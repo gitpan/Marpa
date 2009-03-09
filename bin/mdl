@@ -1,0 +1,299 @@
+#!perl
+
+use 5.010;
+use strict;
+use warnings;
+
+use Carp;
+use Getopt::Long qw(GetOptionsFromArray);
+use Marpa;
+use English qw( -no_match_vars ) ;
+use Fatal qw(open close);
+
+my $grammar_file;
+my $stringified_grammar_file;
+my $text_to_parse;
+my $inaccessible_symbols;
+my $accessible_symbols;
+my $nullable_symbols;
+my $nulling_symbols;
+my $unproductive_symbols;
+my $productive_symbols;
+my $trace_actions;
+my $trace_lex;
+my $trace_predefineds;
+my $trace_priorities;
+my $trace_values;
+my $show_NFA;
+my $show_QDFA;
+my $show_bocage_verbosity;
+my $show_earley_sets;
+my $show_problems;
+my $show_rules;
+my $show_symbols;
+my $show_tree_flag;
+my $stdout;
+my $all_parses;
+my %options;
+my %source_options;
+
+mdl_command(\@ARGV);
+
+# Apparently a Perl::Critic bug does not allow it to see the final return
+## no critic (Subroutines::RequireFinalReturn)
+sub mdl_command
+## use critic (Subroutines::RequireFinalReturn)
+{
+    my $argvp = shift;
+    my $command = shift @{$argvp};
+
+    given ($command) {
+        when ('stringify') {
+            croak unless GetOptionsFromArray( $argvp, 'option=s' => \%options );
+            return do_stringify();
+        }
+        when ('parse') {
+            croak
+                unless GetOptionsFromArray( $argvp,
+                'grammar=s'            => \$grammar_file,
+                'stringified_grammar=s'   => \$stringified_grammar_file,
+                'text=s'               => \$text_to_parse,
+                'QDFA'                 => \$show_QDFA,
+                'NFA'                  => \$show_NFA,
+                'bocage:i'             => \$show_bocage_verbosity,
+                'inaccessible_symbols' => \$inaccessible_symbols,
+                'accessible_symbols'   => \$accessible_symbols,
+                'nullable_symbols'     => \$nullable_symbols,
+                'nulling_symbols'      => \$nulling_symbols,
+                'unproductive_symbols' => \$unproductive_symbols,
+                'productive_symbols'   => \$productive_symbols,
+                'trace_actions'        => \$trace_actions,
+                'trace_predefineds'    => \$trace_predefineds,
+                'trace_values'         => \$trace_values,
+                'trace_priorities'     => \$trace_priorities,
+                'trace_lex'            => \$trace_lex,
+                'rules'                => \$show_rules,
+                'problems'             => \$show_problems,
+                'symbols'              => \$show_symbols,
+                'earley_sets'          => \$show_earley_sets,
+                'tree:i'               => \$show_tree_flag,
+                'source_option=s'      => \%source_options,
+                'stdout'               => \$stdout,
+                'all_parses'           => \$all_parses,
+                'option=s'             => \%options,
+                );
+
+            if ($trace_actions) {
+                $options{trace_actions} = 1;
+            }
+
+            if ($trace_lex) {
+                $options{trace_lex} = 1;
+            }
+
+            if ($trace_predefineds) {
+                $options{trace_predefineds} = 1;
+            }
+
+            if ($trace_priorities) {
+                $options{trace_priorities} = 1;
+            }
+
+            if ($trace_values) {
+                $options{trace_values} = 1;
+            }
+
+            # should I set it up so that it takes effect before other
+            # traces are set?
+            if ($stdout) {
+                $options{trace_file_handle} = \*STDOUT;
+            }
+
+            return do_parse();
+
+        }
+        default {
+            croak("Unimplemented marpa command: $command");
+        }
+    }
+
+    # should never be reached
+    return;
+
+} # sub mdl_command
+
+sub do_stringify {
+    my $grammar_source;
+    { local ($RS) = undef; $grammar_source = <ARGV>; }
+
+    my $grammar = new Marpa::Grammar(
+        {   mdl_source => \$grammar_source,
+            %options
+        }
+    );
+
+    $grammar->precompute();
+    my $stringified_grammar = $grammar->stringify();
+    print ${$stringified_grammar}
+        or croak "print failed: $OS_ERROR";
+
+    return 1;
+
+}
+
+sub do_parse {
+
+    my $grammar;
+    if ( defined $stringified_grammar_file ) {
+        croak('Stringified grammars not implemented');
+
+    }
+    elsif ( defined $grammar_file ) {
+        open my $grammar_fh, '<', $grammar_file;
+        my $grammar_source;
+        { local ($RS) = undef; $grammar_source = <$grammar_fh>; }
+        close $grammar_fh;
+
+        # don't string data needed for debugging
+        $options{strip} = 0 if $show_rules;
+        $options{strip} = 0 if $show_symbols;
+        $options{strip} = 0 if $show_QDFA;
+
+        eval {
+            $grammar = new Marpa::Grammar( {%options} );
+            $grammar->set(
+                {   mdl_source     => \$grammar_source,
+                    source_options => \%source_options,
+                }
+            );
+        } or croak( "Parse of $grammar_file failed:\n", $EVAL_ERROR );
+        %options = ();
+    }
+    else {
+        croak('No grammar specified');
+    }
+
+    $grammar->precompute();
+
+    if ($show_symbols) {
+        print $grammar->show_symbols()
+            or croak "print failed: $OS_ERROR";
+    }
+
+    if ($show_rules) {
+        print $grammar->show_rules()
+            or croak "print failed: $OS_ERROR";
+    }
+
+    if ($show_problems) {
+        print $grammar->show_problems()
+            or croak "print failed: $OS_ERROR";
+    }
+
+    if ($show_NFA) {
+        print $grammar->show_NFA()
+            or croak "print failed: $OS_ERROR";
+    }
+
+    if ($show_QDFA) {
+        print $grammar->show_QDFA()
+            or croak "print failed: $OS_ERROR";
+    }
+
+    if ($accessible_symbols) {
+        say 'Accessible symbols: ', $grammar->show_accessible_symbols();
+    }
+
+    if ($inaccessible_symbols) {
+        for my $symbol ( @{ $grammar->inaccessible_symbols() } ) {
+            say 'Inaccessible symbol: ', $symbol;
+        }
+    }
+
+    if ($nullable_symbols) {
+        say 'Nullable symbols: ', $grammar->show_nullable_symbols();
+    }
+
+    if ($nulling_symbols) {
+        say 'Nulling symbols: ', $grammar->show_nulling_symbols();
+    }
+
+    if ($productive_symbols) {
+        say 'Productive symbols: ', $grammar->show_productive_symbols();
+    }
+
+    if ($unproductive_symbols) {
+        for my $symbol ( @{ $grammar->unproductive_symbols() } ) {
+            say 'Unproductive symbol: ', $symbol;
+        }
+    }
+
+    my $recce = new Marpa::Recognizer( {
+        grammar => $grammar,
+        clone => 0
+    } );
+    if ( not defined $text_to_parse ) {
+        local ($RS) = undef;
+        $text_to_parse = <ARGV>;
+    }
+
+    my $fail_location = $recce->text( \$text_to_parse );
+
+    if ($show_earley_sets) {
+	$recce->end_input();
+	print $recce->show_earley_sets
+            or croak "print failed: $OS_ERROR";
+    }
+
+    if ( $fail_location >= 0 ) {
+        print {*STDERR} Marpa::show_location(
+                'Parsing failed',
+                \$text_to_parse,
+                $fail_location,
+        ) or croak "print to STDERR failed: $OS_ERROR";
+        exit 1;
+    }
+
+    $recce->end_input();
+
+    my $evaler = new Marpa::Evaluator( {
+        recce => $recce,
+        clone => 0
+    } );
+    if (not $evaler) {
+	say STDERR 'Input not recognized by grammar';
+	exit 1;
+    }
+
+    if (defined $show_bocage_verbosity) {
+	print $evaler->show_bocage($show_bocage_verbosity)
+            or croak "print failed: $OS_ERROR";
+    }
+
+    my $parse_count = 0;
+    PARSE: while (1) {
+
+        my $value = $evaler->value();
+        if ( not defined $value ) {
+            croak 'No parse' if $parse_count <= 0;
+            return;
+        }
+        $parse_count++;
+
+        given (${$value}) {
+            when (undef) { say 'Marpa returned an undefined' }
+            default      { say $_ };
+        }
+
+        if (defined $show_tree_flag) {
+            print $evaler->show_tree($show_tree_flag)
+                or croak "print failed: $OS_ERROR";
+        }
+
+        last PARSE unless $all_parses;
+
+    }    # while (1)
+
+    return 1;
+
+}

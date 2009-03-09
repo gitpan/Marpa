@@ -1,0 +1,241 @@
+=head1 NAME
+
+Marpa::Doc::Plumbing - The Plumbing Interface
+
+=head1 DESCRIPTION
+
+This document describes Marpa's plumbing Interface.
+The plumbing is the low-level interface used by all the porcelain interfaces.
+The plumbing can be used directly.
+It is a short list of named arguments to the
+C<Marpa::Grammar::new()>,
+C<Marpa::Grammar::set()>,
+and C<Marpa::Recognizer::new()> methods.
+
+The C<start> argument may be used in combination
+with a porcelain interface,
+subject to the symbol name conversion requirements
+described below.
+Other than that,
+plumbing and porcelain interfaces cannot be used 
+to build the same grammar.
+Marpa throws an exception if the user attempts to use
+any of the plumbing's other named
+arguments with a porcelain interface.
+
+=head2 Plumbing Symbol Names
+
+Each interface has its own rules for symbol names.
+The plumbing's conventions are
+designed to allow flexibility for the porcelain.
+Any valid Perl string not ending in a right square bracket is an acceptable
+plumbing symbol name.
+Plumbing symbol names which end in right square brackets are reserved for Marpa internal use.
+
+Unlike MDL, plumbing symbols are not considered identical unless their names
+match exactly.
+Unless stated otherwise, any reference to a B<symbol name> in this document
+means a plumbing symbol name.
+
+=head1 METHOD
+
+=head2 Marpa::Grammar::get_symbol
+
+=begin Marpa::Test::Display:
+
+## next display
+in_file($_, 't/ah2.t');
+
+=end Marpa::Test::Display:
+
+    my $a = $grammar->get_symbol('a');
+
+Given a symbol's plumbing name, returns the symbol's cookie.
+It returns undefined if a symbol with that name doesn't exist.
+If you are using MDL to define your grammar,
+you want to use C<Marpa::MDL::get_symbol> instead.
+
+Symbol cookies are used primarily
+in calls to the C<Marpa::Recognizer::earleme> method.
+To get the cookie for a symbol using its porcelain name,
+see the documentation for the individual porcelain interface.
+
+=head1 NAMED ARGUMENTS
+
+=head2 The C<rules> Named Argument
+
+The C<rules> named argument is available with both the C<Marpa::Grammar::new>
+and C<Marpa::Grammar::set> methods.
+The C<rules> named argument may be specified multiple times, adding new rules
+to the grammar each time.
+New rules may be added until the grammar is precomputed.
+
+The value of the C<rules> named argument must be a reference to an array,
+and each element of the array must be a reference to a description of a rule.
+Rule descriptions can be either arrays (the B<short form>)
+or hashes (the B<long form>).
+
+=head3 Short Form
+
+The short form description of a rule is an array with 4 elements:
+I<lhs>, I<rhs>, I<action> and I<priority>.
+The last two of these are optional.
+
+The I<lhs> element must be the name of the left hand side symbol.
+The I<rhs> element must be a reference to an array of names of right hand side symbol names.
+In the case of an empty rule, I<rhs> must be a reference to a zero length array.
+
+The I<action> element, if present, must be a string describing the rule's action
+in the current Marpa semantics.  Right now, the only available semantics is Perl 5.
+If the action for a rule is not explicitly set,
+it will be the value of Marpa's C<default_action> option.
+
+The I<priority> element, if present, must be an integer.
+It can be negative.
+It will be the priority of the rule.
+If undefined, I<priority> defaults to zero.
+
+=head3 Long Form
+
+The long form description of a rule is a hash
+of B<rule options>,
+with the option names as the hash keys,
+and the option values as the hash values.
+The available rule options are:
+
+=over 4
+
+=item C<lhs>, C<rhs>, C<action>, and C<priority>
+
+The values of the C<lhs>, C<rhs>, C<action>, and C<priority> rule options
+are as described above for the corresponding elements of the short form.
+
+=item C<min>
+
+C<min> must be undefined, 0 or 1.
+If C<min> is 0 or 1, 
+the rule is a B<sequence production>.
+If C<min> is undefined, the rule is an ordinary, B<BNF production>.
+
+Only one symbol is allowed on the right hand side of a sequence production,
+and the right hand side symbol may not be a nullable symbol.
+The input will be required to match
+the rhs symbol at least C<min> times
+and will be allowed to match an unlimited number of times.
+For an introduction to sequence productions,
+see the L<MDL document|Marpa::Doc::MDL>.
+
+=item C<separator>
+
+Any sequence production may have a C<separator> defined.
+The value must be a symbol name.
+Marpa allows trailing separators, Perl style.
+The separator must not be a nullable symbol.
+
+=back
+
+=head3 Duplicate Rules
+
+Marpa throws an exception if a duplicate rule is added.
+For BNF productions, a rule is considered a duplicate if it has the
+same left hand side symbol,
+and the same symbols in the same order on the right hand side.
+For sequences, a rule is considered a duplicate if it has the same
+left hand symbol, the same right hand side symbol,
+and the same separator.
+
+=head2 The C<terminals> Named Argument
+
+The value of the C<terminals> name argument must be a reference to an array of terminal descriptions.
+Terminal descriptions can be short form or long form.
+The short form is very short: it is the symbol name of the terminal as a scalar string.
+
+A long form terminal description is a reference to an array of two elements.
+The first element is the symbol name of the terminal.
+The second element must be a reference to a hash of B<terminal options>,
+with option names as hash keys
+and option values as hash values.
+
+=head3 Terminal Options
+
+=over 4
+
+=item C<regex>
+
+The value of the C<regex> terminal option must be a regular expression.
+It is used when Marpa is asked to match the terminals in the input text.
+When the tokens are supplied directly,
+for example when using the L<earleme command|Marpa::Recognizer/"earleme">,
+the terminal's C<regex> value is ignored.
+Only one of the C<regex> and C<action> terminal options may be specified.
+See L<the MDL document|Marpa::Doc::MDL> for details on writing terminal regexes.
+
+=item C<action>
+
+The value of the C<action> terminal option must be a string with code in the current semantics.
+Right now the only available semantics is Perl 5.
+The code will be interpreted as a lex action, which
+will be used to match the terminal in the input text.
+When the tokens are supplied directly,
+for example when using the L<earleme command|Marpa::Recognizer/"earleme">,
+the terminal's C<action> value is ignored.
+Only one of the C<regex> and C<action> terminal options may be specified.
+See L<the MDL document|Marpa::Doc::MDL> for details on writing lex actions.
+
+=item C<prefix>
+
+The value of the C<prefix> terminal option must be a regular expression.
+It will be used to match and discard text from the input
+before any attempt is made to match the terminal itself.
+The most common use is to discard leading whitespace.
+When the tokens are supplied directly,
+for example when using the L<earleme command|Marpa::Recognizer/"earleme">,
+the terminal's C<prefix> value is ignored.
+
+=item C<priority>
+
+The value of the C<priority> terminal option must be an integer.
+It can be negative.
+It will control the order in which terminal matches are attempted.
+
+=back
+
+=head2 The C<start> Named Argument
+
+The value of the C<start> named argument must be a plumbing symbol name.
+It will be used as the start symbol for the grammar.
+Most of the plumbing named arguments
+may not be used
+in combination with a porcelain interface.
+The C<start> named argument is an exception.
+It may be used to set the default for, or to override
+the choice of, the start symbol in the porcelain.
+
+If you use the C<start> named argument to specify a porcelain symbol,
+you must be careful to use the plumbing symbol name.
+The documentation for the porcelain should describe how
+to convert porcelain symbol names to plumbing symbol names.
+
+=head1 SUPPORT
+
+See the L<support section|Marpa/SUPPORT> in the main module.
+
+=head1 AUTHOR
+
+Jeffrey Kegler
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright 2007 - 2009 Jeffrey Kegler
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl 5.10.0.
+
+=cut
+
+# Local Variables:
+#   mode: cperl
+#   cperl-indent-level: 4
+#   fill-column: 100
+# End:
+# vim: expandtab shiftwidth=4:

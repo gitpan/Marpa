@@ -1,0 +1,123 @@
+=head1 NAME
+
+Marpa::Doc::To_Do - Marpa's To Do List
+
+=head1 MEDIUM PRIORITY
+
+=over 4
+
+=item * Allow cloning of unstripped recognizers
+
+=item * Add a SYNOPSIS to the Plumbing document.
+
+=item * Parse bocage creation can probably be made a bit slightly cleaner.
+At least I think so, based on what I found when revising that part of the
+Internals doc.
+
+=item * Make sure that nulling symbols can never be terminals
+
+=back
+
+=head1 LOW PRIORITY
+
+=over 4
+
+=item * Better evaluation of sequences -- just push onto an array via
+a ref, reversing at the end if necessary.  All that code could use
+better comments.
+
+=item * Add a trace_choices option.  There was an option to trace
+non-trivial evaluation choices in the old evaluator, and the new trace_iterations
+doesn't entirely replace it.
+
+=item * Add a show_derivation option.
+
+=item * Add to test set: Basic tests of sequences.
+The matrix is separation (none/perl5/proper)
+and minimium count (0 or 1).
+Eliminate keep vs. no-keep, right vs. left.
+
+=back
+
+=head1 MAYBE, MAYBE NOT
+
+=over 4
+
+=item * Test lexing suffixes?  Remove them?
+
+=item * Speed-up for pre-computing lexables?  Predict lexables based
+on user request?
+
+=item * C<show_tree> before first call to C<value>?  Should
+it cause an error message?  How about after unsuccessful
+call to C<value>?
+
+=back
+
+=head1 MDL FROZEN
+
+For the moment, I will do only bug fixes on the Marpa Demonstration Language,
+or features for which there is specific demand from the users.
+I'm currently thinking of creating another interface language, with syntax like
+Perl 6 regexes and the PGE input.
+So for the time being, nothing will happen on any of the items in this
+section.
+
+=head2 Terminal Priorities Cannot Be Set in MDL
+
+Priorities cannot be set in MDL for terminals.
+So far there's been no need for this,
+and I don't want to invent an artificial test case.
+Once there is an application, I will use that as the test case.
+
+Workaround:
+Add extra rules with the terminals you want to prioritize on their right hand side,
+and assign 
+priorities to the rules.
+
+=head2 Other MDL Changes
+
+=over 4
+
+=item * Allow alternation?
+
+=item * Downgrade version conflict or semantics mismatch to warning?
+
+=item * Add C<{}> and C<[]> syntax to MDL production statements.
+
+=back
+
+=head1 OTHER FROZEN
+
+=head2 Lifting Restrictions on Sequence Productions
+
+The restriction of sequences to sequence productions and of
+sequence productions to a single sequence
+is not the result of any limit of the Marpa parse engine.
+It would not be hard to allow any number of
+sequences and optional sequences on the right hand
+side of any BNF production.
+I'm open to revisiting this issue and lifting the restriction.
+
+The problem is figuring out how to conveniently specify their semantics.
+As the right hand side of a production grows more complex,
+the semantics becomes
+more complex to write, more bug-prone, and harder to debug.
+
+=head1 SUPPORT
+
+See the L<support section|Marpa/SUPPORT> in the main module.
+
+=head1 AUTHOR
+
+Jeffrey Kegler
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright 2007 - 2009 Jeffrey Kegler
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl 5.10.0.
+
+=cut
+

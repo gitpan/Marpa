@@ -1,0 +1,854 @@
+=head1 NAME
+
+Marpa::Doc::MDL - The Marpa Demonstration Language
+
+=begin Marpa::Test::Display:
+
+## default
+in_file($_, 'bootstrap/self.marpa');
+
+=end Marpa::Test::Display:
+
+=head1 OVERVIEW
+
+The Marpa Demonstration Language (MDL) is a language for describing grammars
+to Marpa.  It's porcelain -- as of this
+writing, the only porcelain grammar interface.
+
+While it is Marpa's first porcelain, it's intended not
+to have a privileged status within Marpa.
+Users can write their
+own porcelain.
+It would be easy to write an interface faster than the MDL.
+(Hint: Use a custom lexer.)
+You can also write one that's more powerful.
+(Just think of some cool feature and add it.)
+There are better language designers than me out there.
+Maybe you're one of them.
+If so, Marpa was written to empower you.
+
+=head1 SELF-PARSING
+
+Not all parsers can parse the language that describes their input grammars.
+Marpa can.
+In fact, Marpa's parser starts as the MDL file C<self.marpa>, and
+the parser in Marpa
+is created from it,
+using the same grammar interface and with the same methods available to the user.
+I go to some trouble to make sure this claim is really true.
+
+An initial bootstrap is used to create a second generation MDL bootstrap parser.
+The initial bootstrap is mainly Marpa-generated,
+but when Marpa changes it may be modified by hand to get around chicken-and-egg issues.
+To ensure that Marpa can indeed parse itself,
+the second generation parser is run on the grammar again to produce a third
+generation.
+Production of the second and third generations of the grammar is fully automated,
+with no manual editing.
+Only if the code in these last two generations is exactly identical
+is the Marpa parser considered to be fully self-parsing,
+
+Most of the examples below are
+from C<self.marpa> or previous versions of it.
+
+=head1 ELEMENTS OF MARPA GRAMMAR DESCRIPTIONS
+
+=head2 Paragraphs and Sentences
+
+An MDL file is divided into paragraphs.
+Paragraphs are separated by blank lines, that is lines
+containing only horizontal whitespace.
+Comments do not count as whitespace
+for the purpose of separating paragraphs.
+Paragraphs contain sentences, which must end in a period.
+
+There are definition paragraphs, production paragraphs and terminal paragraphs.
+Here's an example of a definition paragraph:
+
+    semantics are perl5.  version is 0.001_000.  the start symbol is
+    grammar.
+
+=head2 MDL Keywords
+
+Keywords in MDL
+are always entirely lower case, even at the beginning
+of a sentence.
+This is in keeping with the position Larry Wall took in his 2007
+"State of the Onion" talk.
+The idea is that what the user is doing should be
+emphasized over the framework of the language.
+
+Note that MDL does not reserve its keywords the way that most computer
+languages do.
+A user is free to use MDL keywords for her own purposes,
+and when context makes the difference clear,
+may use them in their all lowercase form.
+
+=head2 User Specified Names
+
+User specified names may contain any mix of both upper- and lower-case and
+are case-indifferent.
+That is, C<Symbol> is the same user-specified name as C<SYMBOL>, C<symbol> and even C<sYmBoL>.
+The user may use case as an expressive element, or to distinguish
+his names from MDL keywords.
+
+Names may be more than one word and may be separated by whitespace,
+hyphens, or underscores as the user chooses.
+User names are separation-indifferent as well as case-indifferent.
+C<My symbol>, C<MY_SYMBOL> and C<my-symbol> are all the same name.
+
+A user specified name may be all lowercase,
+just like one of the MDL keywords.
+This allows the user to reuse the MDL
+keywords for his purposes.
+Marpa is far more aware of context than most parsers and
+can often determine
+whether a user name or an MDL keyword is intended.
+When the choice is ambiguous, the MDL keyword takes precedence.
+The user can force the word to be regarded as part of a user name
+by capitalizing one or more of its letters.
+
+For example, in MDL's self-definition, the following occurs:
+
+    rhs element: Optional rhs element.
+
+As you'll see below,
+C<optional> is an MDL keyword which can be meaningful in that context,
+and if C<optional> were lower case in this example,
+the Marpa's preferred parse would result in the above sentence
+being interpreted as a rule which states
+that a C<rhs element> can consist either of itself or nothing.
+(Cycles are not allowed in Marpa, so this will cause Marpa to
+fail with an error message.)
+
+However, since C<Optional> begins with a capital letter, it must
+be a user name or part of one.
+And in fact, an C<Optional rhs element> is defined later as
+
+    optional rhs element: /optional/, rhs symbol specifier.
+
+As will be explained in more detail below, this states that
+an C<optional rhs element> is not an optional element at all.
+It is a non-nullable and non-optional element,
+composed of the keyword
+C<optional> followed by a C<rhs symbol specifier>.
+
+Note that on the left hand side of this second rule, the C<optional> in
+C<optional rhs element> is not capitalized.
+The C<optional> keyword only makes sense on the right hand side.
+MDL only interprets keywords as keywords where they "make sense".
+
+In human languages,
+we often use the same word to mean two different things,
+relying on context to resolve the ambiguity.
+It makes human languages compact and expressive.
+The parsing tools in general use today
+allow the user to use ambiguity only to a very limited degree.
+In Perl 5, Larry Wall is probably about as aggressive in the use of
+overloading and ambiguity as anyone using an LALR parser could be.
+
+=head2 Literal Strings
+
+Literal strings can be single quoted, double quoted, C<q>-quoted or C<qq>-quoted.
+The syntax is much the same as in Perl 5.
+MDL recognizes backslashes,
+and will not terminate a single- or double-quoted string at a
+delimiting quote preceded by a backslash.
+
+For C<q> and C<qq> strings, MDL allows as delimiters
+everything in the POSIX C<punct> character class except backslash and
+the four right hand side bracketing symbols --
+angle and square bracket, curly brace and parentheses.
+(These are the same restrictions that Perl 5 imposes, or at least very close.)
+Backslashes escape the end delimiters in C<q> and C<qq> strings,
+just as they do in single and double-quoted strings.
+
+Like Perl 5, MDL treats a C<q> or C<qq> string with a left-hand bracketing symbol as its
+opening delimiter as a special case.
+The corresponding right hand bracketing symbol becomes the end-delimiter.
+Backslashes escape as usual.
+Nesting of the brackets within the quote is also tracked and the string
+will not terminate until there's an unescaped closing bracket at the same
+nesting level as the opening bracket.
+
+MDL's literal strings are often Perl 5 code,
+and it must be remembered that MDL does B<not> understand Perl 5 syntax.
+This means that in complex cases, such as when an end delimiter appears in a Perl 5
+character class or within a string,
+MDL's idea of where the closing delimiter is may not
+correspond to Perl 5's.
+Users should choose,
+from among MDL's large variety of quoting constructs,
+one that sidesteps potential issues.
+
+Once a literal string is recognized, it's passed to Perl 5, unaltered
+and delimited in the same way that it was in MDL.
+For example, if you
+use double quotes in the MDL source file,
+you can expect Perl 5's interpretation of
+that string literal to follow the same rules as if you had 
+specified that string directly to Perl 5.
+
+=head2 Literal Regexes
+
+Literal regexes are delimited either by slashes, or by C<qr>-quoting.
+For example, the definition sentence
+
+    the default lex prefix is qr/(?:[ \t]*(?:\n|(?:\#[^\n]*\n)))*[ \t]*/xms.
+
+contains a C<qr>-quoted regex, and
+
+    terminal sentence: symbol phrase, /matches/, regex, period.
+
+contains a slash delimited regex.
+
+The actual evaluation of regexes is done by Perl 5, and it is always
+done with the C<qr>-operator.
+MDL C<qr>-quoted regexes are passed as is.
+MDL slash-delimited regexes have C<qr> prepended to them, so that
+Perl 5 sees them as C<qr>-quoted slash-delimited regexes.
+
+Delimiters in MDL regexes follows the same rules as
+in MDL strings.
+Regexes accept all characters in the POSIX "punct" character class
+except backslashes and right bracketing characters as delimiters.
+Backslashing escapes delimiters in regexes.
+And bracketing delimiters get the same special treatment as in strings.
+
+Perl 5 regex modifiers are recognized
+after the closing delimiter,
+just as in Perl 5.
+The following modifiers are recognized: C<msixpo>.
+They are passed on to Perl 5 exactly as found and where found.
+Here's an example of the C<m> modifier in use:
+
+    empty line matches qr/^\h*\n/xms.
+
+=head1 DEFINITION PARAGRAPHS
+
+Definition paragraphs contain one or more definition sentences.
+Definition sentences contain the name of an MDL predefined and its value,
+separated by the word C<is> or C<are>.
+The name of the predefined may be preceded
+by C<the>.
+
+The following sentences all define the semantics of the grammar to be Perl 5.
+
+=begin Marpa::Test::Display:
+
+## next display
+in_file($_, 'author.t/MDL_displays.marpa');
+
+=end Marpa::Test::Display:
+
+    semantics are perl5.
+    perl5 is the semantics.
+    perl5 is semantics.
+    the semantics are perl5.
+    the semantics is perl5.
+
+Note that C<is> or C<are> always works.
+MDL can't be bothered figuring out
+whether C<semantics> is (are?) really singular or plural,
+and I don't blame it.
+MDL is similarly nonchalant about C<is> versus C<are> for all names, whether they are MDL
+predefineds or user-specified.
+
+The syntax of all definition sentences obeys the above rules,
+except as specifically noted otherwise.
+Each definition takes its own set of values,
+as described below.
+
+Many definitions takes strings as their value.
+Where that's the case,
+the string may be specified either by name
+or as a literal string.
+
+=head2 Semantics Definition
+
+The semantics definition is not optional.
+Marpa is ultimately targeted to Perl 6,
+and that is considered its "default" semantics,
+even though it's not currently available.
+Currently, the only available semantics is C<perl5>.
+
+All MDL source requires a line explicitly stating
+that its semantics are Perl 5, in order to limit
+problems with old MDL files
+once Perl 6 becomes the default.
+
+=head2 Version Definition
+
+    version is 0.001_000.
+
+The version definition is also not optional,
+The version has to match B<exactly>.
+
+=head2 Start Symbol Definition
+
+    the start symbol is grammar.
+
+Pedantically speaking, the start symbol is optional,
+in the sense that it may be specified later
+using L<the raw interface|Marpa::Doc::Plumbing>.
+But if no start symbol has been specified by precomputation time,
+Marpa will throw an exception.
+
+=head2 String Definitions
+
+Strings are important in Marpa.
+In Marpa, semantic actions are specified by strings with Perl 5 code in them.
+
+Here's an example of a string definition:
+
+
+    concatenate lines is q{
+        (scalar @_) ? (join "\n", (grep { $_ } @_)) : undef;
+    }.
+
+=head2 Default Action Definition
+
+You can specify a "default action", that is, an action to be used in rules which do
+not explicitly specify an action.  By default, rules return undefined.
+The current version of C<self.marpa> uses this default.
+Here's the specification of a default action from an earlier version:
+
+=begin Marpa::Test::Display:
+
+## next display
+in_file($_, 'author.t/MDL_displays.marpa');
+
+=end Marpa::Test::Display:
+
+    concatenate lines is the default action. 
+
+In this case, the string specifier is C<concatenate lines>, the string name
+defined above.
+
+=head2 Default Null Value Definition
+
+A "null value" is the value returned when a symbol matches the empty string.
+Whenever an empty rule is explicitly specified to Marpa,
+and an action is given for it,
+that action is used to calculate
+the null value of the symbol on the left hand side of that rule.
+The null value of a symbol is its value whenever it is nulled,
+whether directly as a result of the symbol's own empty rule,
+or indirectly through a series of other rules.
+
+When a null symbol value is not set explicitly in an empty rule,
+it defaults to a Perl undefined.
+This default can be changed.
+For example, the following changes the default null symbol value
+to an at-sign.
+
+=begin Marpa::Test::Display:
+
+## next display
+in_file($_, 'author.t/MDL_displays.marpa');
+
+=end Marpa::Test::Display:
+
+    the default null value is q{'@'}.
+
+=head2 Default Lex Prefix Definition
+
+Terminals can be specified as Perl 5 regexes.
+Terminals are allowed to have
+a "prefix" before the main pattern.
+By default, this prefix is discarded.
+A common use for lex prefixes is the elimination of leading whitespace.
+
+The plumbing allows a separate lex prefix to be set for each terminal,
+and this ability will be added to the MDL.
+By default, there is no lex prefix for a terminal.
+(Saying the same thing more pedantically,
+the default lex prefix is the empty string.)
+This default can be reset with a default lex prefix definition sentence.
+Here's one from C<self.marpa>:
+
+    the default lex prefix is qr/(?:[ \t]*(?:\n|(?:\#[^\n]*\n)))*[ \t]*/xms.
+
+=head2 Preamble Definition
+
+Rule actions and null values
+are run in a special per-evaluator namespace.
+It's sometimes useful to have globals in this namespace initialized before any
+actions are run.
+Preamble definition sentences may be used for this purpose.
+Values in the preamble definitions are strings containing Perl code.
+
+If there is more than one preamble definition in MDL, the strings are concatenated.
+This differs from most definitions in MDL, where any new value overwrites the old one.
+Also, the article to be used before the name of the predefined must be
+C<a> and not C<the>.  As with other definitions, the article may be omitted.
+This is an example of a preamble:
+
+    a preamble is q{
+        our $regex_data = [];
+        1;
+    }.
+
+=head2 Lex Preamble Definition
+
+Lex actions are run in a special per-recognizer namespace.
+It's sometimes useful to have globals in this namespace initialized before any
+actions are run.
+Lex preamble definition sentences may be used for this purpose.
+Values in the lex preamble definitions are strings containing Perl code.
+
+If there is more than one lex preamble definition in MDL,
+the strings are concatenated.
+This differs from most definitions in MDL, where any new value overwrites the old one.
+Also, the article to be used before the name of the predefined must be
+C<a> and not C<the>.  As with other definitions, the article may be omitted.
+This was a C<self.marpa> lex preamble in one version:
+
+=begin Marpa::Test::Display:
+
+## next display
+in_file($_, 'author.t/MDL_displays.marpa');
+
+=end Marpa::Test::Display:
+
+    a lex preamble is q{
+	our $regex_data = [];
+        1;
+    }.
+
+=head1 PRODUCTION PARAGRAPHS
+
+Here's a self-describing example of a production paragraph,
+simplified from C<self.marpa>:
+
+    production paragraph:
+	non structural production sentences,
+	production sentence,
+	non structural production sentences,
+	optional action sentence,
+	non structural production sentences.
+
+A production paragraph is characterized by a production sentence.  This
+is followed by an optional
+action sentence.
+Before and after these may be B<non structural production sentences> -- sentences
+which can go anywhere in the paragraph.
+Comment sentences and priority sentences are
+"non structural" sentences.
+
+=head2 Production Sentences
+
+Production sentences come in two forms: BNF sentences and sequence sentences.
+
+=head3 BNF Sentences
+
+Let's start with another self-description:
+
+    production sentence: lhs, production copula, rhs, period.
+
+The usual form of a production sentence is 
+a BNF production.
+A BNF sentence consists of a left hand side and a right hand side, separated by a colon.
+The left hand side is the name of a single symbol.
+The right hand side is a series of symbol names and regex literals,
+separated by commas,
+as in the above
+example, where C<lhs> and C<rhs> are symbol names, and C</:/> is a regex.
+
+Any symbol name or regex literal in a right hand side can be made optional
+by preceding it with the keyword C<optional>.
+We've already seen several examples of those, but here's another:
+
+    default action setting:
+    optional /the/, /default/, /action/, /is/, action specifier.
+
+In this case the regex C</the/> is optional, so that the sentences
+
+=begin Marpa::Test::Display:
+
+## next 2 displays
+in_file($_, 'author.t/MDL_displays.marpa');
+
+=end Marpa::Test::Display:
+
+    the default action is do whatever.
+
+and 
+
+    default action is do whatever.
+
+are both valid C<default action setting>'s.
+It is assumed that C<do whatever> has
+been defined as a string.
+
+Marpa doesn't allow you to make a symbol optional, if it is nullable.
+A symbol is nullable if it can produce the empty string.
+In effect, a nullable symbol already is optional.
+Making it optional again with the C<optional> keyword
+would cause a lot of useless wheels to spin inside Marpa.
+
+=head3 Sequence Sentences
+
+Sequences of symbols are extremely common in useful grammars.
+MDL provides four special forms of the production sentence for dealing with these.
+
+    definition paragraph: definition sequence.
+    
+Z<>
+
+    non structural production sentences:
+    optional non structural production sentence sequence.
+
+Z<>
+
+    paragraphs: empty line separated paragraph sequence.
+
+=begin Marpa::Test::Display:
+
+## next display
+in_file($_, 'author.t/MDL_displays.marpa');
+
+=end Marpa::Test::Display:
+
+    frobitz: optional comma separated whatchamacallit sequence.
+
+In sequence sentences, the right hand side of the production is
+a sequence description.  Only one sequence description is allowed on a right
+hand side, and it must be the only thing on the right hand side.
+
+The right hand side of a sequence production can be either a B<simple sequence>
+or a B<separated sequence>.
+A simple sequence is designated by the symbol name of the symbol to be repeated,
+followed by the keyword C<sequence>.
+A separated sequence is designated by the symbol name of a separator
+followed by the keyword C<separated>, then the name of the repeated symbol
+followed by the keyword C<sequence>.
+
+A separated sequence will allow trailing separators, in Perl fashion.
+For example, a C<rhs> is specified above as a comma-separated
+sequence of C<rhs element>'s.
+Both of the following would parse as valid C<rhs>'s:
+
+    optional /the/, /default/, /action/, /is/, action specifier
+
+=begin Marpa::Test::Display:
+
+## next display
+in_file($_, 'author.t/MDL_displays.marpa');
+
+=end Marpa::Test::Display:
+
+    optional /the/, /default/, /action/, /is/, action specifier,
+
+Preceding any sequence with the keyword C<optional> means that the entire
+sequence may be omitted.
+
+The value of the child symbols in a sequence sentence is available
+to semantic actions in the
+C<@_> array,
+just as in a BNF sentence.
+Unlike in a BNF sentence,
+in a sequence sentence
+you don't know in advance the number of right hand side symbols.
+
+You can deal with the semantics of sequence sentences
+by using operations like C<join> or C<map> which work
+on the entire array.
+You can also obtain a count of the symbols on the right side
+in the usual way,
+with C<scalar @_>.
+The index of the last symbol is available as C<$#_>.
+Sequence sentences work best where the semantics really is that of a sequence
+of semantically equivalent items.
+
+Sequences can always be written as BNF.
+Most parser generators don't have explicit sequence constructors
+and force you
+to write your sequences out in BNF form.
+
+Having nullable symbols (symbols which might match the empty string) in a sequence
+is not a good idea, and Marpa throws an exception if you try it.
+If you define an C<X> as a string of one or more non-nullable C<Y>'s,
+Marpa can recognize a single parse for the string C<"YY">.
+Now suppose C<Y> is nullable.
+How many null C<Y>'s are there in C<"YY">, and where are they?
+A nullable in a sequence is probably an error in grammar design.
+
+But not always.
+Marpa's most basic test case is exactly that:
+creation of a sequence of nullables and a tally of the exponentially increasing results.
+The ban on nullables in sequences only applies to sequences in sequence productions.
+Nothing prevents you from specifying a sequence of nullables with BNF productions,
+for stress testing, or for any other use you can find.
+
+=head2 Action Sentences
+
+An action sentence describes a semantic action.  In MDL,
+actions are strings containing Perl 5 code.
+For example, in C<self.marpa>:
+
+    action sentence:
+    optional /the/, /action/, /is/, action specifier, period.
+    q{ '    action =>' . $_[3] }.
+
+the last line is an action sentence.  You can also be more verbose.
+
+    action sentence: action specifier, period.
+    the action is q{ '    action =>' . $_[0] }.
+
+The action can be either a rule action or a null symbol action.
+Which it is depends on the production sentence in the paragraph.
+If the production sentence is a BNF sentence with an empty right hand
+side, the action is the null symbol action for the symbol on the left hand side.
+Otherwise, the action is a rule action.
+
+As a reminder, strings are delimited as MDL strings, not as Perl 5 code, even
+when they are destined to be compiled as Perl 5 code.
+Many constructs that "escape" the delimiters in Perl 5 code will not
+do so in an MDL string.
+
+The value of the last expression evaluated
+in the action will be the value returned by the
+production.
+B<Do not> use the C<return> builtin.
+Actions may not be implemented as subroutines.
+
+Values from child productions are available through
+the C<@_> array, as if they were arguments to a subroutine.
+The array contains the values of the symbols on the right hand side, in order.
+In both the examples above, a string is prepended to the value of the
+C<action specifier>,
+and that becomes the value of C<action sentence> in any parent production.
+
+All actions start with
+C<use integer> and C<use strict> in effect.
+All Perl 5 warnings are also in effect except those in the C<recursion> category.
+The code is run in a special per-recognizer namespace shared by all the rule actions
+and null symbols actions evaluated in a recognizer.
+Globals in that namespace may be initialized in
+preamble definitions.
+
+=head2 Priority Sentences
+
+A priority sentence is the keyword C<priority> followed by an integer value, which
+may be negative.  The default priority is 0.
+
+    definition: predefined setting, period.
+    q{ $_[0] }.
+    priority 1000.
+
+In the example above,
+the rule that produces a C<predefined setting> from a C<definition> is given a priority of 1000.
+
+Priorities are used to affect the order in which ambiguous parses are returned,
+and they are a very important tool in Marpa.
+The priority setting in the above example directly affects the parsing of this sentence:
+
+    a preamble is q{ our $regex_data = []; 1; }.
+
+This sentence has two parses in C<self.marpa>.
+It could be parsed as a string definition,
+one defining the string named C<a-preamble>.
+But C<a> and C<preamble> could also be recognized as MDL keywords,
+and in that case the sentence is a setting for Marpa's C<preamble> predefined,
+and the literal string would be concatenated to the current value of the preamble.
+
+The ambiguity is resolved by giving C<predefined setting>'s,
+such as the C<preamble> setting, a higher
+priority than string definitions.
+The above example sets the priority for C<definition>'s
+which match C<predefined setting>'s to 1000.
+Here's the production paragraph for
+producing a C<string definition> from a C<definition>:
+
+    definition: string definition.  concatenate lines.
+
+There's no priority sentence here, so
+string definitions get the default priority,
+which is zero.
+
+That means that if a sentence in a definition paragraph
+can be parsed both as the definition of the setting for a predefined, and as the definition of a string,
+the first parse will be the one that treats the sentence as setting a predefined.
+Only if a definition sentence cannot be interpreted as a predefined setting,
+will the string definition be the first parse.
+In MDL's parsing of itself,
+as in most applications,
+only one parse is used.
+That means that the first parse is the only parse.
+
+=head2 Comment Sentences
+
+Comment sentences may occur anywhere in a production paragraph.
+They consist of a comment tag, followed by a colon and a series
+of whitespace-separated "comment words".  Comment words
+may contain anything except whitespace or a period.
+The comment tags are C<to do>, C<note> and C<comment>.
+
+=begin Marpa::Test::Display:
+
+## next display
+in_file($_, 'author.t/MDL_displays.marpa');
+
+=end Marpa::Test::Display:
+
+    note: I may look like a production sentence; but MDL
+    knows the difference.
+
+To force MDL to treat something that looks like a comment sentence as a production,
+capitalize any letter in the comment tag.
+To force MDL to treat something that looks like a production
+as a comment sentence, put some syntax
+which is illegal in a production sentence anywhere in the comment.
+The above example has a semi-colon, which no form of any production sentence allows.
+
+=head1 TERMINAL PARAGRAPHS
+
+A terminal paragraph is characterized by a terminal sentence.  It may also contain
+comment sentences, as described L<above|/"Comment sentences">.
+Terminal sentences come in two forms, the regex form and the closure form.
+
+=head2 Regex Form of Terminal Sentence
+
+The regex form of a terminal sentence is a symbol name,
+followed by the keyword C<matches>
+and a regex literal.
+For example,
+
+    comma matches qr/\,/.
+
+These regexes must make no assumptions about where in a string,
+or where relative to the C<pos> position,
+they will be applied.
+This means that the only anchoring allowed is "C<^>" and "C<$>" when the C<"m">
+modifier is in use, so that 
+"C<^>" and "C<$>" are able to match start and end of line anywhere in a string.
+I don't think you'll really want any other forms of anchoring.
+
+Captures should be avoided for efficiency reasons, but the only ones that are actually banned
+are named captures to buffers with names beginning with
+"C<MARPA_>" or any of its capitalization variants ("C<marpa_>", "C<MaRpA_>", etc.).
+These buffers are reserved for Marpa's use.
+
+=head2 Closure Form of Terminal Sentence
+
+The closure form of a terminal sentence is the keyword C<match>; a symbol name;
+the keyword C<using>; and finally, a string name or a string literal.
+For example,
+
+    match single quoted string using q{
+	my $match_start = pos ${$STRING};
+	state $prefix_regex = qr/\G'/oxms;
+	return unless ${$STRING} =~ /$prefix_regex/gxms;
+	state $regex = qr/\G[^'\0134]*('|\0134')/xms;
+	MATCH: while (${$STRING} =~ /$regex/gcxms) {
+	    next MATCH unless defined $1;
+	    if ($1 eq q{'}) {
+		my $end_pos = pos ${$STRING};
+		my $match_length = $end_pos - $match_start;
+		my $lex_length = $end_pos - $START;
+		return (
+                    substr(${$STRING}, $match_start, $match_length),
+                    $lex_length
+                );
+	    }
+	}
+	return;
+    }.
+    
+The string may contain Perl 5 code specifying a lexing closure,
+or be one of the special strings C<lex_q_quote> or C<lex_regex>.
+
+If the string is C<lex_q_quote> Marpa uses an internal routine that implements
+the q-quoting rules described L<above|/"Literal Strings">.
+If the string is C<lex_regex> Marpa uses as the closure an internal routine
+that implements the rules for literal regexes also described L<above|/"Literal Regexes">.
+This means the terminal paragraph for the C<regex> terminal can be very simple:
+
+    match regex using 'lex_regex'.
+
+Lexing closures find the string to be matched as a C<pos> offset within
+the string B<referred to> by C<$STRING>.
+(See L<perlre> for details on setting and using C<pos>.)
+
+In writing a lexing closure, keep the following in mind:
+
+=over 4
+
+=item * Simply matching C<$$STRING> won't work, and will cause your parser to
+fail in almost every case.
+
+=item * Always match from the current setting of C<pos $STRING>,
+which is accessible with C<\G> anchoring.
+
+=item * C<$STRING> is a reference, and for efficiency should be used that way.
+The string may be many megabytes long.  Don't use any construct that copies it,
+unless you feel sure it's OK to limit use of your grammar to applications where efficiency is
+not an issue.
+
+=item * Don't change C<$$STRING>, or C<$STRING>.
+Changing either of these causes results which are unpredictable,
+but usually bad.
+
+=item * Changes to C<pos $$STRING> are OK.
+You do B<not> need to worry about where your code leaves the C<pos>
+position in C<$$STRING>.
+Marpa will use the length you returned for the match to
+set C<pos $$STRING> when it wants to move lexing forward.
+
+=item * Return failure with a bare C<return>.
+If you need to throw an exception, use C<croak()>.
+
+=item * On success, return an array of two elements.
+The first element must be the value of the token at the match.
+This is often the matched substring, but it can be anything useful.
+The second element of the array must be the length of the token
+in characters.
+
+=item * Zero-length tokens will totally mess Marpa up.
+Token lengths must be B<greater than> zero.
+
+=item * Lex closures run in a special per-recognizer namespace.
+Globals may be initialized in a lex preamble.
+C<use strict>, C<use integer> and all warnings except C<recursion> are in effect.
+
+=item * C<$START> is set to the position at the start of the prefix.
+If there was no prefix (or, more pedantically, if the prefix was zero
+length), C<$START> will be set to C<pos $$STRING>.
+
+=item * The token length returned must include the length of any prefix removed.
+If a non-empty prefix was removed,
+returning just the length of the matched string
+will usually cause lexing to get out of sync and parsing to fail.
+The code in the above example shows things being done correctly.
+
+=back
+
+=head1 USING MDL SYMBOLS WITH THE PLUMBING
+
+For discussion of how to refer to MDL symbols using the plumbing
+interface, see the L<MDL Utilities document|Marpa::MDL>.
+
+=head1 SUPPORT
+
+See the L<support section|Marpa/SUPPORT> in the main module.
+
+=head1 AUTHOR
+
+Jeffrey Kegler
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright 2007 - 2009 Jeffrey Kegler
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl 5.10.0.
+
+=cut
+
+# Local Variables:
+#   mode: cperl
+#   cperl-indent-level: 4
+#   fill-column: 100
+# End:
+# vim: expandtab shiftwidth=4:

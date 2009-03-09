@@ -1,0 +1,315 @@
+=head1 NAME
+
+Marpa::Doc::Options - Options to Marpa Method Calls
+
+=head1 DESCRIPTION
+
+Marpa has options which control its behavior.
+These may be set using named arguments when C<Marpa::Grammar>,
+C<Marpa::Recognizer>,
+and
+C<Marpa::Evaluator>,
+objects are created;
+with the C<Marpa::Grammar::set>
+and the C<Marpa::Evaluator::set> methods,
+and
+with the C<Marpa::mdl> static method.
+Except as noted,
+a recognizer object inherits the Marpa option settings
+of the grammar from which it was created,
+and an evaluator object inherits the Marpa option settings
+of the recognizer from which it was created.
+
+Options for debugging and tracing are described in
+L<a separate document on diagnostics|Marpa::Doc::Diagnostics>.
+The other Marpa options are listed below, by argument name,
+and described.
+
+Porcelain interfaces have their own conventions
+for Marpa options.
+The documentation of MDL describes,
+and the documentation of all porcelain interfaces should describe,
+which options can be set through that interface, and how.
+
+=over 4
+
+=item ambiguous_lex
+
+Treats its value as a boolean. 
+If true, ambiguous lexing is used.
+Ambiguous lexing means that even if a terminal is matched
+by a regex or a lex action,
+the search for other terminals at that location continues.
+If multiple terminals match,
+all the tokens found are considered for use in the parse.
+If the parse is ambiguous,
+it is possible that all the tokens will actually be used.
+Ambiguous lexing is the default.
+The C<ambiguous_lex> option cannnot be changed after grammar precomputation.
+
+If C<ambiguous_lex> is false,
+Marpa does unambiguous lexing,
+which is the standard in parser generators.
+With unambiguous lexing,
+lexing at each location ends when the first terminal matches.
+The user must ensure the first terminal to match is the correct one.
+Traditionally, users have done this by making their
+lex patterns deterministic --
+that is,
+they set their lex patterns
+up so that every valid input lexes in one and only one way.
+
+Marpa offers users who opt for unambiguous lexing a second alternative.
+Terminals are tested in order of priority, and the priorities can be set
+by the user.
+
+=item code_lines
+
+If there is a problem with user supplied code,
+Marpa prints the error message and a description of where the code is being used.
+Marpa also displays the code.
+The value of C<code_lines> tells Marpa how many lines of context to print.
+If it's negative, all the code is displayed, no matter how long it is.
+The default is 3 lines.
+The C<code_lines> option can be changed at any point in a parse.
+
+If the line with the problem cannot be determined, the first lines
+of code are printed, up to a maximum of twice C<code_lines>, plus one.
+
+=item cycle_depth
+
+The value must be an integer greater than or equal to 1.
+In an infinitely ambigious grammar, this is
+the depth to which cycles will be followed.
+The default is 1.
+C<cycle_depth> may be changed at any point in parsing.
+
+Recursion is a case where a symbol produces itself, usually as part of a larger
+string.
+Cycles are a special, and usually pathological, kind of recursion.
+In a cycle, a symbol produces itself, unchanged.
+This means that the symbol will produce itself over and over again, forever.
+
+The most "natural" semantics of a cycle is an infinite loop.
+This is probably not what the user wants, and Marpa always ends
+cycles after a fixed number of iterations.
+The C<cycle_depth> option sets this depth.
+
+Cycles are usually caused by an error in writing the grammar.
+One reason that Marpa allows cycles is bragging rights --
+Marpa can truly claim to parse any grammar which can be written in BNF.
+But there are other reasons:
+Marpa frees a user working out a complicated grammar
+from having to worry at every point about whether she has created a cycle.
+And, who knows, there may be uses for cycles.
+It is possible that the most natural way to describe some
+languages in BNF may be in grammars with cycles.
+
+=item cycle_action
+
+The value will be treated as a string
+that describes what to do with cycles.
+If the string is "C<warn>",
+warnings will be written
+to the trace file handle for every rule involved in a cycle,
+but parsing will be allowed to proceed.
+If the string is "C<fatal>",
+warnings will be written,
+then an exception will be thrown.
+If the string is "C<quiet>",
+no warnings will be written,
+and parsing will be allowed to proceed.
+
+The default value is "C<warn>".
+C<cycle_action> cannot be changed after the grammar is precomputed.
+For more about cycles, see the description of the C<cycle_depth>
+Marpa option.
+
+=item default_action
+
+Takes as its value a string, which must be code in the current
+semantics.
+(Right now Perl 5 is the only semantics available.)
+This value is used as the action for rules which have no
+explicitly specified action.
+If C<default_action> is not set,
+the default action is to return a Perl 5 undefined.
+C<default_action> cannot be changed once a recognizer object has been created.
+
+=item default_lex_prefix
+
+The value must be a regex in the current semantics.
+(Right now Perl 5 is the only semantics available.)
+The lexers allow every terminal to specify a B<lex prefix>,
+a pattern to be matched and discarded before the pattern for
+the terminal itself is matched.
+Lex prefixes are often used to handle leading whitespace.
+C<default_lex_prefix> cannot be changed once a grammar is precomputed.
+
+If a terminal has no lex prefix set, C<default_lex_prefix> is used.
+When C<default_lex_prefix> is not set,
+the default lex prefix is equivalent to a regex which matches
+only the empty string.
+
+=item default_null_value
+
+The value must be an action, that is, a string containing code in the current semantics.
+(Right now Perl 5 is the only semantics available.)
+The null value of a symbol is the symbol's value when it matches the empty string in a parse.
+Null symbol values are calculated when a recognizer object is created.
+C<default_null_value> cannot be changed after that point.
+
+Symbols with an explicitly set null action
+use the value returned by that explicitly set action.
+Otherwise,
+if there is a C<default_null_value> action, that 
+action is run when the recognizer is created,
+and the result becomes that symbol's null value.
+If there is no C<default_null_value> action,
+and a symbol has no explicitly set null action,
+that symbol's null value is a Perl 5 undefined.
+There's more about null values L<above|"Null Symbol Values"> and in
+L<Marpa::Evaluator/"Null Symbol Values">.
+
+=item inaccessible_ok
+
+The value must be a reference to an array of symbol names.
+By default, Marpa warns if a symbol is inaccessible, but
+the warning is suppressed for any symbol named in the array.
+Setting the C<inaccessible_ok> option
+after grammar precomputation is useless,
+and itself results in a warning.
+
+Inaccessible symbols sometimes indicate errors in the grammar
+design.
+But a user may have plans for these symbols,
+may wish to keep them as notes,
+or may simply wish to deal with them later.
+
+=item lex_preamble
+
+The value must be a string which contains code in the current semantics.
+(Right now Perl 5 is the only semantics available.)
+The lex preamble is run
+when the recognizer object is created,
+in a namespace special to the recognizer object.
+A lex preamble may be used to set up globals.
+
+The value of the lex preamble is the value of its
+last statement.
+Marpa throws an exception if this is not a true value in Perl 5.
+The lex preamble of a recognizer object cannot be changed
+after the recognizer object has been created.
+
+If multiple lex preambles are specified as named arguments,
+the most recent lex preamble replaces any earlier one.
+This is consistent with the behavior of other named arguments,
+but it differs from the behavior of MDL,
+which creates a lex preamble by concatenating code strings.
+
+=item max_parses
+
+The value must be an integer.
+If it is greater than zero, evaluators will return no more than that number
+of parses.
+If it is zero, there will be no limit on the number of parses returned
+by an evaluator.
+The default is for there to be no limit.
+C<max_parses> can be changed at any point in the parse.
+
+Grammars for which the number of parses grows exponentially with the length of the input
+are common, and easy to create by mistake.
+This option is one way to deal with that.
+
+=item preamble
+
+The value must be a string which contains code in the current semantics.
+(Right now Perl 5 is the only semantics available.)
+The preamble is run
+when the evaluator object is created,
+in a namespace special to the evaluator object.
+Rule actions and null symbol actions also run in this namespace.
+A preamble may be used to set up globals.
+
+The value of the preamble is the value
+of its last statement.
+Marpa throws an exception if this is not a true value in Perl 5.
+The preamble of a recognizer object cannot be changed
+after the recognizer object has been created.
+
+If multiple preambles are specified as named arguments,
+the most recent preamble replaces any earlier one.
+This is consistent with the behavior of other named arguments,
+but it differs from the behavior of MDL,
+which creates a preamble by concatenating code strings.
+
+=item semantics
+
+The value is a string specifying the type of semantics used in the semantic actions.
+The current default, and the only available semantics at this writing, is C<perl5>.
+The C<semantics> option cannot be changed after the grammar is precomputed.
+
+=item trace_file_handle
+
+The value is a file handle.
+Warnings and trace output go to the trace file handle.
+By default it's C<STDERR>.
+The trace file handle can be changed at any point in a parse.
+
+=item unproductive_ok
+
+The value must be a reference to an array of symbol names.
+By default, Marpa warns if a symbol is unproductive, but
+the warning is suppressed for any symbol named in the array.
+Setting the C<unproductive_ok> option
+after grammar precomputation is useless,
+and itself results in a warning.
+
+Unproductive symbols sometimes indicate errors in the grammar
+design.
+But a user may have plans for these symbols,
+may wish to keep them as notes,
+or may simply wish to deal with them later.
+
+=item version
+
+If present, the C<version> option must match the current
+Marpa version B<exactly>.
+The C<version> option cannot be changed after the grammar is precomputed.
+
+=item warnings
+
+The value is a boolean.
+If true, it enables warnings
+about inaccessible and unproductive symbols in the grammar.
+Warnings are written to the trace file handle.
+By default, warnings are on.
+Turning warnings on
+after grammar precomputation is useless,
+and itself results in a warning.
+
+Inaccessible and unproductive rules sometimes indicate errors in the grammar
+design.
+But a user may have plans for these rules,
+may wish to keep them as notes,
+or may simply wish to deal with them later.
+
+=back
+
+=head1 SUPPORT
+
+See the L<support section|Marpa/SUPPORT> in the main module.
+
+=head1 AUTHOR
+
+Jeffrey Kegler
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright 2007 - 2009 Jeffrey Kegler
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl 5.10.0.
+
+=cut
+
