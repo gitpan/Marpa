@@ -11,25 +11,26 @@ use Scalar::Util qw(refaddr reftype isweak weaken);
 use Test::More tests => 2;
 use Test::Weaken;
 
-BEGIN { use_ok( 'Marpa' ); }
+BEGIN { use_ok('Marpa'); }
 
 my $test = sub {
-    my $g = new Marpa::Grammar({
-        start => 'S',
-        rules => [
-            [ 'S', [qw/A A A A/] ],
-            [ 'A', [qw/a/] ],
-            [ 'A', [qw/E/] ],
-            [ 'E' ],
-        ],
-        terminals => [ 'a' ],
-    });
+    my $g = new Marpa::Grammar(
+        {   start => 'S',
+            rules => [
+                [ 'S', [qw/A A A A/] ],
+                [ 'A', [qw/a/] ],
+                [ 'A', [qw/E/] ],
+                ['E'],
+            ],
+            terminals => ['a'],
+        }
+    );
     my $a = $g->get_symbol('a');
-    my $recce = new Marpa::Recognizer({grammar => $g});
-    $recce->earleme([$a, 'a', 1]);
-    $recce->earleme([$a, 'a', 1]);
-    $recce->earleme([$a, 'a', 1]);
-    $recce->earleme([$a, 'a', 1]);
+    my $recce = new Marpa::Recognizer( { grammar => $g } );
+    $recce->earleme( [ $a, 'a', 1 ] );
+    $recce->earleme( [ $a, 'a', 1 ] );
+    $recce->earleme( [ $a, 'a', 1 ] );
+    $recce->earleme( [ $a, 'a', 1 ] );
     $recce->end_input();
     my $evaler = new Marpa::Evaluator( { recce => $recce } );
     croak('No parse found') unless $evaler;
@@ -47,18 +48,22 @@ my $freed_count       = $total - $unfreed_count;
 # an undef "global".  No harm done if there's only one.
 
 my $ignored_count = 0;
-DELETE_UNDEF_CONSTANT: for my $ix (0 .. $#{$unfreed_proberefs}) {
-    if (ref $unfreed_proberefs->[$ix] eq 'SCALAR' and not defined ${$unfreed_proberefs->[$ix]}) {
+DELETE_UNDEF_CONSTANT: for my $ix ( 0 .. $#{$unfreed_proberefs} ) {
+    if ( ref $unfreed_proberefs->[$ix] eq 'SCALAR'
+        and not defined ${ $unfreed_proberefs->[$ix] } )
+    {
         delete $unfreed_proberefs->[$ix];
         $ignored_count++;
         last DELETE_UNDEF_CONSTANT;
-    }
-}
+    } ## end if ( ref $unfreed_proberefs->[$ix] eq 'SCALAR' and not...
+} ## end for my $ix ( 0 .. $#{$unfreed_proberefs} )
 $unfreed_count = @{$unfreed_proberefs};
 
-diag("Freed=$freed_count, ignored=$ignored_count, unfreed=$unfreed_count, total=$total");
+diag(
+    "Freed=$freed_count, ignored=$ignored_count, unfreed=$unfreed_count, total=$total"
+);
 
-cmp_ok($unfreed_count, q{==}, 0, 'All refs freed')
+cmp_ok( $unfreed_count, q{==}, 0, 'All refs freed' )
     or diag("Unfreed refs: $unfreed_count");
 
 # Local Variables:

@@ -16,25 +16,30 @@ BEGIN {
     use_ok('Marpa');
 }
 
-my $g = new Marpa::Grammar({
-    start => q{S'},
-    rules => [
-        [ q{S'}, [qw/S/] ],
-        [ 'S',  [qw/A A A A/] ],
-        [ 'A',  [qw/a/] ],
-        [ 'A',  [qw/E/] ],
-        [ 'E' ],
-    ],
-    academic => 1,
-    precompute => 0,
-    strip => 0.
-});
+my $g = new Marpa::Grammar(
+    {   start => q{S'},
+        rules => [
+            [ q{S'}, [qw/S/] ],
+            [ 'S',   [qw/A A A A/] ],
+            [ 'A',   [qw/a/] ],
+            [ 'A',   [qw/E/] ],
+            ['E'],
+        ],
+        academic   => 1,
+        precompute => 0,
+        strip      => 0.
+    }
+);
 
-$g->set({
+$g->set(
+    {
+    #<<< perltidy flattens this
     terminals => [
         [ 'a' => { regex => 'a' } ],
     ],
-});
+    #>>>
+    }
+);
 
 Marpa::Test::is( $g->show_rules(), <<'EOS', 'Aycock/Horspool Rules' );
 0: S' -> S /* nullable */

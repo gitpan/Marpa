@@ -14,17 +14,17 @@ sub gen_symbol_from_regex {
     my ( $regex_hash, $uniq_number ) = @{$data};
     given ($regex) {
         when (/^qr/xms) { $regex = substr $regex, 3, -1; }
-        default      { $regex = substr $regex, 1, -1; };
+        default         { $regex = substr $regex, 1, -1; };
     }
     my $symbol = $regex_hash->{$regex};
     return $symbol if defined $symbol;
     $symbol = substr $regex, 0, 20;
     $symbol =~ s/%/%%/gxms;
     $symbol =~ s/([^[:alnum:]_-])/sprintf("%%%.2x", ord($1))/gexms;
-    $symbol .= sprintf ':k%x', (${$uniq_number})++;
+    $symbol .= sprintf ':k%x', ( ${$uniq_number} )++;
     $regex_hash->{$regex} = $symbol;
     return ( $symbol, 1 );
-}
+} ## end sub gen_symbol_from_regex
 
 sub canonical_symbol_name {
     my $symbol = lc shift;
@@ -37,7 +37,7 @@ sub get_symbol {
     my $symbol_name = shift;
     return Marpa::Grammar::get_symbol( $grammar,
         canonical_symbol_name($symbol_name) );
-}
+} ## end sub get_symbol
 
 1;
 

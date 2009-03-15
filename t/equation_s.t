@@ -35,12 +35,12 @@ close $grammar_fh;
 # Set max_parses to 10 in case there's an infinite loop.
 # This is for debugging, after all
 
-my $grammar = new Marpa::Grammar(
-    { max_parses => 10, mdl_source => \$source, } );
+my $grammar =
+    new Marpa::Grammar( { max_parses => 10, mdl_source => \$source, } );
 
 my $recce = new Marpa::Recognizer( { grammar => $grammar } );
 
-my $fail_offset = $recce->text( '2-0*3+1' );
+my $fail_offset = $recce->text('2-0*3+1');
 if ( $fail_offset >= 0 ) {
     croak("Parse failed at offset $fail_offset");
 }
@@ -57,16 +57,16 @@ my $evaler = new Marpa::Evaluator( { recognizer => $recce } );
 croak('Parse failed') unless $evaler;
 
 my $i = -1;
-while ( defined( my $value = $evaler->value() ) )
-{
+while ( defined( my $value = $evaler->value() ) ) {
     $i++;
     if ( $i > $#expected ) {
         fail( 'Ambiguous equation has extra value: ' . ${$value} . "\n" );
     }
     else {
-        Marpa::Test::is( ${$value}, $expected[$i], "Ambiguous Equation Value $i" );
+        Marpa::Test::is( ${$value}, $expected[$i],
+            "Ambiguous Equation Value $i" );
     }
-}
+} ## end while ( defined( my $value = $evaler->value() ) )
 
 # Local Variables:
 #   mode: cperl

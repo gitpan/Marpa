@@ -17,24 +17,29 @@ BEGIN {
 # _The Computer Journal_, Vol. 45, No. 6, pp. 620-630
 # This time testing the stripped output
 
-my $g = new Marpa::Grammar({
-    start => q{S'},
-    rules => [
-        [ q{S'}, [qw/S/] ],
-        [ 'S',  [qw/A A A A/] ],
-        [ 'A',  [qw/a/] ],
-        [ 'A',  [qw/E/] ],
-        [ 'E' ],
-    ],
-    academic => 1,
-    precompute => 0
-});
+my $g = new Marpa::Grammar(
+    {   start => q{S'},
+        rules => [
+            [ q{S'}, [qw/S/] ],
+            [ 'S',   [qw/A A A A/] ],
+            [ 'A',   [qw/a/] ],
+            [ 'A',   [qw/E/] ],
+            ['E'],
+        ],
+        academic   => 1,
+        precompute => 0
+    }
+);
 
-$g->set({
+$g->set(
+    {
+    #<<<
     terminals => [
         [ 'a' => { regex => 'a' } ],
     ],
-});
+    #>>>
+    }
+);
 
 Marpa::Test::is( $g->show_rules(), <<'EOS', 'Aycock/Horspool Rules' );
 0: S' -> S /* stripped */

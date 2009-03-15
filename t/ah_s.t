@@ -50,17 +50,18 @@ my @answer        = (
 );
 
 for my $i ( 0 .. 4 ) {
-    my $evaler = new Marpa::Evaluator( {
-        recce => $recce,
-        end => $i
-    } );
+    my $evaler = new Marpa::Evaluator(
+        {   recce => $recce,
+            end   => $i
+        }
+    );
     my $result = $evaler->value();
     $total_count++;
     if ( $answer[$i] ne ${$result} ) {
         diag( 'got ' . ${$result} . ', expected ' . $answer[$i] . "\n" );
         $failure_count++;
     }
-}
+} ## end for my $i ( 0 .. 4 )
 
 ok( !$failure_count,
     ( $total_count - $failure_count )
@@ -74,7 +75,7 @@ ok( !$failure_count,
 # vim: expandtab shiftwidth=4:
 
 __DATA__
-semantics are perl5.  version is 0.001_000.  the start symbol is
+semantics are perl5.  version is 0.001_003.  the start symbol is
 S.  the default null value is q{}.  the default action is q{
      my $v_count = scalar @_;
      return q{} if $v_count <= 0;

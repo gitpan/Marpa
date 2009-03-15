@@ -21,7 +21,7 @@ my $example_dir = 'example';
 chdir $example_dir;
 
 my $mdl_header = <<'EOF';
-semantics are perl5.  version is 0.001_000.
+semantics are perl5.  version is 0.001_003.
 start symbol is S.
 default action is q{join(q{ }, @_)}.
 
@@ -81,28 +81,25 @@ X: .
 EOF
 
 for my $test_data (
-  [
-      \$cycle1_mdl,
-      \('1'),
-      '1',
-      <<'EOS'
+    [   \$cycle1_mdl,
+        \('1'),
+        '1',
+        <<'EOS'
 Cycle found involving rule: 0: s -> s
 EOS
-  ],
-  [
-      \$cycle2_mdl,
-      \('1'),
-      '1',
-      <<'EOS'
+    ],
+    [   \$cycle2_mdl,
+        \('1'),
+        '1',
+        <<'EOS'
 Cycle found involving rule: 1: a -> s
 Cycle found involving rule: 0: s -> a
 EOS
-  ],
-  [
-      \$cycle8_mdl,
-      \('123456'),
-      '1 2 3 4 5 6',
-      <<'EOS'
+    ],
+    [   \$cycle8_mdl,
+        \('123456'),
+        '1 2 3 4 5 6',
+        <<'EOS'
 Cycle found involving rule: 3: c -> w d x
 Cycle found involving rule: 2: b -> v c
 Cycle found involving rule: 1: a -> b t u
@@ -111,22 +108,21 @@ Cycle found involving rule: 4: d -> e
 Cycle found involving rule: 0: s -> a
 EOS
     ],
-) {
-    my ($grammar, $input, $expected, $expected_trace) = @{$test_data};
+    )
+{
+    my ( $grammar, $input, $expected, $expected_trace ) = @{$test_data};
     my $trace = q{};
     open my $MEMORY, '>', \$trace;
     my $value = Marpa::mdl(
-        $grammar,
-        $input,
-        {
-            cycle_action => 'warn',
+        $grammar, $input,
+        {   cycle_action      => 'warn',
             trace_file_handle => $MEMORY,
         }
     );
     close $MEMORY;
-    Marpa::Test::is(${$value}, $expected);
-    Marpa::Test::is($trace, $expected_trace);
-}
+    Marpa::Test::is( ${$value}, $expected );
+    Marpa::Test::is( $trace,    $expected_trace );
+} ## end for my $test_data ( [ \$cycle1_mdl, \('1'), '1', <<'EOS'...
 
 # Local Variables:
 #   mode: cperl

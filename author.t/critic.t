@@ -19,10 +19,20 @@ my %exclude = map { ( $_, 1 ) } qw(
     t/lib/Test/Weaken.pm
 );
 
+# usually workarounds for perlcritic bugs
+my %per_file_options =
+    ( 'bootstrap/bootstrap.pl' => [qw(--exclude CodeLayout::RequireTidyCode)],
+    );
+
 sub run_critic {
     my $file = shift;
-    my @cmd  = qw(perlcritic -profile author.t/perlcriticrc);
+
+    my $per_file_options = $per_file_options{$file};
+    my @cmd              = ('perlcritic');
+    push @cmd, @{$per_file_options} if defined $per_file_options;
+    push @cmd, qw(--profile author.t/perlcriticrc);
     push @cmd, $file;
+
     my ( $child_out, $child_in );
 
     my $pid = open2( $child_out, $child_in, @cmd )
@@ -45,9 +55,9 @@ sub run_critic {
             $critic_output .= "$error_message\n";
         }
         return \$critic_output;
-    }
+    } ## end if ( my $child_error = $CHILD_ERROR )
     return q{};
-}
+} ## end sub run_critic
 
 open my $manifest, '<', 'MANIFEST'
     or croak("open of MANIFEST failed: $ERRNO");
@@ -88,10 +98,10 @@ FILE: for my $file (@test_files) {
               "perlcritic for $file: "
             . ( scalar @newlines )
             . ' lines of warnings';
-    }
+    } ## end if ($warnings)
     ok( $clean, $message );
     next FILE if $clean;
     print {$error_file} "=== $file ===\n" . ${$warnings}
         or croak("print failed: $ERRNO");
-}
+} ## end for my $file (@test_files)
 close $error_file;

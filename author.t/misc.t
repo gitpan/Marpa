@@ -15,7 +15,7 @@ pass('misc.pl compiled');
 
 my $mdl_source = <<'END';
 semantics are perl5.
-version is 0.001_000.
+version is 0.001_003.
 start symbol is S.
 
 S: Document.
@@ -41,8 +41,7 @@ my $stringified_grammar = $grammar->stringify();
 
 ## use Marpa::Test::Display unstringify snippet
 
-$grammar =
-    Marpa::Grammar::unstringify( $stringified_grammar, $trace_fh );
+$grammar = Marpa::Grammar::unstringify( $stringified_grammar, $trace_fh );
 
 $grammar = Marpa::Grammar::unstringify($stringified_grammar);
 
@@ -66,8 +65,7 @@ my $stringified_recce = $recce->stringify();
 
 ## use Marpa::Test::Display unstringify Recognizer snippet
 
-$recce =
-    Marpa::Recognizer::unstringify( $stringified_recce, $trace_fh );
+$recce = Marpa::Recognizer::unstringify( $stringified_recce, $trace_fh );
 
 $recce = Marpa::Recognizer::unstringify($stringified_recce);
 
@@ -135,8 +133,7 @@ $first_result = Marpa::mdl( \$grammar_description, \$string_to_parse );
 ## use Marpa::Test::Display mdl scalar hash args snippet
 
 $first_result =
-    Marpa::mdl( \$grammar_description, \$string_to_parse,
-    { warnings => 0 } );
+    Marpa::mdl( \$grammar_description, \$string_to_parse, { warnings => 0 } );
 
 ## no Marpa::Test::Display
 

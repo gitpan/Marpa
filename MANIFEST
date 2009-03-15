@@ -9,8 +9,8 @@ bootstrap/bootstrap.pl
 bootstrap/bootstrap_header.pl
 bootstrap/bootstrap_trailer.pl
 bootstrap/self.marpa
+etc/change_version.pl
 etc/perlcriticrc
-etc/do_critic.pl
 etc/Makefile
 etc/not_in_manifest.pl
 example/null_value.marpa

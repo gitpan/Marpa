@@ -10,18 +10,18 @@ croak('Test::More not loaded')
 BEGIN {
     ## no critic (BuiltinFunctions::ProhibitStringyEval)
     ## no critic (ErrorHandling::RequireCheckingReturnValueOfEval)
-    eval 'use Test::Differences'
+    eval 'use Test::Differences';
     ## use critic
-}
+} ## end BEGIN
 use Data::Dumper;
 
 ## no critic (Subroutines::RequireArgUnpacking)
 sub is {
 ## use critic
     goto &eq_or_diff if defined &eq_or_diff && @_ > 1;
-    @_ = map { ref $_ ? Dumper( @_ ) : $_ } @_;
+    @_ = map { ref $_ ? Dumper(@_) : $_ } @_;
     goto &Test::More::is;
-}
+} ## end sub is
 
 1;
 

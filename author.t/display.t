@@ -16,7 +16,7 @@ croak("$PROGRAM_NAME options parsing failed")
 
 package Marpa::Test::Display;
 
-@Marpa::Test::Display::ISA = qw(Exporter);
+@Marpa::Test::Display::ISA       = qw(Exporter);
 @Marpa::Test::Display::EXPORT_OK = qw(test_file);
 
 use Text::Diff;
@@ -55,7 +55,7 @@ sub normalize_whitespace {
     $text =~ s/\s*\z//xms;
     $text =~ s/\s+/ /gxms;
     return \$text;
-}
+} ## end sub normalize_whitespace
 
 sub slurp {
     my ($file_name) = @_;
@@ -68,7 +68,7 @@ sub slurp {
     my $result = \<$fh>;
     close $fh;
     return $result;
-}
+} ## end sub slurp
 
 sub parse_displays {
     my $raw_ref = shift;
@@ -87,7 +87,7 @@ sub parse_displays {
 
     return $result;
 
-}
+} ## end sub parse_displays
 
 sub read_file {
     my $file_name    = shift;
@@ -103,7 +103,7 @@ sub read_file {
             $normalized_display{$file_name}{$raw_display_name} =
                 normalize_whitespace( $raw_display->{$raw_display_name} );
         }
-    }
+    } ## end if ( not defined $file_ref )
     return $file_ref
         if not defined $display_name;
     my $display_ref = $normalized_display{$file_name}{$display_name};
@@ -112,7 +112,7 @@ sub read_file {
     }
     $normalized_display_uses{$file_name}{$display_name}++;
     return $display_ref;
-}
+} ## end sub read_file
 
 sub in_file {
     my ( $pod_display, $file_name, $display_name ) = @_;
@@ -128,12 +128,13 @@ sub in_file {
     return (
         (   $location >= 0
             ? q{}
-            : "Display in $Marpa::Test::Display::CURRENT_FILE not in $file_name\n" . $pod_display
+            : "Display in $Marpa::Test::Display::CURRENT_FILE not in $file_name\n"
+                . $pod_display
         ),
         1
     );
 
-}
+} ## end sub in_file
 
 sub is_file {
     my ( $pod_display, $file_name, $display_name ) = @_;
@@ -158,7 +159,8 @@ sub is_file {
         $display_name
         ? "Display '$display_name'"
         : 'Display';
-    $header .= " in $Marpa::Test::Display::CURRENT_FILE differs from the one in $file_name";
+    $header
+        .= " in $Marpa::Test::Display::CURRENT_FILE differs from the one in $file_name";
 
     return (
         (   $header
@@ -171,7 +173,7 @@ sub is_file {
         1
     );
 
-}
+} ## end sub is_file
 
 sub test_file {
     my $file = shift;
@@ -212,7 +214,7 @@ sub test_file {
             }
             $mismatches .= "=== Line $display_line: $message";
             $mismatch_count++;
-        }
+        } ## end if ( my $message = $eval_result ? $eval_result->[0] ...
 
     }    # $display_test
 
@@ -237,11 +239,12 @@ sub queue_display {
         if not $Marpa::Test::Display::DISPLAY_SKIP;
     $Marpa::Test::Display::COMMAND_COUNTDOWN--;
     if ( $Marpa::Test::Display::COMMAND_COUNTDOWN <= 0 ) {
-        $Marpa::Test::Display::CURRENT_CODE = $Marpa::Test::Display::DEFAULT_CODE;
+        $Marpa::Test::Display::CURRENT_CODE =
+            $Marpa::Test::Display::DEFAULT_CODE;
         $Marpa::Test::Display::DISPLAY_SKIP = 0;
     }
     return;
-}
+} ## end sub queue_display
 
 sub verbatim {
     my ( $parser, $paragraph, $line_num ) = @_;
@@ -253,7 +256,7 @@ sub verbatim {
     }
     queue_display( $paragraph, $line_num );
     return;
-}
+} ## end sub verbatim
 
 sub process_instruction {
     my $instruction = shift;
@@ -277,7 +280,7 @@ sub process_instruction {
         ) if $Marpa::Test::Display::COMMAND_COUNTDOWN < 1;
         $Marpa::Test::Display::CURRENT_CODE = join "\n", @{$code};
         return;
-    }
+    } ## end if ( $instruction =~ / ^ next \s+ (\d+) \s+ display(s)? $ /xms)
 
     if ( $instruction =~ / ^ default $ /xms ) {
         $Marpa::Test::Display::DEFAULT_CODE = join "\n", @{$code};
@@ -285,7 +288,7 @@ sub process_instruction {
             $Marpa::Test::Display::DEFAULT_CODE
             if $Marpa::Test::Display::COMMAND_COUNTDOWN <= 0;
         return;
-    }
+    } ## end if ( $instruction =~ / ^ default $ /xms )
 
     if ( $instruction =~ / ^ preamble $ /xms ) {
         $Marpa::Test::Display::PREAMBLE .= join "\n", @{$code};
@@ -306,7 +309,7 @@ sub process_instruction {
         ) if $Marpa::Test::Display::COMMAND_COUNTDOWN < 1;
         $Marpa::Test::Display::DISPLAY_SKIP++;
         return;
-    }
+    } ## end if ( $instruction =~ / ^ skip \s+ (\d+) \s+ display(s)? $ /xms)
 
     if ( $instruction =~ /^ start \s+ display $/xms ) {
         $Marpa::Test::Display::COLLECTED_DISPLAY = q{};
@@ -316,17 +319,20 @@ sub process_instruction {
     if ( $instruction =~ / ^ end \s+ display $ /xms ) {
 
         # line num will be set when first part of display is found
-        queue_display( $Marpa::Test::Display::COLLECTED_DISPLAY, $Marpa::Test::Display::COLLECTING_FROM_LINE_NUM );
+        queue_display(
+            $Marpa::Test::Display::COLLECTED_DISPLAY,
+            $Marpa::Test::Display::COLLECTING_FROM_LINE_NUM
+        );
         $Marpa::Test::Display::COLLECTED_DISPLAY        = undef;
         $Marpa::Test::Display::COLLECTING_FROM_LINE_NUM = -1;
         return;
-    }
+    } ## end if ( $instruction =~ / ^ end \s+ display $ /xms )
 
     croak(
         "Unrecognized instruction in file $Marpa::Test::Display::CURRENT_FILE at line $line_num: $instruction\n"
     );
 
-}
+} ## end sub process_instruction
 
 sub textblock {
     my ( $parser, $paragraph, $line_num ) = @_;
@@ -343,16 +349,17 @@ sub textblock {
             process_instruction( $line, \@lines, $line_num );
             $found_instruction = 1;
             next LINE;
-        }
-        croak( "File: $Marpa::Test::Display::CURRENT_FILE  Line: $line_num\n",
-            "test block doesn't begin with ## instruction\n$paragraph" )
-            if not $found_instruction;
+        } ## end if ( $line =~ /\A[#][#]/xms )
+        croak(
+            "File: $Marpa::Test::Display::CURRENT_FILE  Line: $line_num\n",
+            "test block doesn't begin with ## instruction\n$paragraph"
+        ) if not $found_instruction;
         last LINE;
-    }
+    } ## end while ( my $line = shift @lines )
 
     return;
 
-}
+} ## end sub textblock
 
 sub interior_sequence { }
 
@@ -366,14 +373,14 @@ sub command {
                 \s* \Z
             }xms;
         $Marpa::Test::Display::IN_COMMAND++ if $paragraph =~ /\Amake:$/xms;
-    }
+    } ## end if ( $command eq 'begin' )
     elsif ( $command eq 'end' ) {
         $Marpa::Test::Display::IN_COMMAND = 0;
     }
 
     return;
 
-}
+} ## end sub command
 
 package main;
 
@@ -413,7 +420,8 @@ FILE: for my $file (@test_files) {
         next FILE;
     }
 
-    my ( $mismatch_count, $mismatches ) = Marpa::Test::Display::test_file($file);
+    my ( $mismatch_count, $mismatches ) =
+        Marpa::Test::Display::test_file($file);
     my $clean = $mismatch_count == 0;
 
     my $message =
@@ -425,7 +433,7 @@ FILE: for my $file (@test_files) {
     next FILE if $clean;
     print {$error_file} "=== $file ===\n" . ${$mismatches}
         or croak("print failed: $ERRNO");
-}
+} ## end for my $file (@test_files)
 
 my $unused       = q{};
 my $unused_count = 0;
@@ -435,7 +443,7 @@ while ( my ( $file_name, $displays ) = each %normalized_display_uses ) {
         $unused .= "display '$display_name' in $file_name never used\n";
         $unused_count++;
     }
-}
+} ## end while ( my ( $file_name, $displays ) = each %normalized_display_uses)
 if ($unused_count) {
     fail('$unused count displays not used');
     print {$error_file} "=== UNUSED DISPLAYS ===\n" . $unused

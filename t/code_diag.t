@@ -14,7 +14,7 @@ use Carp;
 use English qw( -no_match_vars );
 
 BEGIN {
-	use_ok( 'Marpa' );
+    use_ok('Marpa');
 }
 
 my @features = qw(
@@ -35,9 +35,9 @@ my @tests = (
 );
 
 my %good_code = (
-    'e op action' => 'my $error =',
+    'e op action'     => 'my $error =',
     'e number action' => 'my $error =',
-    'default action' => 'my $error =',
+    'default action'  => 'my $error =',
 );
 
 my %test_code;
@@ -47,64 +47,64 @@ for my $test (@tests) {
     for my $feature (@features) {
         $expected{$test}{$feature} = q{};
     }
-}
+} ## end for my $test (@tests)
 
 my $getting_headers = 1;
 my @headers;
 my $data = q{};
 
-LINE: while (my $line = <DATA>)
-{
+LINE: while ( my $line = <DATA> ) {
 
-    if ($getting_headers)
-    {
+    if ($getting_headers) {
         next LINE if $line =~ m/ \A \s* \Z/xms;
-        if ($line =~ s/ \A [|] \s+ //xms)
-        {
+        if ( $line =~ s/ \A [|] \s+ //xms ) {
             chomp $line;
             push @headers, $line;
             next LINE;
-        } else {
-            $getting_headers = 0;
-            $data = q{};
         }
-    }
+        else {
+            $getting_headers = 0;
+            $data            = q{};
+        }
+    } ## end if ($getting_headers)
 
     # getting data
 
-    if ($line =~ /\A__END__\Z/xms) {
-        HEADER: while (my $header = pop @headers) {
-            if ($header =~ s/\A expected \s //xms) {
-                my ($feature, $test) = ($header =~ m/\A ([^\s]*) \s+ (.*) \Z/xms);
-                croak("expected result given for unknown test, feature: $test, $feature")
-                    unless defined $expected{$test}{$feature};
+    if ( $line =~ /\A__END__\Z/xms ) {
+        HEADER: while ( my $header = pop @headers ) {
+            if ( $header =~ s/\A expected \s //xms ) {
+                my ( $feature, $test ) =
+                    ( $header =~ m/\A ([^\s]*) \s+ (.*) \Z/xms );
+                croak(
+                    "expected result given for unknown test, feature: $test, $feature"
+                ) unless defined $expected{$test}{$feature};
                 $expected{$test}{$feature} = $data;
                 next HEADER;
-            }
-            if ($header =~ s/\A good \s code \s //xms) {
+            } ## end if ( $header =~ s/\A expected \s //xms )
+            if ( $header =~ s/\A good \s code \s //xms ) {
                 chomp $header;
                 $good_code{$header} = $data;
                 next HEADER;
             }
-            if ($header =~ s/\A bad \s code \s //xms) {
+            if ( $header =~ s/\A bad \s code \s //xms ) {
                 chomp $header;
                 croak("test code given for unknown test: $header")
                     unless defined $test_code{$header};
                 $test_code{$header} = $data;
                 next HEADER;
-            }
+            } ## end if ( $header =~ s/\A bad \s code \s //xms )
             croak("Bad header: $header");
-        } # HEADER
+        }    # HEADER
         $getting_headers = 1;
-        $data = q{};
-    } # if $line
+        $data            = q{};
+    }    # if $line
 
     $data .= $line;
-}
+} ## end while ( my $line = <DATA> )
 
 sub canonical {
-    my $template = shift;
-    my $where = shift;
+    my $template   = shift;
+    my $where      = shift;
     my $long_where = shift;
     $long_where //= $where;
     $template =~ s{ \b package \s Marpa [:][:] [EP] _ [0-9a-fA-F]+ [;] $
@@ -114,67 +114,70 @@ sub canonical {
     $template =~ s/[<]LONG_WHERE[>]/$long_where/xmsg;
     $template =~ s{ \s [<]DATA[>] \s line \s \d+
             }{ <DATA> line <LINE_NO>}xmsg;
-    $template
-        =~ s{
+    $template =~ s{
             \s at \s [(] eval \s \d+ [)] \s line \s
             }{ at (eval <LINE_NO>) line }xmsg;
     return $template;
-}
+} ## end sub canonical
 
 sub run_test {
     my $args = shift;
 
-    my $E_Op_action = $good_code{e_op_action};
-    my $E_Number_action = $good_code{e_number_action};
-    my $preamble = q{1};
-    my $lex_preamble = q{1};
-    my $default_action = $good_code{default_action};
-    my $text_lexer = 'lex_q_quote';
-    my $null_action = q{ '[null]' };
+    my $E_Op_action        = $good_code{e_op_action};
+    my $E_Number_action    = $good_code{e_number_action};
+    my $preamble           = q{1};
+    my $lex_preamble       = q{1};
+    my $default_action     = $good_code{default_action};
+    my $text_lexer         = 'lex_q_quote';
+    my $null_action        = q{ '[null]' };
     my $default_null_value = q{[default null]};
 
-    while (my ($arg, $value) = each %{$args})
-    {
-      given(lc $arg) {
-        when ('e_op_action') { $E_Op_action = $value }
-        when ('e_number_action') { $E_Number_action = $value }
-        when ('default_action') { $default_action = $value }
-        when ('lex_preamble') { $lex_preamble = $value }
-        when ('preamble') { $preamble = $value }
-        when ('lexer') { $text_lexer = $value }
-        when ('null_action') { $null_action = $value }
-        when ('unstringify_grammar') { return Marpa::Grammar::unstringify(\$value) }
-        when ('unstringify_recce') { return Marpa::Recognizer::unstringify(\$value) }
-        default { croak("unknown argument to run_test: $arg"); }
-      }
-    }
+    while ( my ( $arg, $value ) = each %{$args} ) {
+        given ( lc $arg ) {
+            when ('e_op_action')     { $E_Op_action     = $value }
+            when ('e_number_action') { $E_Number_action = $value }
+            when ('default_action')  { $default_action  = $value }
+            when ('lex_preamble')    { $lex_preamble    = $value }
+            when ('preamble')        { $preamble        = $value }
+            when ('lexer')           { $text_lexer      = $value }
+            when ('null_action')     { $null_action     = $value }
+            when ('unstringify_grammar') {
+                return Marpa::Grammar::unstringify( \$value );
+            }
+            when ('unstringify_recce') {
+                return Marpa::Recognizer::unstringify( \$value );
+            }
+            default { croak("unknown argument to run_test: $arg"); };
+        } ## end given
+    } ## end while ( my ( $arg, $value ) = each %{$args} )
 
-    my $grammar = new Marpa::Grammar({
-        start => 'S',
-        rules => [
-            [ 'S', [qw/E trailer optional_trailer1 optional_trailer2/], ],
-            [ 'E', [qw/E Op E/], $E_Op_action, ],
-            [ 'E', [qw/Number/], $E_Number_action, ],
-            [ 'optional_trailer1', [qw/trailer/], ],
-            [ 'optional_trailer1', [], ],
-            [ 'optional_trailer2', [], $null_action ],
-            [ 'trailer', [qw/Text/], ],
-        ],
-        terminals => [
-            [ 'Number' => { regex => qr/\d+/xms } ],
-            [ 'Op' => { regex => qr/[-+*]/xms } ],
-            [ 'Text' => { action => $text_lexer } ],
-        ],
-        default_action => $default_action,
-        preamble => $preamble,
-        lex_preamble => $lex_preamble,
-        default_lex_prefix => '\s*',
-        default_null_value => $default_null_value,
-    });
+    my $grammar = new Marpa::Grammar(
+        {   start => 'S',
+            rules => [
+                [ 'S', [qw/E trailer optional_trailer1 optional_trailer2/], ],
+                [ 'E', [qw/E Op E/], $E_Op_action, ],
+                [ 'E', [qw/Number/], $E_Number_action, ],
+                [ 'optional_trailer1', [qw/trailer/], ],
+                [ 'optional_trailer1', [], ],
+                [ 'optional_trailer2', [], $null_action ],
+                [ 'trailer',           [qw/Text/], ],
+            ],
+            terminals => [
+                [ 'Number' => { regex  => qr/\d+/xms } ],
+                [ 'Op'     => { regex  => qr/[-+*]/xms } ],
+                [ 'Text'   => { action => $text_lexer } ],
+            ],
+            default_action     => $default_action,
+            preamble           => $preamble,
+            lex_preamble       => $lex_preamble,
+            default_lex_prefix => '\s*',
+            default_null_value => $default_null_value,
+        }
+    );
 
-    my $recce = new Marpa::Recognizer({grammar => $grammar});
+    my $recce = new Marpa::Recognizer( { grammar => $grammar } );
 
-    my $fail_offset = $recce->text( '2 - 0 * 3 + 1 q{trailer}' );
+    my $fail_offset = $recce->text('2 - 0 * 3 + 1 q{trailer}');
     if ( $fail_offset >= 0 ) {
         croak("Parse failed at offset $fail_offset");
     }
@@ -182,62 +185,56 @@ sub run_test {
     $recce->end_input();
 
     my $expected = '((((2-0)*3)+1)==7; q{trailer};[default null];[null])';
-    my $evaler = new Marpa::Evaluator( { recce => $recce } );
-    my $value = $evaler->value();
-    Marpa::Test::is(${$value}, $expected, 'Ambiguous Equation Value');
+    my $evaler   = new Marpa::Evaluator( { recce => $recce } );
+    my $value    = $evaler->value();
+    Marpa::Test::is( ${$value}, $expected, 'Ambiguous Equation Value' );
 
     return 1;
 
-} # sub run_test
+}    # sub run_test
 
-run_test({});
+run_test( {} );
 
 my %where = (
-    preamble => 'evaluating preamble',
-    lex_preamble => 'evaluating lex preamble',
-    e_op_action => 'compiling action',
-    default_action => 'compiling action',
-    null_action => 'evaluating null value',
-    lexer => 'compiling lexer',
+    preamble            => 'evaluating preamble',
+    lex_preamble        => 'evaluating lex preamble',
+    e_op_action         => 'compiling action',
+    default_action      => 'compiling action',
+    null_action         => 'evaluating null value',
+    lexer               => 'compiling lexer',
     unstringify_grammar => 'unstringifying grammar',
-    unstringify_recce => 'unstringifying recognizer',
+    unstringify_recce   => 'unstringifying recognizer',
 );
 
 my %long_where = (
-    preamble => 'evaluating preamble',
-    lex_preamble => 'evaluating lex preamble',
-    e_op_action => 'compiling action for 1: E -> E Op E',
+    preamble       => 'evaluating preamble',
+    lex_preamble   => 'evaluating lex preamble',
+    e_op_action    => 'compiling action for 1: E -> E Op E',
     default_action => 'compiling action for 3: optional_trailer1 -> trailer',
-    null_action => 'evaluating null value for optional_trailer2',
-    lexer => 'compiling lexer for Text',
+    null_action    => 'evaluating null value for optional_trailer2',
+    lexer          => 'compiling lexer for Text',
     unstringify_grammar => 'unstringifying grammar',
-    unstringify_recce => 'unstringifying recognizer',
+    unstringify_recce   => 'unstringifying recognizer',
 );
 
-for my $test (@tests)
-{
-    for my $feature (@features)
-    {
+for my $test (@tests) {
+    for my $feature (@features) {
         my $test_name = "$test in $feature";
-        if (eval {
-            run_test({
-                $feature => $test_code{$test},
-            });
-        })
-        {
-           fail("$test_name did not fail -- that shouldn't happen");
-        } else {
+        if ( eval { run_test( { $feature => $test_code{$test}, } ); } ) {
+            fail("$test_name did not fail -- that shouldn't happen");
+        }
+        else {
             my $eval_error = $EVAL_ERROR;
-            my $where = $where{$feature};
+            my $where      = $where{$feature};
             my $long_where = $long_where{$feature};
             Marpa::Test::is(
-                canonical($eval_error, $where, $long_where),
-                canonical($expected{$test}{$feature}, $where, $long_where),
+                canonical( $eval_error,                $where, $long_where ),
+                canonical( $expected{$test}{$feature}, $where, $long_where ),
                 $test_name
             );
-        }
-    }
-}
+        } ## end else [ if ( eval { run_test( { $feature => $test_code{$test...
+    } ## end for my $feature (@features)
+} ## end for my $test (@tests)
 
 # Local Variables:
 #   mode: cperl

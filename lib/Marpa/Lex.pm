@@ -25,7 +25,7 @@ sub gen_bracket_regex {
             | \x{5c}
         )
     }xms;
-}
+} ## end sub gen_bracket_regex
 
 my %regex_data = (
     '{' => [ '}', gen_bracket_regex( '{', '}' ) ],
@@ -44,7 +44,7 @@ my $punct = qr'[!"#$%&\x{27}(*+,-./:;<=?\x{5b}^_`{|~@]'xms;
 sub lex_q_quote {
     my $string = shift;
     my $start  = shift;
-    my ($left_bracket) = (${$string} =~ m/\Gqq?($punct)/xmsogc);
+    my ($left_bracket) = ( ${$string} =~ m/\Gqq?($punct)/xmsogc );
     return unless defined $left_bracket;
 
     my $regex_data = $regex_data{$left_bracket};
@@ -61,7 +61,7 @@ sub lex_q_quote {
                 )
             }xms;
         $regex_data{$left_bracket} = $regex_data = [ undef, $regex ];
-    }
+    } ## end if ( not defined $regex_data )
     my ( $right_bracket, $regex ) = @{$regex_data};
 
     # unbracketed quote
@@ -72,15 +72,15 @@ sub lex_q_quote {
                 my $length = ( pos ${$string} ) - $start;
                 return ( substr( ${$string}, $start, $length ), $length );
             }
-        }
+        } ## end while ( ${$string} =~ /$regex/gcxms )
         return;
-    }
+    } ## end if ( not defined $right_bracket )
 
     # bracketed quote
     my $depth = 1;
     MATCH: while ( ${$string} =~ /$regex/gxms ) {
         given ($1) {
-            when (undef)  {return}
+            when (undef)          { return; }
             when ($left_bracket)  { $depth++; }
             when ($right_bracket) { $depth--; }
         }
@@ -88,15 +88,15 @@ sub lex_q_quote {
             my $length = ( pos ${$string} ) - $start;
             return ( substr( ${$string}, $start, $length ), $length );
         }
-    }
+    } ## end while ( ${$string} =~ /$regex/gxms )
     return;
-}
+} ## end sub lex_q_quote
 
 sub lex_regex {
     my $string       = shift;
     my $lexeme_start = shift;
     my $value_start  = pos ${$string};
-    my ($left_side) = (${$string} =~ m{\G(qr$punct|/)}xmsogc);
+    my ($left_side) = ( ${$string} =~ m{\G(qr$punct|/)}xmsogc );
     return unless defined $left_side;
     my $left_bracket = substr $left_side, -1;
     my $prefix = ( $left_side =~ /^qr/xms ) ? q{} : 'qr';
@@ -115,7 +115,7 @@ sub lex_regex {
                 )
             }xms;
         $regex_data{$left_bracket} = $regex_data = [ undef, $regex ];
-    }
+    } ## end if ( not defined $regex_data )
     my ( $right_bracket, $regex ) = @{$regex_data};
 
     # unbracketed quote
@@ -127,22 +127,21 @@ sub lex_regex {
                 # also take in trailing options
                 ${$string} =~ /\G[msixpo]*/gxms;
                 my $pos = pos ${$string};
-                return (
+                my $value =
                     $prefix
-                        . substr( ${$string}, $value_start,
-                        $pos - $value_start ),
-                    $pos - $lexeme_start
-                );
-            }
-        }
+                    . ( substr ${$string}, $value_start,
+                    $pos - $value_start );
+                return ( $value, $pos - $lexeme_start );
+            } ## end if ( $1 eq $left_bracket )
+        } ## end while ( ${$string} =~ /$regex/xmsgc )
         return;
-    }
+    } ## end if ( not defined $right_bracket )
 
     # bracketed quote
     my $depth = 1;
     MATCH: while ( ${$string} =~ /$regex/gxms ) {
         given ($1) {
-            when (undef)  {return}
+            when (undef)          { return; }
             when ($left_bracket)  { $depth++; }
             when ($right_bracket) { $depth--; }
         }
@@ -150,16 +149,15 @@ sub lex_regex {
 
             # also take in trailing options
             ${$string} =~ /\G[msixpo]*/gxms;
-            my $pos = pos ${$string};
-            return (
-                $prefix
-                    . substr( ${$string}, $value_start, $pos - $value_start ),
-                $pos - $lexeme_start
-            );
-        }
-    }
+            my $pos   = pos ${$string};
+            my $value = $prefix
+                . ( substr ${$string}, $value_start, $pos - $value_start );
+            return ( $value, $pos - $lexeme_start );
+
+        } ## end if ( $depth <= 0 )
+    } ## end while ( ${$string} =~ /$regex/gxms )
     return;
-}
+} ## end sub lex_regex
 
 1;    # End of Marpa
 
