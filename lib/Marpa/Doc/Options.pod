@@ -76,35 +76,6 @@ The C<code_lines> option can be changed at any point in a parse.
 If the line with the problem cannot be determined, the first lines
 of code are printed, up to a maximum of twice C<code_lines>, plus one.
 
-=item cycle_depth
-
-The value must be an integer greater than or equal to 1.
-In an infinitely ambigious grammar, this is
-the depth to which cycles will be followed.
-The default is 1.
-C<cycle_depth> may be changed at any point in parsing.
-
-Recursion is a case where a symbol produces itself, usually as part of a larger
-string.
-Cycles are a special, and usually pathological, kind of recursion.
-In a cycle, a symbol produces itself, unchanged.
-This means that the symbol will produce itself over and over again, forever.
-
-The most "natural" semantics of a cycle is an infinite loop.
-This is probably not what the user wants, and Marpa always ends
-cycles after a fixed number of iterations.
-The C<cycle_depth> option sets this depth.
-
-Cycles are usually caused by an error in writing the grammar.
-One reason that Marpa allows cycles is bragging rights --
-Marpa can truly claim to parse any grammar which can be written in BNF.
-But there are other reasons:
-Marpa frees a user working out a complicated grammar
-from having to worry at every point about whether she has created a cycle.
-And, who knows, there may be uses for cycles.
-It is possible that the most natural way to describe some
-languages in BNF may be in grammars with cycles.
-
 =item cycle_action
 
 The value will be treated as a string
@@ -122,8 +93,29 @@ and parsing will be allowed to proceed.
 
 The default value is "C<warn>".
 C<cycle_action> cannot be changed after the grammar is precomputed.
-For more about cycles, see the description of the C<cycle_depth>
-Marpa option.
+
+Recursion is a case where a symbol produces itself, usually as part of a larger
+string.
+Cycles are a special, and usually pathological, kind of recursion.
+In a cycle, a symbol produces itself, unchanged.
+This means that the symbol will produce itself over and over again, forever.
+
+The most "natural" semantics of a cycle is an infinite loop.
+This is probably not what the user wants.
+Marpa always ends cycles after the first iteration,
+that is, before any symbol cycles back to itself.
+Put another way, while Marpa allows grammars with cycles,
+it will not produce a parse which contains any.
+
+Cycles are usually caused by an error in writing the grammar.
+One reason that Marpa allows cycles is bragging rights --
+Marpa can truly claim to parse any grammar which can be written in BNF.
+But there are other reasons:
+Marpa frees a user working out a complicated grammar
+from having to worry at every point about whether she has created a cycle.
+Who knows, there may be uses for cycles.
+It is possible that the most natural way to describe some
+languages in BNF may be in grammars with cycles.
 
 =item default_action
 

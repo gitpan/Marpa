@@ -15,7 +15,7 @@ pass('misc.pl compiled');
 
 my $mdl_source = <<'END';
 semantics are perl5.
-version is 0.001_003.
+version is 0.001_004.
 start symbol is S.
 
 S: Document.
@@ -82,7 +82,11 @@ my $evaler = new Marpa::Evaluator(
 
 my $depth = 1;
 
-$evaler->set( { cycle_depth => $depth } );
+## use Marpa::Test::Display evaler set snippet
+
+$evaler->set( { trace_values => 1 } );
+
+## no Marpa::Test::Display
 
 my $input_string = q{};
 my $lexeme_start = 0;

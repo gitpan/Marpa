@@ -924,10 +924,8 @@ sub Marpa::Evaluator::value {
         Marpa::Internal::Evaluator::NULL_VALUES,
     ];
 
-    my ( $max_parses, $cycle_depth ) = @{$grammar}[
-        Marpa::Internal::Grammar::MAX_PARSES,
-        Marpa::Internal::Grammar::CYCLE_DEPTH,
-    ];
+    my $max_parses = $grammar->[Marpa::Internal::Grammar::MAX_PARSES];
+
     my $parse_count = $evaler->[Marpa::Internal::Evaluator::PARSE_COUNT]++;
     if ( $max_parses > 0 && $parse_count >= $max_parses ) {
         croak("Maximum parse count ($max_parses) exceeded");
@@ -1087,7 +1085,7 @@ sub Marpa::Evaluator::value {
                 # if by an initial highball estimate
                 # we have yet to cycle more than a limit (now hard coded
                 # to 1), then we can use this and node
-                last AND_NODE if $cycles->{$and_node_name}++ < $cycle_depth;
+                last AND_NODE if $cycles->{$and_node_name}++ < 1;
 
                 # compute actual cycles count
                 my $parent =
@@ -1114,7 +1112,7 @@ sub Marpa::Evaluator::value {
                 $cycles->{$and_node_name} = $cycles_count;
 
                 # repeat the test
-                last AND_NODE if $cycles->{$and_node_name}++ < $cycle_depth;
+                last AND_NODE if $cycles->{$and_node_name}++ < 1;
 
                 # this and-node was rejected -- try the next
                 $choice++;
@@ -1717,18 +1715,19 @@ For these, see L<Marpa::Doc::Options>.
 =begin Marpa::Test::Display:
 
 ## next display
-in_file($_, 'author.t/misc.t')
+is_file($_, 'author.t/misc.t', 'evaler set snippet')
 
 =end Marpa::Test::Display:
 
-    $evaler->set( { cycle_depth => $depth } );
+    $evaler->set( { trace_values => 1 } );
 
 The C<set> method takes as its one, required, argument a reference to a hash of named arguments.
 It allows Marpa options
 to be specified for an evaler object.
-Relatively few of the Marpa options can be applied at evaluation time,
-but the C<cycle_depth> option is available,
-as are the options to control the tracing done at evaluation time.
+Relatively few Marpa options are not available at
+evaluation time.
+The options which are available
+are mainly those which control evaluation time tracing.
 C<set> either returns true or throws an exception.
 
 =head2 value

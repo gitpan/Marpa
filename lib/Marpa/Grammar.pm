@@ -198,7 +198,7 @@ use Marpa::Offset Grammar =>
     # evaluator data
     qw(
     DEFAULT_NULL_VALUE
-    CYCLE_ACTION CYCLE_DEPTH
+    CYCLE_ACTION
     TRACE_ITERATIONS
     TRACE_ACTIONS TRACE_VALUES
     MAX_PARSES
@@ -278,7 +278,6 @@ PHASE - the grammar's phase
 INTERFACE - the grammar's interface
 START_STATES - ref to array of the start states
 CYCLE_ACTION - ref to array of the start states
-CYCLE_DEPTH - depth to which to follow cycles
 
 =end Implementation:
 
@@ -692,7 +691,6 @@ sub Marpa::Grammar::new {
     $grammar->[Marpa::Internal::Grammar::INACCESSIBLE_OK] = {};
     $grammar->[Marpa::Internal::Grammar::UNPRODUCTIVE_OK] = {};
     $grammar->[Marpa::Internal::Grammar::CYCLE_ACTION]    = 'warn';
-    $grammar->[Marpa::Internal::Grammar::CYCLE_DEPTH]     = 1;
     $grammar->[Marpa::Internal::Grammar::CODE_LINES]      = undef;
     $grammar->[Marpa::Internal::Grammar::PHASE] = Marpa::Internal::Phase::NEW;
     $grammar->[Marpa::Internal::Grammar::SYMBOLS]      = [];
@@ -1098,12 +1096,8 @@ sub Marpa::Grammar::set {
                 $grammar->[Marpa::Internal::Grammar::CYCLE_ACTION] = $value;
             } ## end when ('cycle_action')
             when ('cycle_depth') {
-                croak('cycle_depth must be set to a number > 0')
-                    if not defined $value
-                        or $value !~ /\A\d+\z/xms
-                        or $value <= 0;
-                $grammar->[Marpa::Internal::Grammar::CYCLE_DEPTH] = $value;
-            } ## end when ('cycle_depth')
+                croak('cycle_depth option no longer implemented');
+            }
             when ('warnings') {
                 #<<< perltidy gets confused
                 if ( $value && $phase >= Marpa::Internal::Phase::PRECOMPUTED )
