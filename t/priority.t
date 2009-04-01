@@ -62,7 +62,7 @@ my $evaler = new Marpa::Evaluator( { recce => $recce } );
 croak('Could not initialize parse') unless $evaler;
 
 my $i = -1;
-while ( defined( my $value = $evaler->value() ) ) {
+while ( defined( my $value = $evaler->old_value() ) ) {
     $i++;
     if ( $i > $#expected ) {
         fail( 'Minuses equation has extra value: ' . ${$value} . "\n" );
@@ -70,7 +70,7 @@ while ( defined( my $value = $evaler->value() ) ) {
     else {
         Marpa::Test::is( ${$value}, $expected[$i], "Priority Value $i" );
     }
-} ## end while ( defined( my $value = $evaler->value() ) )
+} ## end while ( defined( my $value = $evaler->old_value() ) )
 
 # Local Variables:
 #   mode: cperl

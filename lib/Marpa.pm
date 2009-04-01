@@ -7,7 +7,7 @@ no warnings 'recursion';
 use strict;
 
 BEGIN {
-    our $VERSION = '0.001_004';
+    our $VERSION = '0.001_005';
 }
 
 use integer;
@@ -170,9 +170,9 @@ sub Marpa::mdl {
     if ( not defined $evaler ) {
         die_with_parse_failure( $text, length $text );
     }
-    return $evaler->value if not wantarray;
+    return $evaler->old_value if not wantarray;
     my @values;
-    while ( defined( my $value = $evaler->value() ) ) {
+    while ( defined( my $value = $evaler->old_value() ) ) {
         push @values, $value;
     }
     return @values;
@@ -213,7 +213,7 @@ is_file($_, 'example/synopsis.pl');
     say ${$value};
 
     __DATA__
-    semantics are perl5.  version is 0.001_004.  start symbol is Expression.
+    semantics are perl5.  version is 0.001_005.  start symbol is Expression.
 
     Expression: Expression, /[*]/, Expression.  priority 200.  q{
         $_[0] * $_[2]
@@ -234,7 +234,9 @@ is_file($_, 'example/synopsis.pl');
 =head1 DESCRIPTION
 
 This is alpha software.
-B<This is an experimental fork from C<Parse::Marpa>>.
+B<This is an experimental fork from C<Parse::Marpa>.
+At this point in development, the documentation is not being kept
+up to date.>
 
 If you can write a grammar in BNF, Marpa will generate a parser for it.
 That means Marpa parses

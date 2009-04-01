@@ -50,7 +50,7 @@ my $trailer_file_name = shift @ARGV;
 # This is the end of bootstrap_header.pl
 $new_semantics = 'perl5';
 
-$new_version = '0.001_004';
+$new_version = '0.001_005';
 
 $new_start_symbol = 'grammar';
 
@@ -1163,7 +1163,7 @@ if ($header_file_name)
     }
 }
 
-my $value = $evaler->value();
+my $value = $evaler->old_value();
 say ${$value};
 
 if ($trailer_file_name)

@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Marpa
-version:             0.001_004
+version:             0.001_005
 abstract:            Generate Parsers from any BNF grammar
 author:              
     - Jeffrey Kegler
@@ -24,22 +24,22 @@ requires:
 provides:
     Marpa:
         file: lib/Marpa.pm
-        version: 0.001_004
+        version: 0.001_005
     Marpa::Evaluator:
         file: lib/Marpa/Evaluator.pm
-        version: 0.001_004
+        version: 0.001_005
     Marpa::Recognizer:
         file: lib/Marpa/Recognizer.pm
-        version: 0.001_004
+        version: 0.001_005
     Marpa::Grammar:
         file: lib/Marpa/Grammar.pm
-        version: 0.001_004
+        version: 0.001_005
     Marpa::MDL:
         file: lib/Marpa/MDL.pm
-        version: 0.001_004
+        version: 0.001_005
     Marpa::Lex:
         file: lib/Marpa/Lex.pm
-        version: 0.001_004
+        version: 0.001_005
 recommends:
     Test::Weaken: 1.000000
 meta-spec:

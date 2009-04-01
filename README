@@ -1,6 +1,8 @@
 Marpa
 
 This is alpha software.  It is an experimental fork from Parse::Marpa.
+At this point in development, the documentation is not being kept
+up to date.
 
 Marpa generates parses from any BNF grammar.  That includes recursive
 grammars, ambiguous grammars, infinitely ambiguous grammars and

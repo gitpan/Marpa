@@ -25,7 +25,7 @@ A(B(a))
 EOS
 
 my $mdl = <<'EOF';
-semantics are perl5.  version is 0.001_004.
+semantics are perl5.  version is 0.001_005.
 start symbol is S.
 default action is q{join(q{ }, @_)}.
 
@@ -68,14 +68,14 @@ $recce->end_input();
 
 my $evaler = new Marpa::Evaluator( { recce => $recce } );
 my $parse_count = 0;
-while ( my $value = $evaler->value() ) {
+while ( my $value = $evaler->old_value() ) {
     Marpa::Test::is(
         ${$value},
         $expected_values[$parse_count],
         "cycle depth test $parse_count"
     );
     $parse_count++;
-} ## end while ( my $value = $evaler->value() )
+} ## end while ( my $value = $evaler->old_value() )
 
 # Local Variables:
 #   mode: cperl

@@ -57,7 +57,7 @@ sub ah_extended {
             }
         );
         croak("Cannot initialize parse at location $loc") unless $evaler;
-        while ( $evaler->value() ) { $parse_counts[$loc]++ }
+        while ( $evaler->old_value() ) { $parse_counts[$loc]++ }
     } ## end for my $loc ( 0 .. $n )
     return join q{ }, @parse_counts;
 } ## end sub ah_extended
