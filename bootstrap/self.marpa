@@ -1,4 +1,4 @@
-semantics are perl5.  version is 0.001_005.  the start symbol is
+semantics are perl5.  version is 0.001_006.  the start symbol is
 grammar.
 
 the default lex prefix is qr/(?:[ \t]*(?:\n|(?:\#[^\n]*\n)))*[ \t]*/xms.

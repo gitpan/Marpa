@@ -21,7 +21,7 @@ and an evaluator object inherits the Marpa option settings
 of the recognizer from which it was created.
 
 Options for debugging and tracing are described in
-L<a separate document on diagnostics|Marpa::Doc::Diagnostics>.
+L<a separate document on debugging|Marpa::Doc::Debugging>.
 The other Marpa options are listed below, by argument name,
 and described.
 

@@ -19,7 +19,7 @@ example/synopsis.pl
 lib/Marpa.pm
 lib/Marpa/Doc/Algorithm.pod
 lib/Marpa/Doc/Bibliography.pod
-lib/Marpa/Doc/Diagnostics.pod
+lib/Marpa/Doc/Debugging.pod
 lib/Marpa/Doc/Internals.pod
 lib/Marpa/Doc/MDL.pod
 lib/Marpa/Doc/Options.pod

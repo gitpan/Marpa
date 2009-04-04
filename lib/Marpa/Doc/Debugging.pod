@@ -1,6 +1,6 @@
 =head1 NAME
 
-Marpa::Doc::Diagnostics - Diagnostics
+Marpa::Doc::Debugging - Debugging Marpa Grammars
 
 =head1 DESCRIPTION
 
@@ -30,7 +30,7 @@ This saves time and memory, but data that is not
 needed for processing
 can be extremely valuable for debugging.
 When the C<strip> option is left on,
-many of Marpa's diagnostics methods will return
+many of Marpa's debugging methods will return
 partial information or no information at all.
 
 When a problem is not obvious,
@@ -83,6 +83,8 @@ do the following:
 =item * Run C<show_tree> in verbose mode
 on the evaluator after each call of the C<value> method.
 
+=item * Turn on C<trace_choices>.
+
 =item * Turn on C<trace_values> so you can see the values as they pushed onto
 the evaluation stack, popped off it, calculated and pushed back on.
 
@@ -93,6 +95,7 @@ the outputs from C<show_earley_sets>,
 C<show_bocage>,
 C<show_tree>,
 C<trace_lex>,
+and C<trace_choices>
 and C<trace_values>
 can be lengthy.
 You'll want to work with short inputs if at all possible.
@@ -237,6 +240,8 @@ which is probably not what he intended.
 To be effective
 C<trace_rules> must be set
 in a method call prior to the one with the C<source> option.
+
+=item trace_choices
 
 =item trace_values
 

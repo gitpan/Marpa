@@ -19,8 +19,8 @@ WriteMakefile(
 	    => '$(INST_LIB)/Marpa/Doc/Algorithm.pod',
 	'lib/Marpa/Doc/Bibliography.pod'
 	    => '$(INST_LIB)/Marpa/Doc/Bibliography.pod',
-	'lib/Marpa/Doc/Diagnostics.pod'
-	    => '$(INST_LIB)/Marpa/Doc/Diagnostics.pod',
+	'lib/Marpa/Doc/Debugging.pod'
+	    => '$(INST_LIB)/Marpa/Doc/Debugging.pod',
 	'lib/Marpa/Doc/Internals.pod'
 	    => '$(INST_LIB)/Marpa/Doc/Internals.pod',
 	'lib/Marpa/Doc/Parse_Terms.pod'

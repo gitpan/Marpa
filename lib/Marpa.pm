@@ -7,7 +7,7 @@ no warnings 'recursion';
 use strict;
 
 BEGIN {
-    our $VERSION = '0.001_005';
+    our $VERSION = '0.001_006';
 }
 
 use integer;
@@ -213,7 +213,7 @@ is_file($_, 'example/synopsis.pl');
     say ${$value};
 
     __DATA__
-    semantics are perl5.  version is 0.001_005.  start symbol is Expression.
+    semantics are perl5.  version is 0.001_006.  start symbol is Expression.
 
     Expression: Expression, /[*]/, Expression.  priority 200.  q{
         $_[0] * $_[2]
@@ -271,7 +271,7 @@ B<Defining uses> of terms are in boldface, for easy skimming.
 =head2 What is in the Other Documents
 
 If you want help debugging a grammar,
-look at L<Marpa::Doc::Diagnostics>.
+look at L<Marpa::Doc::Debugging>.
 As you get into advanced applications of Marpa,
 the first places to look will be the
 documents for the various phases of Marpa parsing:
@@ -286,10 +286,10 @@ names to plumbing interface names.
 L<Marpa::Lex> documents some lex actions which are used
 by MDL, and which are available to users for their own lexing.
 
-For very advanced diagnostics
-or for reading Marpa's code,
+For reading Marpa's code,
 it is necessary to understand Marpa's internals.
-These are described in 
+Internals knowledge can also be useful in advanced debugging.
+Marpa's internals are described in 
 L<Marpa::Doc::Internals>.
 
 For those interesting in the theory behind Marpa and
@@ -431,7 +431,7 @@ The C<mdl> method
 hides the details of creating Marpa objects
 and using Marpa's object methods from the user.
 But for advanced applications,
-and for tracing and diagnostics,
+and for tracing and debugging,
 it is useful to know in detail how Marpa works.
 
 Marpa parsing take place in three phases:
@@ -603,9 +603,9 @@ In list context, C<mdl> returns a list of B<references> to the values of the par
 If there are no parses, C<mdl> returns undefined in scalar context and
 the empty list in list context.
 
-=head2 Diagnostic Methods
+=head2 Debugging Methods
 
-L<The separate document on diagnostics|Marpa::Doc::Diagnostics> deals
+L<The separate document on debugging|Marpa::Doc::Debugging> deals
 with methods for debugging grammars and parses.
 
 =head1 IMPLEMENTATION NOTES
