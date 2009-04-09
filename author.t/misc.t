@@ -15,7 +15,7 @@ pass('misc.pl compiled');
 
 my $mdl_source = <<'END';
 semantics are perl5.
-version is 0.001_006.
+version is 0.001_007.
 start symbol is S.
 
 S: Document.

@@ -89,7 +89,7 @@ EOCODE
 
 my $recce = new Marpa::Recognizer( { grammar => $g, } );
 
-Marpa::Test::is( $g->show_rules(), <<'END_RULES', 'Minuses Equation Rules' );
+Marpa::Test::is( $g->show_rules, <<'END_RULES', 'Minuses Equation Rules' );
 0: E -> E Minus E
 1: E -> E MinusMinus
 2: E -> MinusMinus E
@@ -98,7 +98,7 @@ Marpa::Test::is( $g->show_rules(), <<'END_RULES', 'Minuses Equation Rules' );
 5: E['] -> E
 END_RULES
 
-Marpa::Test::is( $g->show_ii_QDFA(), <<'END_QDFA', 'Minuses Equation QDFA' );
+Marpa::Test::is( $g->show_ii_QDFA, <<'END_QDFA', 'Minuses Equation QDFA' );
 Start States: St0; St5
 St0: predict; 1,5,8,11,14
 E ::= . E Minus E

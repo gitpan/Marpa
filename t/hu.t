@@ -46,7 +46,7 @@ $g->set(
 
 $g->precompute();
 
-Marpa::Test::is( $g->show_rules(), <<'EOS', 'Hopcroft/Ullman Rules' );
+Marpa::Test::is( $g->show_rules, <<'EOS', 'Hopcroft/Ullman Rules' );
 0: S' -> S c
 1: S -> S A
 2: S -> A
@@ -54,7 +54,7 @@ Marpa::Test::is( $g->show_rules(), <<'EOS', 'Hopcroft/Ullman Rules' );
 4: A -> a b
 EOS
 
-Marpa::Test::is( $g->show_symbols(), <<'EOS', 'Hopcroft/Ullman Symbols' );
+Marpa::Test::is( $g->show_symbols, <<'EOS', 'Hopcroft/Ullman Symbols' );
 0: S', lhs=[0] rhs=[]
 1: S, lhs=[1 2] rhs=[0 1 3]
 2: c, lhs=[] rhs=[0] terminal
@@ -63,21 +63,21 @@ Marpa::Test::is( $g->show_symbols(), <<'EOS', 'Hopcroft/Ullman Symbols' );
 5: b, lhs=[] rhs=[3 4] terminal
 EOS
 
-Marpa::Test::is( $g->show_nullable_symbols(),
-    q{}, 'Hopcroft/Ullman Nullable Symbols' );
-Marpa::Test::is( $g->show_nulling_symbols(),
-    q{}, 'Hopcroft/Ullman Nulling Symbols' );
+Marpa::Test::is( $g->show_nullable_symbols, q{},
+    'Hopcroft/Ullman Nullable Symbols' );
+Marpa::Test::is( $g->show_nulling_symbols, q{},
+    'Hopcroft/Ullman Nulling Symbols' );
 Marpa::Test::is(
-    $g->show_productive_symbols(),
+    $g->show_productive_symbols,
     'A S S\' a b c',
     'Hopcroft/Ullman Productive Symbols'
 );
 Marpa::Test::is(
-    $g->show_accessible_symbols(),
+    $g->show_accessible_symbols,
     'A S S\' a b c',
     'Hopcroft/Ullman Accessible Symbols'
 );
-Marpa::Test::is( $g->show_NFA(), <<'EOS', 'Hopcroft/Ullman NFA' );
+Marpa::Test::is( $g->show_NFA, <<'EOS', 'Hopcroft/Ullman NFA' );
 S0: /* empty */
  empty => S1
 S1: S' ::= . S c
@@ -112,7 +112,7 @@ S14: A ::= a . b
 S15: A ::= a b .
 EOS
 
-Marpa::Test::is( $g->show_ii_QDFA(), <<'EOS', 'Hopcroft/Ullman QDFA' );
+Marpa::Test::is( $g->show_ii_QDFA, <<'EOS', 'Hopcroft/Ullman QDFA' );
 Start States: St0; St7
 St0: 1
 S' ::= . S c

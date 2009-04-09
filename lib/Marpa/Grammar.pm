@@ -86,13 +86,14 @@ use Marpa::Offset Rule =>
     qw(
     USEFUL ACTION
     CODE CYCLE
-    PRIORITY HASTY
+    PRIORITY MINIMAL
     HAS_CHAF_LHS HAS_CHAF_RHS
     ),
 
     # temporary data
     qw(
     ORIGINAL_RULE
+    CHAF_START CHAF_END
     NULLABLE ACCESSIBLE PRODUCTIVE NULLING
 );
 
@@ -747,10 +748,8 @@ sub locator {
 } ## end sub locator
 
 sub Marpa::show_location {
-    my $msg     = shift;
-    my $source  = shift;
-    my $earleme = shift;
-    my $result  = q{};
+    my ( $msg, $source, $earleme ) = @_;
+    my $result = q{};
 
     my ( $line, $line_start ) = locator( $earleme, $source );
     $result .= $msg . ' at line ' . ( $line + 1 ) . ", earleme $earleme\n";
@@ -1229,7 +1228,7 @@ sub Marpa::Grammar::precompute {
     my $problems = $grammar->[Marpa::Internal::Grammar::PROBLEMS];
     if ($problems) {
         croak(
-            Marpa::Grammar::show_problems($grammar),
+            Marpa::show_problems($grammar),
             "Second attempt to precompute grammar with fatal problems\n",
             'Marpa cannot proceed'
         );
@@ -1316,7 +1315,7 @@ sub Marpa::Grammar::precompute {
 } ## end sub Marpa::Grammar::precompute
 
 sub Marpa::Grammar::show_problems {
-    my $grammar = shift;
+    my ($grammar) = @_;
 
     my $problems = $grammar->[Marpa::Internal::Grammar::PROBLEMS];
     if ($problems) {
@@ -1352,7 +1351,7 @@ sub Marpa::Grammar::stringify {
     my $problems = $grammar->[Marpa::Internal::Grammar::PROBLEMS];
     if ($problems) {
         croak(
-            Marpa::Grammar::show_problems($grammar),
+            Marpa::show_problems($grammar),
             "Attempt to stringify grammar with fatal problems\n",
             'Marpa cannot proceed'
         );
@@ -1437,7 +1436,7 @@ sub Marpa::Grammar::clone {
 } ## end sub Marpa::Grammar::clone
 
 sub Marpa::show_symbol {
-    my $symbol   = shift;
+    my ($symbol) = @_;
     my $text     = q{};
     my $stripped = $#{$symbol} < Marpa::Internal::Symbol::LAST_FIELD;
 
@@ -1487,9 +1486,9 @@ sub Marpa::show_symbol {
 } ## end sub Marpa::show_symbol
 
 sub Marpa::Grammar::show_symbols {
-    my $grammar = shift;
-    my $symbols = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
-    my $text    = q{};
+    my ($grammar) = @_;
+    my $symbols   = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
+    my $text      = q{};
     for my $symbol_ref ( @{$symbols} ) {
         $text .= Marpa::show_symbol($symbol_ref);
     }
@@ -1497,7 +1496,7 @@ sub Marpa::Grammar::show_symbols {
 } ## end sub Marpa::Grammar::show_symbols
 
 sub Marpa::Grammar::show_nulling_symbols {
-    my $grammar = shift;
+    my ($grammar) = @_;
     my $symbols = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
     return 'stripped_'
         if scalar grep { $#{$_} < Marpa::Internal::Symbol::LAST_FIELD }
@@ -1507,7 +1506,7 @@ sub Marpa::Grammar::show_nulling_symbols {
 } ## end sub Marpa::Grammar::show_nulling_symbols
 
 sub Marpa::Grammar::show_nullable_symbols {
-    my $grammar = shift;
+    my ($grammar) = @_;
     return 'stripped_'
         unless exists $grammar->[Marpa::Internal::Grammar::NULLABLE_SYMBOL];
     my $symbols = $grammar->[Marpa::Internal::Grammar::NULLABLE_SYMBOL];
@@ -1516,7 +1515,7 @@ sub Marpa::Grammar::show_nullable_symbols {
 } ## end sub Marpa::Grammar::show_nullable_symbols
 
 sub Marpa::Grammar::show_productive_symbols {
-    my $grammar = shift;
+    my ($grammar) = @_;
     my $symbols = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
     return 'stripped_'
         if scalar grep { $#{$_} < Marpa::Internal::Symbol::LAST_FIELD }
@@ -1526,7 +1525,7 @@ sub Marpa::Grammar::show_productive_symbols {
 } ## end sub Marpa::Grammar::show_productive_symbols
 
 sub Marpa::Grammar::show_accessible_symbols {
-    my $grammar = shift;
+    my ($grammar) = @_;
     my $symbols = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
     return 'stripped_'
         if scalar grep { $#{$_} < Marpa::Internal::Symbol::LAST_FIELD }
@@ -1536,7 +1535,7 @@ sub Marpa::Grammar::show_accessible_symbols {
 } ## end sub Marpa::Grammar::show_accessible_symbols
 
 sub Marpa::Grammar::inaccessible_symbols {
-    my $grammar = shift;
+    my ($grammar) = @_;
     my $symbols = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
     return [
         sort map { $_->[Marpa::Internal::Symbol::NAME] }
@@ -1545,7 +1544,7 @@ sub Marpa::Grammar::inaccessible_symbols {
 } ## end sub Marpa::Grammar::inaccessible_symbols
 
 sub Marpa::Grammar::unproductive_symbols {
-    my $grammar = shift;
+    my ($grammar) = @_;
     my $symbols = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
     return [
         sort map { $_->[Marpa::Internal::Symbol::NAME] }
@@ -1554,7 +1553,7 @@ sub Marpa::Grammar::unproductive_symbols {
 } ## end sub Marpa::Grammar::unproductive_symbols
 
 sub Marpa::brief_rule {
-    my $rule = shift;
+    my ($rule) = @_;
     my ( $lhs, $rhs, $rule_id ) = @{$rule}[
         Marpa::Internal::Rule::LHS, Marpa::Internal::Rule::RHS,
         Marpa::Internal::Rule::ID
@@ -1571,14 +1570,58 @@ sub Marpa::brief_rule {
 } ## end sub Marpa::brief_rule
 
 sub Marpa::brief_original_rule {
-    my $rule          = shift;
+    my ($rule) = @_;
     my $original_rule = $rule->[Marpa::Internal::Rule::ORIGINAL_RULE]
         // $rule;
     return Marpa::brief_rule($original_rule);
 } ## end sub Marpa::brief_original_rule
 
+sub Marpa::brief_virtual_rule {
+    my ( $rule, $dot_position ) = @_;
+    my $original_rule = $rule->[Marpa::Internal::Rule::ORIGINAL_RULE];
+    if ( not defined $original_rule ) {
+        return Marpa::show_dotted_rule( $rule, $dot_position )
+            if defined $dot_position;
+        return Marpa::brief_rule($rule);
+    }
+    my $rule_id          = $rule->[Marpa::Internal::Rule::ID];
+    my $original_rule_id = $original_rule->[Marpa::Internal::Rule::ID];
+    my $original_lhs     = $original_rule->[Marpa::Internal::Rule::LHS];
+    my $original_rhs     = $original_rule->[Marpa::Internal::Rule::RHS];
+    my $chaf_start       = $rule->[Marpa::Internal::Rule::CHAF_START];
+    my $chaf_end         = $rule->[Marpa::Internal::Rule::CHAF_END];
+    if ( not defined $chaf_start ) {
+        return "$rule_id, dot at $dot_position, virtual "
+            . Marpa::brief_rule($original_rule)
+            if defined $dot_position;
+        return "$rule_id, virtual " . Marpa::brief_rule($original_rule);
+    } ## end if ( not defined $chaf_start )
+    my $text = "$rule_id, part of $original_rule_id: ";
+    $text .= $original_lhs->[Marpa::Internal::Symbol::NAME] . ' -> ';
+    if ( @{$original_rhs} ) {
+        my @rhs_names =
+            map { $_->[Marpa::Internal::Symbol::NAME] } @{$original_rhs};
+        my @chaf_portion;
+        if ( defined $dot_position ) {
+            my $dot_in_original = $dot_position + $chaf_start;
+            @chaf_portion = (
+                @rhs_names[ $chaf_start .. $dot_in_original ],
+                q{.}, @rhs_names[ $dot_in_original + 1 .. $chaf_end ],
+            );
+        } ## end if ( defined $dot_position )
+        else {
+            @chaf_portion = @rhs_names[ $chaf_start .. $chaf_end ];
+        }
+        $text .= join q{ },
+            @rhs_names[ 0 .. $chaf_start - 1 ], '{',
+            @chaf_portion, '}',
+            @rhs_names[ $chaf_end + 1 .. $#rhs_names ];
+    } ## end if ( @{$original_rhs} )
+    return $text;
+} ## end sub Marpa::brief_virtual_rule
+
 sub Marpa::show_rule {
-    my $rule = shift;
+    my ($rule) = @_;
 
     my $stripped = $#{$rule} < Marpa::Internal::Rule::LAST_FIELD;
     my ( $rhs, $useful ) =
@@ -1597,7 +1640,7 @@ sub Marpa::show_rule {
             [ 1, 'inaccessible', Marpa::Internal::Rule::ACCESSIBLE, ],
             [ 0, 'nullable',     Marpa::Internal::Rule::NULLABLE, ],
             [ 0, 'nulling',      Marpa::Internal::Rule::NULLING, ],
-            [ 0, 'hasty',        Marpa::Internal::Rule::HASTY, ],
+            [ 0, 'minimal',      Marpa::Internal::Rule::MINIMAL, ],
         )
         )
     {
@@ -1634,17 +1677,16 @@ sub Marpa::show_rule {
 # Returns ref to a string showing dotted priority otherwise.
 # A true second arg, means create a string even if priority is zero.
 sub Marpa::show_priority {
-    my $priority = shift;
+    my ( $priority, $defined_if_zero ) = @_;
     return unless defined $priority;
-    my $defined_if_zero = shift;
     my ( $pri1, $pri2 ) = unpack 'NN', $priority;
     return unless $defined_if_zero or $pri1 or $pri2;
     return \( $pri1 . q{.} . $pri2 );
 } ## end sub Marpa::show_priority
 
 sub Marpa::Grammar::show_rules {
-    my $grammar = shift;
-    my $rules   = $grammar->[Marpa::Internal::Grammar::RULES];
+    my ($grammar) = @_;
+    my $rules = $grammar->[Marpa::Internal::Grammar::RULES];
     my $text;
 
     for my $rule ( @{$rules} ) {
@@ -1654,8 +1696,7 @@ sub Marpa::Grammar::show_rules {
 } ## end sub Marpa::Grammar::show_rules
 
 sub Marpa::show_dotted_rule {
-    my $rule     = shift;
-    my $position = shift;
+    my ( $rule, $position ) = @_;
 
     my @names =
         map { $_->[Marpa::Internal::Symbol::NAME] }
@@ -1667,7 +1708,7 @@ sub Marpa::show_dotted_rule {
 } ## end sub Marpa::show_dotted_rule
 
 sub Marpa::show_item {
-    my $item = shift;
+    my ($item) = @_;
     my $text = q{};
     if ( not defined $item ) {
         $text .= '/* empty */';
@@ -1684,7 +1725,7 @@ sub Marpa::show_item {
 } ## end sub Marpa::show_item
 
 sub Marpa::show_NFA_state {
-    my $state = shift;
+    my ($state) = @_;
     my ( $name, $item, $transition, $at_nulling, $priority ) = @{$state}[
         Marpa::Internal::NFA::NAME,       Marpa::Internal::NFA::ITEM,
         Marpa::Internal::NFA::TRANSITION, Marpa::Internal::NFA::AT_NULLING,
@@ -1713,8 +1754,8 @@ sub Marpa::show_NFA_state {
 } ## end sub Marpa::show_NFA_state
 
 sub Marpa::Grammar::show_NFA {
-    my $grammar = shift;
-    my $text    = q{};
+    my ($grammar) = @_;
+    my $text = q{};
 
     return "stripped\n"
         unless exists $grammar->[Marpa::Internal::Grammar::NFA];
@@ -1728,16 +1769,14 @@ sub Marpa::Grammar::show_NFA {
 } ## end sub Marpa::Grammar::show_NFA
 
 sub Marpa::brief_QDFA_state {
-    my $state = shift;
-    my $tags  = shift;
+    my ( $state, $tags ) = @_;
     return 'St' . $state->[Marpa::Internal::QDFA::TAG]
         if defined $tags;
     return 'S' . $state->[Marpa::Internal::QDFA::ID];
 } ## end sub Marpa::brief_QDFA_state
 
 sub Marpa::show_QDFA_state {
-    my $state = shift;
-    my $tags  = shift;
+    my ( $state, $tags ) = @_;
 
     my $text     = q{};
     my $stripped = $#{$state} < Marpa::Internal::QDFA::LAST_FIELD;
@@ -1803,8 +1842,7 @@ sub tag_QDFA {
 } ## end sub tag_QDFA
 
 sub Marpa::Grammar::show_QDFA {
-    my $grammar = shift;
-    my $tags    = shift;
+    my ( $grammar, $tags ) = @_;
 
     my $text         = q{};
     my $QDFA         = $grammar->[Marpa::Internal::Grammar::QDFA];
@@ -1821,9 +1859,9 @@ sub Marpa::Grammar::show_QDFA {
 } ## end sub Marpa::Grammar::show_QDFA
 
 sub Marpa::Grammar::show_ii_QDFA {
-    my $grammar = shift;
-    my $text    = q{};
-    my $QDFA    = $grammar->[Marpa::Internal::Grammar::QDFA];
+    my ($grammar) = @_;
+    my $text      = q{};
+    my $QDFA      = $grammar->[Marpa::Internal::Grammar::QDFA];
     my $tags;
     tag_QDFA($grammar);
 
@@ -2048,7 +2086,7 @@ sub add_rule {
         $rhs,        $nulling,           $nulling,
         $nulling,    $action,            $priority,
         );
-    $new_rule->[Marpa::Internal::Rule::HASTY] = 0;
+    $new_rule->[Marpa::Internal::Rule::MINIMAL] = 0;
 
     push @{$rules}, $new_rule;
     {
@@ -3690,7 +3728,6 @@ sub rewrite_as_CHAF {
                 } ## end if ( @{$proper_nullables} == 2 )
 
                 # The following subproduction is non-nullable.
-                # TODO: Has this code been tried yet? ( 15 Jan 2008)
                 if ( $proper_nullable1 < $last_nonnullable ) {
                     $subp_end = $proper_nullable1;
                     splice @{$proper_nullables}, 0, 2;
@@ -3838,6 +3875,8 @@ sub rewrite_as_CHAF {
                     = ( 1, 1, 1, 0, 0, $has_chaf_lhs, $has_chaf_rhs, );
 
                 $new_rule->[Marpa::Internal::Rule::ORIGINAL_RULE] = $rule;
+                $new_rule->[Marpa::Internal::Rule::CHAF_START] = $subp_start;
+                $new_rule->[Marpa::Internal::Rule::CHAF_END]   = $subp_end;
                 $new_rule->[Marpa::Internal::Rule::ACTION] =
                     $rule->[Marpa::Internal::Rule::ACTION];
 

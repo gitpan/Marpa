@@ -43,7 +43,7 @@ $grammar->set( { terminals => ['a'], } );
 
 $grammar->precompute();
 
-Marpa::Test::is( $grammar->show_rules(), <<'EOS', 'Aycock/Horspool Rules' );
+Marpa::Test::is( $grammar->show_rules, <<'EOS', 'Aycock/Horspool Rules' );
 0: S -> A A A A /* !useful nullable */
 1: A -> a
 2: A -> E /* !useful nullable nulling */
@@ -61,8 +61,7 @@ Marpa::Test::is( $grammar->show_rules(), <<'EOS', 'Aycock/Horspool Rules' );
 14: S['][] -> /* empty nullable nulling */
 EOS
 
-Marpa::Test::is( $grammar->show_symbols(),
-    <<'EOS', 'Aycock/Horspool Symbols' );
+Marpa::Test::is( $grammar->show_symbols, <<'EOS', 'Aycock/Horspool Symbols' );
 0: S, lhs=[0 4 5 6] rhs=[13]
 1: A, lhs=[1 2] rhs=[0 4 6 7 9 10 11 12]
 2: a, lhs=[] rhs=[1] terminal
@@ -78,27 +77,27 @@ Marpa::Test::is( $grammar->show_symbols(),
 EOS
 
 Marpa::Test::is(
-    $grammar->show_nullable_symbols(),
+    $grammar->show_nullable_symbols,
     q{A[] E S['][] S[R0:1][x6][] S[R0:2][x8][] S[]},
     'Aycock/Horspool Nullable Symbols'
 );
 Marpa::Test::is(
-    $grammar->show_nulling_symbols(),
+    $grammar->show_nulling_symbols,
     q{A[] E S['][] S[R0:1][x6][] S[R0:2][x8][] S[]},
     'Aycock/Horspool Nulling Symbols'
 );
 Marpa::Test::is(
-    $grammar->show_productive_symbols(),
+    $grammar->show_productive_symbols,
     q{A A[] E S S['] S['][] S[R0:1][x6] S[R0:1][x6][] S[R0:2][x8] S[R0:2][x8][] S[] a},
     'Aycock/Horspool Productive Symbols'
 );
 Marpa::Test::is(
-    $grammar->show_accessible_symbols(),
+    $grammar->show_accessible_symbols,
     q{A A[] E S S['] S['][] S[R0:1][x6] S[R0:1][x6][] S[R0:2][x8] S[R0:2][x8][] S[] a},
     'Aycock/Horspool Accessible Symbols'
 );
 
-Marpa::Test::is( $grammar->show_NFA(), <<'EOS', 'Aycock/Horspool NFA' );
+Marpa::Test::is( $grammar->show_NFA, <<'EOS', 'Aycock/Horspool NFA' );
 S0: /* empty */
  empty => S30 S32
 S1: A ::= . a
@@ -183,7 +182,7 @@ S31: S['] ::= S .
 S32: S['][] ::= .
 EOS
 
-Marpa::Test::is( $grammar->show_ii_QDFA(), <<'EOS', 'Aycock/Horspool QDFA' );
+Marpa::Test::is( $grammar->show_ii_QDFA, <<'EOS', 'Aycock/Horspool QDFA' );
 Start States: St11; St3
 St0: predict; 1
 A ::= . a

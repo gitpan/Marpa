@@ -1125,9 +1125,9 @@ in_file($_, 'author.t/equation_trace_values.out');
 
 =end Marpa::Test::Display:
 
-    Popping 1 values to evaluate S4@2-3L0, rule: 1: e -> number
+    Popping 1 values to evaluate S4@2-3L0[0], rule: 1: e -> number
     Calculated and pushed value: '2==2'
-    Popping 3 values to evaluate S6@0-3L0, rule: 0: e -> e op e
+    Popping 3 values to evaluate S6@0-3L0[0], rule: 0: e -> e op e
     Calculated and pushed value: '(2+2)==4'
 
 =head1 GRAMMAR REWRITING
@@ -1447,7 +1447,7 @@ is_file($_, 'example/equation.marpa');
 =end Marpa::Test::Display:
 
 
-    semantics are perl5.  version is 0.001_006.
+    semantics are perl5.  version is 0.001_007.
 
     start symbol is E.
 
@@ -1659,16 +1659,16 @@ is_file($_, 'author.t/equation_trace_values.out');
 
 =end Marpa::Test::Display:
 
-    Pushed value from S4@0-1L0: '2'
-    Popping 1 values to evaluate S4@0-1L0, rule: 1: e -> number
+    Pushed value from S4@0-1L0[0]: '2'
+    Popping 1 values to evaluate S4@0-1L0[0], rule: 1: e -> number
     Calculated and pushed value: '2==2'
-    Pushed value from S5@0-2R0:2: '+'
-    Pushed value from S4@2-3L0: '2'
-    Popping 1 values to evaluate S4@2-3L0, rule: 1: e -> number
+    Pushed value from S5@0-2R0:2[0]: '+'
+    Pushed value from S4@2-3L0[0]: '2'
+    Popping 1 values to evaluate S4@2-3L0[0], rule: 1: e -> number
     Calculated and pushed value: '2==2'
-    Popping 3 values to evaluate S6@0-3L0, rule: 0: e -> e op e
+    Popping 3 values to evaluate S6@0-3L0[0], rule: 0: e -> e op e
     Calculated and pushed value: '(2+2)==4'
-    Popping 1 values to evaluate S2@0-3L3, rule: 2: e['] -> e
+    Popping 1 values to evaluate S2@0-3L3[0], rule: 2: e['] -> e
     Calculated and pushed value: '(2+2)==4'
     (2+2)==4
 

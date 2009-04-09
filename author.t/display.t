@@ -4,7 +4,7 @@ use Pod::Parser;
 use warnings;
 use strict;
 use English qw( -no_match_vars );
-use Fatal qw(close);
+use Fatal qw(open close);
 use Carp;
 use Getopt::Long qw(GetOptions);
 use Test::More;
@@ -61,11 +61,16 @@ sub slurp {
     my ($file_name) = @_;
     my $open_result = open my $fh, '<', $file_name;
     if ( not $open_result ) {
-        $Marpa::Test::Display::FILE_ERROR = "Cannot open $file_name: $ERRNO";
-        return;
-    }
+        $Marpa::Test::Display::FILE_ERROR = my $message =
+            "Cannot open $file_name: $ERRNO";
+        carp($message);
+        return \$message;
+    } ## end if ( not $open_result )
     local ($RS) = undef;
     my $result = \<$fh>;
+
+    # special for corner case: empty file
+    $result = \q{} if not defined ${$result};
     close $fh;
     return $result;
 } ## end sub slurp
@@ -389,31 +394,44 @@ my %exclude = map { ( $_, 1 ) } qw(
     t/lib/Test/Weaken.pm
 );
 
-my @test_files = ();
-open my $manifest, '<', 'MANIFEST'
-    or croak("Cannot open MANIFEST: $ERRNO");
-FILE: while ( my $file = <$manifest> ) {
-    chomp $file;
-    $file =~ s/\s*[#].*\z//xms;
-    next FILE if $exclude{$file};
-    next FILE if -d $file;
-    my ($ext) = $file =~ / [.] ([^.]+) \z /xms;
-    next FILE unless defined $ext;
-    $ext = lc $ext;
-    next FILE
-        if $ext ne 'pod'
-            and $ext ne 'pl'
-            and $ext ne 'pm'
-            and $ext ne 't';
+my @test_files = @ARGV;
+my $debug_mode = scalar @test_files;
+if ( not $debug_mode ) {
+    open my $manifest, '<', 'MANIFEST'
+        or croak("Cannot open MANIFEST: $ERRNO");
+    FILE: while ( my $file = <$manifest> ) {
+        chomp $file;
+        $file =~ s/\s*[#].*\z//xms;
+        next FILE if $exclude{$file};
+        next FILE if -d $file;
+        my ($ext) = $file =~ / [.] ([^.]+) \z /xms;
+        next FILE unless defined $ext;
+        $ext = lc $ext;
+        next FILE
+            if $ext ne 'pod'
+                and $ext ne 'pl'
+                and $ext ne 'pm'
+                and $ext ne 't';
 
-    push @test_files, $file;
-}    # FILE
-close $manifest;
+        push @test_files, $file;
+    }    # FILE
+    close $manifest;
+} ## end if ( not $debug_mode )
 
 plan tests => 1 + scalar @test_files;
 
-open my $error_file, '>', 'author.t/display.errs'
-    or croak("Cannot open display.errs: $ERRNO");
+my $error_file;
+## no critic (InputOutput::RequireBriefOpen)
+if ($debug_mode) {
+    open $error_file, '>&STDOUT'
+        or croak("Cannot dup STDOUT: $ERRNO");
+}
+else {
+    open $error_file, '>', 'author.t/display.errs'
+        or croak("Cannot open display.errs: $ERRNO");
+}
+## use critic
+
 FILE: for my $file (@test_files) {
     if ( not -f $file ) {
         fail("attempt to test displays in non-file: $file");

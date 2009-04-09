@@ -177,7 +177,7 @@ Setting it after that point will result in a warning.
 
 # I find it better to wait until evaluation time,
 # when there's more information
-# and then use C<Marpa::Recognizer::show_status()>.
+# and then use C<Marpa::show_status()>.
 # Requires knowledge of Marpa internals.
 
 =end undocumented:
@@ -349,7 +349,7 @@ in_file($_, 'bin/mdl');
 
     $grammar->precompute();
 
-    print $grammar->show_NFA()
+    print $grammar->show_NFA
         or croak "print failed: $OS_ERROR";
 
 Returns a multi-line string listing the states of the NFA
@@ -369,7 +369,7 @@ in_file($_, 'bin/mdl');
 
     $grammar->precompute();
 
-    print $grammar->show_QDFA()
+    print $grammar->show_QDFA
         or croak "print failed: $OS_ERROR";
 
 Returns a multi-line string listing the states of the QDFA
@@ -389,7 +389,7 @@ in_file($_, 'bin/mdl');
     $grammar->precompute();
 
     say 'Accessible symbols: ',
-        $grammar->show_accessible_symbols();
+        $grammar->show_accessible_symbols;
 
 Returns a one-line string with the plumbing names
 of the accessible symbols of the grammar,
@@ -410,7 +410,7 @@ in_file($_, 'bin/mdl');
     $grammar->precompute();
 
     say 'Nullable symbols: ',
-        $grammar->show_nullable_symbols();
+        $grammar->show_nullable_symbols;
 
 Returns a one-line string with the plumbing names
 of the nullable symbols of the grammar,
@@ -431,7 +431,7 @@ in_file($_, 'bin/mdl');
     $grammar->precompute();
 
     say 'Nulling symbols: ',
-        $grammar->show_nulling_symbols();
+        $grammar->show_nulling_symbols;
 
 Returns a one-line string with the plumbing names
 of the nulling symbols of the grammar,
@@ -451,7 +451,7 @@ in_file($_, 'bin/mdl');
 
     $grammar->precompute();
 
-    print $grammar->show_problems()
+    print $grammar->show_problems
         or croak "print failed: $OS_ERROR";
 
 Returns a string describing the problems a grammar had in the precomputation phase.
@@ -482,7 +482,7 @@ in_file($_, 'bin/mdl');
     $grammar->precompute();
 
     say 'Productive symbols: ',
-        $grammar->show_productive_symbols();
+        $grammar->show_productive_symbols;
 
 Returns a one-line string with the plumbing names
 of the productive symbols of the grammar,
@@ -502,7 +502,7 @@ in_file($_, 'bin/mdl');
 
     $grammar->precompute();
 
-    print $grammar->show_rules()
+    print $grammar->show_rules
         or croak "print failed: $OS_ERROR";
 
 Returns a string listing the rules, each commented as to whether it
@@ -529,7 +529,7 @@ in_file($_, 'bin/mdl');
 
     $grammar->precompute();
 
-    print $grammar->show_symbols()
+    print $grammar->show_symbols
         or croak "print failed: $OS_ERROR";
 
 Returns a string listing the symbols, along with whether they were
@@ -550,7 +550,7 @@ in_file($_, 'bin/mdl');
 
     $grammar->precompute();
 
-    for my $symbol ( @{ $grammar->unproductive_symbols() } ) {
+    for my $symbol ( @{ $grammar->unproductive_symbols } ) {
         say 'Unproductive symbol: ', $symbol;
     }
 

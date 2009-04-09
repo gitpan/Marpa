@@ -176,32 +176,32 @@ sub do_parse {
     $grammar->precompute();
 
     if ($show_symbols) {
-        print $grammar->show_symbols()
+        print $grammar->show_symbols
             or croak "print failed: $OS_ERROR";
     }
 
     if ($show_rules) {
-        print $grammar->show_rules()
+        print $grammar->show_rules
             or croak "print failed: $OS_ERROR";
     }
 
     if ($show_problems) {
-        print $grammar->show_problems()
+        print $grammar->show_problems
             or croak "print failed: $OS_ERROR";
     }
 
     if ($show_NFA) {
-        print $grammar->show_NFA()
+        print $grammar->show_NFA
             or croak "print failed: $OS_ERROR";
     }
 
     if ($show_QDFA) {
-        print $grammar->show_QDFA()
+        print $grammar->show_QDFA
             or croak "print failed: $OS_ERROR";
     }
 
     if ($accessible_symbols) {
-        say 'Accessible symbols: ', $grammar->show_accessible_symbols();
+        say 'Accessible symbols: ', $grammar->show_accessible_symbols;
     }
 
     if ($inaccessible_symbols) {
@@ -211,19 +211,19 @@ sub do_parse {
     }
 
     if ($nullable_symbols) {
-        say 'Nullable symbols: ', $grammar->show_nullable_symbols();
+        say 'Nullable symbols: ', $grammar->show_nullable_symbols;
     }
 
     if ($nulling_symbols) {
-        say 'Nulling symbols: ', $grammar->show_nulling_symbols();
+        say 'Nulling symbols: ', $grammar->show_nulling_symbols;
     }
 
     if ($productive_symbols) {
-        say 'Productive symbols: ', $grammar->show_productive_symbols();
+        say 'Productive symbols: ', $grammar->show_productive_symbols;
     }
 
     if ($unproductive_symbols) {
-        for my $symbol ( @{ $grammar->unproductive_symbols() } ) {
+        for my $symbol ( @{ $grammar->unproductive_symbols } ) {
             say 'Unproductive symbol: ', $symbol;
         }
     }
@@ -273,7 +273,7 @@ sub do_parse {
     my $parse_count = 0;
     PARSE: while (1) {
 
-        my $value = $evaler->value();
+        my $value = $evaler->old_value();
         if ( not defined $value ) {
             croak 'No parse' if $parse_count <= 0;
             return;
