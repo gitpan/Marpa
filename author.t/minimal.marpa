@@ -1,4 +1,4 @@
-semantics are perl5.  version is 0.001_007.  the start symbol is
+semantics are perl5.  version is 0.001_008.  the start symbol is
 S.
 
 S: .

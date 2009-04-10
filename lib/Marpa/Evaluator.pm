@@ -38,7 +38,7 @@ use Marpa::Offset And_Node =>
     qw(NAME ID PARENT PREDECESSOR CAUSE VALUE_REF PERL_CLOSURE END_EARLEME ARGC RULE POSITION);
 
 use Marpa::Offset Or_Node =>
-    qw(NAME ID PARENT AND_NODES IS_COMPLETED START_EARLEME CHOICE CHOICE_MAP MAP_IX PARENT_OR_CHOICES);
+    qw(NAME ID PARENT AND_NODES IS_COMPLETED START_EARLEME AND_CHOICE CHOICE_MAP MAP_IX PARENT_OR_CHOICES);
 
 # IS_COMPLETED - is this a completed or-node?
 
@@ -47,7 +47,7 @@ use Marpa::Offset Tree_Node => qw(OR_NODE CHOICE PREDECESSOR CAUSE DEPTH
 
 use Marpa::Offset Evaluator =>
     qw(RECOGNIZER PARSE_COUNT OR_NODES TREE RULE_DATA PACKAGE NULL_VALUES CYCLES
-    CHOICE_OR_NODES CHOICE_AND_NODES
+    OR_NODES_BY_EARLEME COMPLETIONS_BY_EARLEME
 );
 
 # PARSE_COUNT  number of parses in an ambiguous parse
@@ -60,6 +60,7 @@ use Marpa::Offset Rule => qw(CODE PERL_CLOSURE);
 use Scalar::Util qw(weaken);
 use Data::Dumper;
 use Carp;
+BEGIN { *exception = \&Carp::croak }
 
 sub run_preamble {
     my $grammar = shift;
@@ -211,8 +212,10 @@ sub set_null_values {
                 print {$trace_fh} 'Setting null value for symbol ',
                     $nulling_symbol->[Marpa::Internal::Symbol::NAME],
                     " from\n", $code, "\n",
-                    ' to ', Dumper( \$null_value ), "\n"
-                    or croak('Could not print to trace file');
+                    ' to ',
+                    Data::Dumper->new( [ \$null_value ] )->Terse(1)->Dump,
+                    "\n"
+                    or exception('Could not print to trace file');
             } ## end if ($trace_actions)
 
         } ## end if ( defined $action and @{$rhs} <= 0 )
@@ -235,8 +238,9 @@ sub set_null_values {
             ];
             print {$trace_fh}
                 'Setting null value for CHAF symbol ',
-                $name, ' to ', Dumper( $null_values->[$id] ),
-                or croak('Could not print to trace file');
+                $name, ' to ',
+                Data::Dumper->new( [ $null_values->[$id] ] )->Terse(1)->Dump,
+                or exception('Could not print to trace file');
         } ## end for my $symbol ( @{$symbols} )
     } ## end if ($trace_actions)
 
@@ -436,8 +440,6 @@ sub Marpa::Evaluator::new {
         $trace_iterations =
             $grammar->[Marpa::Internal::Grammar::TRACE_ITERATIONS];
     }
-
-    local ($Data::Dumper::Terse) = 1;
 
     $self->[Marpa::Internal::Evaluator::PARSE_COUNT] = 0;
     $self->[Marpa::Internal::Evaluator::OR_NODES]    = [];
@@ -719,9 +721,9 @@ sub Marpa::Evaluator::new {
         $or_node_by_name{$sapling_name} = $or_node;
 
         if ( @and_nodes >= 2 ) {
-            $self->[Marpa::Internal::Evaluator::CHOICE_OR_NODES]
+            $self->[Marpa::Internal::Evaluator::OR_NODES_BY_EARLEME]
                 ->[$start_earleme] = [];
-            $self->[Marpa::Internal::Evaluator::CHOICE_AND_NODES]
+            $self->[Marpa::Internal::Evaluator::COMPLETIONS_BY_EARLEME]
                 ->[$start_earleme] = [];
         } ## end if ( @and_nodes >= 2 )
 
@@ -748,9 +750,9 @@ sub Marpa::Evaluator::new {
     } ## end for my $and_node ( map { @{ $_->[...
 
     my $choice_or_nodes =
-        $self->[Marpa::Internal::Evaluator::CHOICE_OR_NODES] = [];
+        $self->[Marpa::Internal::Evaluator::OR_NODES_BY_EARLEME] = [];
     my $choice_and_nodes =
-        $self->[Marpa::Internal::Evaluator::CHOICE_AND_NODES] = [];
+        $self->[Marpa::Internal::Evaluator::COMPLETIONS_BY_EARLEME] = [];
 
     # Find the choice points
     OR_NODE: for my $or_node ( @{ $self->[OR_NODES] } ) {
@@ -818,6 +820,7 @@ sub Marpa::Evaluator::new {
 
 sub Marpa::show_and_node {
     my ( $and_node, $verbose ) = @_;
+    $verbose //= 0;
     my $return_value = q{};
 
     my ( $name, $predecessor, $cause, $value_ref, $closure, $argc, $rule,
@@ -851,20 +854,21 @@ sub Marpa::show_and_node {
     }    # value
 
     $return_value .= "$name ::= " . join( q{ }, @rhs ) . "\n";
-    $return_value
-        .= q{    } . Marpa::brief_virtual_rule( $rule, $position + 1 ) . "\n";
 
     if ($verbose) {
         $return_value
             .= '    rule '
             . $rule->[Marpa::Internal::Rule::ID] . ': '
-            . Marpa::show_dotted_rule( $rule, $position + 1 ) . "\n";
+            . Marpa::brief_virtual_rule( $rule, $position + 1 ) . "\n";
+    } ## end if ($verbose)
+
+    if ( $verbose >= 2 ) {
         $return_value .= "    rhs length = $argc";
         if ( defined $closure ) {
             $return_value .= '; closure';
         }
         $return_value .= "\n";
-    } ## end if ($verbose)
+    } ## end if ( $verbose >= 2 )
 
     return $return_value;
 
@@ -899,10 +903,10 @@ sub Marpa::Evaluator::show_choice_point {
     my $start_earleme =
         $choice_point->[Marpa::Internal::Or_Node::START_EARLEME];
     my $choice_or_nodes =
-        $evaler->[Marpa::Internal::Evaluator::CHOICE_OR_NODES]
+        $evaler->[Marpa::Internal::Evaluator::OR_NODES_BY_EARLEME]
         ->[$start_earleme];
     my $choice_and_nodes =
-        $evaler->[Marpa::Internal::Evaluator::CHOICE_AND_NODES]
+        $evaler->[Marpa::Internal::Evaluator::COMPLETIONS_BY_EARLEME]
         ->[$start_earleme];
     for my $map_ix ( 0 .. $#{$map} ) {
         $text .= 'CHOSEN: ' if $map_ix == $choice_ix;
@@ -920,7 +924,7 @@ sub Marpa::Evaluator::show_choice_point {
             $choice_label = ", choice $and_choice of $choice_count"
                 if $choice_count > 1;
             $text .= "Completion$choice_label: "
-                . Marpa::show_and_node($and_node);
+                . Marpa::show_and_node( $and_node, 1 );
         } ## end for my $and_ix ( 0 .. $#{$choice_and_nodes} )
         OR_IX: for my $or_ix ( 0 .. $#{$choice_or_nodes} ) {
             my $and_choice = $or_choices->[$or_ix];
@@ -935,7 +939,7 @@ sub Marpa::Evaluator::show_choice_point {
             $choice_label = "Choice $and_choice of $choice_count"
                 if $choice_count > 1;
             my $and_node = $and_nodes->[$and_choice];
-            $text .= "$choice_label: " . Marpa::show_and_node($and_node);
+            $text .= "$choice_label: " . Marpa::show_and_node( $and_node, 1 );
         } ## end for my $or_ix ( 0 .. $#{$choice_or_nodes} )
     } ## end for my $map_ix ( 0 .. $#{$map} )
     return $text;
@@ -951,15 +955,13 @@ sub Marpa::Evaluator::show_bocage {
         Marpa::Internal::Evaluator::PACKAGE,
     ];
 
-    local $Data::Dumper::Terse = 1;
-
     my $text =
         'package: ' . $package . '; parse count: ' . $parse_count . "\n";
 
     for my $or_node ( @{ $evaler->[OR_NODES] } ) {
 
         my $or_node_name = $or_node->[Marpa::Internal::Or_Node::NAME];
-        my $choice       = $or_node->[Marpa::Internal::Or_Node::CHOICE];
+        my $choice       = $or_node->[Marpa::Internal::Or_Node::AND_CHOICE];
         my $and_nodes    = $or_node->[Marpa::Internal::Or_Node::AND_NODES];
 
         for my $index ( 0 .. $#{$and_nodes} ) {
@@ -986,8 +988,6 @@ sub Marpa::Evaluator::show_tree {
     my ( $evaler, $verbose ) = @_;
 
     my $tree = $evaler->[Marpa::Internal::Evaluator::TREE];
-
-    local $Data::Dumper::Terse = 1;
 
     my $text = q{};
 
@@ -1034,7 +1034,8 @@ sub Marpa::Evaluator::show_tree {
         if ($verbose) {
             $text .= '    Perl Closure: ' . ( defined $closure ? 'Y' : 'N' );
             if ( defined $value_ref ) {
-                $text .= '; Token: ' . Dumper( ${$value_ref} );
+                $text .= '; Token: '
+                    . Data::Dumper->new( [ ${$value_ref} ] )->Terse(1)->Dump;
             }
             else {
                 $text .= "\n";
@@ -1068,24 +1069,17 @@ sub map_choice_point {
     my $start_earleme =
         $choice_point->[Marpa::Internal::Or_Node::START_EARLEME];
 
-    # gross and buggy hack for incremental development -- delete this
-    state %been_there_done_that;
-    if ( $been_there_done_that{$start_earleme} ) {
-        ## print STDERR "Been there $start_earleme\n";
-        return;
-    }
-    $been_there_done_that{$start_earleme} = 1;
-
     # create the vector of parent or nodes
     my $parent_or_choices = [];
     CHOICE_OR_NODE:
     for my $choice_or_node (
-        @{  $evaler->[Marpa::Internal::Evaluator::CHOICE_OR_NODES]
+        @{  $evaler->[Marpa::Internal::Evaluator::OR_NODES_BY_EARLEME]
                 ->[$start_earleme]
         }
         )
     {
-        if ( defined $choice_or_node->[Marpa::Internal::Or_Node::CHOICE] ) {
+        if ( defined $choice_or_node->[Marpa::Internal::Or_Node::AND_CHOICE] )
+        {
             $parent_or_choices
                 ->[ $choice_or_node->[Marpa::Internal::Or_Node::ID] ] = -1;
         }
@@ -1182,8 +1176,6 @@ sub Marpa::Evaluator::value {
             $grammar->[Marpa::Internal::Grammar::TRACE_ITERATIONS];
     }
 
-    local ($Data::Dumper::Terse) = 1;
-
     my ( $bocage, $tree, $rule_data, $null_values, ) = @{$evaler}[
         Marpa::Internal::Evaluator::OR_NODES,
         Marpa::Internal::Evaluator::TREE,
@@ -1206,30 +1198,55 @@ sub Marpa::Evaluator::value {
     #
     # For starters just set all choices to the first.
     #
-    my $last_choice_earleme = -1;
+    my $chosen_to_here_earleme = -1;
     OR_NODE: while ( my $or_node = pop @work_list ) {
-        if ( defined $or_node->[Marpa::Internal::Or_Node::CHOICE]
-            and $or_node->[Marpa::Internal::Or_Node::START_EARLEME]
-            > $last_choice_earleme )
+        my $start_earleme =
+            $or_node->[Marpa::Internal::Or_Node::START_EARLEME];
+        if ( defined $or_node->[Marpa::Internal::Or_Node::AND_CHOICE]
+            and $start_earleme > $chosen_to_here_earleme )
         {
-            croak( 'Cycle at ' . $or_node->[Marpa::Internal::Or_Node::NAME] );
-        } ## end if ( defined $or_node->[Marpa::Internal::Or_Node::CHOICE...
+            exception(
+                'Cycle at ' . $or_node->[Marpa::Internal::Or_Node::NAME] );
+        } ## end if ( defined $or_node->[Marpa::Internal::Or_Node::AND_CHOICE...
 
         my $and_nodes = $or_node->[Marpa::Internal::Or_Node::AND_NODES];
 
         # if the choice is non-trivial
         if ( @{$and_nodes} >= 2 ) {
 
-            map_choice_point( $evaler, $or_node )
-                if not
-                    defined $or_node->[Marpa::Internal::Or_Node::CHOICE_MAP];
+            my $choices = $or_node->[Marpa::Internal::Or_Node::CHOICE_MAP];
+            if ( not defined $choices ) {
+                map_choice_point( $evaler, $or_node );
+                $choices = $or_node->[Marpa::Internal::Or_Node::CHOICE_MAP];
+            }
+            if ( @{$choices} <= 0 ) {
+                exception( 'No valid choices for '
+                        . $or_node->[Marpa::Internal::Or_Node::NAME] );
+            }
+            $or_node->[Marpa::Internal::Or_Node::MAP_IX] = my $map_ix = 0;
+            my $or_choices = $choices->[$map_ix]->[1];
+            my $or_nodes_here =
+                $evaler->[Marpa::Internal::Evaluator::OR_NODES_BY_EARLEME]
+                ->[$start_earleme];
 
-            # what if no choices found?
+            OR_IX: for my $or_ix ( 0 .. $#{$or_choices} ) {
+                my $choice_or_node = $or_nodes_here->[$or_ix];
+                my $and_choice     = $or_choices->[$or_ix];
+                next OR_IX if not defined $and_choice or $and_choice < 0;
+                $or_node->[Marpa::Internal::Or_Node::AND_CHOICE] =
+                    $and_choice;
+            } ## end for my $or_ix ( 0 .. $#{$or_choices} )
+
+            $chosen_to_here_earleme = $start_earleme;
 
         } ## end if ( @{$and_nodes} >= 2 )
+        else {
 
-        $or_node->[Marpa::Internal::Or_Node::CHOICE] = 0;
-        my $and_node = $and_nodes->[0];
+            $or_node->[Marpa::Internal::Or_Node::AND_CHOICE] = 0;
+        }
+
+        my $and_choice = $or_node->[Marpa::Internal::Or_Node::AND_CHOICE];
+        my $and_node   = $and_nodes->[$and_choice];
 
         push @work_list, grep { defined $_ } @{$and_node}[
             Marpa::Internal::And_Node::CAUSE,
@@ -1244,7 +1261,7 @@ sub Marpa::Evaluator::value {
     @work_list = (
         do {
             my $or_node = $bocage->[0];
-            my $choice  = $or_node->[Marpa::Internal::Or_Node::CHOICE];
+            my $choice  = $or_node->[Marpa::Internal::Or_Node::AND_CHOICE];
             $or_node->[Marpa::Internal::Or_Node::AND_NODES]->[$choice];
             } ## end do
     );
@@ -1257,13 +1274,15 @@ sub Marpa::Evaluator::value {
             $right_or_node = undef;
         }
         if ( defined $left_or_node ) {
-            my $choice = $left_or_node->[Marpa::Internal::Or_Node::CHOICE];
+            my $choice =
+                $left_or_node->[Marpa::Internal::Or_Node::AND_CHOICE];
             push @work_list,
                 $left_or_node->[Marpa::Internal::Or_Node::AND_NODES]
                 ->[$choice];
         } ## end if ( defined $left_or_node )
         if ( defined $right_or_node ) {
-            my $choice = $right_or_node->[Marpa::Internal::Or_Node::CHOICE];
+            my $choice =
+                $right_or_node->[Marpa::Internal::Or_Node::AND_CHOICE];
             push @work_list,
                 $right_or_node->[Marpa::Internal::Or_Node::AND_NODES]
                 ->[$choice];
@@ -1283,9 +1302,11 @@ sub Marpa::Evaluator::value {
         if ( $trace_values >= 3 ) {
             for my $i ( reverse 0 .. $#evaluation_stack ) {
                 printf {$trace_fh} 'Stack position %3d:', $i;
-                print {$trace_fh} q{ }, Dumper( $evaluation_stack[$i] )
-                    or croak('print to trace handle failed');
-            }
+                print {$trace_fh} q{ },
+                    Data::Dumper->new( [ $evaluation_stack[$i] ] )->Terse(1)
+                    ->Dump
+                    or exception('print to trace handle failed');
+            } ## end for my $i ( reverse 0 .. $#evaluation_stack )
         } ## end if ( $trace_values >= 3 )
 
         my ( $closure, $value_ref, $argc ) = @{$and_node}[
@@ -1302,7 +1323,8 @@ sub Marpa::Evaluator::value {
                 print {$trace_fh}
                     'Pushed value from ',
                     $and_node->[Marpa::Internal::And_Node::NAME],
-                    ': ', Dumper( ${$value_ref} )
+                    ': ',
+                    Data::Dumper->new( [ ${$value_ref} ] )->Terse(1)->Dump
                     or croak('print to trace handle failed');
             } ## end if ($trace_values)
 
@@ -1373,8 +1395,9 @@ sub Marpa::Evaluator::value {
         }    # when non-code reference
 
         if ($trace_values) {
-            print {$trace_fh} 'Calculated and pushed value: ', Dumper($result)
-                or croak('print to trace handle failed');
+            print {$trace_fh} 'Calculated and pushed value: ',
+                Data::Dumper->new( [$result] )->Terse(1)->Dump
+                or exception('print to trace handle failed');
         }
 
         push @evaluation_stack, \$result;
@@ -1412,8 +1435,6 @@ sub Marpa::Evaluator::old_value {
         $trace_iterations =
             $grammar->[Marpa::Internal::Grammar::TRACE_ITERATIONS];
     }
-
-    local ($Data::Dumper::Terse) = 1;
 
     my ( $bocage, $tree, $rule_data, $null_values, ) = @{$evaler}[
         Marpa::Internal::Evaluator::OR_NODES,
@@ -1654,7 +1675,9 @@ sub Marpa::Evaluator::old_value {
 
             if ($trace_iterations) {
                 my $value_description = "\n";
-                $value_description = '; value=' . Dumper( ${$value_ref} )
+                $value_description =
+                    '; value='
+                    . Data::Dumper->new( ${$value_ref} )->Terse(1)->Dump
                     if defined $value_ref;
                 print {$trace_fh}
                     'Pushing tree node #',
@@ -1663,7 +1686,7 @@ sub Marpa::Evaluator::old_value {
                     "[$choice]: ",
                     Marpa::show_dotted_rule( $rule, $rule_position + 1 ),
                     $value_description
-                    or croak('print to trace handle failed');
+                    or exception('print to trace handle failed');
             } ## end if ($trace_iterations)
 
             push @{$tree}, $new_tree_node;
@@ -1698,7 +1721,7 @@ sub Marpa::Evaluator::old_value {
             defined $leaf_side_start_position
             ? @old_tree - $leaf_side_start_position
             : 0
-            ) or croak('print to trace handle failed');
+            ) or exception('print to trace handle failed');
     } ## end if ($trace_iterations)
 
     # Put the uniterated leaf side of the tree back on the stack.
@@ -1712,9 +1735,11 @@ sub Marpa::Evaluator::old_value {
         if ( $trace_values >= 3 ) {
             for my $i ( reverse 0 .. $#evaluation_stack ) {
                 printf {$trace_fh} 'Stack position %3d:', $i;
-                print {$trace_fh} q{ }, Dumper( $evaluation_stack[$i] )
-                    or croak('print to trace handle failed');
-            }
+                print {$trace_fh} q{ },
+                    Data::Dumper->new( [ $evaluation_stack[$i] ] )->Terse(1)
+                    ->Dump
+                    or exception('print to trace handle failed');
+            } ## end for my $i ( reverse 0 .. $#evaluation_stack )
         } ## end if ( $trace_values >= 3 )
 
         my ( $closure, $value_ref, $argc ) = @{$node}[
@@ -1733,8 +1758,9 @@ sub Marpa::Evaluator::old_value {
                 print {$trace_fh}
                     'Pushed value from ',
                     $or_node->[Marpa::Internal::Or_Node::NAME],
-                    ': ', Dumper( ${$value_ref} )
-                    or croak('print to trace handle failed');
+                    ': ',
+                    Data::Dumper->new( [ ${$value_ref} ] )->Terse(1)->Dump
+                    or exception('print to trace handle failed');
             } ## end if ($trace_values)
 
         }    # defined $value_ref
@@ -1807,8 +1833,9 @@ sub Marpa::Evaluator::old_value {
         }    # when non-code reference
 
         if ($trace_values) {
-            print {$trace_fh} 'Calculated and pushed value: ', Dumper($result)
-                or croak('print to trace handle failed');
+            print {$trace_fh} 'Calculated and pushed value: ',
+                Data::Dumper->new( [$result] )->Terse(1)->Dump
+                or exception('print to trace handle failed');
         }
 
         push @evaluation_stack, \$result;
