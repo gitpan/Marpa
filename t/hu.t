@@ -8,11 +8,10 @@ use Test::More tests => 9;
 
 use lib 'lib';
 use lib 't/lib';
-use Carp;
 use Marpa::Test;
 
 BEGIN {
-    use_ok('Marpa');
+    Test::More::use_ok('Marpa');
 }
 
 # A grammar from Hopcroft & Ullman,
@@ -20,7 +19,7 @@ BEGIN {
 # (Addison-Wesley, Reading, Massachusetts: 1979),
 # pp. 248, 250.
 
-my $g = new Marpa::Grammar(
+my $g = Marpa::Grammar->new(
     {   precompute => 0,
         start      => q{S'},
         strip      => 0,

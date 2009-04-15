@@ -10,18 +10,17 @@ use Fatal qw(open close chdir);
 use Test::More tests => 7;
 use lib 'lib';
 use lib 't/lib';
-use Carp;
 use Marpa::Test;
 
 BEGIN {
-    use_ok('Marpa');
+    Test::More::use_ok('Marpa');
 }
 
 my $example_dir = 'example';
 chdir $example_dir;
 
 my $mdl_header = <<'EOF';
-semantics are perl5.  version is 0.001_008.
+semantics are perl5.  version is 0.001_009.
 start symbol is S.
 default action is q{join(q{ }, @_)}.
 

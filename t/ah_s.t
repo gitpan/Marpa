@@ -9,18 +9,17 @@ use strict;
 use warnings;
 use lib 'lib';
 use English qw( -no_match_vars );
-use Carp;
 
-use Test::More tests => 2;
+use Test::More tests => 6;
 
 BEGIN {
-    use_ok('Marpa');
+    Test::More::use_ok('Marpa');
 }
 
 my $source;
 { local ($RS) = undef; $source = <DATA> };
 
-my $grammar = new Marpa::Grammar(
+my $grammar = Marpa::Grammar->new(
     {   warnings   => 1,
         code_lines => -1,
     }
@@ -30,7 +29,7 @@ $grammar->set( { mdl_source => \$source } );
 
 $grammar->precompute();
 
-my $recce = new Marpa::Recognizer( { grammar => $grammar } );
+my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
 
 my $lc_a = Marpa::MDL::get_symbol( $grammar, 'lowercase a' );
 $recce->earleme( [ $lc_a, 'lowercase a', 1 ] );
@@ -39,9 +38,7 @@ $recce->earleme( [ $lc_a, 'lowercase a', 1 ] );
 $recce->earleme( [ $lc_a, 'lowercase a', 1 ] );
 $recce->end_input();
 
-my $failure_count = 0;
-my $total_count   = 0;
-my @answer        = (
+my @answer = (
     q{},
     '(lowercase a;;;)',
     '(lowercase a;lowercase a;;)',
@@ -50,22 +47,14 @@ my @answer        = (
 );
 
 for my $i ( 0 .. 4 ) {
-    my $evaler = new Marpa::Evaluator(
+    my $evaler = Marpa::Evaluator->new(
         {   recce => $recce,
             end   => $i
         }
     );
     my $result = $evaler->value();
-    $total_count++;
-    if ( $answer[$i] ne ${$result} ) {
-        diag( 'got ' . ${$result} . ', expected ' . $answer[$i] . "\n" );
-        $failure_count++;
-    }
+    Test::More::is( ${$result}, $answer[$i], "parse permutation $i" );
 } ## end for my $i ( 0 .. 4 )
-
-ok( !$failure_count,
-    ( $total_count - $failure_count )
-        . " of $total_count parse permutations succeeded" );
 
 # Local Variables:
 #   mode: cperl
@@ -75,7 +64,7 @@ ok( !$failure_count,
 # vim: expandtab shiftwidth=4:
 
 __DATA__
-semantics are perl5.  version is 0.001_008.  the start symbol is
+semantics are perl5.  version is 0.001_009.  the start symbol is
 S.  the default null value is q{}.  the default action is q{
      my $v_count = scalar @_;
      return q{} if $v_count <= 0;

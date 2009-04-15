@@ -9,11 +9,10 @@ use lib 't/lib';
 use English qw( -no_match_vars );
 use Fatal qw(open close chdir);
 use Test::More tests => 4;
-use Carp;
 use Marpa::Test;
 
 BEGIN {
-    use_ok('Marpa');
+    Test::More::use_ok('Marpa');
 }
 
 my $example_dir = 'example';
@@ -25,7 +24,7 @@ A(B(a))
 EOS
 
 my $mdl = <<'EOF';
-semantics are perl5.  version is 0.001_008.
+semantics are perl5.  version is 0.001_009.
 start symbol is S.
 default action is q{join(q{ }, @_)}.
 
@@ -40,7 +39,7 @@ EOF
 
 my $trace;
 open my $MEMORY, '>', \$trace;
-my $grammar = new Marpa::Grammar(
+my $grammar = Marpa::Grammar->new(
     {   mdl_source        => \$mdl,
         trace_file_handle => $MEMORY,
     }
@@ -53,7 +52,7 @@ Cycle found involving rule: 3: b -> a
 Cycle found involving rule: 1: a -> b
 EOS
 
-my $recce = new Marpa::Recognizer(
+my $recce = Marpa::Recognizer->new(
     {   grammar           => $grammar,
         trace_file_handle => *STDERR,
     }
@@ -62,11 +61,12 @@ my $recce = new Marpa::Recognizer(
 my $text          = 'a';
 my $fail_location = $recce->text( \$text );
 if ( $fail_location >= 0 ) {
-    croak( Marpa::show_location( 'Parsing failed', \$text, $fail_location ) );
+    Marpa::exception(
+        Marpa::show_location( 'Parsing failed', \$text, $fail_location ) );
 }
 $recce->end_input();
 
-my $evaler = new Marpa::Evaluator( { recce => $recce } );
+my $evaler = Marpa::Evaluator->new( { recce => $recce } );
 my $parse_count = 0;
 while ( my $value = $evaler->old_value() ) {
     Marpa::Test::is(

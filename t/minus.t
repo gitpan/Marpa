@@ -12,11 +12,10 @@ use Test::More tests => 11;
 
 use lib 'lib';
 use lib 't/lib';
-use Carp;
 use Marpa::Test;
 
 BEGIN {
-    use_ok('Marpa');
+    Test::More::use_ok('Marpa');
 }
 
 # The inefficiency (at least some of it) is deliberate.
@@ -26,7 +25,7 @@ BEGIN {
 # apart at each step.  But I wanted to test having
 # a start symbol that appears repeatedly on the RHS.
 
-my $g = new Marpa::Grammar(
+my $g = Marpa::Grammar->new(
     {   start => 'E',
         strip => 0,
 
@@ -87,7 +86,7 @@ EOCODE
     }
 );
 
-my $recce = new Marpa::Recognizer( { grammar => $g, } );
+my $recce = Marpa::Recognizer->new( { grammar => $g, } );
 
 Marpa::Test::is( $g->show_rules, <<'END_RULES', 'Minuses Equation Rules' );
 0: E -> E Minus E
@@ -158,20 +157,21 @@ my @expected = (
 for my $string_piece ( '6', '-----', '1' ) {
     my $fail_offset = $recce->text($string_piece);
     if ( $fail_offset >= 0 ) {
-        croak("Parse failed at offset $fail_offset");
+        Marpa::exception("Parse failed at offset $fail_offset");
     }
 } ## end for my $string_piece ( '6', '-----', '1' )
 
 $recce->end_input();
 
-my $evaler = new Marpa::Evaluator( { recce => $recce, clone => 0 } );
-croak('Could not initialize parse') unless $evaler;
+my $evaler = Marpa::Evaluator->new( { recce => $recce, clone => 0 } );
+Marpa::exception('Could not initialize parse') unless $evaler;
 
 my $i = -1;
 while ( defined( my $value = $evaler->old_value() ) ) {
     $i++;
     if ( $i > $#expected ) {
-        fail( 'Minuses equation has extra value: ' . ${$value} . "\n" );
+        Test::More::fail(
+            'Minuses equation has extra value: ' . ${$value} . "\n" );
     }
     else {
         Marpa::Test::is( ${$value}, $expected[$i],

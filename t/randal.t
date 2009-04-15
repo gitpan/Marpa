@@ -9,10 +9,9 @@ use English qw( -no_match_vars );
 
 use Test::More tests => 5;
 use Marpa::Test;
-use Carp;
 
 BEGIN {
-    use_ok('Marpa');
+    Test::More::use_ok('Marpa');
 }
 
 my @tests = split /\n/xms, <<'EO_TESTS';
@@ -31,7 +30,7 @@ EO_TESTS
 my $source;
 { local ($RS) = undef; $source = <DATA> };
 
-my $g = new Marpa::Grammar(
+my $g = Marpa::Grammar->new(
     {   warnings   => 1,
         code_lines => -1,
     }
@@ -42,10 +41,10 @@ $g->set( { mdl_source => \$source } );
 $g->precompute();
 
 TEST: while ( my $test = pop @tests ) {
-    my $recce = new Marpa::Recognizer( { grammar => $g } );
+    my $recce = Marpa::Recognizer->new( { grammar => $g } );
     $recce->text( \$test );
     $recce->end_input();
-    my $evaler = new Marpa::Evaluator( { recce => $recce } );
+    my $evaler = Marpa::Evaluator->new( { recce => $recce } );
     my @parses;
     while ( defined( my $value = $evaler->old_value ) ) {
         push @parses, $value;
@@ -61,7 +60,7 @@ TEST: while ( my $test = pop @tests ) {
                 ( 'division, comment', 'sin function call, die statement', );
         }
         default {
-            croak("unexpected test: $test_name");
+            Marpa::exception("unexpected test: $test_name");
         }
     } ## end given
     my $expected_parse_count = scalar @expected_parses;
@@ -75,19 +74,19 @@ TEST: while ( my $test = pop @tests ) {
         : $parse_count;
     for my $i ( 0 .. ( $parses_to_check - 1 ) ) {
         if ( ${ $parses[$i] } ne $expected_parses[$i] ) {
-            diag(     "Mismatch on parse $i for test $test_name: "
+            Test::More::diag( "Mismatch on parse $i for test $test_name: "
                     . ${ $parses[$i] } . ' vs. '
                     . $expected_parses[$i] );
             $mismatch_count++;
         } ## end if ( ${ $parses[$i] } ne $expected_parses[$i] )
     } ## end for my $i ( 0 .. ( $parses_to_check - 1 ) )
-    ok( !$mismatch_count,
+    Test::More::ok( !$mismatch_count,
         ( $expected_parse_count - $mismatch_count )
             . " of the $expected_parse_count parses expected succeeded" );
 } ## end while ( my $test = pop @tests )
 
 __DATA__
-semantics are perl5.  version is 0.001_008.  the start symbol is perl line.
+semantics are perl5.  version is 0.001_009.  the start symbol is perl line.
 the default lex prefix is qr/\s*/.
 
 perl line: perl statements, optional comment.

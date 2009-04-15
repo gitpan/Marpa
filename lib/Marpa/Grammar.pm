@@ -201,7 +201,7 @@ use Marpa::Offset Grammar =>
     DEFAULT_NULL_VALUE
     CYCLE_ACTION
     TRACE_ITERATIONS
-    TRACE_ACTIONS TRACE_VALUES
+    TRACE_ACTIONS TRACE_VALUES TRACE_CHOICES
     MAX_PARSES
     PREAMBLE
     ),
@@ -338,36 +338,6 @@ package Marpa::Internal::Grammar;
 use Scalar::Util qw(weaken);
 use Data::Dumper;
 use English qw( -no_match_vars );
-
-use Carp;
-our @CARP_NOT = qw(
-    Marpa
-    Marpa::Evaluator
-    Marpa::Grammar
-    Marpa::Internal
-    Marpa::Internal::And_Node
-    Marpa::Internal::Earley_item
-    Marpa::Internal::Evaluator
-    Marpa::Internal::Evaluator::Rule
-    Marpa::Internal::Grammar
-    Marpa::Internal::Interface
-    Marpa::Internal::LR0_item
-    Marpa::Internal::Lex
-    Marpa::Internal::NFA
-    Marpa::Internal::Or_Node
-    Marpa::Internal::Or_Sapling
-    Marpa::Internal::Phase
-    Marpa::Internal::QDFA
-    Marpa::Internal::Recognizer
-    Marpa::Internal::Rule
-    Marpa::Internal::Source_Eval
-    Marpa::Internal::Source_Raw
-    Marpa::Internal::Symbol
-    Marpa::Internal::Tree_Node
-    Marpa::Lex
-    Marpa::MDL
-    Marpa::Recognizer
-);
 
 sub Marpa::Internal::code_problems {
     my $args = shift;
@@ -521,7 +491,7 @@ sub Marpa::Internal::code_problems {
         push @msg, q{======} . "\n";
     } ## end if ($fatal_error)
 
-    croak(@msg);
+    Marpa::exception(@msg);
 } ## end sub Marpa::Internal::code_problems
 
 package Marpa::Internal::Source_Eval;
@@ -590,18 +560,18 @@ sub Marpa::Internal::Grammar::raw_grammar_eval {
             if $trace_predefineds;
     }
 
-    Carp::croak('Semantics must be set to perl5 in marpa grammar')
+    Marpa::exception('Semantics must be set to perl5 in marpa grammar')
         if not defined $new_semantics
             or $new_semantics ne 'perl5';
     $grammar->[Marpa::Internal::Grammar::SEMANTICS] = $new_semantics;
     say {$trace_fh} 'Semantics set to ', $new_semantics
         if $trace_predefineds;
 
-    Carp::croak('Version must be set in marpa grammar')
+    Marpa::exception('Version must be set in marpa grammar')
         if not defined $new_version;
 
     no integer;
-    Carp::croak(
+    Marpa::exception(
         "Version in marpa grammar ($new_version) does not match Marpa (",
         $Marpa::VERSION, ')' )
         if $new_version ne $Marpa::VERSION;
@@ -683,6 +653,7 @@ sub Marpa::Grammar::new {
     $grammar->[Marpa::Internal::Grammar::AMBIGUOUS_LEX]      = 1;
     $grammar->[Marpa::Internal::Grammar::TRACE_RULES]        = 0;
     $grammar->[Marpa::Internal::Grammar::TRACE_VALUES]       = 0;
+    $grammar->[Marpa::Internal::Grammar::TRACE_CHOICES]      = 0;
     $grammar->[Marpa::Internal::Grammar::TRACE_ITERATIONS]   = 0;
     $grammar->[Marpa::Internal::Grammar::TRACING]            = 0;
     $grammar->[Marpa::Internal::Grammar::STRIP]              = 1;
@@ -766,12 +737,13 @@ sub Marpa::show_location {
     return $result;
 } ## end sub Marpa::show_location
 
-sub die_with_parse_failure {
+sub Marpa::die_with_parse_failure {
     my $source  = shift;
     my $earleme = shift;
 
-    croak( Marpa::show_location( 'Parse failed', $source, $earleme ) );
-} ## end sub die_with_parse_failure
+    Marpa::exception(
+        Marpa::show_location( 'Parse failed', $source, $earleme ) );
+} ## end sub Marpa::die_with_parse_failure
 
 # The following method fails if "use Marpa::Raw_Source" is not
 # specified by the user.  This is an undocumented bootstrapping routine,
@@ -789,7 +761,7 @@ sub Marpa::stringify_source_grammar {
         $raw_source_grammar->[Marpa::Internal::Grammar::VERSION];
     $raw_source_version //= 'not defined';
     if ( $raw_source_version ne $Marpa::VERSION ) {
-        croak(
+        Marpa::exception(
             "raw source grammar version ($raw_source_version) does not match Marpa version (",
             $Marpa::VERSION, ')'
         );
@@ -817,13 +789,14 @@ sub parse_source_grammar {
         else {
             my $eval_error = $Marpa::Internal::STRINGIFIED_EVAL_ERROR
                 // 'no eval error';
-            croak( "No stringified source grammar:\n", $eval_error );
-        }
+            Marpa::exception( "No stringified source grammar:\n",
+                $eval_error );
+        } ## end else [ if ($allow_raw_source)
     } ## end if ( not defined $Marpa::Internal::STRINGIFIED_SOURCE_GRAMMAR)
 
     $source_options //= {};
 
-    my $recce = new Marpa::Recognizer(
+    my $recce = Marpa::Recognizer->new(
         {   stringified_grammar =>
                 $Marpa::Internal::STRINGIFIED_SOURCE_GRAMMAR,
             trace_file_handle => $trace_fh,
@@ -836,8 +809,9 @@ sub parse_source_grammar {
         die_with_parse_failure( $source, $failed_at_earleme );
     }
     $recce->end_input();
-    my $evaler = new Marpa::Evaluator( { recce => $recce } );
-    croak('Marpa Internal error: failed to create evaluator for MDL')
+    my $evaler = Marpa::Evaluator->new( { recce => $recce } );
+    Marpa::exception(
+        'Marpa Internal error: failed to create evaluator for MDL')
         unless defined $evaler;
     my $value = $evaler->old_value();
     raw_grammar_eval( $grammar, $value );
@@ -865,11 +839,12 @@ sub Marpa::Grammar::set {
     # value of source needs to be a *REF* to a string
     my $source = $args->{'mdl_source'};
     if ( defined $source ) {
-        croak('Cannot source grammar with some rules already defined')
+        Marpa::exception(
+            'Cannot source grammar with some rules already defined')
             if $phase != Marpa::Internal::Phase::NEW;
-        croak('Source for grammar must be specified as string ref')
+        Marpa::exception('Source for grammar must be specified as string ref')
             unless ref $source eq 'SCALAR';
-        croak('Source for grammar undefined')
+        Marpa::exception('Source for grammar undefined')
             if not defined ${$source};
         parse_source_grammar( $grammar, $source, $args->{'source_options'} );
         delete $args->{'mdl_source'};
@@ -884,10 +859,10 @@ sub Marpa::Grammar::set {
                 $grammar->[Marpa::Internal::Grammar::INTERFACE] //=
                     Marpa::Internal::Interface::RAW;
                 $interface = $grammar->[Marpa::Internal::Grammar::INTERFACE];
-                croak( 'rules option not allowed with '
-                        . interface_description($interface) )
+                Marpa::exception(
+                    'rules option only allowed with raw interface')
                     if $interface ne Marpa::Internal::Interface::RAW;
-                croak(
+                Marpa::exception(
                     "$option option not allowed after grammar is precomputed")
                     if $phase >= Marpa::Internal::Phase::PRECOMPUTED;
                 add_user_rules( $grammar, $value );
@@ -898,10 +873,10 @@ sub Marpa::Grammar::set {
                 $grammar->[Marpa::Internal::Grammar::INTERFACE] //=
                     Marpa::Internal::Interface::RAW;
                 $interface = $grammar->[Marpa::Internal::Grammar::INTERFACE];
-                croak( 'terminals option not allowed with '
-                        . interface_description($interface) )
+                Marpa::exception(
+                    'terminals option only allowed with raw interface')
                     if $interface ne Marpa::Internal::Interface::RAW;
-                croak(
+                Marpa::exception(
                     "$option option not allowed after grammar is precomputed")
                     if $phase >= Marpa::Internal::Phase::PRECOMPUTED;
                 add_user_terminals( $grammar, $value );
@@ -909,52 +884,52 @@ sub Marpa::Grammar::set {
                     Marpa::Internal::Phase::RULES;
             } ## end when ('terminals')
             when ('start') {
-                croak(
+                Marpa::exception(
                     "$option option not allowed after grammar is precomputed")
                     if $phase >= Marpa::Internal::Phase::PRECOMPUTED;
                 $grammar->[Marpa::Internal::Grammar::START_NAME] = $value;
             } ## end when ('start')
             when ('academic') {
-                croak(
+                Marpa::exception(
                     "$option option not allowed after grammar is precomputed")
                     if $phase >= Marpa::Internal::Phase::PRECOMPUTED;
                 $grammar->[Marpa::Internal::Grammar::ACADEMIC] = $value;
             } ## end when ('academic')
             when ('default_null_value') {
-                croak( "$option option not allowed in ",
+                Marpa::exception( "$option option not allowed in ",
                     Marpa::Internal::Phase::description($phase) )
                     if $phase >= Marpa::Internal::Phase::RECOGNIZING;
                 $grammar->[Marpa::Internal::Grammar::DEFAULT_NULL_VALUE] =
                     $value;
             } ## end when ('default_null_value')
             when ('default_action') {
-                croak( "$option option not allowed in ",
+                Marpa::exception( "$option option not allowed in ",
                     Marpa::Internal::Phase::description($phase) )
                     if $phase >= Marpa::Internal::Phase::RECOGNIZING;
                 $grammar->[Marpa::Internal::Grammar::DEFAULT_ACTION] = $value;
             } ## end when ('default_action')
             when ('default_lex_prefix') {
-                croak(
+                Marpa::exception(
                     "$option option not allowed after grammar is precomputed")
                     if $phase >= Marpa::Internal::Phase::PRECOMPUTED;
                 $grammar->[Marpa::Internal::Grammar::DEFAULT_LEX_PREFIX] =
                     $value;
             } ## end when ('default_lex_prefix')
             when ('default_lex_suffix') {
-                croak(
+                Marpa::exception(
                     "$option option not allowed after grammar is precomputed")
                     if $phase >= Marpa::Internal::Phase::PRECOMPUTED;
                 $grammar->[Marpa::Internal::Grammar::DEFAULT_LEX_SUFFIX] =
                     $value;
             } ## end when ('default_lex_suffix')
             when ('ambiguous_lex') {
-                croak(
+                Marpa::exception(
                     "$option option not allowed after grammar is precomputed")
                     if $phase >= Marpa::Internal::Phase::PRECOMPUTED;
                 $grammar->[Marpa::Internal::Grammar::AMBIGUOUS_LEX] = $value;
             } ## end when ('ambiguous_lex')
             when ('strip') {
-                croak( "$option option not allowed in ",
+                Marpa::exception( "$option option not allowed in ",
                     Marpa::Internal::Phase::description($phase) )
                     if $phase >= Marpa::Internal::Phase::EVALUATING;
                 $grammar->[Marpa::Internal::Grammar::STRIP] = $value;
@@ -998,8 +973,18 @@ sub Marpa::Grammar::set {
                     $grammar->[Marpa::Internal::Grammar::TRACING] = 1;
                 }
             } ## end when ('trace_lex_matches')
+            when ('trace_choices') {
+                Marpa::exception('trace_choice must be set to a number >= 0')
+                    unless $value =~ /\A\d+\z/xms;
+                $grammar->[Marpa::Internal::Grammar::TRACE_CHOICES] =
+                    $value + 0;
+                if ($value) {
+                    say {$trace_fh} "Setting $option option to $value";
+                    $grammar->[Marpa::Internal::Grammar::TRACING] = 1;
+                }
+            } ## end when ('trace_choices')
             when ('trace_values') {
-                croak('trace_values must be set to a number >= 0')
+                Marpa::exception('trace_values must be set to a number >= 0')
                     unless $value =~ /\A\d+\z/xms;
                 $grammar->[Marpa::Internal::Grammar::TRACE_VALUES] =
                     $value + 0;
@@ -1046,7 +1031,8 @@ sub Marpa::Grammar::set {
                 } ## end if ($value)
             } ## end when ('trace_predefineds')
             when ('trace_iterations') {
-                croak('trace_iterations must be set to a number >= 0')
+                Marpa::exception(
+                    'trace_iterations must be set to a number >= 0')
                     unless $value =~ /\A\d+\z/xms;
                 $grammar->[Marpa::Internal::Grammar::TRACE_ITERATIONS] =
                     $value + 0;
@@ -1075,10 +1061,10 @@ sub Marpa::Grammar::set {
                 }
             } ## end when ('trace_completions')
             when ('location_callback') {
-                croak('location callback not yet implemented');
+                Marpa::exception('location callback not yet implemented');
             }
             when ('opaque') {
-                croak('the opaque option has been removed');
+                Marpa::exception('the opaque option has been removed');
             }
             when ('cycle_action') {
                 #<<< perltidy gets confused
@@ -1088,14 +1074,14 @@ sub Marpa::Grammar::set {
                         '"cycle_action" option is useless after grammar is precomputed';
                 }
                 #>>>
-                croak("$option must be 'warn', 'quiet' or 'fatal'")
+                Marpa::exception("$option must be 'warn', 'quiet' or 'fatal'")
                     unless $value eq 'warn'
                         || $value eq 'quiet'
                         || $value eq 'fatal';
                 $grammar->[Marpa::Internal::Grammar::CYCLE_ACTION] = $value;
             } ## end when ('cycle_action')
             when ('cycle_depth') {
-                croak('cycle_depth option no longer implemented');
+                Marpa::exception('cycle_depth option no longer implemented');
             }
             when ('warnings') {
                 #<<< perltidy gets confused
@@ -1119,7 +1105,8 @@ sub Marpa::Grammar::set {
                     q{"inaccessible_ok" option is useless after grammar is precomputed};
                 }
                 #>>>
-                croak('value of inaccessible_ok option must be an array ref')
+                Marpa::exception(
+                    'value of inaccessible_ok option must be an array ref')
                     unless ref $value eq 'ARRAY';
                 $grammar->[Marpa::Internal::Grammar::INACCESSIBLE_OK] =
                     { map { ( $_, 1 ) } @{$value} };
@@ -1134,7 +1121,8 @@ sub Marpa::Grammar::set {
                     q{"unproductive_ok" option is useless after grammar is precomputed};
                 }
                 #>>>
-                croak('value of unproductive_ok option must be an array ref')
+                Marpa::exception(
+                    'value of unproductive_ok option must be an array ref')
                     unless ref $value eq 'ARRAY';
                 $grammar->[Marpa::Internal::Grammar::UNPRODUCTIVE_OK] =
                     { map { ( $_, 1 ) } @{$value} };
@@ -1143,7 +1131,7 @@ sub Marpa::Grammar::set {
                 $grammar->[Marpa::Internal::Grammar::CODE_LINES] = $value;
             }
             when ('allow_raw_source') {
-                croak( "$option option not allowed in ",
+                Marpa::exception( "$option option not allowed in ",
                     Marpa::Internal::Phase::description($phase) )
                     if $phase >= Marpa::Internal::Phase::RULES;
                 $grammar->[Marpa::Internal::Grammar::ALLOW_RAW_SOURCE] =
@@ -1153,31 +1141,31 @@ sub Marpa::Grammar::set {
                 $grammar->[Marpa::Internal::Grammar::MAX_PARSES] = $value;
             }
             when ('version') {
-                croak(
+                Marpa::exception(
                     "$option option not allowed after grammar is precomputed")
                     if $phase >= Marpa::Internal::Phase::PRECOMPUTED;
                 $grammar->[Marpa::Internal::Grammar::VERSION] = $value;
             } ## end when ('version')
             when ('semantics') {
-                croak(
+                Marpa::exception(
                     "$option option not allowed after grammar is precomputed")
                     if $phase >= Marpa::Internal::Phase::PRECOMPUTED;
                 $grammar->[Marpa::Internal::Grammar::SEMANTICS] = $value;
             } ## end when ('semantics')
             when ('lex_preamble') {
-                croak( "$option option not allowed in ",
+                Marpa::exception( "$option option not allowed in ",
                     Marpa::Internal::Phase::description($phase) )
                     if $phase >= Marpa::Internal::Phase::RECOGNIZING;
                 $grammar->[Marpa::Internal::Grammar::LEX_PREAMBLE] = $value;
             } ## end when ('lex_preamble')
             when ('preamble') {
-                croak( "$option option not allowed in ",
+                Marpa::exception( "$option option not allowed in ",
                     Marpa::Internal::Phase::description($phase) )
                     if $phase >= Marpa::Internal::Phase::RECOGNIZING;
                 $grammar->[Marpa::Internal::Grammar::PREAMBLE] = $value;
             } ## end when ('preamble')
             default {
-                croak("$_ is not an available Marpa option");
+                Marpa::exception("$_ is not an available Marpa option");
             }
         } ## end given
     } ## end while ( my ( $option, $value ) = each %{$args} )
@@ -1227,7 +1215,7 @@ sub Marpa::Grammar::precompute {
 
     my $problems = $grammar->[Marpa::Internal::Grammar::PROBLEMS];
     if ($problems) {
-        croak(
+        Marpa::exception(
             Marpa::show_problems($grammar),
             "Second attempt to precompute grammar with fatal problems\n",
             'Marpa cannot proceed'
@@ -1243,7 +1231,7 @@ sub Marpa::Grammar::precompute {
     }
 
     if ( $phase != Marpa::Internal::Phase::RULES ) {
-        croak(
+        Marpa::exception(
             "Attempt to precompute grammar in inappropriate state\nAttempt to precompute ",
             Marpa::Internal::Phase::description($phase)
         );
@@ -1342,7 +1330,7 @@ sub Marpa::Grammar::stringify {
 
     my $phase = $grammar->[Marpa::Internal::Grammar::PHASE];
     if ( $phase != Marpa::Internal::Phase::PRECOMPUTED ) {
-        croak(
+        Marpa::exception(
             "Attempt to stringify grammar in inappropriate state\nAttempt to stringify ",
             Marpa::Internal::Phase::description($phase)
         );
@@ -1350,7 +1338,7 @@ sub Marpa::Grammar::stringify {
 
     my $problems = $grammar->[Marpa::Internal::Grammar::PROBLEMS];
     if ($problems) {
-        croak(
+        Marpa::exception(
             Marpa::show_problems($grammar),
             "Attempt to stringify grammar with fatal problems\n",
             'Marpa cannot proceed'
@@ -1375,9 +1363,9 @@ sub Marpa::Grammar::unstringify {
     my $trace_fh            = shift;
     $trace_fh //= *STDERR;
 
-    croak('Attempt to unstringify undefined grammar')
+    Marpa::exception('Attempt to unstringify undefined grammar')
         unless defined $stringified_grammar;
-    croak('Arg to unstringify must be ref to SCALAR')
+    Marpa::exception('Arg to unstringify must be ref to SCALAR')
         if ref $stringified_grammar ne 'SCALAR';
 
     my $grammar;
@@ -1591,31 +1579,30 @@ sub Marpa::brief_virtual_rule {
     my $chaf_start       = $rule->[Marpa::Internal::Rule::CHAF_START];
     my $chaf_end         = $rule->[Marpa::Internal::Rule::CHAF_END];
     if ( not defined $chaf_start ) {
-        return "$rule_id, dot at $dot_position, virtual "
+        return "dot at $dot_position, virtual "
             . Marpa::brief_rule($original_rule)
             if defined $dot_position;
-        return "$rule_id, virtual " . Marpa::brief_rule($original_rule);
+        return 'virtual ' . Marpa::brief_rule($original_rule);
     } ## end if ( not defined $chaf_start )
-    my $text = "$rule_id, part of $original_rule_id: ";
+    my $text .= "(part of $original_rule_id) ";
     $text .= $original_lhs->[Marpa::Internal::Symbol::NAME] . ' -> ';
     if ( @{$original_rhs} ) {
         my @rhs_names =
             map { $_->[Marpa::Internal::Symbol::NAME] } @{$original_rhs};
-        my @chaf_portion;
         if ( defined $dot_position ) {
             my $dot_in_original = $dot_position + $chaf_start;
-            @chaf_portion = (
-                @rhs_names[ $chaf_start .. $dot_in_original ],
-                q{.}, @rhs_names[ $dot_in_original + 1 .. $chaf_end ],
-            );
+            given ( $dot_in_original - $chaf_end ) {
+                when (1) { $rhs_names[$chaf_end] .= q{ .}; }
+                when (2) { $rhs_names[-1]        .= q{ .}; }
+                default {
+                    $rhs_names[$dot_in_original] =
+                        q{. } . $rhs_names[$dot_in_original];
+                }
+            } ## end given
         } ## end if ( defined $dot_position )
-        else {
-            @chaf_portion = @rhs_names[ $chaf_start .. $chaf_end ];
-        }
-        $text .= join q{ },
-            @rhs_names[ 0 .. $chaf_start - 1 ], '{',
-            @chaf_portion, '}',
-            @rhs_names[ $chaf_end + 1 .. $#rhs_names ];
+        $rhs_names[$chaf_start] = '{ ' . $rhs_names[$chaf_start];
+        $rhs_names[$chaf_end] .= ' }';
+        $text .= join q{ }, @rhs_names;
     } ## end if ( @{$original_rhs} )
     return $text;
 } ## end sub Marpa::brief_virtual_rule
@@ -1908,7 +1895,7 @@ sub add_terminal {
             when ('suffix')   { $suffix        = $value; }
             when ('regex')    { $regex         = $value; }
             default {
-                croak(
+                Marpa::exception(
                     "Attempt to add terminal named $name with unknown option $key"
                 );
             }
@@ -1932,7 +1919,7 @@ sub add_terminal {
     if ( defined $symbol ) {
 
         if ( $symbol->[Marpa::Internal::Symbol::TERMINAL] ) {
-            croak("Attempt to add terminal twice: $name");
+            Marpa::exception("Attempt to add terminal twice: $name");
         }
 
         @{$symbol}[
@@ -2006,9 +1993,10 @@ sub assign_user_symbol {
     my $self = shift;
     my $name = shift;
     if ( my $type = ref $name ) {
-        croak("Symbol name was ref to $type; it must be a scalar string");
+        Marpa::exception(
+            "Symbol name was ref to $type; it must be a scalar string");
     }
-    croak("Symbol name $name ends in '_': that's not allowed")
+    Marpa::exception("Symbol name $name ends in '_': that's not allowed")
         if $name =~ /_\z/xms;
     return assign_symbol( $self, $name );
 } ## end sub assign_user_symbol
@@ -2031,7 +2019,7 @@ sub add_user_rule {
     my $rule_key = join q{,},
         map { $_->[Marpa::Internal::Symbol::ID] }
         ( $lhs_symbol, @{$rhs_symbols} );
-    croak( 'Duplicate rule: ',
+    Marpa::exception( 'Duplicate rule: ',
         $lhs_name, ' -> ', ( join q{ }, @{$rhs_names} ) )
         if exists $rule_hash->{$rule_key};
 
@@ -2040,13 +2028,13 @@ sub add_user_rule {
     $user_priority //= 0;
     my $max_priority = 1_000_000;
     if ( $user_priority > $max_priority ) {
-        croak(
+        Marpa::exception(
             "Rule priority ($user_priority) greater than maximum ($max_priority)"
         );
     }
     my $min_priority = -1_000_000;
     if ( $user_priority < $min_priority ) {
-        croak(
+        Marpa::exception(
             "Rule priority ($user_priority) less than minimum ($min_priority)"
         );
     }
@@ -2114,7 +2102,7 @@ sub add_rule {
             $lhs->[Marpa::Internal::Symbol::NAME], ' -> ',
             join( q{ }, map { $_->[Marpa::Internal::Symbol::NAME] } @{$rhs} ),
             "\n"
-            or croak('Could not print to trace file');
+            or Marpa::exception('Could not print to trace file');
     } ## end if ($trace_rules)
     return $new_rule;
 } ## end sub add_rule
@@ -2131,7 +2119,7 @@ sub add_user_rules {
                 my $arg_count = @{$rule};
 
                 if ( $arg_count > 4 or $arg_count < 1 ) {
-                    croak(
+                    Marpa::exception(
                         "Rule has $arg_count arguments: "
                             . join( ', ',
                             map { defined $_ ? $_ : 'undef' } @{$rule} )
@@ -2148,7 +2136,8 @@ sub add_user_rules {
                 add_rules_from_hash( $grammar, $rule );
             }
             default {
-                croak( 'Invalid rule reftype ', ( $_ ? $_ : 'undefined' ) );
+                Marpa::exception( 'Invalid rule reftype ',
+                    ( $_ ? $_ : 'undefined' ) );
             }
         } ## end given
 
@@ -2180,24 +2169,28 @@ sub add_rules_from_hash {
             when ('left_associative')  { $left_associative  = $value }
             when ('right_associative') { $left_associative  = !$value }
             when ('priority')          { $user_priority     = $value }
-            default { croak("Unknown option in counted rule: $option") };
+            default {
+                Marpa::exception("Unknown option in counted rule: $option");
+            };
         } ## end given
     } ## end while ( my ( $option, $value ) = each %{$options} )
 
-    croak('Only left associative sequences available')
+    Marpa::exception('Only left associative sequences available')
         unless $left_associative;
     given ($min) {
         when (undef) {;}
         when ( [ 0, 1 ] ) {;}
         default {
-            croak('If min is defined for a rule, it must be 0 or 1');
+            Marpa::exception(
+                'If min is defined for a rule, it must be 0 or 1');
         }
     } ## end given
 
     if ( scalar @{$rhs_names} == 0 or not defined $min ) {
 
         if ( defined $separator_name ) {
-            croak('separator defined for rule without repetitions');
+            Marpa::exception(
+                'separator defined for rule without repetitions');
         }
 
         # This is an ordinary, non-counted rule,
@@ -2227,7 +2220,7 @@ sub add_rules_from_hash {
         $min = 1;
     } ## end if ( $min == 0 )
 
-    croak('Only one rhs symbol allowed for counted rule')
+    Marpa::exception('Only one rhs symbol allowed for counted rule')
         if scalar @{$rhs_names} != 1;
 
     # create the rhs symbol
@@ -2266,7 +2259,7 @@ sub add_rules_from_hash {
             defined $separator ? ( $rhs, $separator, $rhs ) : ($rhs);
         my $rule_key = join q{,},
             map { $_->[Marpa::Internal::Symbol::ID] } ( $lhs, @key_rhs );
-        croak( 'Duplicate rule: ',
+        Marpa::exception( 'Duplicate rule: ',
             $lhs_name, q{ -> }, ( join q{,}, @{$rhs_names} ) )
             if exists $rule_hash->{$rule_key};
         $rule_hash->{$rule_key} = 1;
@@ -2291,7 +2284,7 @@ EO_CODE
 
             } ## end if ($left_associative)
             else {
-                croak('Only left associative sequences available');
+                Marpa::exception('Only left associative sequences available');
             }
             $rule_action .= $action;
         } ## end default
@@ -2331,7 +2324,7 @@ EO_CODE
         }
     } ## end if ($left_associative)
     else {
-        croak('Only left associative sequences available');
+        Marpa::exception('Only left associative sequences available');
     }
 
     add_rule( $grammar, $sequence, $counted_rhs, $rule_action,
@@ -2377,7 +2370,7 @@ sub add_user_terminals {
         if ( ref $terminal eq 'ARRAY' ) {
             my $arg_count = @{$terminal};
             if ( $arg_count > 2 or $arg_count < 1 ) {
-                croak('terminal must have 1 or 2 arguments');
+                Marpa::exception('terminal must have 1 or 2 arguments');
             }
             ( $lhs_name, $options ) = @{$terminal};
         } ## end if ( ref $terminal eq 'ARRAY' )
@@ -2395,9 +2388,10 @@ sub add_user_terminal {
     my $options = shift;
 
     if ( my $type = ref $name ) {
-        croak("Terminal name was ref to $type; it must be a scalar string");
+        Marpa::exception(
+            "Terminal name was ref to $type; it must be a scalar string");
     }
-    croak("Symbol name $name ends in '_': that's not allowed")
+    Marpa::exception("Symbol name $name ends in '_': that's not allowed")
         if $name =~ /_\z/xms;
     add_terminal( $grammar, $name, $options );
     return;
@@ -2408,9 +2402,9 @@ sub check_start {
     my $success = 1;
 
     my $start_name = $grammar->[Marpa::Internal::Grammar::START_NAME];
-    croak('No start symbol specified') unless defined $start_name;
+    Marpa::exception('No start symbol specified') unless defined $start_name;
     if ( my $ref_type = ref $start_name ) {
-        croak(
+        Marpa::exception(
             "Start symbol name specified as a ref to $ref_type, it should be a string"
         );
     }
@@ -2419,7 +2413,7 @@ sub check_start {
     my $start       = $symbol_hash->{$start_name};
 
     if ( not defined $start ) {
-        croak( 'Start symbol: ' . $start_name . ' not defined' );
+        Marpa::exception( 'Start symbol: ' . $start_name . ' not defined' );
     }
 
     my ( $lhs, $rhs, $terminal, $productive ) = @{$start}[
@@ -2662,7 +2656,8 @@ sub terminals_distinguished {
     my $rules = $grammar->[Marpa::Internal::Grammar::RULES];
     RULE: for my $rule ( @{$rules} ) {
         next RULE if scalar @{ $rule->[Marpa::Internal::Rule::RHS] };
-        croak('A grammar with empty rules must mark its terminals');
+        Marpa::exception(
+            'A grammar with empty rules must mark its terminals');
     }
     return 0;
 } ## end sub terminals_distinguished
@@ -3112,12 +3107,12 @@ sub detect_cycle {
                 print {$trace_fh}
                     'Cycle found involving rule: ',
                     Marpa::brief_rule($warning_rule), "\n"
-                    or croak('Could not print to trace file');
+                    or Marpa::exception('Could not print to trace file');
             } ## end if ( $warn_on_cycle and defined $warning_rule )
         } ## end if ( $start_symbol_id == $derived_symbol_id || ...
     } ## end while ( my $unit_rule_data = pop @unit_rules )
 
-    croak('Cycle in grammar, fatal error')
+    Marpa::exception('Cycle in grammar, fatal error')
         if $cycle_count and $cycle_is_fatal;
 
     return 1;
@@ -3471,7 +3466,7 @@ sub create_QDFA {
     my $initial_NFA_states =
         $NFA_s0->[Marpa::Internal::NFA::TRANSITION]->{q{}};
     if ( not defined $initial_NFA_states ) {
-        croak('Empty NFA, cannot create QDFA');
+        Marpa::exception('Empty NFA, cannot create QDFA');
     }
     $grammar->[Marpa::Internal::Grammar::START_STATES] =
         assign_QDFA_state_set( $grammar, $initial_NFA_states );
@@ -4027,7 +4022,7 @@ in_file($_, 'author.t/misc.t');
 
 =end Marpa::Test::Display:
 
-    my $grammar = new Marpa::Grammar();
+    my $grammar = Marpa::Grammar->new();
 
 Z<>
 
@@ -4038,7 +4033,7 @@ in_file($_, 't/equation_s.t');
 
 =end Marpa::Test::Display:
 
-    my $grammar = new Marpa::Grammar(
+    my $grammar = Marpa::Grammar->new(
 	{ max_parses => 10, mdl_source => \$source, } );
 
 C<Marpa::Recognizer::new> has one, optional, argument --

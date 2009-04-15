@@ -6,7 +6,6 @@ use lib 'lib';
 use lib 't/lib';
 use Test::More;
 use Fatal qw(close open waitpid);
-use Carp;
 use English qw( -no_match_vars );
 use Config;
 use IPC::Open3;
@@ -14,10 +13,10 @@ use IPC::Open3;
 use Marpa::Test;
 
 if ( $Config{'d_fork'} ) {
-    plan tests => 2;
+    Test::More::plan tests => 2;
 }
 else {
-    plan skip_all => 'Fork required to test examples';
+    Test::More::plan skip_all => 'Fork required to test examples';
     exit 0;
 }
 
@@ -37,8 +36,8 @@ exit 0
 END_OF_SCRIPT
 
 my ( $wtr, $rdr, $err );
-my $pid = open3( $wtr, $rdr, $err, 'sh' );
-print {$wtr} $script or croak("write to open3 failed: $ERRNO");
+my $pid = IPC::Open3::open3( $wtr, $rdr, $err, 'sh' );
+print {$wtr} $script or Marpa::exception("write to open3 failed: $ERRNO");
 close $wtr;
 waitpid $pid, 0;
 

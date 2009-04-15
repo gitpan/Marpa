@@ -20,7 +20,6 @@ use strict;
 use warnings;
 use Marpa;
 use Marpa::MDL;
-use Carp;
 use Fatal qw(open close);
 use English qw( -no_match_vars ) ;
 
@@ -37,7 +36,7 @@ my $new_default_lex_prefix;
 my %strings;
 
 sub usage {
-   croak("usage: $0 grammar-file\n");
+   Marpa::exception("usage: $0 grammar-file\n");
 }
 
 my $argc = @ARGV;
@@ -50,7 +49,7 @@ my $trailer_file_name = shift @ARGV;
 # This is the end of bootstrap_header.pl
 $new_semantics = 'perl5';
 
-$new_version = '0.001_008';
+$new_version = '0.001_009';
 
 $new_start_symbol = 'grammar';
 
@@ -1062,13 +1061,13 @@ $new_start_symbol //= '(undefined start symbol)';
 $new_semantics //= 'not defined';
 $new_version //= 'not defined';
 
-croak('Version requested is ', $new_version, "\nVersion must match ", $Marpa::VERSION, ' exactly.')
+Marpa::exception('Version requested is ', $new_version, "\nVersion must match ", $Marpa::VERSION, ' exactly.')
    unless $new_version eq $Marpa::VERSION;
 
-croak('Semantics are ', $new_semantics, "\nThe only semantics currently available are perl5.")
+Marpa::exception('Semantics are ', $new_semantics, "\nThe only semantics currently available are perl5.")
    unless $new_semantics eq 'perl5';
 
-my $g = new Marpa::Grammar({
+my $g = Marpa::Grammar->new({
     start => $new_start_symbol,
     rules => $new_rules,
     terminals => $new_terminals,
@@ -1093,7 +1092,7 @@ $g->set({
 
 $g->precompute();
 
-my $recce = new Marpa::Recognizer({
+my $recce = Marpa::Recognizer->new({
    grammar=> $g,
    preamble => $new_preamble,
    lex_preamble => $new_lex_preamble,
@@ -1120,7 +1119,7 @@ my $spec;
 
 {
     local($RS) = undef;
-    open my $grammar, '<', $grammar_file_name or croak("Cannot open $grammar_file_name: $ERRNO");
+    open my $grammar, '<', $grammar_file_name or Marpa::exception("Cannot open $grammar_file_name: $ERRNO");
     $spec = <$grammar>;
     close $grammar;
     if ((my $earleme = $recce->text(\$spec)) >= 0) {
@@ -1139,8 +1138,8 @@ my $spec;
 
 $recce->end_input();
 
-my $evaler = new Marpa::Evaluator( { recce => $recce } );
-croak('No parse') unless $evaler;
+my $evaler = Marpa::Evaluator->new( { recce => $recce } );
+Marpa::exception('No parse') unless $evaler;
 
 sub slurp {
     open my $fh, '<', shift;
@@ -1159,7 +1158,7 @@ if ($header_file_name)
     {
         # explicit STDOUT is workaround for perlcritic bug
         print {*STDOUT} $header
-            or croak("print failed: $ERRNO");
+            or Marpa::exception("print failed: $ERRNO");
     }
 }
 
@@ -1173,7 +1172,7 @@ if ($trailer_file_name)
     {
         # explicit STDOUT is workaround for perlcritic bug
         print {*STDOUT} $trailer
-            or croak("print failed: $ERRNO");
+            or Marpa::exception("print failed: $ERRNO");
     }
 }
 

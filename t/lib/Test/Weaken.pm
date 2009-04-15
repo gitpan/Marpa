@@ -36,7 +36,6 @@ of them, even implicitly.
 
 package Test::Weaken::Internal;
 
-use Carp;
 use Scalar::Util qw(refaddr reftype isweak weaken);
 
 sub follow {
@@ -151,7 +150,7 @@ sub Test::Weaken::new {
         }
 
         if ( ref $arg1 ne 'HASH' ) {
-            croak('arg to Test::Weaken::new is not HASH ref');
+            Marpa::Exception('arg to Test::Weaken::new is not HASH ref');
         }
 
         if ( defined $arg1->{constructor} ) {
@@ -176,24 +175,24 @@ sub Test::Weaken::new {
             for my $unknown_named_arg (@unknown_named_args) {
                 $message .= "Unknown named arg: '$unknown_named_arg'\n";
             }
-            croak( $message
+            Marpa::exception( $message
                     . 'Test::Weaken failed due to unknown named arg(s)' );
         }
 
     }    # UNPACK_ARGS
 
     if ( my $ref_type = ref $self->{constructor} ) {
-        croak('Test::Weaken: constructor must be CODE ref')
+        Marpa::exception('Test::Weaken: constructor must be CODE ref')
             unless ref $self->{constructor} eq 'CODE';
     }
 
     if ( my $ref_type = ref $self->{destructor} ) {
-        croak('Test::Weaken: destructor must be CODE ref')
+        Marpa::exception('Test::Weaken: destructor must be CODE ref')
             unless ref $self->{destructor} eq 'CODE';
     }
 
     if ( my $ref_type = ref $self->{ignore} ) {
-        croak('Test::Weaken: ignore must be CODE ref')
+        Marpa::exception('Test::Weaken: ignore must be CODE ref')
             unless ref $self->{ignore} eq 'CODE';
     }
 
@@ -281,7 +280,7 @@ sub Test::Weaken::unfreed_proberefs {
     my $test   = shift;
     my $result = $test->{unfreed_probes};
     if ( not defined $result ) {
-        croak('Results not available for this Test::Weaken object');
+        Marpa::exception('Results not available for this Test::Weaken object');
     }
     return $result;
 }
@@ -290,7 +289,7 @@ sub Test::Weaken::unfreed_count {
     my $test   = shift;
     my $result = $test->{unfreed_probes};
     if ( not defined $result ) {
-        croak('Results not available for this Test::Weaken object');
+        Marpa::exception('Results not available for this Test::Weaken object');
     }
     return scalar @{$result};
 }
@@ -299,7 +298,7 @@ sub Test::Weaken::probe_count {
     my $test  = shift;
     my $count = $test->{probe_count};
     if ( not defined $count ) {
-        croak('Results not available for this Test::Weaken object');
+        Marpa::exception('Results not available for this Test::Weaken object');
     }
     return $count;
 }
@@ -308,7 +307,7 @@ sub Test::Weaken::weak_probe_count {
     my $test  = shift;
     my $count = $test->{weak_probe_count};
     if ( not defined $count ) {
-        croak('Results not available for this Test::Weaken object');
+        Marpa::exception('Results not available for this Test::Weaken object');
     }
     return $count;
 }
@@ -317,7 +316,7 @@ sub Test::Weaken::strong_probe_count {
     my $test  = shift;
     my $count = $test->{strong_probe_count};
     if ( not defined $count ) {
-        croak('Results not available for this Test::Weaken object');
+        Marpa::exception('Results not available for this Test::Weaken object');
     }
     return $count;
 }
@@ -329,13 +328,13 @@ sub Test::Weaken::check_ignore {
 
     $max_errors = 1 if not defined $max_errors;
     if ( not Scalar::Util::looks_like_number($max_errors) ) {
-        croak('Test::Weaken::check_ignore max_errors must be a number');
+        Marpa::exception('Test::Weaken::check_ignore max_errors must be a number');
     }
     $max_errors = 0 if $max_errors <= 0;
 
     $reporting_depth = -1 if not defined $reporting_depth;
     if ( not Scalar::Util::looks_like_number($reporting_depth) ) {
-        croak('Test::Weaken::check_ignore reporting_depth must be a number');
+        Marpa::exception('Test::Weaken::check_ignore reporting_depth must be a number');
     }
     $reporting_depth = -1 if $reporting_depth < 0;
 
@@ -343,7 +342,7 @@ sub Test::Weaken::check_ignore {
     if ( not Scalar::Util::looks_like_number($compare_depth)
         or $compare_depth < 0 )
     {
-        croak(
+        Marpa::exception(
             'Test::Weaken::check_ignore compare_depth must be a non-negative number'
         );
     }
@@ -418,7 +417,7 @@ sub Test::Weaken::check_ignore {
         if ( $max_errors > 0 and $error_count >= $max_errors ) {
             $message
                 .= "Terminating ignore callbacks after finding $error_count error(s)";
-            croak($message);
+            Marpa::exception($message);
         }
 
         carp( $message . 'Above errors reported' );
@@ -448,7 +447,6 @@ is_file($_, 't/synopsis.t', 'synopsis')
     use Data::Dumper;
     use Math::BigInt;
     use Math::BigFloat;
-    use Carp;
     use English qw( -no_match_vars );
 
     my $good_test = sub {
@@ -458,11 +456,11 @@ is_file($_, 't/synopsis.t', 'synopsis')
     };
 
     if ( !leaks($good_test) ) {
-        print "No leaks in test 1\n" or croak("Cannot print to STDOUT: $ERRNO");
+        print "No leaks in test 1\n" or Marpa::exception("Cannot print to STDOUT: $ERRNO");
     }
     else {
         print "There were memory leaks from test 1!\n"
-            or croak("Cannot print to STDOUT: $ERRNO");
+            or Marpa::exception("Cannot print to STDOUT: $ERRNO");
     }
 
     my $bad_test = sub {
@@ -483,12 +481,12 @@ is_file($_, 't/synopsis.t', 'synopsis')
         my $unfreed_count     = @{$unfreed_proberefs};
         printf "Test 2: %d of %d original references were not freed\n",
             $test->unfreed_count(), $test->probe_count()
-            or croak("Cannot print to STDOUT: $ERRNO");
+            or Marpa::exception("Cannot print to STDOUT: $ERRNO");
         print "These are the probe references to the unfreed objects:\n"
-            or croak("Cannot print to STDOUT: $ERRNO");
+            or Marpa::exception("Cannot print to STDOUT: $ERRNO");
         for my $proberef ( @{$unfreed_proberefs} ) {
             print Data::Dumper->Dump( [$proberef], ['unfreed'] )
-                or croak("Cannot print to STDOUT: $ERRNO");
+                or Marpa::exception("Cannot print to STDOUT: $ERRNO");
         }
     }
 
@@ -802,7 +800,7 @@ is_file($_, 't/snippet.t', 'leaks snippet')
         }
     );
     if ($test) {
-        print "There are leaks\n" or croak("Cannot print to STDOUT: $ERRNO");
+        print "There are leaks\n" or Marpa::exception("Cannot print to STDOUT: $ERRNO");
     }
 
 =begin Marpa::Test::Display:
@@ -963,12 +961,12 @@ is_file($_, 't/snippet.t', 'unfreed_proberefs snippet')
         my $unfreed_count     = @{$unfreed_proberefs};
         printf "%d of %d references were not freed\n",
             $test->unfreed_count(), $test->probe_count()
-            or croak("Cannot print to STDOUT: $ERRNO");
+            or Marpa::exception("Cannot print to STDOUT: $ERRNO");
         print "These are the probe references to the unfreed objects:\n"
-            or croak("Cannot print to STDOUT: $ERRNO");
+            or Marpa::exception("Cannot print to STDOUT: $ERRNO");
         for my $proberef ( @{$unfreed_proberefs} ) {
             print Data::Dumper->Dump( [$proberef], ['unfreed'] )
-                or croak("Cannot print to STDOUT: $ERRNO");
+                or Marpa::exception("Cannot print to STDOUT: $ERRNO");
         }
     }
 
@@ -1015,7 +1013,7 @@ is_file($_, 't/snippet.t', 'unfreed_count snippet')
     my $test = Test::Weaken::leaks( sub { new Buggy_Object } );
     next TEST if not $test;
     printf "%d objects were not freed\n", $test->unfreed_count(),
-        or croak("Cannot print to STDOUT: $ERRNO");
+        or Marpa::exception("Cannot print to STDOUT: $ERRNO");
 
 =begin Marpa::Test::Display:
 
@@ -1048,7 +1046,7 @@ is_file($_, 't/snippet.t', 'probe_count snippet')
         next TEST if not $test;
         printf "%d of %d objects were not freed\n",
             $test->unfreed_count(), $test->probe_count()
-            or croak("Cannot print to STDOUT: $ERRNO");
+            or Marpa::exception("Cannot print to STDOUT: $ERRNO");
 
 =begin Marpa::Test::Display:
 
@@ -1085,7 +1083,7 @@ is_file($_, 't/snippet.t', 'weak_probe_count snippet')
             @{ $test->unfreed_proberefs() };
         printf "%d of %d weak references were not freed\n",
             $weak_unfreed_reference_count, $test->weak_probe_count(),
-            or croak("Cannot print to STDOUT: $ERRNO");
+            or Marpa::exception("Cannot print to STDOUT: $ERRNO");
 
 =begin Marpa::Test::Display:
 
@@ -1130,10 +1128,10 @@ is_file($_, 't/snippet.t', 'strong_probe_count snippet')
 
     printf "%d of %d strong objects were not freed\n",
         $strong_unfreed_object_count, $test->strong_probe_count(),
-        or croak("Cannot print to STDOUT: $ERRNO");
+        or Marpa::exception("Cannot print to STDOUT: $ERRNO");
     printf "%d of the unfreed strong objects were references\n",
         $strong_unfreed_reference_count
-        or croak("Cannot print to STDOUT: $ERRNO");
+        or Marpa::exception("Cannot print to STDOUT: $ERRNO");
 
 =begin Marpa::Test::Display:
 
@@ -1175,7 +1173,7 @@ is_file($_, 't/snippet.t', 'new snippet')
 
     my $test = new Test::Weaken( sub { new My_Object } );
     printf "There were %s leaks\n", $test->test()
-        or croak("Cannot print to STDOUT: $ERRNO");
+        or Marpa::exception("Cannot print to STDOUT: $ERRNO");
     my $proberefs            = $test->unfreed_proberefs();
     my $unfreed_count        = 0;
     my $weak_unfreed_count   = 0;
@@ -1190,13 +1188,13 @@ is_file($_, 't/snippet.t', 'new snippet')
         }
     }
     printf "%d of %d objects freed\n", $unfreed_count, $test->probe_count()
-        or croak("Cannot print to STDOUT: $ERRNO");
+        or Marpa::exception("Cannot print to STDOUT: $ERRNO");
     printf "%d of %d weak references freed\n", $weak_unfreed_count,
         $test->weak_probe_count()
-        or croak("Cannot print to STDOUT: $ERRNO");
+        or Marpa::exception("Cannot print to STDOUT: $ERRNO");
     printf "%d of %d other objects freed\n", $strong_unfreed_count,
         $test->strong_probe_count()
-        or croak("Cannot print to STDOUT: $ERRNO");
+        or Marpa::exception("Cannot print to STDOUT: $ERRNO");
 
 =begin Marpa::Test::Display:
 
@@ -1235,7 +1233,7 @@ is_file($_, 't/snippet.t', 'test snippet')
         }
     );
     printf "There are %s\n", ( $test->test() ? 'leaks' : 'no leaks' )
-        or croak("Cannot print to STDOUT: $ERRNO");
+        or Marpa::exception("Cannot print to STDOUT: $ERRNO");
 
 The C<test> method should only be called on a C<Test::Weaken> object just
 returned from the C<new> constructor.
@@ -1385,7 +1383,7 @@ B<lab rat>.
 The second, optional argument, is the maximum error count.
 Below this count, errors are reported as warnings using C<carp>.
 When the maximum error count is reached, an
-exception is thrown using C<croak>.
+exception is thrown using C<Marpa::exception>.
 The maximum error count, if defined,
 must be an number greater than or equal to 0.
 By default the maximum error count is 1,
@@ -1444,7 +1442,7 @@ If either comparison shows a difference,
 the wrapper treats it as a problem, and
 produces an error message.
 This error message is either a C<carp> warning or a
-C<croak> exception, depending on the number of error
+C<Marpa::exception> exception, depending on the number of error
 messages already reported and the setting of the
 maximum error count.
 If the reporting depth is a non-negative number, the error

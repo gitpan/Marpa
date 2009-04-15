@@ -5,19 +5,18 @@ use strict;
 use warnings;
 use lib 'lib';
 use lib 't/lib';
-use Carp;
 use Test::More tests => 8;
 use Marpa::Test;
 
 BEGIN {
-    use_ok('Marpa');
+    Test::More::use_ok('Marpa');
 }
 
 # The example grammar in Aycock/Horspool "Practical Earley Parsing",
 # _The Computer Journal_, Vol. 45, No. 6, pp. 620-630
 # This time testing the stripped output
 
-my $g = new Marpa::Grammar(
+my $g = Marpa::Grammar->new(
     {   start => q{S'},
         rules => [
             [ q{S'}, [qw/S/] ],

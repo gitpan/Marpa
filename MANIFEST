@@ -30,6 +30,7 @@ lib/Marpa/Lex.pm
 lib/Marpa/MDL.pm
 lib/Marpa/Grammar.pm
 lib/Marpa/Evaluator.pm
+lib/Marpa/Internal.pm
 lib/Marpa/Offset.pm
 lib/Marpa/Recognizer.pm
 lib/Marpa/Raw_Source.pm

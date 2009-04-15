@@ -65,7 +65,7 @@ Paragraphs contain sentences, which must end in a period.
 There are definition paragraphs, production paragraphs and terminal paragraphs.
 Here's an example of a definition paragraph:
 
-    semantics are perl5.  version is 0.001_008.  the start symbol is
+    semantics are perl5.  version is 0.001_009.  the start symbol is
     grammar.
 
 =head2 MDL Keywords
@@ -279,7 +279,7 @@ once Perl 6 becomes the default.
 
 =head2 Version Definition
 
-    version is 0.001_008.
+    version is 0.001_009.
 
 The version definition is also not optional,
 The version has to match B<exactly>.
@@ -797,7 +797,7 @@ Marpa will use the length you returned for the match to
 set C<pos $$STRING> when it wants to move lexing forward.
 
 =item * Return failure with a bare C<return>.
-If you need to throw an exception, use C<croak()>.
+If you need to throw an exception, use C<Marpa::exception()>.
 
 =item * On success, return an array of two elements.
 The first element must be the value of the token at the match.

@@ -8,18 +8,17 @@ use 5.010;
 use strict;
 use warnings;
 
-use Test::More tests => 16;
+use Test::More tests => 20;
 
 use lib 'lib';
 use lib 't/lib';
-use Carp;
 use Marpa::Test;
 
 BEGIN {
-    use_ok('Marpa');
+    Test::More::use_ok('Marpa');
 }
 
-my $grammar = new Marpa::Grammar(
+my $grammar = Marpa::Grammar->new(
     {   precompute => 0,
         start      => 'S',
         strip      => 0,
@@ -263,7 +262,7 @@ St15: pri=0.1; 8
 S ::= A[] S[R0:1][x6] .
 EOS
 
-my $recce = new Marpa::Recognizer( { grammar => $grammar, clone => 0 } );
+my $recce = Marpa::Recognizer->new( { grammar => $grammar, clone => 0 } );
 
 my $set0_new = <<'EOS';
 Earley Set 0
@@ -347,7 +346,7 @@ Marpa::Test::is(
 );
 
 my $a = $grammar->get_symbol('a');
-$recce->earleme( [ $a, 'a', 1 ] ) or croak('Parsing exhausted');
+$recce->earleme( [ $a, 'a', 1 ] ) or Marpa::exception('Parsing exhausted');
 
 Marpa::Test::is(
     $recce->show_earley_sets(1),
@@ -355,7 +354,7 @@ Marpa::Test::is(
     'Aycock/Horspool Parse Status at 0'
 );
 
-$recce->earleme( [ $a, 'a', 1 ] ) or croak('Parsing exhausted');
+$recce->earleme( [ $a, 'a', 1 ] ) or Marpa::exception('Parsing exhausted');
 
 Marpa::Test::is(
     $recce->show_earley_sets(1),
@@ -363,7 +362,7 @@ Marpa::Test::is(
     'Aycock/Horspool Parse Status at 1'
 );
 
-$recce->earleme( [ $a, 'a', 1 ] ) or croak('Parsing exhausted');
+$recce->earleme( [ $a, 'a', 1 ] ) or Marpa::exception('Parsing exhausted');
 
 Marpa::Test::is(
     $recce->show_earley_sets(1),
@@ -371,7 +370,7 @@ Marpa::Test::is(
     'Aycock/Horspool Parse Status at 2'
 );
 
-$recce->earleme( [ $a, 'a', 1 ] ) or croak('Parsing exhausted');
+$recce->earleme( [ $a, 'a', 1 ] ) or Marpa::exception('Parsing exhausted');
 
 Marpa::Test::is(
     $recce->show_earley_sets(1),
@@ -387,28 +386,18 @@ Marpa::Test::is(
     'Aycock/Horspool Parse Status at 4'
 );
 
-my $failure_count = 0;
-my $total_count   = 0;
-my @answer        = ( q{}, qw[(a;;;) (a;a;;) (a;a;a;) (a;a;a;a)] );
+my @answer = ( q{}, qw[(a;;;) (a;a;;) (a;a;a;) (a;a;a;a)] );
 
 for my $i ( 0 .. 4 ) {
-    my $evaler = new Marpa::Evaluator(
+    my $evaler = Marpa::Evaluator->new(
         {   recce => $recce,
             end   => $i,
             clone => 0,
         }
     );
     my $result = $evaler->value();
-    $total_count++;
-    if ( $answer[$i] ne ${$result} ) {
-        diag( 'got ' . ${$result} . ', expected ' . $answer[$i] . "\n" );
-        $failure_count++;
-    }
+    Test::More::is( ${$result}, $answer[$i], "parse permutation $i" );
 } ## end for my $i ( 0 .. 4 )
-
-ok( !$failure_count,
-    ( $total_count - $failure_count )
-        . " of $total_count parse permutations succeeded" );
 
 # Local Variables:
 #   mode: cperl

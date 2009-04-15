@@ -567,12 +567,13 @@ evaluator's parse criteria.
 In other general parsers,
 a parse forest has been used to store ambiguous parses.
 Marpa's parse bocage is an adaptation of a parse forest.
-Parse bocages differ from parse forests in three ways:
-parse bocages may contain cycles;
-and-nodes and or-nodes strictly alternate in a parse bocage;
-and
-in parse bocages
-and-nodes are limited to two rhs symbols.
+Parse bocages differ from parse forests in three ways.
+First, parse bocages may contain cycles.
+Second, and-nodes and or-nodes strictly alternate in a parse bocage.
+That is, every direct child of an and-node is an or-node,
+and every direct child of an or-node is an and-node.
+Third,
+and-nodes in a parse bocage have at most two rhs symbols.
 
 Parse forests and parse bocages both 
 consist of and-nodes and or-nodes.
@@ -882,7 +883,7 @@ in the C<show_symbols> output.)
 
 =head2 Naming And-Nodes
 
-An and-node is always a child of an or-node.
+An and-node is always a child of exactly one or-node.
 The name of an and-node is the name of the parent or-node,
 followed by a numerical index in square brackets.
 The child and-nodes are numbered starting at 0.
@@ -1447,7 +1448,7 @@ is_file($_, 'example/equation.marpa');
 =end Marpa::Test::Display:
 
 
-    semantics are perl5.  version is 0.001_008.
+    semantics are perl5.  version is 0.001_009.
 
     start symbol is E.
 
@@ -1466,7 +1467,7 @@ is_file($_, 'example/equation.marpa');
 		} elsif ($op eq "-") {
 		   $value = $left_value - $right_value;
 		} else {
-		   croak("Unknown op: $op");
+		   Marpa::exception("Unknown op: $op");
 		}
 		"(" . $left_string . $op . $right_string . ")==" . $value;
     }.

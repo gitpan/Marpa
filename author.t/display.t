@@ -5,13 +5,14 @@ use warnings;
 use strict;
 use English qw( -no_match_vars );
 use Fatal qw(open close);
-use Carp;
+use lib 'lib';
+use Marpa;
 use Getopt::Long qw(GetOptions);
 use Test::More;
 
 my $warnings = 0;
 my $options_result = GetOptions( 'warnings' => \$warnings );
-croak("$PROGRAM_NAME options parsing failed")
+Marpa::exception("$PROGRAM_NAME options parsing failed")
     unless $options_result;
 
 package Marpa::Test::Display;
@@ -20,7 +21,6 @@ package Marpa::Test::Display;
 @Marpa::Test::Display::EXPORT_OK = qw(test_file);
 
 use Text::Diff;
-use Carp;
 use Fatal qw(close);
 use English qw( -no_match_vars );
 
@@ -63,7 +63,7 @@ sub slurp {
     if ( not $open_result ) {
         $Marpa::Test::Display::FILE_ERROR = my $message =
             "Cannot open $file_name: $ERRNO";
-        carp($message);
+        Carp::carp($message);
         return \$message;
     } ## end if ( not $open_result )
     local ($RS) = undef;
@@ -113,7 +113,8 @@ sub read_file {
         if not defined $display_name;
     my $display_ref = $normalized_display{$file_name}{$display_name};
     if ( not defined $display_ref ) {
-        croak("No display named '$display_name' in file: $file_name");
+        Marpa::exception(
+            "No display named '$display_name' in file: $file_name");
     }
     $normalized_display_uses{$file_name}{$display_name}++;
     return $display_ref;
@@ -170,7 +171,7 @@ sub is_file {
     return (
         (   $header
                 . (
-                diff \$pod_display,
+                Text::Diff::diff \$pod_display,
                 $raw_file_display,
                 { STYLE => 'Table' }
                 )
@@ -192,12 +193,12 @@ sub test_file {
     my $mismatch_count = 0;
     my $mismatches     = q{};
 
-    my $parser = new MyParser();
+    my $parser = MyParser->new();
     $parser->parse_from_file($file);
     ## no critic (BuiltinFunctions::ProhibitStringyEval)
     my $eval_result = eval $PREAMBLE;
     ## use critic
-    croak($EVAL_ERROR) unless $eval_result;
+    Marpa::exception($EVAL_ERROR) unless $eval_result;
 
     for my $display_test (@Marpa::Test::Display::DISPLAY) {
         my ( $display, $code, $display_file, $display_line ) =
@@ -279,7 +280,7 @@ sub process_instruction {
 
     if ( $instruction =~ / ^ next \s+ (\d+) \s+ display(s)? $ /xms ) {
         $Marpa::Test::Display::COMMAND_COUNTDOWN = $1;
-        croak(
+        Marpa::exception(
             "File: $Marpa::Test::Display::CURRENT_FILE  Line: $line_num\n",
             "  'next $Marpa::Test::Display::COMMAND_COUNTDOWN display' has countdown less than one\n"
         ) if $Marpa::Test::Display::COMMAND_COUNTDOWN < 1;
@@ -308,7 +309,7 @@ sub process_instruction {
 
     if ( $instruction =~ / ^ skip \s+ (\d+) \s+ display(s)? $ /xms ) {
         $Marpa::Test::Display::COMMAND_COUNTDOWN = $1;
-        croak(
+        Marpa::exception(
             "File: $Marpa::Test::Display::CURRENT_FILE  Line: $line_num\n",
             "  'display $Marpa::Test::Display::COMMAND_COUNTDOWN skip' has countdown less than one\n"
         ) if $Marpa::Test::Display::COMMAND_COUNTDOWN < 1;
@@ -333,7 +334,7 @@ sub process_instruction {
         return;
     } ## end if ( $instruction =~ / ^ end \s+ display $ /xms )
 
-    croak(
+    Marpa::exception(
         "Unrecognized instruction in file $Marpa::Test::Display::CURRENT_FILE at line $line_num: $instruction\n"
     );
 
@@ -355,7 +356,7 @@ sub textblock {
             $found_instruction = 1;
             next LINE;
         } ## end if ( $line =~ /\A[#][#]/xms )
-        croak(
+        Marpa::exception(
             "File: $Marpa::Test::Display::CURRENT_FILE  Line: $line_num\n",
             "test block doesn't begin with ## instruction\n$paragraph"
         ) if not $found_instruction;
@@ -398,7 +399,7 @@ my @test_files = @ARGV;
 my $debug_mode = scalar @test_files;
 if ( not $debug_mode ) {
     open my $manifest, '<', 'MANIFEST'
-        or croak("Cannot open MANIFEST: $ERRNO");
+        or Marpa::exception("Cannot open MANIFEST: $ERRNO");
     FILE: while ( my $file = <$manifest> ) {
         chomp $file;
         $file =~ s/\s*[#].*\z//xms;
@@ -418,23 +419,23 @@ if ( not $debug_mode ) {
     close $manifest;
 } ## end if ( not $debug_mode )
 
-plan tests => 1 + scalar @test_files;
+Test::More::plan tests => 1 + scalar @test_files;
 
 my $error_file;
 ## no critic (InputOutput::RequireBriefOpen)
 if ($debug_mode) {
     open $error_file, '>&STDOUT'
-        or croak("Cannot dup STDOUT: $ERRNO");
+        or Marpa::exception("Cannot dup STDOUT: $ERRNO");
 }
 else {
     open $error_file, '>', 'author.t/display.errs'
-        or croak("Cannot open display.errs: $ERRNO");
+        or Marpa::exception("Cannot open display.errs: $ERRNO");
 }
 ## use critic
 
 FILE: for my $file (@test_files) {
     if ( not -f $file ) {
-        fail("attempt to test displays in non-file: $file");
+        Test::More::fail("attempt to test displays in non-file: $file");
         next FILE;
     }
 
@@ -447,10 +448,10 @@ FILE: for my $file (@test_files) {
         ? "displays match for $file"
         : "displays in $file has $mismatch_count mismatches";
 
-    ok( $clean, $message );
+    Test::More::ok( $clean, $message );
     next FILE if $clean;
     print {$error_file} "=== $file ===\n" . ${$mismatches}
-        or croak("print failed: $ERRNO");
+        or Marpa::exception("print failed: $ERRNO");
 } ## end for my $file (@test_files)
 
 my $unused       = q{};
@@ -463,11 +464,11 @@ while ( my ( $file_name, $displays ) = each %normalized_display_uses ) {
     }
 } ## end while ( my ( $file_name, $displays ) = each %normalized_display_uses)
 if ($unused_count) {
-    fail('$unused count displays not used');
+    Test::More::fail('$unused count displays not used');
     print {$error_file} "=== UNUSED DISPLAYS ===\n" . $unused
-        or croak("print failed: $ERRNO");
+        or Marpa::exception("print failed: $ERRNO");
 }
 else {
-    pass('all displays used');
+    Test::More::pass('all displays used');
 }
 close $error_file;

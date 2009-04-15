@@ -45,6 +45,8 @@ WriteMakefile(
 	    => '$(INST_LIB)/Marpa/Recognizer.pm',
 	'lib/Marpa/Evaluator.pm'
 	    => '$(INST_LIB)/Marpa/Evaluator.pm',
+	'lib/Marpa/Internal.pm'
+	    => '$(INST_LIB)/Marpa/Internal.pm',
 	'lib/Marpa.pm'
 	    => '$(INST_LIB)/Marpa.pm',
 	'lib/Marpa/trailer_Raw_Source.pm'

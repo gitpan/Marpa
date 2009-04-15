@@ -11,7 +11,6 @@ use strict;
 use warnings;
 use Marpa;
 use Marpa::MDL;
-use Carp;
 use Fatal qw(open close);
 use English qw( -no_match_vars ) ;
 
@@ -28,7 +27,7 @@ my $new_default_lex_prefix;
 my %strings;
 
 sub usage {
-   croak("usage: $0 grammar-file\n");
+   Marpa::exception("usage: $0 grammar-file\n");
 }
 
 my $argc = @ARGV;

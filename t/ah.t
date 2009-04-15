@@ -10,13 +10,12 @@ use lib 'lib';
 use lib 't/lib';
 use Test::More tests => 8;
 use Marpa::Test;
-use Carp;
 
 BEGIN {
-    use_ok('Marpa');
+    Test::More::use_ok('Marpa');
 }
 
-my $g = new Marpa::Grammar(
+my $g = Marpa::Grammar->new(
     {   start => q{S'},
         rules => [
             [ q{S'}, [qw/S/] ],

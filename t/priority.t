@@ -10,13 +10,12 @@ use warnings;
 
 use lib 'lib';
 use lib 't/lib';
-use Carp;
 
 use Test::More tests => 5;
 use Marpa::Test;
 
 BEGIN {
-    use_ok('Marpa');
+    Test::More::use_ok('Marpa');
 }
 
 # The inefficiency (at least some of it) is deliberate.
@@ -26,7 +25,7 @@ BEGIN {
 # apart at each step.  But I wanted to test having
 # a start symbol that appears repeatedly on the RHS.
 
-my $g = new Marpa::Grammar(
+my $g = Marpa::Grammar->new(
     {   start => 'S',
 
         # Set max_parses to 20 in case there's an infinite loop.
@@ -47,25 +46,26 @@ my $g = new Marpa::Grammar(
     }
 );
 
-my $recce = new Marpa::Recognizer( { grammar => $g, } );
+my $recce = Marpa::Recognizer->new( { grammar => $g, } );
 
 my @expected = qw(400 300 200 100);
 
 my $fail_offset = $recce->text( \('a') );
 if ( $fail_offset >= 0 ) {
-    croak("Parse failed at offset $fail_offset");
+    Marpa::exception("Parse failed at offset $fail_offset");
 }
 
 $recce->end_input();
 
-my $evaler = new Marpa::Evaluator( { recce => $recce } );
-croak('Could not initialize parse') unless $evaler;
+my $evaler = Marpa::Evaluator->new( { recce => $recce } );
+Marpa::exception('Could not initialize parse') unless $evaler;
 
 my $i = -1;
 while ( defined( my $value = $evaler->old_value() ) ) {
     $i++;
     if ( $i > $#expected ) {
-        fail( 'Minuses equation has extra value: ' . ${$value} . "\n" );
+        Test::More::fail(
+            'Minuses equation has extra value: ' . ${$value} . "\n" );
     }
     else {
         Marpa::Test::is( ${$value}, $expected[$i], "Priority Value $i" );

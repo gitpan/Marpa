@@ -7,45 +7,16 @@ no warnings 'recursion';
 use strict;
 
 BEGIN {
-    our $VERSION = '0.001_008';
+    our $VERSION = '0.001_009';
 }
 
 use integer;
 
+use Marpa::Internal;
 use Marpa::Grammar;
 use Marpa::Recognizer;
 use Marpa::Evaluator;
 use Marpa::Lex;
-
-use Carp;
-our @CARP_NOT = qw(
-    Marpa
-    Marpa::Evaluator
-    Marpa::Grammar
-    Marpa::Internal
-    Marpa::Internal::And_Node
-    Marpa::Internal::Earley_item
-    Marpa::Internal::Evaluator
-    Marpa::Internal::Evaluator::Rule
-    Marpa::Internal::Grammar
-    Marpa::Internal::Interface
-    Marpa::Internal::LR0_item
-    Marpa::Internal::Lex
-    Marpa::Internal::NFA
-    Marpa::Internal::Or_Node
-    Marpa::Internal::Or_Sapling
-    Marpa::Internal::Phase
-    Marpa::Internal::QDFA
-    Marpa::Internal::Recognizer
-    Marpa::Internal::Rule
-    Marpa::Internal::Source_Eval
-    Marpa::Internal::Source_Raw
-    Marpa::Internal::Symbol
-    Marpa::Internal::Tree_Node
-    Marpa::Lex
-    Marpa::MDL
-    Marpa::Recognizer
-);
 
 # Maybe MDL will be optional someday, but not today
 use Marpa::MDL;
@@ -99,8 +70,9 @@ CPAN modules don't follow his guidelines all that closely.
 =cut
 
 package Marpa::Internal;
+use Marpa::Internal;
 
-use Carp;
+my @CARP_NOT = @Marpa::Internal::CARP_NOT;
 
 our $STRINGIFIED_EVAL_ERROR;
 
@@ -136,20 +108,23 @@ sub Marpa::mdl {
     my $options = shift;
 
     my $ref = ref $grammar;
-    croak(qq{grammar arg to mdl() was ref type "$ref", must be string ref})
+    Marpa::exception(
+        qq{grammar arg to mdl() was ref type "$ref", must be string ref})
         unless $ref eq 'SCALAR';
 
     $ref = ref $text;
-    croak(qq{text arg to mdl() was ref type "$ref", must be string ref})
+    Marpa::exception(
+        qq{text arg to mdl() was ref type "$ref", must be string ref})
         unless $ref eq 'SCALAR';
 
     $options //= {};
     $ref = ref $options;
-    croak(qq{text arg to mdl() was ref type "$ref", must be hash ref})
+    Marpa::exception(
+        qq{text arg to mdl() was ref type "$ref", must be hash ref})
         unless $ref eq 'HASH';
 
-    my $g = new Marpa::Grammar( { mdl_source => $grammar, %{$options} } );
-    my $recce = new Marpa::Recognizer(
+    my $g = Marpa::Grammar->new( { mdl_source => $grammar, %{$options} } );
+    my $recce = Marpa::Recognizer->new(
         {   grammar => $g,
             clone   => 0
         }
@@ -157,18 +132,18 @@ sub Marpa::mdl {
 
     my $failed_at_earleme = $recce->text($text);
     if ( $failed_at_earleme >= 0 ) {
-        die_with_parse_failure( $text, $failed_at_earleme );
+        Marpa::die_with_parse_failure( $text, $failed_at_earleme );
     }
 
     $recce->end_input();
 
-    my $evaler = new Marpa::Evaluator(
+    my $evaler = Marpa::Evaluator->new(
         {   recce => $recce,
             clone => 0,
         }
     );
     if ( not defined $evaler ) {
-        die_with_parse_failure( $text, length $text );
+        Marpa::die_with_parse_failure( $text, length $text );
     }
     return $evaler->old_value if not wantarray;
     my @values;
@@ -213,7 +188,7 @@ is_file($_, 'example/synopsis.pl');
     say ${$value};
 
     __DATA__
-    semantics are perl5.  version is 0.001_008.  start symbol is Expression.
+    semantics are perl5.  version is 0.001_009.  start symbol is Expression.
 
     Expression: Expression, /[*]/, Expression.  priority 200.  q{
         $_[0] * $_[2]
@@ -550,7 +525,7 @@ should not be relied on or modified.
 =head2 Returns and Exceptions
 
 Most Marpa methods return only if successful.
-On failure they throw an exception using C<croak()>.
+On failure they throw an exception.
 If you don't want the exception to be fatal, catch it using C<eval>.
 A few failures are considered "non-exceptional" and returned.
 Non-exceptional failures are described in the documentation for the method which returns them.

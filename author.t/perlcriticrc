@@ -277,7 +277,7 @@ severity=5
 
 [Subroutines::RequireFinalReturn]
 severity=5
-terminal_funcs = bless
+terminal_funcs = Marpa::exception
 
 [TestingAndDebugging::ProhibitNoStrict]
 severity=5
@@ -383,3 +383,11 @@ severity=5
 [Variables::RequireNegativeIndices]
 severity=5
 
+[Subroutines::ProhibitCallsToUnexportedSubs]
+severity=1
+
+[Subroutines::ProhibitQualifiedSubDeclarations]
+severity=1
+
+[Modules::RequireExplicitInclusion]
+severity=1

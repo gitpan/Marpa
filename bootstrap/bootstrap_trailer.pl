@@ -4,10 +4,10 @@ $new_start_symbol //= '(undefined start symbol)';
 $new_semantics //= 'not defined';
 $new_version //= 'not defined';
 
-croak('Version requested is ', $new_version, "\nVersion must match ", $Marpa::VERSION, ' exactly.')
+Marpa::exception('Version requested is ', $new_version, "\nVersion must match ", $Marpa::VERSION, ' exactly.')
    unless $new_version eq $Marpa::VERSION;
 
-croak('Semantics are ', $new_semantics, "\nThe only semantics currently available are perl5.")
+Marpa::exception('Semantics are ', $new_semantics, "\nThe only semantics currently available are perl5.")
    unless $new_semantics eq 'perl5';
 
 my $g = new Marpa::Grammar({
@@ -62,7 +62,7 @@ my $spec;
 
 {
     local($RS) = undef;
-    open my $grammar, '<', $grammar_file_name or croak("Cannot open $grammar_file_name: $ERRNO");
+    open my $grammar, '<', $grammar_file_name or Marpa::exception("Cannot open $grammar_file_name: $ERRNO");
     $spec = <$grammar>;
     close $grammar;
     if ((my $earleme = $recce->text(\$spec)) >= 0) {
@@ -82,7 +82,7 @@ my $spec;
 $recce->end_input();
 
 my $evaler = new Marpa::Evaluator( { recce => $recce } );
-croak('No parse') unless $evaler;
+Marpa::exception('No parse') unless $evaler;
 
 sub slurp {
     open my $fh, '<', shift;
@@ -101,7 +101,7 @@ if ($header_file_name)
     {
         # explicit STDOUT is workaround for perlcritic bug
         print {*STDOUT} $header
-            or croak("print failed: $ERRNO");
+            or Marpa::exception("print failed: $ERRNO");
     }
 }
 
@@ -115,7 +115,7 @@ if ($trailer_file_name)
     {
         # explicit STDOUT is workaround for perlcritic bug
         print {*STDOUT} $trailer
-            or croak("print failed: $ERRNO");
+            or Marpa::exception("print failed: $ERRNO");
     }
 }
 

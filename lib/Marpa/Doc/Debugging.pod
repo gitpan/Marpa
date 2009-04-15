@@ -274,7 +274,7 @@ in_file($_, 't/equation_s.t');
 
 =end Marpa::Test::Display:
 
-    my $recce = new Marpa::Recognizer( { grammar => $grammar } );
+    my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
 
 =begin Marpa::Test::Display:
 
@@ -291,7 +291,7 @@ in_file($_, 'bin/mdl');
             \$text_to_parse,
             $fail_location,
         )
-        or croak "print to STDERR failed: $OS_ERROR";
+        or Marpa::exception "print to STDERR failed: $OS_ERROR";
         exit 1;
     }
 
@@ -350,7 +350,7 @@ in_file($_, 'bin/mdl');
     $grammar->precompute();
 
     print $grammar->show_NFA
-        or croak "print failed: $OS_ERROR";
+        or Marpa::exception "print failed: $OS_ERROR";
 
 Returns a multi-line string listing the states of the NFA
 with the LR(0) items and transitions for each.
@@ -370,7 +370,7 @@ in_file($_, 'bin/mdl');
     $grammar->precompute();
 
     print $grammar->show_QDFA
-        or croak "print failed: $OS_ERROR";
+        or Marpa::exception "print failed: $OS_ERROR";
 
 Returns a multi-line string listing the states of the QDFA
 with the LR(0) items, NFA states, and transitions for each.
@@ -452,7 +452,7 @@ in_file($_, 'bin/mdl');
     $grammar->precompute();
 
     print $grammar->show_problems
-        or croak "print failed: $OS_ERROR";
+        or Marpa::exception "print failed: $OS_ERROR";
 
 Returns a string describing the problems a grammar had in the precomputation phase.
 For many precomputation problems, Marpa
@@ -503,7 +503,7 @@ in_file($_, 'bin/mdl');
     $grammar->precompute();
 
     print $grammar->show_rules
-        or croak "print failed: $OS_ERROR";
+        or Marpa::exception "print failed: $OS_ERROR";
 
 Returns a string listing the rules, each commented as to whether it
 was nullable, nulling, unproductive, inaccessible, empty or not useful.
@@ -530,7 +530,7 @@ in_file($_, 'bin/mdl');
     $grammar->precompute();
 
     print $grammar->show_symbols
-        or croak "print failed: $OS_ERROR";
+        or Marpa::exception "print failed: $OS_ERROR";
 
 Returns a string listing the symbols, along with whether they were
 nulling, nullable, unproductive or inaccessible.
@@ -574,7 +574,7 @@ in_file($_, 't/equation_s.t');
 
 =end Marpa::Test::Display:
 
-    my $recce = new Marpa::Recognizer( { grammar => $grammar } );
+    my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
 
 =begin Marpa::Test::Display:
 
@@ -586,7 +586,7 @@ in_file($_, 'bin/mdl');
     my $fail_location = $recce->text( \$text_to_parse );
 
     print $recce->show_earley_sets
-        or croak "print failed: $OS_ERROR";
+        or Marpa::exception "print failed: $OS_ERROR";
 
 Returns a multi-line string
 listing every Earley item in every Earley set.
@@ -603,7 +603,7 @@ in_file($_, 'bin/mdl');
 =end Marpa::Test::Display:
 
     print $evaler->show_bocage($show_bocage_verbosity)
-        or croak "print failed: $OS_ERROR";
+        or Marpa::exception "print failed: $OS_ERROR";
 
 Returns a multi-line string describing the bocage
 for an evaluator.
@@ -645,7 +645,7 @@ in_file($_, 'bin/mdl');
 =end Marpa::Test::Display:
 
     print $evaler->show_tree($show_tree_flag)
-        or croak "print failed: $OS_ERROR";
+        or Marpa::exception "print failed: $OS_ERROR";
 
 When called after a successful call to the C<value> method,
 C<show_tree>

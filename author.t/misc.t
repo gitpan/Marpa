@@ -11,11 +11,11 @@ use Marpa;
 # compile and execute.  No checking other than for compilation errors
 # or fatal exceptions is done.  This code DOES NOT do anything sensible.
 
-pass('misc.pl compiled');
+Test::More::pass('misc.pl compiled');
 
 my $mdl_source = <<'END';
 semantics are perl5.
-version is 0.001_008.
+version is 0.001_009.
 start symbol is S.
 
 S: Document.
@@ -31,7 +31,7 @@ my $location;
 my $first_result;
 my @all_results;
 
-my $grammar = new Marpa::Grammar();
+my $grammar = Marpa::Grammar->new();
 
 $grammar->set( { mdl_source => \$mdl_source } );
 
@@ -51,7 +51,7 @@ my $new_lex_preamble = q{1};
 
 ## use Marpa::Test::Display new Recognizer snippet
 
-my $recce = new Marpa::Recognizer(
+my $recce = Marpa::Recognizer->new(
     {   grammar      => $grammar,
         lex_preamble => $new_lex_preamble,
     }
@@ -73,7 +73,7 @@ $recce = Marpa::Recognizer::unstringify($stringified_recce);
 
 my $cloned_recce = $recce->clone();
 
-my $evaler = new Marpa::Evaluator(
+my $evaler = Marpa::Evaluator->new(
     {   recce => $recce,
         end   => $location,
         clone => 0,
@@ -109,7 +109,7 @@ my $lexeme_start = 0;
 ## no Marpa::Test::Display
 }
 
-my $g = new Marpa::Grammar();
+my $g = Marpa::Grammar->new();
 
 $g->set( { start => Marpa::MDL::canonical_symbol_name('Document') } );
 
@@ -141,4 +141,4 @@ $first_result =
 
 ## no Marpa::Test::Display
 
-pass('misc.pl ran to end');
+Test::More::pass('misc.pl ran to end');
