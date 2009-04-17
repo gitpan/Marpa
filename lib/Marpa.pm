@@ -7,7 +7,7 @@ no warnings 'recursion';
 use strict;
 
 BEGIN {
-    our $VERSION = '0.001_009';
+    our $VERSION = '0.001_010';
 }
 
 use integer;
@@ -188,7 +188,7 @@ is_file($_, 'example/synopsis.pl');
     say ${$value};
 
     __DATA__
-    semantics are perl5.  version is 0.001_009.  start symbol is Expression.
+    semantics are perl5.  version is 0.001_010.  start symbol is Expression.
 
     Expression: Expression, /[*]/, Expression.  priority 200.  q{
         $_[0] * $_[2]

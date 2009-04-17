@@ -22,34 +22,23 @@ use integer;
 
 package Marpa::Internal;
 
-use Marpa::Offset Symbol =>
+use Marpa::Offset Symbol => qw(
+    ID NAME
+    =LAST_BASIC_DATA_FIELD
 
-    # basic data
-    qw(ID NAME),
+    IS_CHAF_NULLING NULL_ALIAS NULLING
+    =LAST_EVALUATOR_FIELD
 
-    # evaluator data
-    qw(IS_CHAF_NULLING NULL_ALIAS NULLING),
-
-    # recognizer data
-    qw(
     ACTION PREFIX SUFFIX
     REGEX PRIORITY TERMINAL
-    ),
+    =LAST_RECOGNIZER_FIELD
 
-    # temporary data
-    qw(
     LHS RHS ACCESSIBLE PRODUCTIVE START
     NULLABLE NULL_VALUE
     CLOSURE
     COUNTED
+    =LAST_FIELD
 );
-
-package Marpa::Internal::Symbol;
-use constant LAST_EVALUATOR_FIELD  => Marpa::Internal::Symbol::NULLING;
-use constant LAST_RECOGNIZER_FIELD => Marpa::Internal::Symbol::TERMINAL;
-use constant LAST_FIELD            => Marpa::Internal::Symbol::COUNTED;
-
-package Marpa::Internal;
 
 # LHS             - rules with this as the lhs,
 #                   as a ref to an array of rule refs
@@ -76,33 +65,22 @@ package Marpa::Internal;
 # IS_CHAF_NULLING - if CHAF nulling lhs, ref to array
 #                   of rhs symbols
 
-use Marpa::Offset Rule =>
+use Marpa::Offset Rule => qw(
+    ID NAME LHS RHS
+    =LAST_BASIC_DATA_FIELD
 
-    # basic data
-    qw(ID NAME LHS RHS
-    ),
-
-    # evaluator data
-    qw(
     USEFUL ACTION
     CODE CYCLE
     PRIORITY MINIMAL
     HAS_CHAF_LHS HAS_CHAF_RHS
-    ),
+    =LAST_EVALUATOR_FIELD
+    =LAST_RECOGNIZER_FIELD
 
-    # temporary data
-    qw(
     ORIGINAL_RULE
     CHAF_START CHAF_END
     NULLABLE ACCESSIBLE PRODUCTIVE NULLING
+    =LAST_FIELD
 );
-
-package Marpa::Internal::Rule;
-use constant LAST_EVALUATOR_FIELD  => Marpa::Internal::Rule::HAS_CHAF_RHS;
-use constant LAST_RECOGNIZER_FIELD => Marpa::Internal::Rule::HAS_CHAF_RHS;
-use constant LAST_FIELD            => Marpa::Internal::Rule::NULLING;
-
-package Marpa::Internal;
 
 =begin Implementation:
 
@@ -141,29 +119,20 @@ PRIORITY - rule priority
 
 =cut
 
-use Marpa::Offset QDFA =>
+use Marpa::Offset QDFA => qw(
+    ID NAME TAG
+    =LAST_BASIC_DATA_FIELD
 
-    # basic data
-    qw(ID NAME TAG),
+    COMPLETE_RULES START_RULE
+    =LAST_EVALUATOR_FIELD
 
-    # evaluator data
-    qw(COMPLETE_RULES START_RULE),
-
-    # recognizer data
-    qw(TRANSITION COMPLETE_LHS
+    TRANSITION COMPLETE_LHS
     RESET_ORIGIN PRIORITY
-    ),
+    =LAST_RECOGNIZER_FIELD
 
-    # temporary data
-    qw(NFA_STATES
+    NFA_STATES
+    =LAST_FIELD
 );
-
-package Marpa::Internal::QDFA;
-use constant LAST_EVALUATOR_FIELD  => Marpa::Internal::QDFA::START_RULE;
-use constant LAST_RECOGNIZER_FIELD => Marpa::Internal::QDFA::PRIORITY;
-use constant LAST_FIELD            => Marpa::Internal::QDFA::NFA_STATES;
-
-package Marpa::Internal;
 
 =begin Implementation:
 
@@ -185,29 +154,22 @@ PRIORITY       - priority of this state
 
 use Marpa::Offset LR0_item => qw(RULE POSITION);
 
-use Marpa::Offset Grammar =>
-
-    # basic data
-    qw(
+use Marpa::Offset Grammar => qw(
     ID NAME VERSION
     RULES SYMBOLS QDFA
     PHASE DEFAULT_ACTION
     TRACE_FILE_HANDLE TRACING
     STRIP CODE_LINES
-    ),
+    =LAST_BASIC_DATA_FIELD
 
-    # evaluator data
-    qw(
     DEFAULT_NULL_VALUE
     CYCLE_ACTION
     TRACE_ITERATIONS
     TRACE_ACTIONS TRACE_VALUES TRACE_CHOICES
     MAX_PARSES
     PREAMBLE
-    ),
+    =LAST_EVALUATOR_FIELD
 
-    # recognizer data
-    qw(
     PROBLEMS
     ACADEMIC
     DEFAULT_LEX_PREFIX DEFAULT_LEX_SUFFIX AMBIGUOUS_LEX
@@ -215,10 +177,8 @@ use Marpa::Offset Grammar =>
     SYMBOL_HASH
     START_STATES
     LEX_PREAMBLE
-    ),
+    =LAST_RECOGNIZER_FIELD
 
-    # temporary data
-    qw(
     RULE_HASH
     START START_NAME
     NFA QDFA_BY_NAME
@@ -230,13 +190,10 @@ use Marpa::Offset Grammar =>
     SEMANTICS
     TRACE_RULES TRACE_STRINGS TRACE_PREDEFINEDS TRACE_PRIORITIES
     ALLOW_RAW_SOURCE INTERFACE
+    =LAST_FIELD
 );
 
 package Marpa::Internal::Grammar;
-
-use constant LAST_EVALUATOR_FIELD  => Marpa::Internal::Grammar::PREAMBLE;
-use constant LAST_RECOGNIZER_FIELD => Marpa::Internal::Grammar::LEX_PREAMBLE;
-use constant LAST_FIELD            => Marpa::Internal::Grammar::INTERFACE;
 
 =begin Implementation:
 

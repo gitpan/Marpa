@@ -32,22 +32,12 @@ use Marpa::Offset Earley_item =>
 # SET    - the set this item is in, for debugging
 
 # Elements of the RECOGNIZER structure
-use Marpa::Offset Recognizer => (
-
-    # evaluator data
-    qw( GRAMMAR EARLEY_SETS CURRENT_SET ),
-
-    # temporary data
-    qw(
-        EARLEY_HASH FURTHEST_EARLEME EXHAUSTED
-        PACKAGE LEXERS LEXABLES_BY_STATE LAST_COMPLETED_SET
-        )
+use Marpa::Offset Recognizer => qw(
+    GRAMMAR EARLEY_SETS CURRENT_SET
+    =LAST_EVALUATOR_FIELD
+    EARLEY_HASH FURTHEST_EARLEME EXHAUSTED
+    PACKAGE LEXERS LEXABLES_BY_STATE LAST_COMPLETED_SET
 );
-
-package Marpa::Internal::Recognizer;
-use constant LAST_EVALUATOR_FIELD => Marpa::Internal::Recognizer::CURRENT_SET;
-
-package Marpa::Internal;
 
 # GRAMMAR            - the grammar used
 # CURRENT_SET        - For an active parse, the set scanned items will be added
