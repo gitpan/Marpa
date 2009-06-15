@@ -13,7 +13,7 @@ use Test::More;
 my $warnings = 0;
 my $options_result = GetOptions( 'warnings' => \$warnings );
 Marpa::exception("$PROGRAM_NAME options parsing failed")
-    unless $options_result;
+    if not $options_result;
 
 package Marpa::Test::Display;
 
@@ -26,10 +26,12 @@ use English qw( -no_match_vars );
 
 our $FILE_ERROR = 'No error';
 
+## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+our $DEFAULT_CODE = q{ no_code_defined($_) };
+## use critic
 our $PREAMBLE   = q{1};
 our $IN_COMMAND = 0;
 our @DISPLAY;
-our $DEFAULT_CODE             = q{ no_code_defined($_) };
 our $CURRENT_CODE             = $DEFAULT_CODE;
 our $COLLECTING_FROM_LINE_NUM = -1;
 our $COLLECTED_DISPLAY;
@@ -70,7 +72,9 @@ sub slurp {
     my $result = \<$fh>;
 
     # special for corner case: empty file
-    $result = \q{} if not defined ${$result};
+    if ( not defined ${$result} ) {
+        $result = \q{};
+    }
     close $fh;
     return $result;
 } ## end sub slurp
@@ -186,10 +190,12 @@ sub test_file {
 
     $Marpa::Test::Display::CURRENT_FILE      = $file;
     @Marpa::Test::Display::DISPLAY           = ();
-    $Marpa::Test::Display::DEFAULT_CODE      = q{ no_code_defined($_) };
     $Marpa::Test::Display::CURRENT_CODE      = $DEFAULT_CODE;
     $Marpa::Test::Display::COMMAND_COUNTDOWN = 0;
     $Marpa::Test::Display::DISPLAY_SKIP      = 0;
+    ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+    $Marpa::Test::Display::DEFAULT_CODE = q{ no_code_defined($_) };
+    ## use critic
     my $mismatch_count = 0;
     my $mismatches     = q{};
 
@@ -198,7 +204,7 @@ sub test_file {
     ## no critic (BuiltinFunctions::ProhibitStringyEval)
     my $eval_result = eval $PREAMBLE;
     ## use critic
-    Marpa::exception($EVAL_ERROR) unless $eval_result;
+    Marpa::exception($EVAL_ERROR) if not $eval_result;
 
     for my $display_test (@Marpa::Test::Display::DISPLAY) {
         my ( $display, $code, $display_file, $display_line ) =
@@ -215,7 +221,7 @@ sub test_file {
             )
         {
             my $do_not_add_display = $eval_result->[1];
-            unless ($do_not_add_display) {
+            if ( not $do_not_add_display ) {
                 $message .= "\n$display";
             }
             $mismatches .= "=== Line $display_line: $message";
@@ -235,14 +241,15 @@ use Carp;
 sub queue_display {
     my $display  = shift;
     my $line_num = shift;
-    push @Marpa::Test::Display::DISPLAY,
-        {
-        'display' => $display,
-        'code'    => $Marpa::Test::Display::CURRENT_CODE,
-        'file'    => $Marpa::Test::Display::CURRENT_FILE,
-        'line'    => $line_num,
-        }
-        if not $Marpa::Test::Display::DISPLAY_SKIP;
+    if ( not $Marpa::Test::Display::DISPLAY_SKIP ) {
+        push @Marpa::Test::Display::DISPLAY,
+            {
+            'display' => $display,
+            'code'    => $Marpa::Test::Display::CURRENT_CODE,
+            'file'    => $Marpa::Test::Display::CURRENT_FILE,
+            'line'    => $line_num,
+            };
+    } ## end if ( not $Marpa::Test::Display::DISPLAY_SKIP )
     $Marpa::Test::Display::COMMAND_COUNTDOWN--;
     if ( $Marpa::Test::Display::COMMAND_COUNTDOWN <= 0 ) {
         $Marpa::Test::Display::CURRENT_CODE =
@@ -290,9 +297,10 @@ sub process_instruction {
 
     if ( $instruction =~ / ^ default $ /xms ) {
         $Marpa::Test::Display::DEFAULT_CODE = join "\n", @{$code};
-        $Marpa::Test::Display::CURRENT_CODE =
-            $Marpa::Test::Display::DEFAULT_CODE
-            if $Marpa::Test::Display::COMMAND_COUNTDOWN <= 0;
+        if ( $Marpa::Test::Display::COMMAND_COUNTDOWN <= 0 ) {
+            $Marpa::Test::Display::CURRENT_CODE =
+                $Marpa::Test::Display::DEFAULT_CODE;
+        }
         return;
     } ## end if ( $instruction =~ / ^ default $ /xms )
 
@@ -342,7 +350,7 @@ sub process_instruction {
 
 sub textblock {
     my ( $parser, $paragraph, $line_num ) = @_;
-    return unless $Marpa::Test::Display::IN_COMMAND;
+    return if not $Marpa::Test::Display::IN_COMMAND;
 
     ## Translate/Format this block of text; sample actions might be:
 
@@ -373,12 +381,18 @@ sub command {
 
     my ( $parser, $command, $paragraph ) = @_;
     if ( $command eq 'begin' ) {
-        $Marpa::Test::Display::IN_COMMAND++ if $paragraph =~ m{
+        if ($paragraph =~ m{
                 \A
                 Marpa[:][:]Test[:][:]Display[:]
                 \s* \Z
-            }xms;
-        $Marpa::Test::Display::IN_COMMAND++ if $paragraph =~ /\Amake:$/xms;
+            }xms
+            )
+        {
+            $Marpa::Test::Display::IN_COMMAND++;
+        } ## end if ( $paragraph =~ m{ )
+        if ( $paragraph =~ /\Amake:$/xms ) {
+            $Marpa::Test::Display::IN_COMMAND++;
+        }
     } ## end if ( $command eq 'begin' )
     elsif ( $command eq 'end' ) {
         $Marpa::Test::Display::IN_COMMAND = 0;
@@ -406,7 +420,7 @@ if ( not $debug_mode ) {
         next FILE if $exclude{$file};
         next FILE if -d $file;
         my ($ext) = $file =~ / [.] ([^.]+) \z /xms;
-        next FILE unless defined $ext;
+        next FILE if not defined $ext;
         $ext = lc $ext;
         next FILE
             if $ext ne 'pod'
@@ -464,10 +478,12 @@ while ( my ( $file_name, $displays ) = each %normalized_display_uses ) {
     }
 } ## end while ( my ( $file_name, $displays ) = each %normalized_display_uses)
 if ($unused_count) {
+    ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
     Test::More::fail('$unused count displays not used');
+    ## use critic
     print {$error_file} "=== UNUSED DISPLAYS ===\n" . $unused
         or Marpa::exception("print failed: $ERRNO");
-}
+} ## end if ($unused_count)
 else {
     Test::More::pass('all displays used');
 }

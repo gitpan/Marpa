@@ -248,7 +248,7 @@ in_file($_, 'author.t/equation_show_earley_sets.out');
 
 =end Marpa::Test::Display:
 
-    S4@2-3  [p=S1@2-2; t=2]
+    S4@2-3  [p=S1@2-2; t='2']
 
 After the name of the Earley item is an
 B<Earley item source choice>, shown in brackets.
@@ -261,7 +261,7 @@ so all Earley items have at most one source choice entry.
 In this case the source choice entry is for a B<token choice>.
 Token choices are shown as C<[p=>I<predecessor>C<; t=>I<token_value>C<]> pairs.
 In the above example, the token choice
-C<[p=S1@2-2; t=2]>
+C<[p=S1@2-2; t='2']>
 indicates that the token has a value of "2",
 and that, when this token choice is selected,
 the predecessor of S4@2-3 is S1@2-2.
@@ -1264,51 +1264,52 @@ Z<>
         non-structural-production-sentences
         production-sentence
         production-paragraph[R11:2][x5f]
-        /* priority=0.3 */
+        /* priority=0.54 */
     101: production-paragraph ->
         non-structural-production-sentences[]
         production-sentence
         production-paragraph[R11:2][x5f]
-        /* priority=0.1 */
+        /* priority=0.52 */
     102: production-paragraph ->
         non-structural-production-sentences
         production-sentence
         production-paragraph[R11:2][x5f][]
-        /* priority=0.2 */
+        /* priority=0.53 */
     103: production-paragraph ->
         non-structural-production-sentences[]
         production-sentence
         production-paragraph[R11:2][x5f][]
+        /* priority=0.51 */
 
 Z<>
 
     104: production-paragraph[R11:2][x5f] ->
         non-structural-production-sentences
         production-paragraph[R11:3][x61]
-        /* priority=0.3 */
+        /* priority=0.34 */
     105: production-paragraph[R11:2][x5f] ->
         non-structural-production-sentences[]
         production-paragraph[R11:3][x61]
-        /* priority=0.1 */
+        /* priority=0.32 */
     106: production-paragraph[R11:2][x5f] ->
         non-structural-production-sentences
         production-paragraph[R11:3][x61][]
-        /* priority=0.2 */
+        /* priority=0.33 */
 
 Z<>
 
     107: production-paragraph[R11:3][x61] ->
         action-sentence:optional
         non-structural-production-sentences
-        /* priority=0.3 */
+        /* priority=0.24 */
     108: production-paragraph[R11:3][x61] ->
         action-sentence:optional[]
         non-structural-production-sentences
-        /* priority=0.1 */
+        /* priority=0.22 */
     109: production-paragraph[R11:3][x61] ->
         action-sentence:optional
         non-structural-production-sentences[]
-        /* priority=0.2 */
+        /* priority=0.23 */
 
 Rule 11 is the original rule.  Because Marpa has rewritten it,
 the rule is marked C<!useful>, telling later stages in the precomputation to ignore it.
@@ -1448,7 +1449,7 @@ is_file($_, 'example/equation.marpa');
 =end Marpa::Test::Display:
 
 
-    semantics are perl5.  version is 0.001_010.
+    semantics are perl5.  version is 0.001_013.
 
     start symbol is E.
 
@@ -1570,14 +1571,14 @@ is_file($_, 'author.t/equation_show_earley_sets.out');
     S0@0-0
     S1@0-0
     Earley Set 1
-    S4@0-1 [p=S1@0-0; t=2]
+    S4@0-1 [p=S1@0-0; t='2']
     S2@0-1 [p=S0@0-0; c=S4@0-1]
     S3@0-1 [p=S1@0-0; c=S4@0-1]
     Earley Set 2
-    S5@0-2 [p=S3@0-1; t=+]
+    S5@0-2 [p=S3@0-1; t='+']
     S1@2-2
     Earley Set 3
-    S4@2-3 [p=S1@2-2; t=2]
+    S4@2-3 [p=S1@2-2; t='2']
     S6@0-3 [p=S5@0-2; c=S4@2-3]
     S3@2-3 [p=S1@2-2; c=S4@2-3]
     S2@0-3 [p=S0@0-0; c=S6@0-3]

@@ -14,7 +14,7 @@ our @CARP_NOT = qw(
     Marpa::Grammar
     Marpa::Internal
     Marpa::Internal::And_Node
-    Marpa::Internal::Earley_item
+    Marpa::Internal::Earley_Item
     Marpa::Internal::Evaluator
     Marpa::Internal::Evaluator::Rule
     Marpa::Internal::Grammar

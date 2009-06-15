@@ -7,7 +7,7 @@ no warnings 'recursion';
 use strict;
 
 BEGIN {
-    our $VERSION = '0.001_010';
+    our $VERSION = '0.001_013';
 }
 
 use integer;
@@ -70,6 +70,7 @@ CPAN modules don't follow his guidelines all that closely.
 =cut
 
 package Marpa::Internal;
+use English qw( -no_match_vars );
 use Marpa::Internal;
 
 my @CARP_NOT = @Marpa::Internal::CARP_NOT;
@@ -92,8 +93,9 @@ BEGIN {
         } ## end if ( $marpa_version ne $source_version )
     } ## end if ( not eval ' use Marpa::Source ' )
 
-    undef $Marpa::Internal::STRINGIFIED_SOURCE_GRAMMAR
-        if $STRINGIFIED_EVAL_ERROR;
+    if ($STRINGIFIED_EVAL_ERROR) {
+        undef $Marpa::Internal::STRINGIFIED_SOURCE_GRAMMAR;
+    }
 
 } ## end BEGIN
 
@@ -110,18 +112,18 @@ sub Marpa::mdl {
     my $ref = ref $grammar;
     Marpa::exception(
         qq{grammar arg to mdl() was ref type "$ref", must be string ref})
-        unless $ref eq 'SCALAR';
+        if $ref ne 'SCALAR';
 
     $ref = ref $text;
     Marpa::exception(
         qq{text arg to mdl() was ref type "$ref", must be string ref})
-        unless $ref eq 'SCALAR';
+        if $ref ne 'SCALAR';
 
     $options //= {};
     $ref = ref $options;
     Marpa::exception(
         qq{text arg to mdl() was ref type "$ref", must be hash ref})
-        unless $ref eq 'HASH';
+        if $ref ne 'HASH';
 
     my $g = Marpa::Grammar->new( { mdl_source => $grammar, %{$options} } );
     my $recce = Marpa::Recognizer->new(
@@ -188,7 +190,7 @@ is_file($_, 'example/synopsis.pl');
     say ${$value};
 
     __DATA__
-    semantics are perl5.  version is 0.001_010.  start symbol is Expression.
+    semantics are perl5.  version is 0.001_013.  start symbol is Expression.
 
     Expression: Expression, /[*]/, Expression.  priority 200.  q{
         $_[0] * $_[2]

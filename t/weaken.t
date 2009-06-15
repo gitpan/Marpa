@@ -32,7 +32,7 @@ my $test = sub {
     $recce->earleme( [ $a, 'a', 1 ] );
     $recce->end_input();
     my $evaler = Marpa::Evaluator->new( { recce => $recce } );
-    Marpa::exception('No parse found') unless $evaler;
+    Marpa::exception('No parse found') if not $evaler;
     $evaler->value();
     [ $g, $recce, $evaler ];
 };

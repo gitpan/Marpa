@@ -32,7 +32,9 @@ sub run_critic {
 
     my $per_file_options = $per_file_options{$file};
     my @cmd              = ('perlcritic');
-    push @cmd, @{$per_file_options} if defined $per_file_options;
+    if ( defined $per_file_options ) {
+        push @cmd, @{$per_file_options};
+    }
     push @cmd, qw(--profile author.t/perlcriticrc);
     push @cmd, $file;
 

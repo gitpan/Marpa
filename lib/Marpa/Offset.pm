@@ -6,17 +6,43 @@ use warnings;
 use integer;
 
 sub import {
-    my ( $class, $struct_name, @fields ) = @_;
-    my $pkg    = caller;
-    my $prefix = $pkg . q{::} . $struct_name . q{::};
-    my $offset = -1;
+    my ( $class, @fields ) = @_;
+    my $pkg        = caller;
+    my $prefix     = $pkg . q{::};
+    my $offset     = -1;
+    my $in_comment = 0;
 
     ## no critic (TestingAndDebugging::ProhibitNoStrict)
     no strict 'refs';
     ## use critic
-    for my $field (@fields) {
+    FIELD: for my $field (@fields) {
 
-        $offset++ unless $field =~ s/\A=//xms;
+        if ($in_comment) {
+            $in_comment = $field ne ':}' && $field ne '}';
+            next FIELD;
+        }
+
+        PROCESS_OPTION: {
+            last PROCESS_OPTION if $field !~ /\A [{:] /xms;
+            if ( $field =~ / \A [:] package [=] (.*) /xms ) {
+                $prefix = $1 . q{::};
+                next FIELD;
+            }
+            if ( $field =~ / \A [:]? [{] /xms ) {
+                $in_comment++;
+                next FIELD;
+            }
+        } ## end PROCESS_OPTION:
+
+        if ( $field !~ s/\A=//xms ) {
+            $offset++;
+        }
+
+        if ( $field =~ / \A ( [^=]* ) = ( [0-9+-]* ) \z/xms ) {
+            $field  = $1;
+            $offset = $2 + 0;
+        }
+
         Marpa::exception("Unacceptable field name: $field")
             if $field =~ /[^A-Z0-9_]/xms;
         my $field_name = $prefix . $field;

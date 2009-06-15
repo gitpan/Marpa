@@ -1,4 +1,4 @@
-package Marpa;
+package Marpa::Lex;
 
 use 5.010;
 
@@ -7,9 +7,6 @@ use strict;
 
 # It's all integers, except for the version number
 use integer;
-
-# package for various lexing utilities
-package Marpa::Lex;
 
 # \x{5c} is backslash
 sub gen_bracket_regex {
@@ -45,7 +42,7 @@ sub lex_q_quote {
     my $string = shift;
     my $start  = shift;
     my ($left_bracket) = ( ${$string} =~ m/\Gqq?($punct)/xmsogc );
-    return unless defined $left_bracket;
+    return if not defined $left_bracket;
 
     my $regex_data = $regex_data{$left_bracket};
     if ( not defined $regex_data ) {
@@ -67,7 +64,7 @@ sub lex_q_quote {
     # unbracketed quote
     if ( not defined $right_bracket ) {
         MATCH: while ( ${$string} =~ /$regex/gcxms ) {
-            next MATCH unless defined $1;
+            next MATCH if not defined $1;
             if ( $1 eq $left_bracket ) {
                 my $length = ( pos ${$string} ) - $start;
                 return ( substr( ${$string}, $start, $length ), $length );
@@ -79,11 +76,9 @@ sub lex_q_quote {
     # bracketed quote
     my $depth = 1;
     MATCH: while ( ${$string} =~ /$regex/gxms ) {
-        given ($1) {
-            when (undef)          { return; }
-            when ($left_bracket)  { $depth++; }
-            when ($right_bracket) { $depth--; }
-        }
+        return if not defined $1;
+        if ( $left_bracket  eq $1 ) { $depth++; }
+        if ( $right_bracket eq $1 ) { $depth--; }
         if ( $depth <= 0 ) {
             my $length = ( pos ${$string} ) - $start;
             return ( substr( ${$string}, $start, $length ), $length );
@@ -97,7 +92,7 @@ sub lex_regex {
     my $lexeme_start = shift;
     my $value_start  = pos ${$string};
     my ($left_side) = ( ${$string} =~ m{\G(qr$punct|/)}xmsogc );
-    return unless defined $left_side;
+    return if not defined $left_side;
     my $left_bracket = substr $left_side, -1;
     my $prefix = ( $left_side =~ /^qr/xms ) ? q{} : 'qr';
 
@@ -121,7 +116,7 @@ sub lex_regex {
     # unbracketed quote
     if ( not defined $right_bracket ) {
         MATCH: while ( ${$string} =~ /$regex/xmsgc ) {
-            next MATCH unless defined $1;
+            next MATCH if not defined $1;
             if ( $1 eq $left_bracket ) {
 
                 # also take in trailing options
@@ -140,11 +135,9 @@ sub lex_regex {
     # bracketed quote
     my $depth = 1;
     MATCH: while ( ${$string} =~ /$regex/gxms ) {
-        given ($1) {
-            when (undef)          { return; }
-            when ($left_bracket)  { $depth++; }
-            when ($right_bracket) { $depth--; }
-        }
+        return if not defined $1;
+        if ( $left_bracket  eq $1 ) { $depth++; }
+        if ( $right_bracket eq $1 ) { $depth--; }
         if ( $depth <= 0 ) {
 
             # also take in trailing options

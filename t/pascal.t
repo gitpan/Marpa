@@ -56,7 +56,7 @@ sub ah_extended {
             }
         );
         Marpa::exception("Cannot initialize parse at location $loc")
-            unless $evaler;
+            if not $evaler;
         while ( $evaler->old_value() ) { $parse_counts[$loc]++ }
     } ## end for my $loc ( 0 .. $n )
     return join q{ }, @parse_counts;
@@ -76,10 +76,14 @@ my @answers = (
     '1 10 45 120 210 252 210 120 45 10 1',
 );
 
+## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
 for my $a ( ( 0 .. 5 ), 10 ) {
+## use critic
+
     Marpa::Test::is( ah_extended($a), $answers[$a],
         "Row $a of Pascal's triangle matches parse counts" );
-}
+
+} ## end for my $a ( ( 0 .. 5 ), 10 )
 
 # Local Variables:
 #   mode: cperl

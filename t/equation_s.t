@@ -53,10 +53,10 @@ my @expected = (
 );
 
 my $evaler = Marpa::Evaluator->new( { recognizer => $recce } );
-Marpa::exception('Parse failed') unless $evaler;
+Marpa::exception('Parse failed') if not $evaler;
 
 my $i = -1;
-while ( defined( my $value = $evaler->old_value() ) ) {
+while ( defined( my $value = $evaler->value() ) ) {
     $i++;
     if ( $i > $#expected ) {
         Test::More::fail(
@@ -66,7 +66,7 @@ while ( defined( my $value = $evaler->old_value() ) ) {
         Marpa::Test::is( ${$value}, $expected[$i],
             "Ambiguous Equation Value $i" );
     }
-} ## end while ( defined( my $value = $evaler->old_value() ) )
+} ## end while ( defined( my $value = $evaler->value() ) )
 
 # Local Variables:
 #   mode: cperl

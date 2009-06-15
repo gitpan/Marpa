@@ -5,7 +5,7 @@ use warnings;
 use Marpa::Internal;
 
 Marpa::exception('Test::More not loaded')
-    unless defined &Test::More::is;
+    if not defined &Test::More::is;
 
 BEGIN {
     ## no critic (BuiltinFunctions::ProhibitStringyEval)

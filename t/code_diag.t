@@ -34,9 +34,11 @@ my @tests = (
 );
 
 my %good_code = (
+    ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
     'e op action'     => 'my $error =',
     'e number action' => 'my $error =',
     'default action'  => 'my $error =',
+    ## use critic
 );
 
 my %test_code;
@@ -76,7 +78,7 @@ LINE: while ( my $line = <DATA> ) {
                     ( $header =~ m/\A ([^\s]*) \s+ (.*) \Z/xms );
                 Marpa::exception(
                     "expected result given for unknown test, feature: $test, $feature"
-                ) unless defined $expected{$test}{$feature};
+                ) if not defined $expected{$test}{$feature};
                 $expected{$test}{$feature} = $data;
                 next HEADER;
             } ## end if ( $header =~ s/\A expected \s //xms )
@@ -88,7 +90,7 @@ LINE: while ( my $line = <DATA> ) {
             if ( $header =~ s/\A bad \s code \s //xms ) {
                 chomp $header;
                 Marpa::exception("test code given for unknown test: $header")
-                    unless defined $test_code{$header};
+                    if not defined $test_code{$header};
                 $test_code{$header} = $data;
                 next HEADER;
             } ## end if ( $header =~ s/\A bad \s code \s //xms )
@@ -122,8 +124,8 @@ sub canonical {
 sub run_test {
     my $args = shift;
 
-    my $E_Op_action        = $good_code{e_op_action};
-    my $E_Number_action    = $good_code{e_number_action};
+    my $e_op_action        = $good_code{e_op_action};
+    my $e_number_action    = $good_code{e_number_action};
     my $preamble           = q{1};
     my $lex_preamble       = q{1};
     my $default_action     = $good_code{default_action};
@@ -133,8 +135,8 @@ sub run_test {
 
     while ( my ( $arg, $value ) = each %{$args} ) {
         given ( lc $arg ) {
-            when ('e_op_action')     { $E_Op_action     = $value }
-            when ('e_number_action') { $E_Number_action = $value }
+            when ('e_op_action')     { $e_op_action     = $value }
+            when ('e_number_action') { $e_number_action = $value }
             when ('default_action')  { $default_action  = $value }
             when ('lex_preamble')    { $lex_preamble    = $value }
             when ('preamble')        { $preamble        = $value }
@@ -156,8 +158,8 @@ sub run_test {
         {   start => 'S',
             rules => [
                 [ 'S', [qw/E trailer optional_trailer1 optional_trailer2/], ],
-                [ 'E', [qw/E Op E/], $E_Op_action, ],
-                [ 'E', [qw/Number/], $E_Number_action, ],
+                [ 'E', [qw/E Op E/], $e_op_action, ],
+                [ 'E', [qw/Number/], $e_number_action, ],
                 [ 'optional_trailer1', [qw/trailer/], ],
                 [ 'optional_trailer1', [], ],
                 [ 'optional_trailer2', [], $null_action ],

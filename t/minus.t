@@ -97,47 +97,47 @@ Marpa::Test::is( $g->show_rules, <<'END_RULES', 'Minuses Equation Rules' );
 5: E['] -> E
 END_RULES
 
-Marpa::Test::is( $g->show_ii_QDFA, <<'END_QDFA', 'Minuses Equation QDFA' );
-Start States: St0; St5
-St0: predict; 1,5,8,11,14
+Marpa::Test::is( $g->show_QDFA, <<'END_QDFA', 'Minuses Equation QDFA' );
+Start States: S0; S1
+S0: 16
+E['] ::= . E
+ <E> => S2
+S1: predict; 1,5,8,11,14
 E ::= . E Minus E
 E ::= . E MinusMinus
 E ::= . MinusMinus E
 E ::= . Minus E
 E ::= . Number
- <E> => St7
- <Minus> => St0; St2
- <MinusMinus> => St0; St11
- <Number> => St4
-St1: 10
-E ::= MinusMinus E .
-St2: 12
-E ::= Minus . E
- <E> => St3
-St3: 13
-E ::= Minus E .
-St4: 15
-E ::= Number .
-St5: 16
-E['] ::= . E
- <E> => St6
-St6: 17
+ <E> => S3
+ <Minus> => S1; S4
+ <MinusMinus> => S1; S5
+ <Number> => S6
+S2: 17
 E['] ::= E .
-St7: 2,6
+S3: 2,6
 E ::= E . Minus E
 E ::= E . MinusMinus
- <Minus> => St0; St8
- <MinusMinus> => St10
-St8: 3
-E ::= E Minus . E
- <E> => St9
-St9: 4
-E ::= E Minus E .
-St10: 7
-E ::= E MinusMinus .
-St11: 9
+ <Minus> => S1; S7
+ <MinusMinus> => S8
+S4: 12
+E ::= Minus . E
+ <E> => S9
+S5: 9
 E ::= MinusMinus . E
- <E> => St1
+ <E> => S10
+S6: 15
+E ::= Number .
+S7: 3
+E ::= E Minus . E
+ <E> => S11
+S8: 7
+E ::= E MinusMinus .
+S9: 13
+E ::= Minus E .
+S10: 10
+E ::= MinusMinus E .
+S11: 4
+E ::= E Minus E .
 END_QDFA
 
 my @expected = (
@@ -164,10 +164,10 @@ for my $string_piece ( '6', '-----', '1' ) {
 $recce->end_input();
 
 my $evaler = Marpa::Evaluator->new( { recce => $recce, clone => 0 } );
-Marpa::exception('Could not initialize parse') unless $evaler;
+Marpa::exception('Could not initialize parse') if not $evaler;
 
 my $i = -1;
-while ( defined( my $value = $evaler->old_value() ) ) {
+while ( defined( my $value = $evaler->value() ) ) {
     $i++;
     if ( $i > $#expected ) {
         Test::More::fail(
@@ -177,7 +177,7 @@ while ( defined( my $value = $evaler->old_value() ) ) {
         Marpa::Test::is( ${$value}, $expected[$i],
             "Minuses Equation Value $i" );
     }
-} ## end while ( defined( my $value = $evaler->old_value() ) )
+} ## end while ( defined( my $value = $evaler->value() ) )
 
 # Local Variables:
 #   mode: cperl

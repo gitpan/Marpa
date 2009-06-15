@@ -1,10 +1,13 @@
-# my severity conventions: 5 is normal.  I don't currently use the
-# 3 or 4 severity levels -- I'm reserving them.  2 is interesting
-# warnings.  1 means basically turn it off, I don't care, I don't
-# think the warning is useful, or I don't agree that it's
-# a bad thing.
+#
+# This perlcriticrc is intended to list all policies explicitly.
+# Defaults are set so that policies not explicitly included (perhaps
+# because they are new in the latest Perl::Critic release)
+# produce warnings.  This is done by setting default severity to
+# 1, changing the severity of all policies I use to 5, and turning
+# off policies which are not used with a minus prepended to the
+# name of the module.
 
-severity = 3
+severity = 1
 
 color = 0
 
@@ -100,10 +103,11 @@ severity=5
 severity=5
 
 [ControlStructures::ProhibitPostfixControls]
-severity=2
+severity=5
+flowcontrol = warn die carp croak cluck confess goto exit Marpa::exception last next
 
 [ControlStructures::ProhibitUnlessBlocks]
-severity=2
+severity=5
 
 [ControlStructures::ProhibitUnreachableCode]
 severity=5
@@ -113,7 +117,6 @@ severity=5
 
 [Documentation::RequirePodAtEnd]
 severity=5
-
 
 [Documentation::RequirePodSections]
 severity=5
@@ -173,8 +176,7 @@ severity=5
 [Miscellanea::ProhibitTies]
 severity=5
 
-[Miscellanea::RequireRcsKeywords]
-severity=1
+[-Miscellanea::RequireRcsKeywords]
 
 [Modules::ProhibitAutomaticExportation]
 severity=5
@@ -182,11 +184,9 @@ severity=5
 [Modules::ProhibitEvilModules]
 severity=5
 
-[Modules::ProhibitExcessMainComplexity]
-severity=1
+[-Modules::ProhibitExcessMainComplexity]
 
-[Modules::ProhibitMultiplePackages]
-severity=1
+[-Modules::ProhibitMultiplePackages]
 
 [Modules::RequireBarewordIncludes]
 severity=5
@@ -197,14 +197,17 @@ severity=5
 [Modules::RequireExplicitPackage]
 severity=5
 
-[Modules::RequireFilenameMatchesPackage]
-severity=1
+[-Modules::RequireFilenameMatchesPackage]
 
 [Modules::RequireNoMatchVarsWithUseEnglish]
 severity=5
 
-[Modules::RequireVersionVar]
-severity=1
+[-Modules::RequireVersionVar]
+
+[NamingConventions::Capitalization]
+local_lexical_variable_exemptions=.*_NFA.* .*NFA_.* .*QDFA_.*
+subroutine_exemptions=.*_NFA.* .*_QDFA.* Marpa::.* .*_CHAF.*
+severity=5
 
 [NamingConventions::ProhibitAmbiguousNames]
 severity=5
@@ -254,8 +257,7 @@ severity=5
 [Subroutines::ProhibitBuiltinHomonyms]
 severity=5
 
-[Subroutines::ProhibitExcessComplexity]
-severity=2
+[-Subroutines::ProhibitExcessComplexity]
 
 [Subroutines::ProhibitExplicitReturnUndef]
 severity=5
@@ -301,8 +303,7 @@ severity=5
 [ValuesAndExpressions::ProhibitCommaSeparatedStatements]
 severity=5
 
-[ValuesAndExpressions::ProhibitConstantPragma]
-severity=1
+[-ValuesAndExpressions::ProhibitConstantPragma]
 
 [ValuesAndExpressions::ProhibitEmptyQuotes]
 severity=5
@@ -322,6 +323,13 @@ severity=5
 [ValuesAndExpressions::ProhibitLongChainsOfMethodCalls]
 severity=5
 
+[ValuesAndExpressions::RequireInterpolationOfMetachars]
+severity=5
+
+[ValuesAndExpressions::ProhibitMagicNumbers]
+severity=5
+allowed_values = -1 0 1 2 3 4 10
+
 [ValuesAndExpressions::ProhibitMismatchedOperators]
 severity=5
 
@@ -338,7 +346,7 @@ severity=5
 severity=5
 
 [ValuesAndExpressions::RequireInterpolationOfMetachars]
-severity=2
+severity=5
 
 [ValuesAndExpressions::RequireNumberSeparators]
 severity=5
@@ -383,11 +391,8 @@ severity=5
 [Variables::RequireNegativeIndices]
 severity=5
 
-[Subroutines::ProhibitCallsToUnexportedSubs]
-severity=1
+[-Subroutines::ProhibitCallsToUnexportedSubs]
 
-[Subroutines::ProhibitQualifiedSubDeclarations]
-severity=1
+[-Subroutines::ProhibitQualifiedSubDeclarations]
 
-[Modules::RequireExplicitInclusion]
-severity=1
+[-Modules::RequireExplicitInclusion]

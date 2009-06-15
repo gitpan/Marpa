@@ -111,47 +111,47 @@ S14: A ::= a . b
 S15: A ::= a b .
 EOS
 
-Marpa::Test::is( $g->show_ii_QDFA, <<'EOS', 'Hopcroft/Ullman QDFA' );
-Start States: St0; St7
-St0: 1
+Marpa::Test::is( $g->show_QDFA, <<'EOS', 'Hopcroft/Ullman QDFA' );
+Start States: S0; S1
+S0: 1
 S' ::= . S c
- <S> => St5
-St1: 10,14
-A ::= a . S b
-A ::= a . b
- <S> => St2
- <b> => St4
-St2: 11
-A ::= a S . b
- <b> => St3
-St3: 12
-A ::= a S b .
-St4: 15
-A ::= a b .
-St5: 2
-S' ::= S . c
- <c> => St6
-St6: 3
-S' ::= S c .
-St7: predict; 4,7,9,13
+ <S> => S2
+S1: predict; 4,7,9,13
 S ::= . S A
 S ::= . A
 A ::= . a S b
 A ::= . a b
- <A> => St10
- <S> => St11; St8
- <a> => St1; St7
-St8: 5
-S ::= S . A
- <A> => St9
-St9: 6
-S ::= S A .
-St10: 8
+ <A> => S3
+ <S> => S4; S5
+ <a> => S1; S6
+S2: 2
+S' ::= S . c
+ <c> => S7
+S3: 8
 S ::= A .
-St11: predict; 9,13
+S4: 5
+S ::= S . A
+ <A> => S8
+S5: predict; 9,13
 A ::= . a S b
 A ::= . a b
- <a> => St1; St7
+ <a> => S1; S6
+S6: 10,14
+A ::= a . S b
+A ::= a . b
+ <S> => S9
+ <b> => S10
+S7: 3
+S' ::= S c .
+S8: 6
+S ::= S A .
+S9: 11
+A ::= a S . b
+ <b> => S11
+S10: 15
+A ::= a b .
+S11: 12
+A ::= a S b .
 EOS
 
 # Local Variables:

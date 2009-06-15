@@ -11,11 +11,11 @@ use Marpa;
 # compile and execute.  No checking other than for compilation errors
 # or fatal exceptions is done.  This code DOES NOT do anything sensible.
 
-Test::More::pass('misc.pl compiled');
+Test::More::pass('misc.t compiled');
 
 my $mdl_source = <<'END';
 semantics are perl5.
-version is 0.001_010.
+version is 0.001_013.
 start symbol is S.
 
 S: Document.
@@ -141,4 +141,4 @@ $first_result =
 
 ## no Marpa::Test::Display
 
-Test::More::pass('misc.pl ran to end');
+Test::More::pass('misc.t ran to end');

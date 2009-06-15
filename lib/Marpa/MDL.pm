@@ -18,7 +18,10 @@ sub gen_symbol_from_regex {
     }
     my $symbol = $regex_hash->{$regex};
     return $symbol if defined $symbol;
+
+    ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
     $symbol = substr $regex, 0, 20;
+    ## use critic
     $symbol =~ s/%/%%/gxms;
     $symbol =~ s/([^[:alnum:]_-])/sprintf("%%%.2x", ord($1))/gexms;
     $symbol .= sprintf ':k%x', ( ${$uniq_number} )++;

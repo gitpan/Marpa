@@ -78,29 +78,29 @@ Marpa::Test::is( $grammar->show_rules,
 2: E['] -> E
 END_RULES
 
-Marpa::Test::is( $grammar->show_ii_QDFA,
+Marpa::Test::is( $grammar->show_QDFA,
     <<'END_QDFA', 'Ambiguous Equation QDFA' );
-Start States: St0; St5
-St0: predict; 1,5
+Start States: S0; S1
+S0: 7
+E['] ::= . E
+ <E> => S2
+S1: predict; 1,5
 E ::= . E Op E
 E ::= . Number
- <E> => St1
- <Number> => St4
-St1: 2
-E ::= E . Op E
- <Op> => St0; St2
-St2: 3
-E ::= E Op . E
- <E> => St3
-St3: 4
-E ::= E Op E .
-St4: 6
-E ::= Number .
-St5: 7
-E['] ::= . E
- <E> => St6
-St6: 8
+ <E> => S3
+ <Number> => S4
+S2: 8
 E['] ::= E .
+S3: 2
+E ::= E . Op E
+ <Op> => S1; S5
+S4: 6
+E ::= Number .
+S5: 3
+E ::= E Op . E
+ <E> => S6
+S6: 4
+E ::= E Op E .
 END_QDFA
 
 my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
@@ -137,7 +137,7 @@ my @expected = (
 my $evaler = Marpa::Evaluator->new( { recce => $recce, clone => 0 } );
 
 my $i = -1;
-while ( defined( my $value = $evaler->old_value() ) ) {
+while ( defined( my $value = $evaler->value() ) ) {
     $i++;
     if ( $i > $#expected ) {
         Test::More::fail(
@@ -147,7 +147,7 @@ while ( defined( my $value = $evaler->old_value() ) ) {
         Marpa::Test::is( ${$value}, $expected[$i],
             "Ambiguous Equation Value $i" );
     }
-} ## end while ( defined( my $value = $evaler->old_value() ) )
+} ## end while ( defined( my $value = $evaler->value() ) )
 
 # Local Variables:
 #   mode: cperl

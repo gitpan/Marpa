@@ -21,7 +21,6 @@ my $productive_symbols;
 my $trace_actions;
 my $trace_lex;
 my $trace_predefineds;
-my $trace_priorities;
 my $trace_values;
 my $show_NFA;
 my $show_QDFA;
@@ -69,7 +68,6 @@ sub mdl_command
                 'trace_actions'        => \$trace_actions,
                 'trace_predefineds'    => \$trace_predefineds,
                 'trace_values'         => \$trace_values,
-                'trace_priorities'     => \$trace_priorities,
                 'trace_lex'            => \$trace_lex,
                 'rules'                => \$show_rules,
                 'problems'             => \$show_problems,
@@ -92,10 +90,6 @@ sub mdl_command
 
             if ($trace_predefineds) {
                 $options{trace_predefineds} = 1;
-            }
-
-            if ($trace_priorities) {
-                $options{trace_priorities} = 1;
             }
 
             if ($trace_values) {
@@ -272,7 +266,7 @@ sub do_parse {
     my $parse_count = 0;
     PARSE: while (1) {
 
-        my $value = $evaler->old_value();
+        my $value = $evaler->value();
         if ( not defined $value ) {
             Marpa::exception 'No parse' if $parse_count <= 0;
             return;

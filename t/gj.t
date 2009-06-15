@@ -120,63 +120,63 @@ S16: T ::= ( E . )
 S17: T ::= ( E ) .
 EOS
 
-Marpa::Test::is( $g->show_ii_QDFA, <<'EOS', 'Grune/Jacobs QDFA' );
-Start States: St0; St9
-St0: 1
+Marpa::Test::is( $g->show_QDFA, <<'EOS', 'Grune/Jacobs QDFA' );
+Start States: S0; S1
+S0: 1
 S' ::= . S $
- <S> => St7
-St1: 11
-E ::= T .
-St2: predict; 12,14
-T ::= . n
-T ::= . ( E )
- <(> => St11; St4
- <n> => St3
-St3: 13
-T ::= n .
-St4: 15
-T ::= ( . E )
- <E> => St5
-St5: 16
-T ::= ( E . )
- <)> => St6
-St6: 17
-T ::= ( E ) .
-St7: 2
-S' ::= S . $
- <$> => St8
-St8: 3
-S' ::= S $ .
-St9: predict; 4,6,10,12,14
+ <S> => S2
+S1: predict; 4,6,10,12,14
 S ::= . E
 E ::= . E - T
 E ::= . T
 T ::= . n
 T ::= . ( E )
- <(> => St11; St4
- <E> => St10
- <T> => St1
- <n> => St3
-St10: 5,7
-S ::= E .
-E ::= E . - T
- <-> => St13; St2
-St11: predict; 6,10,12,14
+ <(> => S3; S4
+ <E> => S5
+ <T> => S6
+ <n> => S7
+S2: 2
+S' ::= S . $
+ <$> => S8
+S3: 15
+T ::= ( . E )
+ <E> => S9
+S4: predict; 6,10,12,14
 E ::= . E - T
 E ::= . T
 T ::= . n
 T ::= . ( E )
- <(> => St11; St4
- <E> => St12
- <T> => St1
- <n> => St3
-St12: 7
+ <(> => S3; S4
+ <E> => S10
+ <T> => S6
+ <n> => S7
+S5: 5,7
+S ::= E .
 E ::= E . - T
- <-> => St13; St2
-St13: 8
+ <-> => S11; S12
+S6: 11
+E ::= T .
+S7: 13
+T ::= n .
+S8: 3
+S' ::= S $ .
+S9: 16
+T ::= ( E . )
+ <)> => S13
+S10: 7
+E ::= E . - T
+ <-> => S11; S12
+S11: 8
 E ::= E - . T
- <T> => St14
-St14: 9
+ <T> => S14
+S12: predict; 12,14
+T ::= . n
+T ::= . ( E )
+ <(> => S3; S4
+ <n> => S7
+S13: 17
+T ::= ( E ) .
+S14: 9
 E ::= E - T .
 EOS
 

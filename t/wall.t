@@ -87,12 +87,16 @@ EOCODE
 
 my @expected = qw(0 1 1 3 4 8 12 21 33 55 88 144 232 );
 
+## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
 for my $n ( 1 .. 12 ) {
+## use critic
 
     my $recce  = Marpa::Recognizer->new( { grammar => $g } );
     my $minus  = $g->get_symbol('Minus');
     my $number = $g->get_symbol('Number');
+    ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
     $recce->earleme( [ $number, 6, 1 ] );
+    ## use critic
     for my $i ( 1 .. $n ) {
         $recce->earleme( [ $minus, q{-}, 1 ] );
     }
@@ -102,7 +106,7 @@ for my $n ( 1 .. 12 ) {
     my $evaler = Marpa::Evaluator->new( { recce => $recce } );
 
     my $parse_count = 0;
-    while ( $evaler->old_value() ) { $parse_count++; }
+    while ( $evaler->value() ) { $parse_count++; }
     Marpa::Test::is( $expected[$n], $parse_count, "Wall Series Number $n" );
 
 } ## end for my $n ( 1 .. 12 )

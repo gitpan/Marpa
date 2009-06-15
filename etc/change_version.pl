@@ -26,7 +26,7 @@ my @test_files = qw(
 our $FH;
 
 Marpa::exception("usage: $0: old_version new_version")
-    unless scalar @ARGV == 2;
+    if scalar @ARGV != 2;
 
 my ( $old, $new ) = @ARGV;
 
@@ -72,40 +72,40 @@ sub change {
     return 1;
 } ## end sub change
 
-sub fix_META_yml {
+sub fix_meta_yml {
     my $text_ref  = shift;
     my $file_name = shift;
 
-    unless ( ${$text_ref} =~ s/(version:\s*)$old/$1$new/gxms ) {
+    if ( ${$text_ref} !~ s/(version:\s*)$old/$1$new/gxms ) {
         say {*STDERR}
             "failed to change version from $old to $new in $file_name"
             or Marpa::exception("Could not print to STDERR: $ERRNO");
     }
     return $text_ref;
-} ## end sub fix_META_yml
+} ## end sub fix_meta_yml
 
-sub fix_Marpa_pm {
+sub fix_marpa_pm {
     my $text_ref  = shift;
     my $file_name = shift;
 
-    unless ( ${$text_ref} =~ s/(our\s+\$VERSION\s*=\s*')$old';/$1$new';/xms ) {
+    if ( ${$text_ref} !~ s/(our\s+\$VERSION\s*=\s*')$old';/$1$new';/xms ) {
         say {*STDERR}
             "failed to change VERSION from $old to $new in $file_name"
             or Marpa::exception("Could not print to STDERR: $ERRNO");
     }
-    unless ( ${$text_ref} =~ s/(version\s+is\s+)$old/$1$new/xms ) {
+    if ( ${$text_ref} !~ s/(version\s+is\s+)$old/$1$new/xms ) {
         say {*STDERR}
             "failed to change version from $old to $new in $file_name"
             or Marpa::exception("Could not print to STDERR: $ERRNO");
     }
     return $text_ref;
-} ## end sub fix_Marpa_pm
+} ## end sub fix_marpa_pm
 
 sub fix_bootstrap_pl {
     my $text_ref  = shift;
     my $file_name = shift;
 
-    unless ( ${$text_ref} =~ s/(\$new_version\s*=\s*')$old';/$1$new';/xms ) {
+    if ( ${$text_ref} !~ s/(\$new_version\s*=\s*')$old';/$1$new';/xms ) {
         say {*STDERR}
             "failed to change version from $old to $new in $file_name"
             or Marpa::exception("Could not print to STDERR: $ERRNO");
@@ -117,7 +117,7 @@ sub fix_test_files {
     my $text_ref  = shift;
     my $file_name = shift;
 
-    unless ( ${$text_ref} =~ s/(version\s+is\s+)$old/$1$new/gxms ) {
+    if ( ${$text_ref} !~ s/(version\s+is\s+)$old/$1$new/gxms ) {
         say {*STDERR}
             "failed to change version from $old to $new in $file_name"
             or Marpa::exception("Could not print to STDERR: $ERRNO");
@@ -130,17 +130,17 @@ sub update_changes {
     my $file_name = shift;
 
     my $date_stamp = localtime;
-    unless ( ${$text_ref}
-        =~ s/(\ARevision\s+history\s+[^\n]*\n\n)/$1$new $date_stamp\n/xms )
+    if ( ${$text_ref}
+        !~ s/(\ARevision\s+history\s+[^\n]*\n\n)/$1$new $date_stamp\n/xms )
     {
         say {*STDERR} "failed to add $new to $file_name"
             or Marpa::exception("Could not print to STDERR: $ERRNO");
-    } ## end unless ( ${$text_ref} =~ ...
+    } ## end if ( ${$text_ref} !~ ...
     return $text_ref;
 } ## end sub update_changes
 
-change( \&fix_META_yml,     'META.yml' );
-change( \&fix_Marpa_pm,     'lib/Marpa.pm' );
+change( \&fix_meta_yml,     'META.yml' );
+change( \&fix_marpa_pm,     'lib/Marpa.pm' );
 change( \&fix_bootstrap_pl, 'bootstrap/bootstrap.pl' );
 change( \&fix_test_files,   @test_files );
 change( \&update_changes,   'Changes' );

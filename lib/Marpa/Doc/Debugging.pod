@@ -83,7 +83,7 @@ do the following:
 =item * Run C<show_tree> in verbose mode
 on the evaluator after each call of the C<value> method.
 
-=item * Turn on C<trace_choices>.
+=item * Turn on C<trace_journal>.
 
 =item * Turn on C<trace_values> so you can see the values as they pushed onto
 the evaluation stack, popped off it, calculated and pushed back on.
@@ -95,7 +95,7 @@ the outputs from C<show_earley_sets>,
 C<show_bocage>,
 C<show_tree>,
 C<trace_lex>,
-and C<trace_choices>
+and C<trace_journal>
 and C<trace_values>
 can be lengthy.
 You'll want to work with short inputs if at all possible.
@@ -217,14 +217,6 @@ C<trace_lex> turns on both.
 May be set at any point in the parse, but will be useless if
 set after input is complete.
 
-=item trace_priorities
-
-Traces the priority setting of each QDFA state.
-Requires knowledge of Marpa internals.
-The priorities are set during precomputation.
-A trace message warns the user if he sets
-C<trace_priorities> after that point.
-
 =item trace_rules
 
 Traces rules as they are added to the grammar.
@@ -241,7 +233,7 @@ To be effective
 C<trace_rules> must be set
 in a method call prior to the one with the C<source> option.
 
-=item trace_choices
+=item trace_journal
 
 =item trace_values
 

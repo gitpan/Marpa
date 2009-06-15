@@ -28,7 +28,9 @@ package Marpa::Source;
 
 END_OF_PREAMBLE_CODE
 
+## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
 say 'our $VERSION = "', $Marpa::VERSION, q{";};
+## use critic
 
 print <<'END_OF_PREAMBLE_CODE' or Marpa::exception("print failed: $ERRNO");
 

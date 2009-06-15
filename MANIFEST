@@ -51,6 +51,7 @@ t/equation_s.t
 t/final_nonnullable.t
 t/gj.t
 t/hu.t
+t/limits.t
 t/minus.t
 t/minus_s.t
 t/pascal.t
