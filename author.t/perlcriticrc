@@ -396,3 +396,7 @@ severity=5
 [-Subroutines::ProhibitQualifiedSubDeclarations]
 
 [-Modules::RequireExplicitInclusion]
+
+[Documentation::PodSpelling]
+severity=5
+stop_words_file = author.t/spelling_exceptions.list

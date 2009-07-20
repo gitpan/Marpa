@@ -236,7 +236,7 @@ for my $test (@tests) {
                 canonical( $expected{$test}{$feature}, $where, $long_where ),
                 $test_name
             );
-        } ## end else [ if ( eval { run_test( { $feature => $test_code{$test...
+        } ## end else [ if ( eval { run_test( { $feature => $test_code{$test...}})})]
     } ## end for my $feature (@features)
 } ## end for my $test (@tests)
 

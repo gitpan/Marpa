@@ -953,7 +953,7 @@ sub scan_set {
                     "  Its last earleme would be at $target_ix\n"
                     );
                     #>>>
-            } ## end if ( $target_ix & ...
+            } ## end if ( $target_ix & ...)
 
             my $target_set = ( $earley_set_list->[$target_ix] //= [] );
             if ( $target_ix > $furthest_earleme ) {
@@ -1290,7 +1290,7 @@ a comment.
 
 Marpa is not restricted to the one-character-per-earleme model.
 Most parser generators treat location as position in a token stream.
-In Marpa, this correspoind to a
+In Marpa, this corresponds to a
 one-token-per-earleme model.
 
 If you use the C<earleme> method, you can structure your input in almost any way you like.
@@ -1490,6 +1490,8 @@ The earleme length of each token is
 set to the length of the token in characters.
 (If a token has a "lex prefix",
 the length of the lex prefix counts as part of the token length.)
+
+=for stopwords cth
 
 Subsequent
 calls to C<text> on the same recognizer always advance the earleme numbering

@@ -135,7 +135,7 @@ sub update_changes {
     {
         say {*STDERR} "failed to add $new to $file_name"
             or Marpa::exception("Could not print to STDERR: $ERRNO");
-    } ## end if ( ${$text_ref} !~ ...
+    } ## end if ( ${$text_ref} !~ ...)
     return $text_ref;
 } ## end sub update_changes
 

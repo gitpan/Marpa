@@ -54,7 +54,7 @@ DELETE_UNDEF_CONSTANT: for my $ix ( 0 .. $#{$unfreed_proberefs} ) {
         delete $unfreed_proberefs->[$ix];
         $ignored_count++;
         last DELETE_UNDEF_CONSTANT;
-    } ## end if ( ref $unfreed_proberefs->[$ix] eq 'SCALAR' and not...
+    } ## end if ( ref $unfreed_proberefs->[$ix] eq 'SCALAR' and not...)
 } ## end for my $ix ( 0 .. $#{$unfreed_proberefs} )
 $unfreed_count = @{$unfreed_proberefs};
 

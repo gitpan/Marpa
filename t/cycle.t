@@ -16,13 +16,10 @@ BEGIN {
     Test::More::use_ok('Marpa');
 }
 
-my $example_dir = 'example';
-chdir $example_dir;
-
 my $mdl_header = <<'EOF';
-semantics are perl5.  version is 0.001_013.
+semantics are perl5.  version is 0.001_014.
 start symbol is S.
-default action is q{join(q{ }, @_)}.
+default action is q{join(q{ }, grep { defined $_ } @_)}.
 
 EOF
 
@@ -79,26 +76,30 @@ X: .
 
 EOF
 
-for my $test_data (
-    [   \$cycle1_mdl,
-        \('1'),
-        '1',
-        <<'EOS'
+my $cycle1_test = [
+    \$cycle1_mdl,
+    \('1'),
+    '1',
+    <<'EOS'
 Cycle found involving rule: 0: s -> s
 EOS
-    ],
-    [   \$cycle2_mdl,
-        \('1'),
-        '1',
-        <<'EOS'
+];
+
+my $cycle2_test = [
+    \$cycle2_mdl,
+    \('1'),
+    '1',
+    <<'EOS'
 Cycle found involving rule: 1: a -> s
 Cycle found involving rule: 0: s -> a
 EOS
-    ],
-    [   \$cycle8_mdl,
-        \('123456'),
-        '1 2 3 4 5 6',
-        <<'EOS'
+];
+
+my $cycle8_test = [
+    \$cycle8_mdl,
+    \('123456'),
+    '1 2 3 4 5 6',
+    <<'EOS'
 Cycle found involving rule: 3: c -> w d x
 Cycle found involving rule: 2: b -> v c
 Cycle found involving rule: 1: a -> b t u
@@ -106,22 +107,36 @@ Cycle found involving rule: 5: e -> s
 Cycle found involving rule: 4: d -> e
 Cycle found involving rule: 0: s -> a
 EOS
-    ],
-    )
-{
-    my ( $grammar, $input, $expected, $expected_trace ) = @{$test_data};
+];
+
+my @test_data = ( $cycle1_test, $cycle2_test, $cycle8_test );
+
+for my $test_data (@test_data) {
+    my ( $grammar_source, $input, $expected, $expected_trace ) =
+        @{$test_data};
     my $trace = q{};
     open my $MEMORY, '>', \$trace;
-    my $value = Marpa::mdl(
-        $grammar, $input,
-        {   cycle_action      => 'warn',
+    my $grammar = Marpa::Grammar->new(
+        {   mdl_source        => $grammar_source,
+            cycle_action      => 'warn',
             trace_file_handle => $MEMORY,
         }
     );
+
+    my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
+    my $fail_offset = $recce->text($input);
+    if ( $fail_offset >= 0 ) {
+        Marpa::exception("Parse failed at offset $fail_offset");
+    }
+
+    $recce->end_input();
+    my $evaler = Marpa::Evaluator->new( { recce => $recce, clone => 0 } );
+    my $result = $evaler->value();
     close $MEMORY;
-    Marpa::Test::is( ${$value}, $expected );
-    Marpa::Test::is( $trace,    $expected_trace );
-} ## end for my $test_data ( [ \$cycle1_mdl, \('1'), '1', <<'EOS'...
+
+    Marpa::Test::is( ${$result}, $expected );
+    Marpa::Test::is( $trace,     $expected_trace );
+} ## end for my $test_data (@test_data)
 
 # Local Variables:
 #   mode: cperl

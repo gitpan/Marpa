@@ -218,7 +218,7 @@ is_file( $_, 'author.t/misc.t', 'lex_q_quote snippet' );
     my ( $string, $token_length ) =
         Marpa::Lex::lex_q_quote( \$input_string, $lexeme_start );
 
-Takes two required arguents, a I<string reference> and a I<start earleme>.
+Takes two required arguments, a I<string reference> and a I<start earleme>.
 The I<string reference> must be to a string that might contain a C<q-> or C<qq->quoted string.
 The C<q-> or C<qq->quoted string will be expected
 to start at the position pointed to by C<pos ${$string}>.

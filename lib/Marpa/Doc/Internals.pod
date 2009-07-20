@@ -913,7 +913,7 @@ in_file($_, 'author.t/equation_show_bocage.out');
 
 =end Marpa::Test::Display:
 
-    S2@0-3L3 ::= S2@0-3L3[0]
+    S2@0-3L3#0 ::= S2@0-3L3#0[0]
 
 A parse bocage grammar always starts with the start or-production.
 The above is the start production for our example.
@@ -971,7 +971,7 @@ in_file($_, 'author.t/equation_show_bocage.out');
 
 =end Marpa::Test::Display:
 
-    S2@0-3L3[0] ::= S6@0-3L0
+    S2@0-3L3#0[0]#0 ::= S6@0-3L0#1
         rule 2: e['] ::= e .
         rhs length = 1; closure
 
@@ -1007,8 +1007,8 @@ in_file($_, 'author.t/equation_show_bocage.out');
 
 =end Marpa::Test::Display:
 
-    S5@0-2R0:2 ::= S5@0-2R0:2[0]
-    S5@0-2R0:2[0] ::= S3@0-1R0:1 '+'
+    S5@0-2R0:2#2 ::= S5@0-2R0:2#2[0]#2
+    S5@0-2R0:2#2[0]#2 ::= S3@0-1R0:1#4 '+'
         rule 0: e ::= e op . e
         rhs length = 3
 
@@ -1037,8 +1037,8 @@ in_file($_, 'author.t/equation_show_bocage.out');
 
 =end Marpa::Test::Display:
 
-    S4@0-1L0 ::= S4@0-1L0[0]
-    S4@0-1L0[0] ::= '2'
+    S4@0-1L0#5 ::= S4@0-1L0#5[0]#5
+    S4@0-1L0#5[0]#5 ::= '2'
         rule 1: e ::= number .
         rhs length = 1; closure
 
@@ -1083,12 +1083,12 @@ in_file($_, 'author.t/equation_show_tree.out');
 
 =end Marpa::Test::Display:
 
-    Tree Node #1: S6@0-3L0[0]; Parent = 0; Depth = 1; Rhs Length = 3
+    Tree Node #1: S6@0-3L0#1[0]; Parent = 0; Depth = 1; Rhs Length = 3
         Rule: e ::= e op e .
-        Kernel: S5@0-2R0:2
-        Closure: S4@2-3L0
+        Kernel: S5@0-2R0:2#2
+        Closure: S4@2-3L0#3
         Perl Closure: Y
-    Tree Node #2: S4@2-3L0[0]; Parent = 1; Depth = 2; Rhs Length = 1
+    Tree Node #2: S4@2-3L0#3[0]; Parent = 1; Depth = 2; Rhs Length = 1
         Rule: e ::= number .
         Perl Closure: Y; Token: '2'
 
@@ -1449,7 +1449,7 @@ is_file($_, 'example/equation.marpa');
 =end Marpa::Test::Display:
 
 
-    semantics are perl5.  version is 0.001_013.
+    semantics are perl5.  version is 0.001_014.
 
     start symbol is E.
 
@@ -1594,28 +1594,28 @@ is_file($_, 'author.t/equation_show_bocage.out');
 =end Marpa::Test::Display:
 
     package: Marpa::E_1; parse count: 0
-    S2@0-3L3 ::= S2@0-3L3[0]
-    S2@0-3L3[0] ::= S6@0-3L0
+    S2@0-3L3#0 ::= S2@0-3L3#0[0]#0
+    S2@0-3L3#0[0]#0 ::= S6@0-3L0#1
         rule 2: e['] ::= e .
         rhs length = 1; closure
-    S6@0-3L0 ::= S6@0-3L0[0]
-    S6@0-3L0[0] ::= S5@0-2R0:2 S4@2-3L0
+    S6@0-3L0#1 ::= S6@0-3L0#1[0]#1
+    S6@0-3L0#1[0]#1 ::= S5@0-2R0:2#2 S4@2-3L0#3
         rule 0: e ::= e op e .
         rhs length = 3; closure
-    S5@0-2R0:2 ::= S5@0-2R0:2[0]
-    S5@0-2R0:2[0] ::= S3@0-1R0:1 '+'
+    S5@0-2R0:2#2 ::= S5@0-2R0:2#2[0]#2
+    S5@0-2R0:2#2[0]#2 ::= S3@0-1R0:1#4 '+'
         rule 0: e ::= e op . e
         rhs length = 3
-    S4@2-3L0 ::= S4@2-3L0[0]
-    S4@2-3L0[0] ::= '2'
+    S4@2-3L0#3 ::= S4@2-3L0#3[0]#3
+    S4@2-3L0#3[0]#3 ::= '2'
         rule 1: e ::= number .
         rhs length = 1; closure
-    S3@0-1R0:1 ::= S3@0-1R0:1[0]
-    S3@0-1R0:1[0] ::= S4@0-1L0
+    S3@0-1R0:1#4 ::= S3@0-1R0:1#4[0]#4
+    S3@0-1R0:1#4[0]#4 ::= S4@0-1L0#5
         rule 0: e ::= e . op e
         rhs length = 3
-    S4@0-1L0 ::= S4@0-1L0[0]
-    S4@0-1L0[0] ::= '2'
+    S4@0-1L0#5 ::= S4@0-1L0#5[0]#5
+    S4@0-1L0#5[0]#5 ::= '2'
         rule 1: e ::= number .
         rhs length = 1; closure
 
@@ -1628,27 +1628,27 @@ is_file($_, 'author.t/equation_show_tree.out');
 
 =end Marpa::Test::Display:
 
-    Tree Node #0: S2@0-3L3[0]; Depth = 0; Rhs Length = 1
+    Tree Node #0: S2@0-3L3#0[0]; Depth = 0; Rhs Length = 1
         Rule: e['] ::= e .
-        Closure: S6@0-3L0
+        Closure: S6@0-3L0#1
         Perl Closure: Y
-    Tree Node #1: S6@0-3L0[0]; Parent = 0; Depth = 1; Rhs Length = 3
+    Tree Node #1: S6@0-3L0#1[0]; Parent = 0; Depth = 1; Rhs Length = 3
         Rule: e ::= e op e .
-        Kernel: S5@0-2R0:2
-        Closure: S4@2-3L0
+        Kernel: S5@0-2R0:2#2
+        Closure: S4@2-3L0#3
         Perl Closure: Y
-    Tree Node #2: S4@2-3L0[0]; Parent = 1; Depth = 2; Rhs Length = 1
+    Tree Node #2: S4@2-3L0#3[0]; Parent = 1; Depth = 2; Rhs Length = 1
         Rule: e ::= number .
         Perl Closure: Y; Token: '2'
-    Tree Node #3: S5@0-2R0:2[0]; Parent = 1; Depth = 2; Rhs Length = 3
+    Tree Node #3: S5@0-2R0:2#2[0]; Parent = 1; Depth = 2; Rhs Length = 3
         Rule: e ::= e op . e
-        Kernel: S3@0-1R0:1
+        Kernel: S3@0-1R0:1#4
         Perl Closure: N; Token: '+'
-    Tree Node #4: S3@0-1R0:1[0]; Parent = 3; Depth = 3; Rhs Length = 3
+    Tree Node #4: S3@0-1R0:1#4[0]; Parent = 3; Depth = 3; Rhs Length = 3
         Rule: e ::= e . op e
-        Closure: S4@0-1L0
+        Closure: S4@0-1L0#5
         Perl Closure: N
-    Tree Node #5: S4@0-1L0[0]; Parent = 4; Depth = 4; Rhs Length = 1
+    Tree Node #5: S4@0-1L0#5[0]; Parent = 4; Depth = 4; Rhs Length = 1
         Rule: e ::= number .
         Perl Closure: Y; Token: '2'
 

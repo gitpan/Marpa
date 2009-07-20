@@ -1,7 +1,9 @@
 
 .PHONY: all all_tests critic display
 
-all: \
+all: source_files all_tests
+
+source_files: \
     equation_show_symbols.out \
     equation_show_rules.out \
     equation_show_QDFA.out \
@@ -10,9 +12,7 @@ all: \
     equation_show_tree.out \
     equation_trace_values.out \
     self_show_rules.out \
-    MDL_displays.errs \
-    test_pod.out \
-    all_tests
+    MDL_displays.errs
 
 all_tests:
 	-(cd ..; prove author.t/*.t)

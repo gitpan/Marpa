@@ -226,7 +226,7 @@ sub test_file {
             }
             $mismatches .= "=== Line $display_line: $message";
             $mismatch_count++;
-        } ## end if ( my $message = $eval_result ? $eval_result->[0] ...
+        } ## end if ( my $message = $eval_result ? $eval_result->[0] ...)
 
     }    # $display_test
 
@@ -389,7 +389,7 @@ sub command {
             )
         {
             $Marpa::Test::Display::IN_COMMAND++;
-        } ## end if ( $paragraph =~ m{ )
+        } ## end if ( $paragraph =~ m{ ) (})
         if ( $paragraph =~ /\Amake:$/xms ) {
             $Marpa::Test::Display::IN_COMMAND++;
         }

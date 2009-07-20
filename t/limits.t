@@ -168,7 +168,7 @@ REPORT_RESULT: {
     {
         Test::More::pass('Caught over-high rule priority');
         last REPORT_RESULT;
-    } ## end if ( $EVAL_ERROR =~ ...
+    } ## end if ( $EVAL_ERROR =~ ...)
     Test::More::is( $EVAL_ERROR, q{}, 'Grammar with earleme too long' );
 } ## end REPORT_RESULT:
 
