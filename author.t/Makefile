@@ -45,7 +45,7 @@ equation_show_earley_sets.out:
 
 equation_show_bocage.out:
 	echo 2+2 | perl -I../lib ../bin/mdl parse -grammar \
-        ../example/equation.marpa --bocage=2 | \
+        ../example/equation.marpa --bocage=3 | \
 	sed -e '/(2+2)==4/d' > $@
 
 equation_show_tree.out:

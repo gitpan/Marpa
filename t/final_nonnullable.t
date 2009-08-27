@@ -65,64 +65,64 @@ Marpa::Test::is( $grammar->show_QDFA,
     <<'END_OF_STRING', 'final nonnulling QDFA' );
 Start States: S0; S1
 S0: 27
-S['] ::= . S
+S['] -> . S
  <S> => S2
 S1: predict; 1,3,5,10,13,19,21,25
-p ::= . a
-n ::= . a
-S ::= . p p S[R0:2][x5]
-S ::= p[] . p S[R0:2][x5]
-S ::= . p p[] S[R0:2][x5]
-S ::= p[] p[] . S[R0:2][x5]
-S[R0:2][x5] ::= . p n
-S[R0:2][x5] ::= p[] . n
+p -> . a
+n -> . a
+S -> . p p S[R0:2][x5]
+S -> p[] . p S[R0:2][x5]
+S -> . p p[] S[R0:2][x5]
+S -> p[] p[] . S[R0:2][x5]
+S[R0:2][x5] -> . p n
+S[R0:2][x5] -> p[] . n
  <S[R0:2][x5]> => S3
  <a> => S4
  <n> => S5
  <p> => S6; S7
 S2: 28
-S['] ::= S .
+S['] -> S .
 S3: 20
-S ::= p[] p[] S[R0:2][x5] .
+S -> p[] p[] S[R0:2][x5] .
 S4: 2,4
-p ::= a .
-n ::= a .
+p -> a .
+n -> a .
 S5: 26
-S[R0:2][x5] ::= p[] n .
+S[R0:2][x5] -> p[] n .
 S6: 6,11,15,22
-S ::= p . p S[R0:2][x5]
-S ::= p[] p . S[R0:2][x5]
-S ::= p p[] . S[R0:2][x5]
-S[R0:2][x5] ::= p . n
+S -> p . p S[R0:2][x5]
+S -> p[] p . S[R0:2][x5]
+S -> p p[] . S[R0:2][x5]
+S[R0:2][x5] -> p . n
  <S[R0:2][x5]> => S8
  <n> => S9
  <p> => S10; S7
 S7: predict; 1,3,21,25
-p ::= . a
-n ::= . a
-S[R0:2][x5] ::= . p n
-S[R0:2][x5] ::= p[] . n
+p -> . a
+n -> . a
+S[R0:2][x5] -> . p n
+S[R0:2][x5] -> p[] . n
  <a> => S4
  <n> => S5
  <p> => S11; S12
 S8: 12,16
-S ::= p[] p S[R0:2][x5] .
-S ::= p p[] S[R0:2][x5] .
+S -> p[] p S[R0:2][x5] .
+S -> p p[] S[R0:2][x5] .
 S9: 23
-S[R0:2][x5] ::= p n .
+S[R0:2][x5] -> p n .
 S10: 7
-S ::= p p . S[R0:2][x5]
+S -> p p . S[R0:2][x5]
  <S[R0:2][x5]> => S13
 S11: 22
-S[R0:2][x5] ::= p . n
+S[R0:2][x5] -> p . n
  <n> => S9
 S12: predict; 3
-n ::= . a
+n -> . a
  <a> => S14
 S13: 8
-S ::= p p S[R0:2][x5] .
+S -> p p S[R0:2][x5] .
 S14: 4
-n ::= a .
+n -> a .
 END_OF_STRING
 
 my $a = $grammar->get_symbol('a');

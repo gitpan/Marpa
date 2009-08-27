@@ -141,7 +141,7 @@ for my $test_data (@test_data) {
     $evaler->audit();
 
     my @values = ();
-    while ( my $value = $evaler->old_value() ) {
+    while ( my $value = $evaler->value() ) {
         push @values, ${$value};
     }
 

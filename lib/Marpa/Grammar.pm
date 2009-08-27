@@ -3,7 +3,7 @@ package Marpa::Grammar;
 use 5.010;
 
 use warnings;
-no warnings 'recursion';
+no warnings qw(recursion qw);
 use strict;
 
 # It's all integers, except for the version number
@@ -20,6 +20,7 @@ what in C would be structures.
 
 =cut
 
+#<<< no perltidy
 use Marpa::Offset qw(
 
     :package=Marpa::Internal::Symbol
@@ -27,11 +28,23 @@ use Marpa::Offset qw(
     ID NAME
     =LAST_BASIC_DATA_FIELD
 
-    IS_CHAF_NULLING NULL_ALIAS NULLING
+    IS_CHAF_NULLING
+    NULL_ALIAS
+    NULLING
+    USER_PRIORITY
+
+    MAXIMAL { Maximal (longest possible)
+        or minimal (shortest possible) evaluation?
+        Default is indifferent. }
+
+    NULL_WIDTH { When nulled,
+    the number of nulls it represents }
+
     =LAST_EVALUATOR_FIELD
 
     ACTION PREFIX SUFFIX
-    REGEX USER_PRIORITY TERMINAL
+    REGEX
+    TERMINAL
     =LAST_RECOGNIZER_FIELD
 
     LHS RHS ACCESSIBLE PRODUCTIVE START
@@ -40,6 +53,8 @@ use Marpa::Offset qw(
     COUNTED
     =LAST_FIELD
 );
+#>>> End of no perltidy
+#
 
 # LHS             - rules with this as the lhs,
 #                   as a ref to an array of rule refs
@@ -77,11 +92,8 @@ use Marpa::Offset qw(
     CODE CYCLE
     USER_PRIORITY
     INTERNAL_PRIORITY
-    MINIMAL
+    MAXIMAL
     HAS_CHAF_LHS HAS_CHAF_RHS
-
-    VIRTUAL_SPAN { does this rule have a start or end
-    other than that of its original rule? }
 
     =LAST_EVALUATOR_FIELD
     =LAST_RECOGNIZER_FIELD
@@ -195,7 +207,6 @@ use Marpa::Offset qw(
     TRACE_EVALUATION { General evaluation trace }
     TRACE_ACTIONS
     TRACE_VALUES
-    TRACE_JOURNAL { Trace the evaluator journal }
 
     MAX_PARSES
     PREAMBLE
@@ -225,6 +236,12 @@ use Marpa::Offset qw(
 );
 
 package Marpa::Internal::Grammar;
+
+use Carp;
+
+# use Smart::Comments '###';
+
+### Using smart comments <where>...
 
 =begin Implementation:
 
@@ -659,7 +676,6 @@ sub Marpa::Grammar::new {
     $grammar->[Marpa::Internal::Grammar::AMBIGUOUS_LEX]      = 1;
     $grammar->[Marpa::Internal::Grammar::TRACE_RULES]        = 0;
     $grammar->[Marpa::Internal::Grammar::TRACE_VALUES]       = 0;
-    $grammar->[Marpa::Internal::Grammar::TRACE_JOURNAL]      = 0;
     $grammar->[Marpa::Internal::Grammar::TRACE_ITERATIONS]   = 0;
     $grammar->[Marpa::Internal::Grammar::TRACING]            = 0;
     $grammar->[Marpa::Internal::Grammar::STRIP]              = 1;
@@ -815,14 +831,14 @@ sub parse_source_grammar {
 
     my $failed_at_earleme = $recce->text($source);
     if ( $failed_at_earleme >= 0 ) {
-        die_with_parse_failure( $source, $failed_at_earleme );
+        Marpa::die_with_parse_failure( $source, $failed_at_earleme );
     }
     $recce->end_input();
     my $evaler = Marpa::Evaluator->new( { recce => $recce } );
     Marpa::exception(
         'Marpa Internal error: failed to create evaluator for MDL')
         if not defined $evaler;
-    my $value = $evaler->old_value();
+    my $value = $evaler->value();
     raw_grammar_eval( $grammar, $value );
     return;
 } ## end sub parse_source_grammar
@@ -985,16 +1001,6 @@ sub Marpa::Grammar::set {
                     $grammar->[Marpa::Internal::Grammar::TRACING] = 1;
                 }
             } ## end when ('trace_lex_matches')
-            when ('trace_journal') {
-                Marpa::exception("$option must be set to a number >= 0")
-                    if not $value =~ /\A\d+\z/xms;
-                $grammar->[Marpa::Internal::Grammar::TRACE_JOURNAL] =
-                    $value + 0;
-                if ($value) {
-                    say {$trace_fh} "Setting $option option to $value";
-                    $grammar->[Marpa::Internal::Grammar::TRACING] = 1;
-                }
-            } ## end when ('trace_journal')
             when ('trace_values') {
                 Marpa::exception('trace_values must be set to a number >= 0')
                     if not $value =~ /\A\d+\z/xms;
@@ -1581,12 +1587,15 @@ sub Marpa::brief_virtual_rule {
             if defined $dot_position;
         return Marpa::brief_rule($rule);
     }
+
     my $rule_id          = $rule->[Marpa::Internal::Rule::ID];
     my $original_rule_id = $original_rule->[Marpa::Internal::Rule::ID];
     my $original_lhs     = $original_rule->[Marpa::Internal::Rule::LHS];
+    my $chaf_rhs         = $rule->[Marpa::Internal::Rule::RHS];
     my $original_rhs     = $original_rule->[Marpa::Internal::Rule::RHS];
     my $chaf_start       = $rule->[Marpa::Internal::Rule::CHAF_START];
     my $chaf_end         = $rule->[Marpa::Internal::Rule::CHAF_END];
+
     if ( not defined $chaf_start ) {
         return "dot at $dot_position, virtual "
             . Marpa::brief_rule($original_rule)
@@ -1594,25 +1603,29 @@ sub Marpa::brief_virtual_rule {
         return 'virtual ' . Marpa::brief_rule($original_rule);
     } ## end if ( not defined $chaf_start )
     my $text .= "(part of $original_rule_id) ";
-    $text .= $original_lhs->[Marpa::Internal::Symbol::NAME] . ' -> ';
-    if ( @{$original_rhs} ) {
-        my @rhs_names =
-            map { $_->[Marpa::Internal::Symbol::NAME] } @{$original_rhs};
-        if ( defined $dot_position ) {
-            my $dot_in_original = $dot_position + $chaf_start;
-            given ( $dot_in_original - $chaf_end ) {
-                when (1) { $rhs_names[$chaf_end] .= q{ .}; }
-                when (2) { $rhs_names[-1]        .= q{ .}; }
-                default {
-                    $rhs_names[$dot_in_original] =
-                        q{. } . $rhs_names[$dot_in_original];
-                }
-            } ## end given
-        } ## end if ( defined $dot_position )
-        $rhs_names[$chaf_start] = '{ ' . $rhs_names[$chaf_start];
-        $rhs_names[$chaf_end] .= ' }';
-        $text .= join q{ }, @rhs_names;
-    } ## end if ( @{$original_rhs} )
+    $text .= $original_lhs->[Marpa::Internal::Symbol::NAME] . ' ->';
+    my @rhs_names =
+        map { $_->[Marpa::Internal::Symbol::NAME] } @{$original_rhs};
+    if ( $dot_position >= scalar @{$chaf_rhs} ) {
+        $dot_position = scalar @rhs_names;
+    }
+    else {
+        $dot_position += $chaf_start;
+    }
+    POSITION: for my $position ( 0 .. scalar @rhs_names ) {
+        if ( $position == $chaf_start ) {
+            $text .= ' {';
+        }
+        if ( $position == $dot_position ) {
+            $text .= q{ .};
+        }
+        if ( $position == $chaf_end + 1 ) {
+            $text .= ' }';
+        }
+        my $name = $rhs_names[$position];
+        next POSITION if not defined $name;
+        $text .= " $name";
+    } ## end for my $position ( 0 .. scalar @rhs_names )
     return $text;
 } ## end sub Marpa::brief_virtual_rule
 
@@ -1636,7 +1649,7 @@ sub Marpa::show_rule {
             [ 1, 'inaccessible', Marpa::Internal::Rule::ACCESSIBLE, ],
             [ 0, 'nullable',     Marpa::Internal::Rule::NULLABLE, ],
             [ 0, 'nulling',      Marpa::Internal::Rule::NULLING, ],
-            [ 0, 'minimal',      Marpa::Internal::Rule::MINIMAL, ],
+            [ 0, 'maximal',      Marpa::Internal::Rule::MAXIMAL, ],
         )
         )
     {
@@ -1681,15 +1694,27 @@ sub Marpa::Grammar::show_rules {
 } ## end sub Marpa::Grammar::show_rules
 
 sub Marpa::show_dotted_rule {
-    my ( $rule, $position ) = @_;
+    my ( $rule, $dot_position ) = @_;
 
-    my @names =
+    my $text =
+        $rule->[Marpa::Internal::Rule::LHS]->[Marpa::Internal::Symbol::NAME]
+        . q{ ->};
+
+    my @rhs_names =
         map { $_->[Marpa::Internal::Symbol::NAME] }
-        $rule->[Marpa::Internal::Rule::LHS],
         @{ $rule->[Marpa::Internal::Rule::RHS] };
-    splice @names, $position + 1, 0, q{.};
-    splice @names, 1, 0, '::=';
-    return join q{ }, @names;
+
+    POSITION: for my $position ( 0 .. scalar @rhs_names ) {
+        if ( $position == $dot_position ) {
+            $text .= q{ .};
+        }
+        my $name = $rhs_names[$position];
+        next POSITION if not defined $name;
+        $text .= " $name";
+    } ## end for my $position ( 0 .. scalar @rhs_names )
+
+    return $text;
+
 } ## end sub Marpa::show_dotted_rule
 
 sub Marpa::show_item {
@@ -1828,9 +1853,10 @@ sub add_terminal {
     my $grammar = shift;
     my $name    = shift;
     my $options = shift;
-    my ( $regex, $prefix, $suffix );
+    my ( $regex, $prefix, $suffix, );
     my $action;
     my $user_priority = 0;
+    my $maximal       = 0;
 
     while ( my ( $key, $value ) = each %{$options} ) {
         given ($key) {
@@ -1839,6 +1865,7 @@ sub add_terminal {
             when ('prefix')   { $prefix        = $value; }
             when ('suffix')   { $suffix        = $value; }
             when ('regex')    { $regex         = $value; }
+            when ('maximal')  { $maximal       = $value; }
             default {
                 Marpa::exception(
                     "Attempt to add terminal named $name with unknown option $key"
@@ -1867,16 +1894,14 @@ sub add_terminal {
             Marpa::exception("Attempt to add terminal twice: $name");
         }
 
-        @{$symbol}[
-            Marpa::Internal::Symbol::PRODUCTIVE,
-            Marpa::Internal::Symbol::NULLING,
-            Marpa::Internal::Symbol::REGEX,
-            Marpa::Internal::Symbol::PREFIX,
-            Marpa::Internal::Symbol::SUFFIX,
-            Marpa::Internal::Symbol::ACTION,
-            Marpa::Internal::Symbol::TERMINAL,
-            ]
-            = ( 1, 0, $regex, $prefix, $suffix, $action, 1, );
+        $symbol->[Marpa::Internal::Symbol::PRODUCTIVE] = 1;
+        $symbol->[Marpa::Internal::Symbol::NULLING]    = 0;
+        $symbol->[Marpa::Internal::Symbol::REGEX]      = $regex;
+        $symbol->[Marpa::Internal::Symbol::PREFIX]     = $prefix;
+        $symbol->[Marpa::Internal::Symbol::SUFFIX]     = $suffix;
+        $symbol->[Marpa::Internal::Symbol::ACTION]     = $action;
+        $symbol->[Marpa::Internal::Symbol::TERMINAL]   = 1;
+        $symbol->[Marpa::Internal::Symbol::MAXIMAL]    = $maximal;
 
         return;
     } ## end if ( defined $symbol )
@@ -1895,6 +1920,7 @@ sub add_terminal {
     $new_symbol->[Marpa::Internal::Symbol::ACTION]        = $action;
     $new_symbol->[Marpa::Internal::Symbol::TERMINAL]      = 1;
     $new_symbol->[Marpa::Internal::Symbol::USER_PRIORITY] = 0;
+    $new_symbol->[Marpa::Internal::Symbol::MAXIMAL]       = $maximal;
 
     push @{$symbols}, $new_symbol;
     return weaken( $symbol_hash->{$name} = $new_symbol );
@@ -1951,6 +1977,7 @@ sub add_user_rule {
     my $action            = $arg_copy{action};
     my $user_priority     = $arg_copy{user_priority};
     my $internal_priority = $arg_copy{internal_priority};
+    $arg_copy{significant} = 1;
 
     my ($rule_hash) = @{$grammar}[Marpa::Internal::Grammar::RULE_HASH];
 
@@ -2013,6 +2040,7 @@ sub add_rule {
     my $action            = $arg_hash->{action};
     my $user_priority     = $arg_hash->{user_priority};
     my $internal_priority = $arg_hash->{internal_priority};
+    my $significant       = $arg_hash->{significant};
 
     my $rules       = $grammar->[Marpa::Internal::Grammar::RULES];
     my $package     = $grammar->[Marpa::Internal::Grammar::NAME];
@@ -2093,7 +2121,7 @@ sub add_rule {
     $new_rule->[Marpa::Internal::Rule::PRODUCTIVE]    = $nulling;
     $new_rule->[Marpa::Internal::Rule::NULLING]       = $nulling;
     $new_rule->[Marpa::Internal::Rule::ACTION]        = $action;
-    $new_rule->[Marpa::Internal::Rule::MINIMAL]       = 0;
+    $new_rule->[Marpa::Internal::Rule::MAXIMAL]       = 0;
     $new_rule->[Marpa::Internal::Rule::USER_PRIORITY] = $user_priority;
     $new_rule->[Marpa::Internal::Rule::INTERNAL_PRIORITY] =
         $internal_priority;
@@ -2323,11 +2351,13 @@ EO_CODE
             $rule_action .= $action;
         } ## end default
     } ## end given
+
     add_rule(
-        {   grammar => $grammar,
-            lhs     => $lhs,
-            rhs     => [$sequence],
-            action  => $rule_action,
+        {   grammar     => $grammar,
+            lhs         => $lhs,
+            rhs         => [$sequence],
+            action      => $rule_action,
+            significant => 1,
         }
     );
 
@@ -2338,10 +2368,11 @@ EO_CODE
             ## use critic
         }
         add_rule(
-            {   grammar => $grammar,
-                lhs     => $lhs,
-                rhs     => [ $sequence, $separator, ],
-                action  => $rule_action,
+            {   grammar     => $grammar,
+                lhs         => $lhs,
+                rhs         => [ $sequence, $separator, ],
+                action      => $rule_action,
+                significant => 1,
             }
         );
     } ## end if ( defined $separator and not $proper_separation )
@@ -3866,7 +3897,8 @@ sub rewrite_as_CHAF {
                         lhs               => $subp_lhs,
                         rhs               => $factor_rhs,
                         user_priority     => $user_priority,
-                        internal_priority => $new_internal_priority
+                        internal_priority => $new_internal_priority,
+                        significant       => !$has_chaf_lhs
                     }
                 );
 
@@ -3880,8 +3912,6 @@ sub rewrite_as_CHAF {
                 $new_rule->[Marpa::Internal::Rule::HAS_CHAF_RHS] =
                     $has_chaf_rhs;
 
-                $new_rule->[Marpa::Internal::Rule::VIRTUAL_SPAN] =
-                    $has_chaf_lhs;
                 $new_rule->[Marpa::Internal::Rule::ORIGINAL_RULE] = $rule;
                 $new_rule->[Marpa::Internal::Rule::CHAF_START] = $subp_start;
                 $new_rule->[Marpa::Internal::Rule::CHAF_END]   = $subp_end;
@@ -3918,19 +3948,18 @@ sub rewrite_as_CHAF {
 
     # Create a new start rule
     my $new_start_rule = add_rule(
-        {   grammar => $grammar,
-            lhs     => $new_start_symbol,
-            rhs     => [$old_start_symbol],
+        {   grammar     => $grammar,
+            lhs         => $new_start_symbol,
+            rhs         => [$old_start_symbol],
+            significant => 1
         }
     );
-    @{$new_start_rule}[
-        Marpa::Internal::Rule::PRODUCTIVE,
-        Marpa::Internal::Rule::ACCESSIBLE,
-        Marpa::Internal::Rule::USEFUL,
-        Marpa::Internal::Rule::ACTION,
-        ]
-        ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
-        = ( $productive, 1, 1, q{ $_[0] } );
+
+    $new_start_rule->[Marpa::Internal::Rule::PRODUCTIVE] = $productive;
+    $new_start_rule->[Marpa::Internal::Rule::ACCESSIBLE] = 1;
+    $new_start_rule->[Marpa::Internal::Rule::USEFUL]     = 1;
+    ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+    $new_start_rule->[Marpa::Internal::Rule::ACTION] = q{ $_[0] };
     ## use critic
 
     # If we created a null alias for the original start symbol, we need
@@ -3941,7 +3970,12 @@ sub rewrite_as_CHAF {
         my $new_start_alias = alias_symbol( $grammar, $new_start_symbol );
         $new_start_alias->[Marpa::Internal::Symbol::START] = 1;
         my $new_start_alias_rule = add_rule(
-            { grammar => $grammar, lhs => $new_start_alias, rhs => [] } );
+            {   grammar     => $grammar,
+                lhs         => $new_start_alias,
+                rhs         => [],
+                significant => 1
+            }
+        );
 
         # Nulling rules are not considered useful, but the top-level one is an exception
         @{$new_start_alias_rule}[

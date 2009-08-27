@@ -8,7 +8,7 @@ use 5.010;
 use strict;
 use warnings;
 
-use Test::More tests => 11;
+use Test::More tests => 4;
 
 use lib 'lib';
 use lib 't/lib';
@@ -100,47 +100,47 @@ END_RULES
 Marpa::Test::is( $g->show_QDFA, <<'END_QDFA', 'Minuses Equation QDFA' );
 Start States: S0; S1
 S0: 16
-E['] ::= . E
+E['] -> . E
  <E> => S2
 S1: predict; 1,5,8,11,14
-E ::= . E Minus E
-E ::= . E MinusMinus
-E ::= . MinusMinus E
-E ::= . Minus E
-E ::= . Number
+E -> . E Minus E
+E -> . E MinusMinus
+E -> . MinusMinus E
+E -> . Minus E
+E -> . Number
  <E> => S3
  <Minus> => S1; S4
  <MinusMinus> => S1; S5
  <Number> => S6
 S2: 17
-E['] ::= E .
+E['] -> E .
 S3: 2,6
-E ::= E . Minus E
-E ::= E . MinusMinus
+E -> E . Minus E
+E -> E . MinusMinus
  <Minus> => S1; S7
  <MinusMinus> => S8
 S4: 12
-E ::= Minus . E
+E -> Minus . E
  <E> => S9
 S5: 9
-E ::= MinusMinus . E
+E -> MinusMinus . E
  <E> => S10
 S6: 15
-E ::= Number .
+E -> Number .
 S7: 3
-E ::= E Minus . E
+E -> E Minus . E
  <E> => S11
 S8: 7
-E ::= E MinusMinus .
+E -> E MinusMinus .
 S9: 13
-E ::= Minus E .
+E -> Minus E .
 S10: 10
-E ::= MinusMinus E .
+E -> MinusMinus E .
 S11: 4
-E ::= E Minus E .
+E -> E Minus E .
 END_QDFA
 
-my @expected = (
+my @expected_values = (
     #<<< no perltidy
     '(((6--)--)-1)==5',
     '((6--)-(--1))==6',
@@ -166,18 +166,14 @@ $recce->end_input();
 my $evaler = Marpa::Evaluator->new( { recce => $recce, clone => 0 } );
 Marpa::exception('Could not initialize parse') if not $evaler;
 
-my $i = -1;
+my @values;
 while ( defined( my $value = $evaler->value() ) ) {
-    $i++;
-    if ( $i > $#expected ) {
-        Test::More::fail(
-            'Minuses equation has extra value: ' . ${$value} . "\n" );
-    }
-    else {
-        Marpa::Test::is( ${$value}, $expected[$i],
-            "Minuses Equation Value $i" );
-    }
-} ## end while ( defined( my $value = $evaler->value() ) )
+    push @values, ${$value};
+}
+
+my $values          = join( "\n", sort @values ) . "\n";
+my $expected_values = join( "\n", sort @expected_values ) . "\n";
+Marpa::Test::is( $values, $expected_values, 'Minuses Equation Values' );
 
 # Local Variables:
 #   mode: cperl

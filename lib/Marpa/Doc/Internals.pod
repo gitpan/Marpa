@@ -107,8 +107,8 @@ in_file($_, 'author.t/equation_show_QDFA.out');
 =end Marpa::Test::Display:
 
     S1: predict; 1,5
-    e ::= . e op e
-    e ::= . number
+    e -> . e op e
+    e -> . number
      <e> => S3
      <number> => S4
 
@@ -220,7 +220,7 @@ in_file($_, 'author.t/equation_show_QDFA.out');
 =end Marpa::Test::Display:
 
     S4: 6
-    e ::= number .
+    e -> number .
 
 We can see that there is only one LR(0) item in QDFA state 4,
 and that it has the dot pointer at the end of its rule.
@@ -248,7 +248,7 @@ in_file($_, 'author.t/equation_show_earley_sets.out');
 
 =end Marpa::Test::Display:
 
-    S4@2-3  [p=S1@2-2; t='2']
+    S4@2-3  [p=S1@2-2; s=number; t=\'2']
 
 After the name of the Earley item is an
 B<Earley item source choice>, shown in brackets.
@@ -261,7 +261,7 @@ so all Earley items have at most one source choice entry.
 In this case the source choice entry is for a B<token choice>.
 Token choices are shown as C<[p=>I<predecessor>C<; t=>I<token_value>C<]> pairs.
 In the above example, the token choice
-C<[p=S1@2-2; t='2']>
+C<[p=S1@2-2; s=number; t=\'2']>
 indicates that the token has a value of "2",
 and that, when this token choice is selected,
 the predecessor of S4@2-3 is S1@2-2.
@@ -288,7 +288,7 @@ in_file($_, 'author.t/equation_show_QDFA.out');
 
 =end Marpa::Test::Display:
 
-    e ::= number .
+    e -> number .
 
 The dot is at the far right, so it's a completed rule whose the left hand side is C<e>.
 
@@ -305,7 +305,7 @@ in_file($_, 'author.t/equation_show_QDFA.out');
 =end Marpa::Test::Display:
 
     S5: 3
-    e ::= e op . e
+    e -> e op . e
      <e> => S6
 
 This says that in QDFA state 5, when you see an C<e>, you transition to
@@ -379,7 +379,7 @@ in_file($_, 'author.t/equation_show_QDFA.out');
 =end Marpa::Test::Display:
 
     S5: 3
-    e ::= e op . e
+    e -> e op . e
      <e> => S6
 
 QDFA state 5 is expecting an C<e>.
@@ -392,8 +392,8 @@ in_file($_, 'author.t/equation_show_QDFA.out');
 
 =end Marpa::Test::Display:
 
-    e ::= . e op e
-    e ::= . number
+    e -> . e op e
+    e -> . number
 
 can also be expected to originate at this earleme.
 Marpa is smart about grouping rules into QDFA states
@@ -407,8 +407,8 @@ in_file($_, 'author.t/equation_show_QDFA.out');
 =end Marpa::Test::Display:
 
     S1: predict; 1,5
-    e ::= . e op e
-    e ::= . number
+    e -> . e op e
+    e -> . number
      <e> => S3
      <number> => S4
 
@@ -519,7 +519,7 @@ in_file($_, 'author.t/equation_show_QDFA.out');
 =end Marpa::Test::Display:
 
     S2: 8
-    e['] ::= e .
+    e['] -> e .
 
 A parse starting at earleme I<S> is successful at earleme I<N> if it
 contains an Earley item
@@ -913,7 +913,7 @@ in_file($_, 'author.t/equation_show_bocage.out');
 
 =end Marpa::Test::Display:
 
-    S2@0-3L3#0 ::= S2@0-3L3#0[0]
+    S2@0-3L3o0 -> S2@0-3L3o0a0
 
 A parse bocage grammar always starts with the start or-production.
 The above is the start production for our example.
@@ -971,8 +971,8 @@ in_file($_, 'author.t/equation_show_bocage.out');
 
 =end Marpa::Test::Display:
 
-    S2@0-3L3#0[0]#0 ::= S6@0-3L0#1
-        rule 2: e['] ::= e .
+    S2@0-3L3o0a0 -> S6@0-3L0o1
+        rule 2: e['] -> e .
         rhs length = 1; closure
 
 Parse bocage and-productions always have one or two rhs symbols.
@@ -1007,9 +1007,9 @@ in_file($_, 'author.t/equation_show_bocage.out');
 
 =end Marpa::Test::Display:
 
-    S5@0-2R0:2#2 ::= S5@0-2R0:2#2[0]#2
-    S5@0-2R0:2#2[0]#2 ::= S3@0-1R0:1#4 '+'
-        rule 0: e ::= e op . e
+    S5@0-2R0:2o2 -> S5@0-2R0:2o2a2
+    S5@0-2R0:2o2a2 -> S3@0-1R0:1o4 '+'
+        rule 0: e -> e op . e
         rhs length = 3
 
 Z<>
@@ -1037,9 +1037,9 @@ in_file($_, 'author.t/equation_show_bocage.out');
 
 =end Marpa::Test::Display:
 
-    S4@0-1L0#5 ::= S4@0-1L0#5[0]#5
-    S4@0-1L0#5[0]#5 ::= '2'
-        rule 1: e ::= number .
+    S4@0-1L0o5 -> S4@0-1L0o5a5
+    S4@0-1L0o5a5 -> '2'
+        rule 1: e -> number .
         rhs length = 1; closure
 
 The and-production above has only a token on its rhs.
@@ -1083,13 +1083,13 @@ in_file($_, 'author.t/equation_show_tree.out');
 
 =end Marpa::Test::Display:
 
-    Tree Node #1: S6@0-3L0#1[0]; Parent = 0; Depth = 1; Rhs Length = 3
-        Rule: e ::= e op e .
-        Kernel: S5@0-2R0:2#2
-        Closure: S4@2-3L0#3
+    Tree Node #1: S6@0-3L0o1[0]; Parent = 0; Depth = 1; Rhs Length = 3
+        Rule: e -> e op e .
+        Kernel: S5@0-2R0:2o2
+        Closure: S4@2-3L0o3
         Perl Closure: Y
-    Tree Node #2: S4@2-3L0#3[0]; Parent = 1; Depth = 2; Rhs Length = 1
-        Rule: e ::= number .
+    Tree Node #2: S4@2-3L0o3[0]; Parent = 1; Depth = 2; Rhs Length = 1
+        Rule: e -> number .
         Perl Closure: Y; Token: '2'
 
 Most of the information in the tree nodes is repeated from
@@ -1449,7 +1449,7 @@ is_file($_, 'example/equation.marpa');
 =end Marpa::Test::Display:
 
 
-    semantics are perl5.  version is 0.001_014.
+    semantics are perl5.  version is 0.001_015.
 
     start symbol is E.
 
@@ -1537,25 +1537,25 @@ in_file($_, 'author.t/equation_show_QDFA.out');
 
     Start States: S0; S1
     S0: 7
-    e['] ::= . e
+    e['] -> . e
      <e> => S2
     S1: predict; 1,5
-    e ::= . e op e
-    e ::= . number
+    e -> . e op e
+    e -> . number
      <e> => S3
      <number> => S4
     S2: 8
-    e['] ::= e .
+    e['] -> e .
     S3: 2
-    e ::= e . op e
+    e -> e . op e
      <op> => S1; S5
     S4: 6
-    e ::= number .
+    e -> number .
     S5: 3
-    e ::= e op . e
+    e -> e op . e
      <e> => S6
     S6: 4
-    e ::= e op e .
+    e -> e op e .
 
 =head2 C<show_earley_sets> Output
 
@@ -1571,14 +1571,14 @@ is_file($_, 'author.t/equation_show_earley_sets.out');
     S0@0-0
     S1@0-0
     Earley Set 1
-    S4@0-1 [p=S1@0-0; t='2']
+    S4@0-1 [p=S1@0-0; s=number; t=\'2']
     S2@0-1 [p=S0@0-0; c=S4@0-1]
     S3@0-1 [p=S1@0-0; c=S4@0-1]
     Earley Set 2
-    S5@0-2 [p=S3@0-1; t='+']
+    S5@0-2 [p=S3@0-1; s=op; t=\'+']
     S1@2-2
     Earley Set 3
-    S4@2-3 [p=S1@2-2; t='2']
+    S4@2-3 [p=S1@2-2; s=number; t=\'2']
     S6@0-3 [p=S5@0-2; c=S4@2-3]
     S3@2-3 [p=S1@2-2; c=S4@2-3]
     S2@0-3 [p=S0@0-0; c=S6@0-3]
@@ -1594,29 +1594,29 @@ is_file($_, 'author.t/equation_show_bocage.out');
 =end Marpa::Test::Display:
 
     package: Marpa::E_1; parse count: 0
-    S2@0-3L3#0 ::= S2@0-3L3#0[0]#0
-    S2@0-3L3#0[0]#0 ::= S6@0-3L0#1
-        rule 2: e['] ::= e .
+    S2@0-3L3o0 -> S2@0-3L3o0a0
+    S2@0-3L3o0a0 -> S6@0-3L0o1
+        rule 2: e['] -> e .
         rhs length = 1; closure
-    S6@0-3L0#1 ::= S6@0-3L0#1[0]#1
-    S6@0-3L0#1[0]#1 ::= S5@0-2R0:2#2 S4@2-3L0#3
-        rule 0: e ::= e op e .
+    S6@0-3L0o1 -> S6@0-3L0o1a1
+    S6@0-3L0o1a1 -> S5@0-2R0:2o2 S4@2-3L0o3
+        rule 0: e -> e op e .
         rhs length = 3; closure
-    S5@0-2R0:2#2 ::= S5@0-2R0:2#2[0]#2
-    S5@0-2R0:2#2[0]#2 ::= S3@0-1R0:1#4 '+'
-        rule 0: e ::= e op . e
+    S5@0-2R0:2o2 -> S5@0-2R0:2o2a2
+    S5@0-2R0:2o2a2 -> S3@0-1R0:1o4 '+'
+        rule 0: e -> e op . e
         rhs length = 3
-    S4@2-3L0#3 ::= S4@2-3L0#3[0]#3
-    S4@2-3L0#3[0]#3 ::= '2'
-        rule 1: e ::= number .
+    S4@2-3L0o3 -> S4@2-3L0o3a3
+    S4@2-3L0o3a3 -> '2'
+        rule 1: e -> number .
         rhs length = 1; closure
-    S3@0-1R0:1#4 ::= S3@0-1R0:1#4[0]#4
-    S3@0-1R0:1#4[0]#4 ::= S4@0-1L0#5
-        rule 0: e ::= e . op e
+    S3@0-1R0:1o4 -> S3@0-1R0:1o4a4
+    S3@0-1R0:1o4a4 -> S4@0-1L0o5
+        rule 0: e -> e . op e
         rhs length = 3
-    S4@0-1L0#5 ::= S4@0-1L0#5[0]#5
-    S4@0-1L0#5[0]#5 ::= '2'
-        rule 1: e ::= number .
+    S4@0-1L0o5 -> S4@0-1L0o5a5
+    S4@0-1L0o5a5 -> '2'
+        rule 1: e -> number .
         rhs length = 1; closure
 
 =head2 C<show_tree> Output
@@ -1628,28 +1628,28 @@ is_file($_, 'author.t/equation_show_tree.out');
 
 =end Marpa::Test::Display:
 
-    Tree Node #0: S2@0-3L3#0[0]; Depth = 0; Rhs Length = 1
-        Rule: e['] ::= e .
-        Closure: S6@0-3L0#1
+    Tree Node #0: S2@0-3L3o0[0]; Depth = 0; Rhs Length = 1
+        Rule: e['] -> e .
+        Closure: S6@0-3L0o1
         Perl Closure: Y
-    Tree Node #1: S6@0-3L0#1[0]; Parent = 0; Depth = 1; Rhs Length = 3
-        Rule: e ::= e op e .
-        Kernel: S5@0-2R0:2#2
-        Closure: S4@2-3L0#3
+    Tree Node #1: S6@0-3L0o1[0]; Parent = 0; Depth = 1; Rhs Length = 3
+        Rule: e -> e op e .
+        Kernel: S5@0-2R0:2o2
+        Closure: S4@2-3L0o3
         Perl Closure: Y
-    Tree Node #2: S4@2-3L0#3[0]; Parent = 1; Depth = 2; Rhs Length = 1
-        Rule: e ::= number .
+    Tree Node #2: S4@2-3L0o3[0]; Parent = 1; Depth = 2; Rhs Length = 1
+        Rule: e -> number .
         Perl Closure: Y; Token: '2'
-    Tree Node #3: S5@0-2R0:2#2[0]; Parent = 1; Depth = 2; Rhs Length = 3
-        Rule: e ::= e op . e
-        Kernel: S3@0-1R0:1#4
+    Tree Node #3: S5@0-2R0:2o2[0]; Parent = 1; Depth = 2; Rhs Length = 3
+        Rule: e -> e op . e
+        Kernel: S3@0-1R0:1o4
         Perl Closure: N; Token: '+'
-    Tree Node #4: S3@0-1R0:1#4[0]; Parent = 3; Depth = 3; Rhs Length = 3
-        Rule: e ::= e . op e
-        Closure: S4@0-1L0#5
+    Tree Node #4: S3@0-1R0:1o4[0]; Parent = 3; Depth = 3; Rhs Length = 3
+        Rule: e -> e . op e
+        Closure: S4@0-1L0o5
         Perl Closure: N
-    Tree Node #5: S4@0-1L0#5[0]; Parent = 4; Depth = 4; Rhs Length = 1
-        Rule: e ::= number .
+    Tree Node #5: S4@0-1L0o5[0]; Parent = 4; Depth = 4; Rhs Length = 1
+        Rule: e -> number .
         Perl Closure: Y; Token: '2'
 
 =head2 C<trace_values> Output

@@ -198,6 +198,8 @@ The value of the C<priority> terminal option must be an integer.
 It can be negative.
 It will control the order in which terminal matches are attempted.
 
+=item C<minimal>
+
 =back
 
 =head2 The C<start> Named Argument

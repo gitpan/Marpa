@@ -84,100 +84,100 @@ Marpa::Test::is(
 Marpa::Test::is( $g->show_NFA, <<'EOS', 'Grune/Jacobs NFA' );
 S0: /* empty */
  empty => S1
-S1: S' ::= . S $
+S1: S' -> . S $
  empty => S4
  <S> => S2
-S2: S' ::= S . $
+S2: S' -> S . $
  <$> => S3
-S3: S' ::= S $ .
-S4: S ::= . E
+S3: S' -> S $ .
+S4: S -> . E
  empty => S6 S10
  <E> => S5
-S5: S ::= E .
-S6: E ::= . E - T
+S5: S -> E .
+S6: E -> . E - T
  empty => S6 S10
  <E> => S7
-S7: E ::= E . - T
+S7: E -> E . - T
  <-> => S8
-S8: E ::= E - . T
+S8: E -> E - . T
  empty => S12 S14
  <T> => S9
-S9: E ::= E - T .
-S10: E ::= . T
+S9: E -> E - T .
+S10: E -> . T
  empty => S12 S14
  <T> => S11
-S11: E ::= T .
-S12: T ::= . n
+S11: E -> T .
+S12: T -> . n
  <n> => S13
-S13: T ::= n .
-S14: T ::= . ( E )
+S13: T -> n .
+S14: T -> . ( E )
  <(> => S15
-S15: T ::= ( . E )
+S15: T -> ( . E )
  empty => S6 S10
  <E> => S16
-S16: T ::= ( E . )
+S16: T -> ( E . )
  <)> => S17
-S17: T ::= ( E ) .
+S17: T -> ( E ) .
 EOS
 
 Marpa::Test::is( $g->show_QDFA, <<'EOS', 'Grune/Jacobs QDFA' );
 Start States: S0; S1
 S0: 1
-S' ::= . S $
+S' -> . S $
  <S> => S2
 S1: predict; 4,6,10,12,14
-S ::= . E
-E ::= . E - T
-E ::= . T
-T ::= . n
-T ::= . ( E )
+S -> . E
+E -> . E - T
+E -> . T
+T -> . n
+T -> . ( E )
  <(> => S3; S4
  <E> => S5
  <T> => S6
  <n> => S7
 S2: 2
-S' ::= S . $
+S' -> S . $
  <$> => S8
 S3: 15
-T ::= ( . E )
+T -> ( . E )
  <E> => S9
 S4: predict; 6,10,12,14
-E ::= . E - T
-E ::= . T
-T ::= . n
-T ::= . ( E )
+E -> . E - T
+E -> . T
+T -> . n
+T -> . ( E )
  <(> => S3; S4
  <E> => S10
  <T> => S6
  <n> => S7
 S5: 5,7
-S ::= E .
-E ::= E . - T
+S -> E .
+E -> E . - T
  <-> => S11; S12
 S6: 11
-E ::= T .
+E -> T .
 S7: 13
-T ::= n .
+T -> n .
 S8: 3
-S' ::= S $ .
+S' -> S $ .
 S9: 16
-T ::= ( E . )
+T -> ( E . )
  <)> => S13
 S10: 7
-E ::= E . - T
+E -> E . - T
  <-> => S11; S12
 S11: 8
-E ::= E - . T
+E -> E - . T
  <T> => S14
 S12: predict; 12,14
-T ::= . n
-T ::= . ( E )
+T -> . n
+T -> . ( E )
  <(> => S3; S4
  <n> => S7
 S13: 17
-T ::= ( E ) .
+T -> ( E ) .
 S14: 9
-E ::= E - T .
+E -> E - T .
 EOS
 
 # Local Variables:

@@ -7,7 +7,7 @@ no warnings 'recursion';
 use strict;
 
 BEGIN {
-    our $VERSION = '0.001_014';
+    our $VERSION = '0.001_015';
 }
 
 use integer;
@@ -147,9 +147,9 @@ sub Marpa::mdl {
     if ( not defined $evaler ) {
         Marpa::die_with_parse_failure( $text, length $text );
     }
-    return $evaler->old_value if not wantarray;
+    return $evaler->value if not wantarray;
     my @values;
-    while ( defined( my $value = $evaler->old_value() ) ) {
+    while ( defined( my $value = $evaler->value() ) ) {
         push @values, $value;
     }
     return @values;
@@ -190,7 +190,7 @@ is_file($_, 'example/synopsis.pl');
     say ${$value};
 
     __DATA__
-    semantics are perl5.  version is 0.001_014.  start symbol is Expression.
+    semantics are perl5.  version is 0.001_015.  start symbol is Expression.
 
     Expression: Expression, /[*]/, Expression.  priority 200.  q{
         $_[0] * $_[2]

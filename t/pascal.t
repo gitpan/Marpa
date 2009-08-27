@@ -57,7 +57,7 @@ sub ah_extended {
         );
         Marpa::exception("Cannot initialize parse at location $loc")
             if not $evaler;
-        while ( $evaler->old_value() ) { $parse_counts[$loc]++ }
+        while ( $evaler->value() ) { $parse_counts[$loc]++ }
     } ## end for my $loc ( 0 .. $n )
     return join q{ }, @parse_counts;
 } ## end sub ah_extended

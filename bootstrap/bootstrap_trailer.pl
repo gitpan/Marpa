@@ -105,7 +105,7 @@ if ($header_file_name)
     }
 }
 
-my $value = $evaler->old_value();
+my $value = $evaler->value();
 say ${$value};
 
 if ($trailer_file_name)

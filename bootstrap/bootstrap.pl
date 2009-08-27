@@ -6,7 +6,7 @@
 # then hacking it by hand as needed
 # to bootstrap the new self.marpa.
 
-# This file was automatically generated using Marpa 1.001_003
+# This file was automatically generated using Marpa 0.001_014
 #!perl
 # This is the beginning of bootstrap_header.pl
 
@@ -49,7 +49,7 @@ my $trailer_file_name = shift @ARGV;
 # This is the end of bootstrap_header.pl
 $new_semantics = 'perl5';
 
-$new_version = '0.001_014';
+$new_version = '0.001_015';
 
 $new_start_symbol = 'grammar';
 
@@ -1067,7 +1067,7 @@ Marpa::exception('Version requested is ', $new_version, "\nVersion must match ",
 Marpa::exception('Semantics are ', $new_semantics, "\nThe only semantics currently available are perl5.")
    unless $new_semantics eq 'perl5';
 
-my $g = Marpa::Grammar->new({
+my $g = new Marpa::Grammar({
     start => $new_start_symbol,
     rules => $new_rules,
     terminals => $new_terminals,
@@ -1092,7 +1092,7 @@ $g->set({
 
 $g->precompute();
 
-my $recce = Marpa::Recognizer->new({
+my $recce = new Marpa::Recognizer({
    grammar=> $g,
    preamble => $new_preamble,
    lex_preamble => $new_lex_preamble,
@@ -1138,7 +1138,7 @@ my $spec;
 
 $recce->end_input();
 
-my $evaler = Marpa::Evaluator->new( { recce => $recce } );
+my $evaler = new Marpa::Evaluator( { recce => $recce } );
 Marpa::exception('No parse') unless $evaler;
 
 sub slurp {
@@ -1162,7 +1162,7 @@ if ($header_file_name)
     }
 }
 
-my $value = $evaler->old_value();
+my $value = $evaler->value();
 say ${$value};
 
 if ($trailer_file_name)

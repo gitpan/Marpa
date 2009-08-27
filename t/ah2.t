@@ -99,158 +99,158 @@ Marpa::Test::is(
 Marpa::Test::is( $grammar->show_NFA, <<'EOS', 'Aycock/Horspool NFA' );
 S0: /* empty */
  empty => S30 S32
-S1: A ::= . a
+S1: A -> . a
  <a> => S2
-S2: A ::= a .
-S3: S ::= . A S[R0:1][x6]
+S2: A -> a .
+S3: S -> . A S[R0:1][x6]
  empty => S1
  <A> => S4
-S4: S ::= A . S[R0:1][x6]
+S4: S -> A . S[R0:1][x6]
  empty => S12 S15 S18
  <S[R0:1][x6]> => S5
-S5: S ::= A S[R0:1][x6] .
-S6: S ::= . A[] S[R0:1][x6]
+S5: S -> A S[R0:1][x6] .
+S6: S -> . A[] S[R0:1][x6]
 at_nulling
  <A[]> => S7
-S7: S ::= A[] . S[R0:1][x6]
+S7: S -> A[] . S[R0:1][x6]
  empty => S12 S15 S18
  <S[R0:1][x6]> => S8
-S8: S ::= A[] S[R0:1][x6] .
-S9: S ::= . A S[R0:1][x6][]
+S8: S -> A[] S[R0:1][x6] .
+S9: S -> . A S[R0:1][x6][]
  empty => S1
  <A> => S10
-S10: S ::= A . S[R0:1][x6][]
+S10: S -> A . S[R0:1][x6][]
 at_nulling
  <S[R0:1][x6][]> => S11
-S11: S ::= A S[R0:1][x6][] .
-S12: S[R0:1][x6] ::= . A S[R0:2][x8]
+S11: S -> A S[R0:1][x6][] .
+S12: S[R0:1][x6] -> . A S[R0:2][x8]
  empty => S1
  <A> => S13
-S13: S[R0:1][x6] ::= A . S[R0:2][x8]
+S13: S[R0:1][x6] -> A . S[R0:2][x8]
  empty => S21 S24 S27
  <S[R0:2][x8]> => S14
-S14: S[R0:1][x6] ::= A S[R0:2][x8] .
-S15: S[R0:1][x6] ::= . A[] S[R0:2][x8]
+S14: S[R0:1][x6] -> A S[R0:2][x8] .
+S15: S[R0:1][x6] -> . A[] S[R0:2][x8]
 at_nulling
  <A[]> => S16
-S16: S[R0:1][x6] ::= A[] . S[R0:2][x8]
+S16: S[R0:1][x6] -> A[] . S[R0:2][x8]
  empty => S21 S24 S27
  <S[R0:2][x8]> => S17
-S17: S[R0:1][x6] ::= A[] S[R0:2][x8] .
-S18: S[R0:1][x6] ::= . A S[R0:2][x8][]
+S17: S[R0:1][x6] -> A[] S[R0:2][x8] .
+S18: S[R0:1][x6] -> . A S[R0:2][x8][]
  empty => S1
  <A> => S19
-S19: S[R0:1][x6] ::= A . S[R0:2][x8][]
+S19: S[R0:1][x6] -> A . S[R0:2][x8][]
 at_nulling
  <S[R0:2][x8][]> => S20
-S20: S[R0:1][x6] ::= A S[R0:2][x8][] .
-S21: S[R0:2][x8] ::= . A A
+S20: S[R0:1][x6] -> A S[R0:2][x8][] .
+S21: S[R0:2][x8] -> . A A
  empty => S1
  <A> => S22
-S22: S[R0:2][x8] ::= A . A
+S22: S[R0:2][x8] -> A . A
  empty => S1
  <A> => S23
-S23: S[R0:2][x8] ::= A A .
-S24: S[R0:2][x8] ::= . A[] A
+S23: S[R0:2][x8] -> A A .
+S24: S[R0:2][x8] -> . A[] A
 at_nulling
  <A[]> => S25
-S25: S[R0:2][x8] ::= A[] . A
+S25: S[R0:2][x8] -> A[] . A
  empty => S1
  <A> => S26
-S26: S[R0:2][x8] ::= A[] A .
-S27: S[R0:2][x8] ::= . A A[]
+S26: S[R0:2][x8] -> A[] A .
+S27: S[R0:2][x8] -> . A A[]
  empty => S1
  <A> => S28
-S28: S[R0:2][x8] ::= A . A[]
+S28: S[R0:2][x8] -> A . A[]
 at_nulling
  <A[]> => S29
-S29: S[R0:2][x8] ::= A A[] .
-S30: S['] ::= . S
+S29: S[R0:2][x8] -> A A[] .
+S30: S['] -> . S
  empty => S3 S6 S9
  <S> => S31
-S31: S['] ::= S .
-S32: S['][] ::= .
+S31: S['] -> S .
+S32: S['][] -> .
 EOS
 
 Marpa::Test::is( $grammar->show_QDFA, <<'EOS', 'Aycock/Horspool QDFA' );
 Start States: S0; S1
 S0: 30,32
-S['] ::= . S
-S['][] ::= .
+S['] -> . S
+S['][] -> .
  <S> => S2
 S1: predict; 1,3,7,9,12,16,18,21,25,27
-A ::= . a
-S ::= . A S[R0:1][x6]
-S ::= A[] . S[R0:1][x6]
-S ::= . A S[R0:1][x6][]
-S[R0:1][x6] ::= . A S[R0:2][x8]
-S[R0:1][x6] ::= A[] . S[R0:2][x8]
-S[R0:1][x6] ::= . A S[R0:2][x8][]
-S[R0:2][x8] ::= . A A
-S[R0:2][x8] ::= A[] . A
-S[R0:2][x8] ::= . A A[]
+A -> . a
+S -> . A S[R0:1][x6]
+S -> A[] . S[R0:1][x6]
+S -> . A S[R0:1][x6][]
+S[R0:1][x6] -> . A S[R0:2][x8]
+S[R0:1][x6] -> A[] . S[R0:2][x8]
+S[R0:1][x6] -> . A S[R0:2][x8][]
+S[R0:2][x8] -> . A A
+S[R0:2][x8] -> A[] . A
+S[R0:2][x8] -> . A A[]
  <A> => S3; S4
  <S[R0:1][x6]> => S5
  <S[R0:2][x8]> => S6
  <a> => S7
 S2: 31
-S['] ::= S .
+S['] -> S .
 S3: 4,11,13,20,22,26,29
-S ::= A . S[R0:1][x6]
-S ::= A S[R0:1][x6][] .
-S[R0:1][x6] ::= A . S[R0:2][x8]
-S[R0:1][x6] ::= A S[R0:2][x8][] .
-S[R0:2][x8] ::= A . A
-S[R0:2][x8] ::= A[] A .
-S[R0:2][x8] ::= A A[] .
+S -> A . S[R0:1][x6]
+S -> A S[R0:1][x6][] .
+S[R0:1][x6] -> A . S[R0:2][x8]
+S[R0:1][x6] -> A S[R0:2][x8][] .
+S[R0:2][x8] -> A . A
+S[R0:2][x8] -> A[] A .
+S[R0:2][x8] -> A A[] .
  <A> => S8
  <S[R0:1][x6]> => S9
  <S[R0:2][x8]> => S10
 S4: predict; 1,12,16,18,21,25,27
-A ::= . a
-S[R0:1][x6] ::= . A S[R0:2][x8]
-S[R0:1][x6] ::= A[] . S[R0:2][x8]
-S[R0:1][x6] ::= . A S[R0:2][x8][]
-S[R0:2][x8] ::= . A A
-S[R0:2][x8] ::= A[] . A
-S[R0:2][x8] ::= . A A[]
+A -> . a
+S[R0:1][x6] -> . A S[R0:2][x8]
+S[R0:1][x6] -> A[] . S[R0:2][x8]
+S[R0:1][x6] -> . A S[R0:2][x8][]
+S[R0:2][x8] -> . A A
+S[R0:2][x8] -> A[] . A
+S[R0:2][x8] -> . A A[]
  <A> => S11; S12
  <S[R0:2][x8]> => S6
  <a> => S7
 S5: 8
-S ::= A[] S[R0:1][x6] .
+S -> A[] S[R0:1][x6] .
 S6: 17
-S[R0:1][x6] ::= A[] S[R0:2][x8] .
+S[R0:1][x6] -> A[] S[R0:2][x8] .
 S7: 2
-A ::= a .
+A -> a .
 S8: 23
-S[R0:2][x8] ::= A A .
+S[R0:2][x8] -> A A .
 S9: 5
-S ::= A S[R0:1][x6] .
+S -> A S[R0:1][x6] .
 S10: 14
-S[R0:1][x6] ::= A S[R0:2][x8] .
+S[R0:1][x6] -> A S[R0:2][x8] .
 S11: 13,20,22,26,29
-S[R0:1][x6] ::= A . S[R0:2][x8]
-S[R0:1][x6] ::= A S[R0:2][x8][] .
-S[R0:2][x8] ::= A . A
-S[R0:2][x8] ::= A[] A .
-S[R0:2][x8] ::= A A[] .
+S[R0:1][x6] -> A . S[R0:2][x8]
+S[R0:1][x6] -> A S[R0:2][x8][] .
+S[R0:2][x8] -> A . A
+S[R0:2][x8] -> A[] A .
+S[R0:2][x8] -> A A[] .
  <A> => S8
  <S[R0:2][x8]> => S10
 S12: predict; 1,21,25,27
-A ::= . a
-S[R0:2][x8] ::= . A A
-S[R0:2][x8] ::= A[] . A
-S[R0:2][x8] ::= . A A[]
+A -> . a
+S[R0:2][x8] -> . A A
+S[R0:2][x8] -> A[] . A
+S[R0:2][x8] -> . A A[]
  <A> => S13; S14
  <a> => S7
 S13: 22,26,29
-S[R0:2][x8] ::= A . A
-S[R0:2][x8] ::= A[] A .
-S[R0:2][x8] ::= A A[] .
+S[R0:2][x8] -> A . A
+S[R0:2][x8] -> A[] A .
+S[R0:2][x8] -> A A[] .
  <A> => S8
 S14: predict; 1
-A ::= . a
+A -> . a
  <a> => S7
 EOS
 
@@ -264,7 +264,7 @@ EOS
 
 my $set1_at_0 = <<'EOS';
 Earley Set 1
-S7@0-1 [p=S1@0-0; t='a']
+S7@0-1 [p=S1@0-0; s=a; t=\'a']
 EOS
 
 my $set1_at_1 = <<'EOS';
@@ -277,7 +277,7 @@ EOS
 
 my $set2_at_1 = <<'EOS';
 Earley Set 2
-S7@1-2 [p=S4@1-1; t='a']
+S7@1-2 [p=S4@1-1; s=a; t=\'a']
 EOS
 
 my $set2_at_2 = <<'EOS';
@@ -294,7 +294,7 @@ EOS
 
 my $set3_at_2 = <<'EOS';
 Earley Set 3
-S7@2-3 [p=S12@2-2; t='a']
+S7@2-3 [p=S12@2-2; s=a; t=\'a']
 EOS
 
 my $set3_at_3 = <<'EOS';
@@ -311,7 +311,7 @@ EOS
 
 my $set4_at_3 = <<'EOS';
 Earley Set 4
-S7@3-4 [p=S14@3-3; t='a']
+S7@3-4 [p=S14@3-3; s=a; t=\'a']
 EOS
 
 my $set4_at_4 = <<'EOS';

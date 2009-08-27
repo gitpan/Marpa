@@ -66,6 +66,10 @@ use Marpa::Offset qw(
 
 package Marpa::Internal::Recognizer;
 
+# use Smart::Comments '###';
+
+### Using smart comments <where>...
+
 use Scalar::Util qw(weaken);
 use Data::Dumper;
 use English qw( -no_match_vars );
@@ -506,12 +510,12 @@ sub Marpa::Recognizer::clone {
 
 sub Marpa::show_token_choice {
     my ($token) = @_;
-    my $token_value = Data::Dumper->new( [ $token->[1] ] )->Terse(1)->Dump;
-    chomp $token_value;
-    return
-          '[p='
-        . $token->[0]->[Marpa::Internal::Earley_Item::NAME]
-        . "; t=$token_value]";
+    my ( $earley_item, $symbol, $value_ref ) = @{$token};
+    my $token_dump = Data::Dumper->new( [$value_ref] )->Terse(1)->Dump;
+    chomp $token_dump;
+    my $symbol_name      = $symbol->[Marpa::Internal::Symbol::NAME];
+    my $earley_item_name = $earley_item->[Marpa::Internal::Earley_Item::NAME];
+    return "[p=$earley_item_name; s=$symbol_name; t=$token_dump]";
 } ## end sub Marpa::show_token_choice
 
 sub Marpa::show_link_choice {
@@ -846,11 +850,6 @@ sub Marpa::Recognizer::end_input {
     return 1;
 } ## end sub Marpa::Recognizer::end_input
 
-# It's bad style, but this routine is in a tight loop -- it may be called
-# as often as once per character of input in.  For efficiency
-# I pull the token alternatives out of @_ one by one as I go in the code,
-# rather than at the beginning of the method.
-
 # The remaining arguments should be a list of token alternatives, as
 # array references.  The array for each alternative is (token, value,
 # length), where token is a symbol reference, value can anything
@@ -860,11 +859,12 @@ sub Marpa::Recognizer::end_input {
 # Given a parse object and a list of alternative tokens starting at
 # the current earleme, add Earley items to recognize those tokens.
 
-## no critic (Subroutines::RequireArgUnpacking)
 sub scan_set {
-## use critic
 
     my $parse = shift;
+
+    # Convert values to value refs
+    my @alternatives = map { [ $_->[0], \( $_->[1] ), $_->[2] ] } @_;
 
     my ($earley_set_list, $earley_hash,      $grammar,
         $current_set,     $furthest_earleme, $exhausted,
@@ -903,8 +903,8 @@ sub scan_set {
 
         # I allow ambigious tokenization.
         # Loop through the alternative tokens.
-        ALTERNATIVE: for my $alternative (@_) {
-            my ( $token, $value, $length ) = @{$alternative};
+        ALTERNATIVE: for my $alternative (@alternatives) {
+            my ( $token, $value_ref, $length ) = @{$alternative};
 
             if ( $length & Marpa::Internal::Recognizer::EARLEME_MASK ) {
                 Marpa::exception(
@@ -922,7 +922,7 @@ sub scan_set {
 
                 Marpa::exception( 'Token '
                         . $token->[Marpa::Internal::Symbol::NAME]
-                        . ' has negative length '
+                        . ' has non-positive length '
                         . $length );
 
             } ## end if ( $length <= 0 )
@@ -969,25 +969,29 @@ sub scan_set {
                     'S%d@%d-%d',
                     ## use critic
                     $state_id, $origin, $target_ix;
+
                 my $target_item = $earley_hash->{$name};
                 if ( not defined $target_item ) {
                     $target_item = [];
-                    @{$target_item}[
-                        Marpa::Internal::Earley_Item::NAME,
-                        Marpa::Internal::Earley_Item::STATE,
-                        Marpa::Internal::Earley_Item::PARENT,
-                        Marpa::Internal::Earley_Item::LINKS,
-                        Marpa::Internal::Earley_Item::TOKENS,
-                        Marpa::Internal::Earley_Item::SET
-                        ]
-                        = ( $name, $state, $origin, [], [], $target_ix );
+                    $target_item->[Marpa::Internal::Earley_Item::NAME] =
+                        $name;
+                    $target_item->[Marpa::Internal::Earley_Item::STATE] =
+                        $state;
+                    $target_item->[Marpa::Internal::Earley_Item::PARENT] =
+                        $origin;
+                    $target_item->[Marpa::Internal::Earley_Item::LINKS]  = [];
+                    $target_item->[Marpa::Internal::Earley_Item::TOKENS] = [];
+                    $target_item->[Marpa::Internal::Earley_Item::SET] =
+                        $target_ix;
                     $earley_hash->{$name} = $target_item;
                     push @{$target_set}, $target_item;
                 } ## end if ( not defined $target_item )
+
                 next STATE if $reset;
+
                 push @{ $target_item->[Marpa::Internal::Earley_Item::TOKENS]
                     },
-                    [ $earley_item, $value ];
+                    [ $earley_item, $token, $value_ref ];
             }    # for my $state
 
         }    # ALTERNATIVE

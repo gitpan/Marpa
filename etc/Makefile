@@ -1,9 +1,9 @@
 
 build:
-	(cd ..;perl Makefile.PL)
-	(cd ..;make realclean)
+	(cd ..;perl Build.PL)
+	(cd ..;./Build realclean)
 	(cd ../bootstrap; make -W self.marpa install)
-	(cd ..;perl Makefile.PL)
-	(cd ..;make)
-	(cd ..;make test)
-	(cd ..;make disttest)
+	(cd ..;perl Build.PL)
+	(cd ..;./Build)
+	(cd ..;./Build test)
+	(cd ..;./Build disttest)

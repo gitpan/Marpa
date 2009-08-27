@@ -1,6 +1,6 @@
 =head1 NAME
 
-Marpa::Doc::Debugging - Debugging Marpa Grammars
+Marpa::Doc::Debugging - How to Debug Your Grammar
 
 =head1 DESCRIPTION
 
@@ -181,6 +181,8 @@ Setting it after that point will result in a warning.
 # Requires knowledge of Marpa internals.
 
 =end undocumented:
+
+=item trace_evaluation
 
 =item trace_iterations
 
