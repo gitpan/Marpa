@@ -63,11 +63,19 @@ use Marpa::Offset qw(
     =LAST_GENERAL_EVALUATOR_FIELD
 
     SORT_ELEMENT
+
+    =LAST_PER_METHOD_EVALUATOR_FIELD
+    =LAST_FIELD
+
+);
+
+use Marpa::Offset qw(
+
+    :package=Marpa::Internal::And_Iteration
+
     SORT_KEY
     OR_MAP
     TRAILING_NULLS
-
-    =LAST_PER_METHOD_EVALUATOR_FIELD
     =LAST_FIELD
 
 );
@@ -88,11 +96,17 @@ use Marpa::Offset qw(
     DELETED
     CLASS { Equivalence class, for pruning duplicates }
     =LAST_GENERAL_EVALUATOR_FIELD
-
-    TRAILING_NULLS
-    AND_CHOICES
-    =LAST_PER_METHOD_EVALUATOR_FIELD
     =LAST_FIELD
+);
+
+use Marpa::Offset qw(
+
+    :package=Marpa::Internal::Or_Iteration
+
+    AND_CHOICE0
+    AND_CHOICE1
+    { And so on ... }
+
 );
 
 use Marpa::Offset qw(
@@ -100,6 +114,8 @@ use Marpa::Offset qw(
     ID
     SORT_KEY
     OR_MAP
+    FROZEN_ITERATION
+    =LAST_FIELD
 );
 
 use Marpa::Offset qw(
@@ -120,12 +136,14 @@ use Marpa::Offset qw(
 
     RECOGNIZER
     PARSE_COUNT :{ number of parses in an ambiguous parse :}
-    OR_NODES
     AND_NODES
+    OR_NODES
     { Delete this } TREE { current evaluation tree }
     RULE_DATA
     PACKAGE
     NULL_VALUES
+    AND_ITERATIONS
+    OR_ITERATIONS
     { Delete this } CYCLES { Will this be needed? }
 
 );
@@ -149,6 +167,7 @@ use Scalar::Util qw(weaken);
 use List::Util qw(min);
 use English qw( -no_match_vars );
 use Data::Dumper;
+use Storable;
 use Marpa::Internal;
 our @CARP_NOT = @Marpa::Internal::CARP_NOT;
 
@@ -1974,36 +1993,131 @@ sub Marpa::Evaluator::new {
     my $and_node_counter = 0;
 
     # resolve links in the bocage
-    for my $parent_or_node ( @{$or_nodes} ) {
-        my $parent_or_node_id =
-            $parent_or_node->[Marpa::Internal::Or_Node::ID];
+    for my $and_node ( @{$and_nodes} ) {
+        my $and_node_id = $and_node->[Marpa::Internal::And_Node::ID];
 
-        my @child_and_node_ids =
-            @{ $parent_or_node->[Marpa::Internal::Or_Node::CHILD_IDS] };
+        FIELD:
+        for my $field (
+            Marpa::Internal::And_Node::PREDECESSOR,
+            Marpa::Internal::And_Node::CAUSE,
+            )
+        {
+            my $name = $and_node->[$field];
+            next FIELD if not defined $name;
+            my $child_or_node = $or_node_by_name{$name};
+            $and_node->[$field] = $child_or_node;
+            my $parent_ids =
+                $child_or_node->[Marpa::Internal::Or_Node::PARENT_IDS];
+            push @{$parent_ids}, $and_node_id;
+        } ## end for my $field ( Marpa::Internal::And_Node::PREDECESSOR...)
 
-        for my $choice ( 0 .. $#child_and_node_ids ) {
-            my $and_node_id = $child_and_node_ids[$choice];
-            my $and_node    = $and_nodes->[$and_node_id];
+    } ## end for my $and_node ( @{$and_nodes} )
 
-            FIELD:
+    # We don't allow zero-length or-nodes to have more than one
+    # and-node parent.
+    # We do that to prevent two and-nodes in a
+    # parse from overlapping.
+    # For non-zero-length or-nodes preventing overlap is
+    # easy -- if no and-nodes have overlapping spans
+    # as determined by start and end earleme,
+    # they won't have overlapping non-zero-length or-nodes.
+    # But with zero-length or-nodes, an or-node can
+    # be a trailing or-node and a lead or-node at the same
+    # earleme location.
+    # That means that two adjacent and-nodes can share
+    # the same child or-node -- one which has it as a trailing
+    # or-node, the other which has it as a leading or-node.
+    #
+    # So in the below, we make sure every zero-length or-node
+    # has only one parent.
+    OR_NODE: for my $or_node ( @{$or_nodes} ) {
+
+        # Don't need to deal with deleted ndoes
+        # There aren't any at this point
+        next OR_NODE
+            if $or_node->[Marpa::Internal::Or_Node::START_EARLEME]
+                != $or_node->[Marpa::Internal::Or_Node::END_EARLEME];
+
+        my $parent_and_node_ids =
+            $or_node->[Marpa::Internal::Or_Node::PARENT_IDS];
+        next OR_NODE if scalar @{$parent_and_node_ids} <= 1;
+
+        # Remove the other parents from the original (uncloned)
+        # or-node.
+        $or_node->[Marpa::Internal::Or_Node::PARENT_IDS] =
+            [ $parent_and_node_ids->[0] ];
+
+        # This or-node needs to be cloned, so that it will be
+        # unique to its parent and-node
+        for my $parent_and_node_id (
+            @{$parent_and_node_ids}[ 1 .. $#{$parent_and_node_ids} ] )
+        {
+            my @cloned_and_nodes =
+                map { clone_and_node( $self, $and_nodes->[$_] ) }
+                @{ $or_node->[Marpa::Internal::Or_Node::CHILD_IDS] };
+
+            my $cloned_or_node = [];
+            $#{$cloned_or_node} = Marpa::Internal::Or_Node::LAST_FIELD;
+            my $cloned_or_node_id =
+                $cloned_or_node->[Marpa::Internal::Or_Node::ID] =
+                @{$or_nodes};
+            my $cloned_or_node_tag =
+                $or_node->[Marpa::Internal::Or_Node::TAG];
+            $cloned_or_node_tag =~ s/ (o\d+) \z /o$cloned_or_node_id/xms;
+            $cloned_or_node->[Marpa::Internal::Or_Node::TAG] =
+                $cloned_or_node_tag;
+            $cloned_or_node->[Marpa::Internal::Or_Node::AND_NODES] =
+                \@cloned_and_nodes;
+            $cloned_or_node->[Marpa::Internal::Or_Node::CHILD_IDS] =
+                [ map { $_->[Marpa::Internal::And_Node::ID] }
+                    @cloned_and_nodes ];
+
+            for my $cloned_and_node_choice ( 0 .. $#cloned_and_nodes ) {
+                my $cloned_and_node =
+                    $cloned_and_nodes[$cloned_and_node_choice];
+                my $cloned_and_node_id =
+                    $cloned_and_node->[Marpa::Internal::And_Node::ID];
+                $cloned_and_node->[Marpa::Internal::And_Node::TAG] =
+                    $cloned_or_node_tag . "a$cloned_and_node_id";
+                $cloned_and_node->[Marpa::Internal::And_Node::PARENT_ID] =
+                    $cloned_or_node_id;
+                $cloned_and_node->[Marpa::Internal::And_Node::PARENT_CHOICE] =
+                    $cloned_and_node_choice;
+            } ## end for my $cloned_and_node_choice ( 0 .. $#cloned_and_nodes)
             for my $field (
-                Marpa::Internal::And_Node::PREDECESSOR,
-                Marpa::Internal::And_Node::CAUSE,
+                Marpa::Internal::Or_Node::START_EARLEME,
+                Marpa::Internal::Or_Node::END_EARLEME,
+                Marpa::Internal::Or_Node::IS_COMPLETED
                 )
             {
-                my $name = $and_node->[$field];
-                next FIELD if not defined $name;
-                my $child_or_node = $or_node_by_name{$name};
-                $and_node->[$field] = $child_or_node;
-                push @{ $child_or_node->[Marpa::Internal::Or_Node::PARENT_IDS]
-                    },
-                    $and_node_id;
-            } ## end for my $field ( Marpa::Internal::And_Node::PREDECESSOR...)
+                $cloned_or_node->[$field] = $or_node->[$field];
+            } ## end for my $field ( Marpa::Internal::Or_Node::START_EARLEME...)
 
-        } ## end for my $choice ( 0 .. $#child_and_node_ids )
-    } ## end for my $parent_or_node ( @{$or_nodes} )
+            $cloned_or_node->[Marpa::Internal::Or_Node::PARENT_IDS] =
+                [$parent_and_node_id];
+
+            my $parent_and_node = $and_nodes->[$parent_and_node_id];
+            my $parent_and_node_cause =
+                $parent_and_node->[Marpa::Internal::And_Node::CAUSE];
+            if ( defined $parent_and_node_cause
+                and $or_node == $parent_and_node_cause )
+            {
+                $parent_and_node->[Marpa::Internal::And_Node::CAUSE] =
+                    $cloned_or_node;
+            } ## end if ( defined $parent_and_node_cause and $or_node == ...)
+            else {
+                $parent_and_node->[Marpa::Internal::And_Node::PREDECESSOR] =
+                    $cloned_or_node;
+            }
+
+            push @{$or_nodes}, $cloned_or_node;
+        } ## end for my $parent_and_node_id ( @{$parent_and_node_ids}[...])
+
+    } ## end for my $or_node ( @{$or_nodes} )
 
     ### Bocage: &Marpa'Evaluator'show_bocage($self, 3)
+
+    ### assert: Marpa'Evaluator'audit($self) or 1
 
     # TODO: Add code to only attempt rewrite if grammar is cyclical
     rewrite_cycles($self);
@@ -2236,19 +2350,22 @@ use Marpa::Offset qw(
     { tasks for use in Marpa::Evaluator::value }
     :package=Marpa::Internal::Task
     SETUP_AND_NODE
-    SCHEDULE_AND_NODE_INITIALIZATION
-    SCHEDULE_OR_NODE_INITIALIZATION
-    SCHEDULE_AND_NODE_ITERATION
-    RESCHEDULE_AND_NODE_ITERATION
+    INITIALIZE_AND_TREE
     INITIALIZE_OR_NODE
+    INITIALIZE_OR_TREE
+    ITERATE_AND_TREE
+    ITERATE_AND_TREE_2
+    ITERATE_AND_TREE_3
     ITERATE_OR_NODE
-    SCHEDULE_OR_NODE_ITERATION
+    ITERATE_OR_TREE
+    RESTORE_AND_TREE
     EVALUATE
 );
 
 # This will replace the old value method
-sub Marpa::Evaluator::new_value {
-    my ($evaler) = @_;
+sub Marpa::Evaluator::value {
+    my ( $evaler, $new_flag ) = @_;
+    goto &Marpa::Evaluator::old_value if not $new_flag;
 
     Marpa::exception('No parse supplied') if not defined $evaler;
     my $evaler_class = ref $evaler;
@@ -2258,11 +2375,21 @@ sub Marpa::Evaluator::new_value {
     ) if $evaler_class ne $right_class;
 
     my $and_nodes = $evaler->[Marpa::Internal::Evaluator::AND_NODES];
+    my $or_nodes  = $evaler->[Marpa::Internal::Evaluator::OR_NODES];
 
     # If the journal is defined, but empty, that means we've
     # exhausted all parses.  Patiently keep returning failure
     # whenever called.
-    Marpa::exception('How to recognize exhausted parse without journal?');
+    my $and_iterations =
+        $evaler->[Marpa::Internal::Evaluator::AND_ITERATIONS];
+    my $or_iterations = $evaler->[Marpa::Internal::Evaluator::OR_ITERATIONS];
+    if ( not defined $and_iterations ) {
+        $#{$and_iterations} = $#{$and_nodes};
+        $#{$or_iterations}  = $#{$or_nodes};
+        $evaler->[Marpa::Internal::Evaluator::AND_ITERATIONS] =
+            $and_iterations;
+        $evaler->[Marpa::Internal::Evaluator::OR_ITERATIONS] = $or_iterations;
+    } ## end if ( not defined $and_iterations )
 
     my $recognizer = $evaler->[Marpa::Internal::Evaluator::RECOGNIZER];
     my $grammar    = $recognizer->[Marpa::Internal::Recognizer::GRAMMAR];
@@ -2279,7 +2406,6 @@ sub Marpa::Evaluator::new_value {
         $trace_tasks = $trace_iterations >= 2;
     } ## end if ($tracing)
 
-    my $or_nodes    = $evaler->[Marpa::Internal::Evaluator::OR_NODES];
     my $rule_data   = $evaler->[Marpa::Internal::Evaluator::RULE_DATA];
     my $null_values = $evaler->[Marpa::Internal::Evaluator::NULL_VALUES];
     my $parse_count = $evaler->[Marpa::Internal::Evaluator::PARSE_COUNT]++;
@@ -2293,10 +2419,10 @@ sub Marpa::Evaluator::new_value {
     # loop is to backtrack, unless this is a new parse.
     my @tasks =
         $parse_count
-        ? ( [ Marpa::Internal::Task::SCHEDULE_OR_NODE_ITERATION, 0 ] )
+        ? ( [ Marpa::Internal::Task::ITERATE_OR_TREE, 0 ] )
         : (
         [Marpa::Internal::Task::EVALUATE],
-        [ Marpa::Internal::Task::SCHEDULE_OR_NODE_INITIALIZATION, 0 ],
+        [ Marpa::Internal::Task::INITIALIZE_OR_TREE, 0 ],
         );
 
     TASK: while (1) {
@@ -2321,44 +2447,79 @@ sub Marpa::Evaluator::new_value {
             }
 
             # Set up the and-choices from the children
-            $or_node->[Marpa::Internal::Or_Node::AND_CHOICES] = [
-                sort {
-                    $a->[Marpa::Internal::And_Choice::SORT_KEY]
-                        <=> $b->[Marpa::Internal::And_Choice::SORT_KEY]
-                    }
+            my @and_choices;
+            for my $child_and_node_id (
+                @{ $or_node->[Marpa::Internal::Or_Node::CHILD_IDS] } )
+            {
+                my $and_choice;
+                $#{$and_choice} = Marpa::Internal::And_Choice::LAST_FIELD;
+                $and_choice->[Marpa::Internal::And_Choice::ID] =
+                    $child_and_node_id;
+                my $and_iteration = $and_iterations->[$child_and_node_id];
+                $and_choice->[Marpa::Internal::And_Choice::SORT_KEY] =
+                    $and_iteration
+                    ->[Marpa::Internal::And_Iteration::SORT_KEY];
+                my $or_map =
+                    $and_choice->[Marpa::Internal::And_Choice::OR_MAP] =
+                    $and_iteration->[Marpa::Internal::And_Iteration::OR_MAP];
+
+                # Add frozen iteration
+                my @or_slice = map { $_->[0] } @{$or_map};
+                my @and_slice = ($child_and_node_id);
+                push @and_slice, map {
+                    $or_nodes->[ $_->[0] ]
+                        ->[Marpa::Internal::Or_Node::CHILD_IDS]->[ $_->[1] ]
+                } @{$or_map};
+                my @or_values  = @{$or_iterations}[@or_slice];
+                my @and_values = ($and_iteration);
+                push @and_values, @{$and_iterations}[@and_slice];
+                $and_choice->[Marpa::Internal::And_Choice::FROZEN_ITERATION] =
+                    Storable::freeze(
+                    [ \@and_slice, \@and_values, \@or_slice, \@or_values ] );
+
+                push @and_choices, $and_choice;
+
+            } ## end for my $child_and_node_id ( @{ $or_node->[...]})
+
+            # Sort and-choices
+            $or_iterations->[$or_node_id] = [
+                map      { $_->[1] }
+                    sort { $a->[0] <=> $b->[0] }
                     map {
-                    [   $_,
-                        @{ $and_nodes->[$_] }[
-                            Marpa::Internal::And_Node::SORT_KEY,
-                        Marpa::Internal::And_Node::OR_MAP
-                        ]
-                    ]
-                    } @{ $or_node->[Marpa::Internal::Or_Node::CHILD_IDS] }
+                    [ $_->[Marpa::Internal::And_Choice::SORT_KEY], $_ ]
+                    } @and_choices
             ];
             next TASK;
         } ## end if ( $task == Marpa::Internal::Task::INITIALIZE_OR_NODE)
 
+        # Set up, dual task for both initialization and iteration
         if ( $task == Marpa::Internal::Task::SETUP_AND_NODE ) {
 
             my ($and_node_id) = @{$task_entry};
-            my $and_node = $and_nodes->[$and_node_id];
-            my $and_node_start_earleme =
-                $and_node->[Marpa::Internal::And_Node::START_EARLEME];
-            my $and_node_end_earleme =
-                $and_node->[Marpa::Internal::And_Node::END_EARLEME];
 
             if ($trace_tasks) {
-                print {$trace_fh} "Task: INITIALIZE_AND_NODE $and_node_id; ",
+                print {$trace_fh} 'Task: SETUP_AND_NODE; ',
                     ( scalar @tasks ), " tasks pending\n"
                     or Marpa::exception('print to trace handle failed');
             }
 
-            my $rule     = $and_node->[Marpa::Internal::And_Node::RULE];
-            my $maximal  = $rule->[Marpa::Internal::Rule::MAXIMAL];
-            my $priority = $rule->[Marpa::Internal::Rule::USER_PRIORITY];
-            my $this_sort_element;
+            my $and_node           = $and_nodes->[$and_node_id];
+            my $and_node_iteration = $and_iterations->[$and_node_id];
 
-            if ( $maximal or $priority ) {
+            my $sort_element =
+                ${ $and_node->[Marpa::Internal::And_Node::SORT_ELEMENT] };
+            CALCULATE_SORT_ELEMENT: {
+                last CALCULATE_SORT_ELEMENT if defined $sort_element;
+
+                my $and_node_start_earleme =
+                    $and_node->[Marpa::Internal::And_Node::START_EARLEME];
+                my $and_node_end_earleme =
+                    $and_node->[Marpa::Internal::And_Node::END_EARLEME];
+                my $rule     = $and_node->[Marpa::Internal::And_Node::RULE];
+                my $maximal  = $rule->[Marpa::Internal::Rule::MAXIMAL];
+                my $priority = $rule->[Marpa::Internal::Rule::USER_PRIORITY];
+
+                last CALCULATE_SORT_ELEMENT if not $maximal and not $priority;
 
                 # compute this and-nodes sort key element
                 # insert it into the predecessor sort key elements
@@ -2370,126 +2531,315 @@ sub Marpa::Evaluator::new_value {
                     : $maximal > 0
                     ? $and_node_end_earleme - $and_node_start_earleme
                     : 0;
-                $this_sort_element =
-                    $and_node->[Marpa::Internal::And_Node::SORT_ELEMENT] =
-                    [ $location, 0, $priority, $length ];
+                $sort_element = [ $location, 0, $priority, $length ];
 
-            } ## end if ( $maximal or $priority )
+            } ## end CALCULATE_SORT_ELEMENT:
 
-            # If we are here, the initial, "best" or-choices and sort-key
-            # have not been computed and need
-            # to be set up.  The current values will be set from
-            # them.
+            my @sort_key = defined $sort_element ? () : ($sort_element);
+
+            my $cause;
+            my $cause_id;
+            my $cause_and_node_choice;
+            my $cause_and_node_iteration;
+
+            # assignment instead of comparison intentional
+            if ( $cause = $and_node->[Marpa::Internal::And_Node::CAUSE] ) {
+                $cause_id = $cause->[Marpa::Internal::Or_Node::ID];
+                $cause_and_node_choice = $or_iterations->[$cause_id]->[-1];
+                $cause_and_node_iteration =
+                    $and_iterations->[$cause_and_node_choice];
+            } ## end if ( $cause = $and_node->[...])
+
+            my $predecessor;
+            my $predecessor_id;
+            my $predecessor_and_node_choice;
+            my $predecessor_and_node_iteration;
+
+            # assignment instead of comparison intentional
+            if ( $predecessor =
+                $and_node->[Marpa::Internal::And_Node::PREDECESSOR] )
+            {
+                $predecessor_id =
+                    $predecessor->[Marpa::Internal::Or_Node::ID];
+                $predecessor_and_node_choice =
+                    $or_iterations->[$predecessor_id]->[-1];
+                $predecessor_and_node_iteration =
+                    $and_iterations->[$predecessor_and_node_choice];
+            } ## end if ( $predecessor = $and_node->[...])
+
+            # TODO: If either predecessor or cause is exhausted, this node is
+            # exhausted.
+
+            # TODO: How to represent exhausted and-node?
+
+            my $sort_key;
+            DERIVE_SORT_KEY: {
+                if ( not defined $cause ) {
+                    $sort_key =
+                        defined $predecessor_and_node_choice
+                        ? $predecessor_and_node_choice
+                        ->[Marpa::Internal::And_Choice::SORT_KEY]
+                        : [];
+                    last DERIVE_SORT_KEY;
+                } ## end if ( not defined $cause )
+
+                my $cause_sort_elements = $cause_and_node_choice
+                    ->[Marpa::Internal::And_Choice::SORT_KEY];
+
+                # If we are here, there a cause child defined
+                if ( not defined $predecessor ) {
+                    $sort_key = $cause_sort_elements;
+                    last DERIVE_SORT_KEY;
+                }
+
+                # If we are here, there a both a cause
+                # and a predecessor defined
+
+                # assignment instead of comparison intentional here
+                if ( my $internal_nulls =
+                    $predecessor_and_node_iteration
+                    ->[Marpa::Internal::And_Iteration::TRAILING_NULLS] )
+                {
+                    my $internal_nulls_earleme =
+                        $predecessor->[Marpa::Internal::Or_Node::END_EARLEME];
+                    $cause_sort_elements = map {
+                        $_->[0] == $internal_nulls_earleme
+                            ? [
+                            $_->[0],
+                            $_->[1] + $internal_nulls,
+                            @{$_}[ 2, 3 ]
+                            ]
+                            : $_
+                    } @{$cause_sort_elements};
+
+                    $sort_key = [
+                        map      { $_->[1] }
+                            sort { $a->[0] cmp $b->[0] }
+                            map  { [ ( pack 'N*', @{$_} ), $_ ] } (
+                            $sort_element,
+                            @{  $predecessor_and_node_choice
+                                    ->[Marpa::Internal::And_Choice::SORT_KEY]
+                                },
+                            @{$cause_sort_elements}
+                            )
+                    ];
+
+                } ## end if ( my $internal_nulls = ...)
+
+            } ## end DERIVE_SORT_KEY:
+
+            Marpa::exception('TODO:: Compute Trailing Nulls');
 
             my $trailing_nulls;
-            my @sort_key;
+            $and_node_iteration
+                ->[Marpa::Internal::And_Iteration::TRAILING_NULLS] =
+                $trailing_nulls // 0;
+
             my @or_map;
-
-            # Flag to indicate our sort element has been added to the
-            # sort key.  Initialized to (vacuously) true if
-            # there is no sort element for this and-node,
-            # otherwise initialized to false.
-            my $sort_element_added = not defined $this_sort_element;
-
-            CHILD_OR_NODE:
-            for my $child_or_node (
-                @{$and_node}[
-                Marpa::Internal::And_Node::PREDECESSOR,
-                Marpa::Internal::And_Node::CAUSE
-                ]
-                )
-            {
-                next CHILD_OR_NODE if not defined $child_or_node;
-                my $sorted_and_choices =
-                    $child_or_node->[Marpa::Internal::Or_Node::AND_CHOICES];
-
-                my $child_or_node_id =
-                    $child_or_node->[Marpa::Internal::Or_Node::ID];
-
-                my $sorted_and_choice = $sorted_and_choices->[-1];
-
-                # Add an entry for the or-node child to the or-map,
-                # as well as that child's or-map
+            if ( defined $predecessor ) {
                 push @or_map,
                     [
-                    $child_or_node_id,
-                    $sorted_and_choice->[Marpa::Internal::And_Choice::ID]
+                    $predecessor_id,
+                    $predecessor_and_node_choice
+                        ->[Marpa::Internal::And_Choice::ID]
                     ],
-                    @{ $sorted_and_choice
+                    @{ $predecessor_and_node_choice
                         ->[Marpa::Internal::And_Choice::OR_MAP] };
+            } ## end if ( defined $predecessor )
+            if ( defined $cause ) {
+                push @or_map,
+                    [
+                    $cause_id,
+                    $cause_and_node_choice->[Marpa::Internal::And_Choice::ID]
+                    ],
+                    @{ $cause_and_node_choice
+                        ->[Marpa::Internal::And_Choice::OR_MAP] };
+            } ## end if ( defined $cause )
+            $and_node_iteration->[Marpa::Internal::And_Iteration::OR_MAP] =
+                \@or_map;
 
-                # Compute sort-key
-                # Sort in sort element
-                my $child_sort_key = $sorted_and_choice
-                    ->[Marpa::Internal::And_Choice::SORT_KEY];
-                my $this_sort_element_ix;
-                if ( not $sort_element_added ) {
-                    $this_sort_element_ix = List::Util::first {
-                        $child_sort_key->[$_]->[0] > $this_sort_element->[0]
-                            || $child_sort_key->[$_]->[1]
-                            > $this_sort_element->[1]
-                            || $child_sort_key->[$_]->[2]
-                            > $this_sort_element->[2]
-                            || $child_sort_key->[$_]->[3]
-                            > $this_sort_element->[3];
-                    } ## end List::Util::first
-                    ( 0 .. $#{$child_sort_key} );
-                } ## end if ( not $sort_element_added )
+            $and_node_iteration->[Marpa::Internal::And_Iteration::SORT_KEY] =
+                $sort_key;
+            next TASK;
 
-                my $last_sort_ix = $#{$child_sort_key};
-                if ( defined $this_sort_element
-                    and not defined $this_sort_element_ix )
-                {
-                    $this_sort_element_ix = scalar @{$child_sort_key};
-                    $last_sort_ix += 1;
-                } ## end if ( defined $this_sort_element and not defined ...)
+        } ## end if ( $task == Marpa::Internal::Task::SETUP_AND_NODE )
 
-                my $child_sort_key_ix = 0;
-                while ( $child_sort_key_ix <= $last_sort_ix ) {
-                    my $new_sort_element;
-                    if ( defined $this_sort_element_ix
-                        and $this_sort_element_ix == $child_sort_key_ix )
-                    {
-                        $new_sort_element = $this_sort_element;
-                        $sort_element_added++;
-                    } ## end if ( defined $this_sort_element_ix and ...)
-                    else {
+        if ( $task == Marpa::Internal::Task::INITIALIZE_OR_TREE ) {
+            my ($or_node_id) = @{$task_entry};
 
-                        # Important: we have to copy the array of sort element -- since we
-                        # modify it, passing a pointer will not do.
-                        my @child_sort_element_copy =
-                            @{ $child_sort_key->[$child_sort_key_ix] };
-                        $child_sort_key_ix++;
-                        $new_sort_element = \@child_sort_element_copy;
-                    } ## end else [ if ( defined $this_sort_element_ix and ...)]
+            if ($trace_tasks) {
+                print {$trace_fh} 'Task: INITIALIZE_OR_TREE; ',
+                    ( scalar @tasks ), " tasks pending\n"
+                    or Marpa::exception('print to trace handle failed');
+            }
 
-                    # Add trailing nulls (if any) from previous or-node
-                    # to sub-locations at first location of child.
-                    if (    $trailing_nulls
-                        and $child_or_node
-                        ->[Marpa::Internal::Or_Node::START_EARLEME]
-                        == $new_sort_element->[0] )
-                    {
-                        $new_sort_element->[1] += $trailing_nulls;
-                    } ## end if ( $trailing_nulls and $child_or_node->[...])
+            my $or_node = $or_nodes->[$or_node_id];
+            push @tasks,
+                [ Marpa::Internal::Task::INITIALIZE_OR_NODE, $or_node_id ],
+                map { [ Marpa::Internal::Task::INITIALIZE_AND_TREE, $_ ] }
+                @{ $or_node->[Marpa::Internal::Or_Node::CHILD_IDS]; };
+            next TASK;
+        } ## end if ( $task == Marpa::Internal::Task::INITIALIZE_OR_TREE)
 
-                    push @sort_key, $new_sort_element;
-                } ## end while ( $child_sort_key_ix <= $last_sort_ix )
+        if ( $task == Marpa::Internal::Task::INITIALIZE_AND_TREE ) {
+            my ($and_node_id) = @{$task_entry};
 
-                # Compute trailing nulls
-                $trailing_nulls =
-                    $and_nodes
-                    ->[ $sorted_and_choice->[Marpa::Internal::And_Choice::ID]
-                    ]->[Marpa::Internal::And_Node::TRAILING_NULLS];
+            if ($trace_tasks) {
+                print {$trace_fh} 'Task: INITIALIZE_AND_TREE; ',
+                    ( scalar @tasks ), " tasks pending\n"
+                    or Marpa::exception('print to trace handle failed');
+            }
 
-            } ## end for my $child_or_node ( @{$and_node}[ ...])
+            my $and_node = $and_nodes->[$and_node_id];
+            push @tasks,
+                [ Marpa::Internal::Task::SETUP_AND_NODE, $and_node_id ],
+                map { [ Marpa::Internal::Task::INITIALIZE_OR_TREE, $_ ] }
+                grep { defined $_ } @{$and_node}[
+                Marpa::Internal::And_Node::CAUSE,
+                Marpa::Internal::And_Node::PREDECESSOR
+                ];
+            next TASK;
+        } ## end if ( $task == Marpa::Internal::Task::INITIALIZE_AND_TREE)
 
-            $and_node->[Marpa::Internal::And_Node::TRAILING_NULLS] =
-                $trailing_nulls // 0;
-            $and_node->[Marpa::Internal::And_Node::OR_MAP]   = \@or_map;
-            $and_node->[Marpa::Internal::And_Node::SORT_KEY] = \@sort_key;
+        if ( $task == Marpa::Internal::Task::ITERATE_AND_TREE ) {
+            my ($or_node_id) = @{$task_entry};
 
-        } ## end if ( $task == Marpa::Internal::Task::INITIALIZE_AND_NODE)
+            if ($trace_tasks) {
+                print {$trace_fh} 'Task: ITERATE_AND_TREE; ',
+                    ( scalar @tasks ), " tasks pending\n"
+                    or Marpa::exception('print to trace handle failed');
+            }
+
+            my $or_node = $or_nodes->[$or_node_id];
+
+            # If any child or-node is exhausted, report this
+            #   and-node exhausted.
+            # ITERATE_AND_TREE_2 on this and-node
+            # ITERATE_OR_TREE on best child or-node
+
+            next TASK;
+        } ## end if ( $task == Marpa::Internal::Task::ITERATE_AND_TREE)
+
+        if ( $task == Marpa::Internal::Task::ITERATE_AND_TREE_2 ) {
+            my ($or_node_id) = @{$task_entry};
+
+            if ($trace_tasks) {
+                print {$trace_fh} 'Task: ITERATE_AND_TREE_2; ',
+                    ( scalar @tasks ), " tasks pending\n"
+                    or Marpa::exception('print to trace handle failed');
+            }
+
+            my $or_node = $or_nodes->[$or_node_id];
+
+            # All child or-nodes iterated OK?
+            #   If so, ITERATE_AND_NODE on this and-node
+            # All child or-nodes exhausted?
+            #   If so, report this and-node as exhausted.
+            # Only other possibility: Two child and-nodes
+            #   one OK, the other exhausted.
+            #   Stack the following:
+            #   ITERATE_AND_NODE on this and-node.
+            #   INITIALIZE_OR_NODE on exhausted child or-node
+            #   ITERATE_OR_NODE on OK child or-node
+
+            next TASK;
+        } ## end if ( $task == Marpa::Internal::Task::ITERATE_AND_TREE_2)
+
+        if ( $task == Marpa::Internal::Task::ITERATE_OR_NODE ) {
+            my ($or_node_id) = @{$task_entry};
+
+            if ($trace_tasks) {
+                print {$trace_fh} 'Task: ITERATE_OR_NODE; ',
+                    ( scalar @tasks ), " tasks pending\n"
+                    or Marpa::exception('print to trace handle failed');
+            }
+
+            my $and_choices = $or_iterations->[$or_node_id];
+            next TASK if not scalar @{$and_choices};
+            my $top_choice    = pop @{$and_choices};
+            my $top_iteration = $and_iterations
+                ->[ $top_choice->[Marpa::Internal::And_Choice::ID] ];
+            next TASK
+                if not defined
+                    $top_iteration->[Marpa::Internal::And_Iteration::OR_MAP];
+            my $top_sortkey = pack 'N*',
+                (
+                map { @{$_} } @{
+                    $top_iteration->[Marpa::Internal::And_Iteration::SORT_KEY]
+                    }
+                );
+
+            my $first_not_greater_choice_ix = List::Util::first {
+                (   pack 'N*',
+                    map { @{$_} } @{
+                        $and_choices->[$_]
+                            ->[Marpa::Internal::And_Choice::SORT_KEY]
+                        }
+                ) <= $top_sortkey;
+            } ## end List::Util::first
+            reverse +( 0 .. $#{$and_choices} );
+
+            $first_not_greater_choice_ix //= -1;
+            splice @{$and_choices}, $first_not_greater_choice_ix + 1, 0,
+                $top_choice;
+
+            # TODO:
+            # if top choice changed, re-initialize all the children of the
+            # new top choice.
+
+            next TASK;
+        } ## end if ( $task == Marpa::Internal::Task::ITERATE_OR_NODE)
+
+        if ( $task == Marpa::Internal::Task::ITERATE_OR_TREE ) {
+            my ($or_node_id) = @{$task_entry};
+
+            if ($trace_tasks) {
+                print {$trace_fh} 'Task: ITERATE_OR_TREE; ',
+                    ( scalar @tasks ), " tasks pending\n"
+                    or Marpa::exception('print to trace handle failed');
+            }
+
+            my $or_node = $or_nodes->[$or_node_id];
+            my $current_and_node_id =
+                $or_iterations->[$or_node_id]->[-1]
+                ->[Marpa::Internal::And_Choice::ID];
+            push @tasks,
+                [ Marpa::Internal::Task::ITERATE_OR_NODE, $or_node_id ],
+                [
+                Marpa::Internal::Task::ITERATE_AND_TREE,
+                $current_and_node_id
+                ];
+            next TASK;
+        } ## end if ( $task == Marpa::Internal::Task::ITERATE_OR_TREE)
+
+        if ( $task == Marpa::Internal::Task::RESTORE_AND_TREE ) {
+            my ( $and_node_id, $frozen_iteration ) = @{$task_entry};
+
+            if ($trace_tasks) {
+                print {$trace_fh} 'Task: RESTORE_AND_TREE; ',
+                    ( scalar @tasks ), " tasks pending\n"
+                    or Marpa::exception('print to trace handle failed');
+            }
+
+            my ( $and_slice, $and_values, $or_slice, $or_values ) =
+                @{ Storable::thaw($frozen_iteration) };
+            @{$and_iterations}[ @{$and_slice} ] = @{$and_values};
+            @{$or_iterations}[ @{$or_slice} ]   = @{$or_values};
+
+            push @tasks, map {
+                [   Marpa::Internal::Task::RESTORE_AND_TREE, $_,
+                    $or_iterations->[$_]->[-1]
+                        ->[Marpa::Internal::And_Choice::FROZEN_ITERATION]
+                ]
+                }
+                map  { $_->[Marpa::Internal::Or_Node::ID] }
+                grep { defined $_ } @{ $and_nodes->[$and_node_id] }[
+                Marpa::Internal::And_Node::CAUSE,
+                Marpa::Internal::And_Node::PREDECESSOR
+                ];
+
+            next TASK;
+        } ## end if ( $task == Marpa::Internal::Task::RESTORE_AND_TREE)
 
         if ( $task == Marpa::Internal::Task::EVALUATE ) {
 
@@ -2500,18 +2850,14 @@ sub Marpa::Evaluator::new_value {
             }
 
             my @or_node_choices = 0 x $#{$or_nodes};
-            while (
-                my ( $or_node_id, $choice ) = @{
-                    pop @{
-                        $or_nodes->[0]
-                            ->[Marpa::Internal::Or_Node::AND_CHOICES]->[-1]
-                            ->[Marpa::Internal::And_Node::OR_MAP]
-                        }
-                }
-                )
+            my $top_or_map =
+                pop @{ $or_iterations->[0]->[-1]
+                    ->[Marpa::Internal::And_Choice::OR_MAP] };
+            while ( my ( $or_node_id, $choice ) =
+                ( splice @{$top_or_map}, 0, 2 ) )
             {
                 $or_node_choices[$or_node_id] = $choice;
-            } ## end while ( my ( $or_node_id, $choice ) = @{ pop @{ ...}})
+            }
 
             # Write the and-nodes out in preorder
             my @preorder = ();
@@ -2682,9 +3028,9 @@ sub Marpa::Evaluator::new_value {
 
     Carp::confess('Internal error: Should not reach here');
 
-} ## end sub Marpa::Evaluator::new_value
+} ## end sub Marpa::Evaluator::value
 
-sub Marpa::Evaluator::value {
+sub Marpa::Evaluator::old_value {
 
     my $evaler     = shift;
     my $recognizer = $evaler->[Marpa::Internal::Evaluator::RECOGNIZER];
@@ -3122,7 +3468,7 @@ sub Marpa::Evaluator::value {
 
     return pop @evaluation_stack;
 
-} ## end sub Marpa::Evaluator::value
+} ## end sub Marpa::Evaluator::old_value
 
 1;
 

@@ -6,7 +6,7 @@ use warnings;
 
 use Module::Build;
 
-my $marpa_version = '0.001_015';
+my $marpa_version = '0.001_016';
 
 my $build = Module::Build->new(
     dist_name     => 'Marpa',
@@ -14,16 +14,16 @@ my $build = Module::Build->new(
     dist_version  => $marpa_version,
     dist_abstract => 'Generate Parsers from any BNF grammar',
     requires      => { 'Test::More' => 0 },
-    meta_merge => {
-        no_index          => {
+    meta_merge    => {
+        no_index => {
             directory => [qw(inc t example bootstrap author.t save)],
             namespace => ['Marpa::Internal'],
-            package   => ['Marpa::Offset'],
+            package   => [qw(Marpa::Internal Marpa::Offset)],
         },
     },
-    meta_add    => {
+    meta_add => {
         distribution_type => 'module',
-        provides => {
+        provides          => {
             'Marpa' => {
                 file    => 'lib/Marpa.pm',
                 version => $marpa_version,
@@ -50,7 +50,7 @@ my $build = Module::Build->new(
             },
         },
     },
-    PL_files => { 'lib/Marpa/Source.pm.PL' => 'lib/Marpa/Source.pm' },
+    PL_files  => { 'lib/Marpa/Source.pm.PL' => 'lib/Marpa/Source.pm' },
     pod_files => {
         'lib/Marpa/Doc/Algorithm.pod' =>
             "$(INST_LIB)/Marpa/Doc/Algorithm.pod",
@@ -68,16 +68,16 @@ my $build = Module::Build->new(
         'lib/Marpa/Doc/To_Do.pod'    => "$(INST_LIB)/Marpa/Doc/To_Do.pod",
     },
     pm_files => {
-        'lib/Marpa.pm' => "$(INST_LIB)/Marpa.pm",
-        'lib/Marpa/Evaluator.pm'     => "$(INST_LIB)/Marpa/Evaluator.pm",
-        'lib/Marpa/Grammar.pm'       => "$(INST_LIB)/Marpa/Grammar.pm",
-        'lib/Marpa/Internal.pm'      => "$(INST_LIB)/Marpa/Internal.pm",
-        'lib/Marpa/Lex.pm'           => "$(INST_LIB)/Marpa/Lex.pm",
-        'lib/Marpa/MDL.pm'           => "$(INST_LIB)/Marpa/MDL.pm",
-        'lib/Marpa/Offset.pm'        => "$(INST_LIB)/Marpa/Offset.pm",
-        'lib/Marpa/Raw_Source.pm'    => "$(INST_LIB)/Marpa/Raw_Source.pm",
-        'lib/Marpa/Recognizer.pm'    => "$(INST_LIB)/Marpa/Recognizer.pm",
-        'lib/Marpa/Source.pm'        => "$(INST_LIB)/Marpa/Source.pm",
+        'lib/Marpa.pm'            => "$(INST_LIB)/Marpa.pm",
+        'lib/Marpa/Evaluator.pm'  => "$(INST_LIB)/Marpa/Evaluator.pm",
+        'lib/Marpa/Grammar.pm'    => "$(INST_LIB)/Marpa/Grammar.pm",
+        'lib/Marpa/Internal.pm'   => "$(INST_LIB)/Marpa/Internal.pm",
+        'lib/Marpa/Lex.pm'        => "$(INST_LIB)/Marpa/Lex.pm",
+        'lib/Marpa/MDL.pm'        => "$(INST_LIB)/Marpa/MDL.pm",
+        'lib/Marpa/Offset.pm'     => "$(INST_LIB)/Marpa/Offset.pm",
+        'lib/Marpa/Raw_Source.pm' => "$(INST_LIB)/Marpa/Raw_Source.pm",
+        'lib/Marpa/Recognizer.pm' => "$(INST_LIB)/Marpa/Recognizer.pm",
+        'lib/Marpa/Source.pm'     => "$(INST_LIB)/Marpa/Source.pm",
         'lib/Marpa/header_Raw_Source.pm' =>
             "$(INST_LIB)/Marpa/header_Raw_Source.pm",
         'lib/Marpa/trailer_Raw_Source.pm' =>

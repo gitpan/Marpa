@@ -84,6 +84,19 @@ sub fix_meta_yml {
     return $text_ref;
 } ## end sub fix_meta_yml
 
+sub fix_build_pl {
+    my $text_ref  = shift;
+    my $file_name = shift;
+
+    if ( ${$text_ref} !~ s/(my\s+\$marpa_version\s*=\s*')$old';/$1$new';/xms )
+    {
+        say {*STDERR}
+            "failed to change VERSION from $old to $new in $file_name"
+            or Marpa::exception("Could not print to STDERR: $ERRNO");
+    } ## end if ( ${$text_ref} !~ ...)
+    return $text_ref;
+} ## end sub fix_build_pl
+
 sub fix_marpa_pm {
     my $text_ref  = shift;
     my $file_name = shift;
@@ -140,6 +153,7 @@ sub update_changes {
 } ## end sub update_changes
 
 change( \&fix_meta_yml,     'META.yml' );
+change( \&fix_build_pl,     'Build.PL' );
 change( \&fix_marpa_pm,     'lib/Marpa.pm' );
 change( \&fix_bootstrap_pl, 'bootstrap/bootstrap.pl' );
 change( \&fix_test_files,   @test_files );

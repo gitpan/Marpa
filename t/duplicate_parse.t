@@ -170,7 +170,7 @@ S10@0-2R4:2o3a5 -> S6@0-1R4:1o8 S4@1-2L2o9
     (part of 0) S -> { p p . } p n
     rhs length = 3
 S5@2-3L5o4 -> S5@2-3L5o4a7
-S5@2-3L5o4a7 -> S7@2-2R9:1o10 S14@2-3L3o12
+S5@2-3L5o4a7 -> S7@2-2R9:1o17 S14@2-3L3o12
     rule 9: S[R0:2][x5] -> p[] n .
     (part of 0) S -> p p { p n . }
     rhs length = 2; closure
@@ -198,11 +198,6 @@ S4@1-2L2o9 -> S4@1-2L2o9a13
 S4@1-2L2o9a13 -> 'b'
     rule 1: p -> a .
     rhs length = 1; closure
-S7@2-2R9:1o10 -> S7@2-2R9:1o10a14
-S7@2-2R9:1o10a14 -> undef
-    rule 9: S[R0:2][x5] -> p[] . n
-    (part of 0) S -> p p { p . n }
-    rhs length = 2
 S14@2-3L3o12 -> S14@2-3L3o12a16
 S14@2-3L3o12a16 -> 'c'
     rule 3: n -> a .
@@ -226,6 +221,11 @@ S6@0-1R6:1o16a20 -> S4@0-1L2o14
     rule 6: S -> p . p[] S[R0:2][x5]
     (part of 0) S -> { p . p } p n
     rhs length = 3
+S7@2-2R9:1o17 -> S7@2-2R9:1o17a21
+S7@2-2R9:1o17a21 -> undef
+    rule 9: S[R0:2][x5] -> p[] . n
+    (part of 0) S -> p p { p . n }
+    rhs length = 2
 END_OF_STRING
 
 # Local Variables:
