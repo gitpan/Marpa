@@ -24,11 +24,10 @@ use 5.010;
 use strict;
 use warnings;
 use lib 'lib';
-use lib 't/lib';
 use English qw( -no_match_vars );
 
 use Test::More tests => 2;
-use Marpa::Test;
+use t::lib::Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');
@@ -69,10 +68,10 @@ my $grammar = Marpa::Grammar->new(
 );
 
 my $expected = <<'EOS';
-svo(s(adje(time);n(flies));v(like);o(art(an);n(arrow)))
 sva(s(n(time));v(flies);adju(pr(like);o(art(an);n(arrow))))
-svo(s(adje(fruit);n(flies));v(like);o(art(a);n(banana)))
+svo(s(adje(time);n(flies));v(like);o(art(an);n(arrow)))
 sva(s(n(fruit));v(flies);adju(pr(like);o(art(a);n(banana))))
+svo(s(adje(fruit);n(flies));v(like);o(art(a);n(banana)))
 EOS
 my $actual = q{};
 

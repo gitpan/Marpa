@@ -22,6 +22,7 @@ my $source;
 my $grammar = Marpa::Grammar->new(
     {   warnings   => 1,
         code_lines => -1,
+        maximal    => 1,
     }
 );
 
@@ -53,12 +54,7 @@ for my $i ( 0 .. 4 ) {
         }
     );
     my $result = $evaler->value();
-    TODO: {
-        ## no critic (ControlStructures::ProhibitPostfixControls)
-        local $TODO = 'new evaluator not yet written' if $i == 3;
-        ## use critic
-        Test::More::is( ${$result}, $answer[$i], "parse permutation $i" );
-    } ## end TODO:
+    Test::More::is( ${$result}, $answer[$i], "parse permutation $i" );
 } ## end for my $i ( 0 .. 4 )
 
 # Local Variables:
@@ -69,7 +65,7 @@ for my $i ( 0 .. 4 ) {
 # vim: expandtab shiftwidth=4:
 
 __DATA__
-semantics are perl5.  version is 0.001_016.  the start symbol is
+semantics are perl5.  version is 0.001_017.  the start symbol is
 S.  the default null value is q{}.  the default action is q{
      my $v_count = scalar @_;
      return q{} if $v_count <= 0;

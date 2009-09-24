@@ -8,8 +8,7 @@ use warnings;
 use Test::More tests => 42;
 
 use lib 'lib';
-use lib 't/lib';
-use Marpa::Test;
+use t::lib::Marpa::Test;
 use English qw( -no_match_vars );
 
 BEGIN {
@@ -187,7 +186,7 @@ sub run_test {
 
     $recce->end_input();
 
-    my $expected = '((((2-0)*3)+1)==7; q{trailer};[default null];[null])';
+    my $expected = '((2-(0*(3+1)))==2; q{trailer};[default null];[null])';
     my $evaler   = Marpa::Evaluator->new( { recce => $recce } );
     my $value    = $evaler->value();
     Marpa::Test::is( ${$value}, $expected, 'Ambiguous Equation Value' );

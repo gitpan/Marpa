@@ -33,12 +33,13 @@ use Marpa::Offset qw(
     NULLING
     USER_PRIORITY
 
-    MAXIMAL { Maximal (longest possible)
-        or minimal (shortest possible) evaluation?
+    MINIMAL MAXIMAL { Maximal (longest possible)
+        or minimal (shortest possible) evaluation
         Default is indifferent. }
 
-    NULL_WIDTH { When nulled,
-    the number of nulls it represents }
+    NULLABLE { The number of nullable symbols
+    the symbol represents,
+    0 if the symbol is not nullable. }
 
     =LAST_EVALUATOR_FIELD
 
@@ -48,7 +49,8 @@ use Marpa::Offset qw(
     =LAST_RECOGNIZER_FIELD
 
     LHS RHS ACCESSIBLE PRODUCTIVE START
-    NULLABLE NULL_VALUE
+
+    NULL_VALUE
     CLOSURE
     COUNTED
     =LAST_FIELD
@@ -92,7 +94,7 @@ use Marpa::Offset qw(
     CODE CYCLE
     USER_PRIORITY
     INTERNAL_PRIORITY
-    MAXIMAL
+    MAXIMAL MINIMAL
     HAS_CHAF_LHS HAS_CHAF_RHS
 
     =LAST_EVALUATOR_FIELD
@@ -100,7 +102,7 @@ use Marpa::Offset qw(
 
     ORIGINAL_RULE
     CHAF_START CHAF_END
-    NULLABLE ACCESSIBLE PRODUCTIVE NULLING
+    NULLABLE ACCESSIBLE PRODUCTIVE
     =LAST_FIELD
 );
 
@@ -210,6 +212,7 @@ use Marpa::Offset qw(
 
     MAX_PARSES
     PREAMBLE
+
     =LAST_EVALUATOR_FIELD
 
     PROBLEMS
@@ -232,6 +235,8 @@ use Marpa::Offset qw(
     SEMANTICS
     TRACE_RULES TRACE_STRINGS TRACE_PREDEFINEDS
     ALLOW_RAW_SOURCE INTERFACE
+    MAXIMAL MINIMAL
+
     =LAST_FIELD
 );
 
@@ -239,7 +244,7 @@ package Marpa::Internal::Grammar;
 
 use Carp;
 
-# use Smart::Comments '###';
+use Smart::Comments '-ENV';
 
 ### Using smart comments <where>...
 
@@ -839,6 +844,7 @@ sub parse_source_grammar {
         'Marpa Internal error: failed to create evaluator for MDL')
         if not defined $evaler;
     my $value = $evaler->value();
+    ### value of mdl grammar: $value
     raw_grammar_eval( $grammar, $value );
     return;
 } ## end sub parse_source_grammar
@@ -878,6 +884,29 @@ sub Marpa::Grammar::set {
             Marpa::Internal::Phase::RULES;
     } ## end if ( defined $source )
 
+    # First pass options: These affect processing of other
+    # options and are expected to take force for the other
+    # options, even if specified afterwards
+    while ( my ( $option, $value ) = each %{$args} ) {
+        given ($option) {
+            when ('minimal') {
+                Marpa::exception(
+                    "$option option not allowed after grammar is precomputed")
+                    if $phase >= Marpa::Internal::Phase::PRECOMPUTED;
+                $grammar->[Marpa::Internal::Grammar::MINIMAL] = $value;
+                delete $args->{'minimal'};
+            } ## end when ('minimal')
+            when ('maximal') {
+                Marpa::exception(
+                    "$option option not allowed after grammar is precomputed")
+                    if $phase >= Marpa::Internal::Phase::PRECOMPUTED;
+                $grammar->[Marpa::Internal::Grammar::MAXIMAL] = $value;
+                delete $args->{'maximal'};
+            } ## end when ('maximal')
+        } ## end given
+    } ## end while ( my ( $option, $value ) = each %{$args} )
+
+    # Second pass options
     while ( my ( $option, $value ) = each %{$args} ) {
         given ($option) {
             when ('rules') {
@@ -1443,9 +1472,8 @@ sub Marpa::show_symbol {
     my $text     = q{};
     my $stripped = $#{$symbol} < Marpa::Internal::Symbol::LAST_FIELD;
 
-    $text .= sprintf '%d: %s,',
-        $symbol->[Marpa::Internal::Symbol::ID],
-        $symbol->[Marpa::Internal::Symbol::NAME];
+    my $name = $symbol->[Marpa::Internal::Symbol::NAME];
+    $text .= sprintf '%d: %s,', $symbol->[Marpa::Internal::Symbol::ID], $name;
 
     if ( exists $symbol->[Marpa::Internal::Symbol::LHS] ) {
         $text .= sprintf ' lhs=[%s]',
@@ -1467,13 +1495,19 @@ sub Marpa::show_symbol {
 
     if ($stripped) { $text .= ' stripped' }
 
+    my $nullable = $symbol->[Marpa::Internal::Symbol::NULLABLE];
+    if ($nullable) {
+        $text .= " nullable=$nullable";
+    }
+
     ELEMENT:
     for my $comment_element (
         (   [ 1, 'unproductive', Marpa::Internal::Symbol::PRODUCTIVE, ],
             [ 1, 'inaccessible', Marpa::Internal::Symbol::ACCESSIBLE, ],
-            [ 0, 'nullable',     Marpa::Internal::Symbol::NULLABLE, ],
             [ 0, 'nulling',      Marpa::Internal::Symbol::NULLING, ],
             [ 0, 'terminal',     Marpa::Internal::Symbol::TERMINAL, ],
+            [ 0, 'maximal',      Marpa::Internal::Symbol::MAXIMAL, ],
+            [ 0, 'minimal',      Marpa::Internal::Symbol::MINIMAL, ],
         )
         )
     {
@@ -1484,7 +1518,8 @@ sub Marpa::show_symbol {
         if ($value) { $text .= " $comment" }
     } ## end for my $comment_element ( ( [ 1, 'unproductive', ...]))
 
-    return $text .= "\n";
+    $text .= "\n";
+    return $text;
 
 } ## end sub Marpa::show_symbol
 
@@ -1602,31 +1637,45 @@ sub Marpa::brief_virtual_rule {
             if defined $dot_position;
         return 'virtual ' . Marpa::brief_rule($original_rule);
     } ## end if ( not defined $chaf_start )
+
     my $text .= "(part of $original_rule_id) ";
     $text .= $original_lhs->[Marpa::Internal::Symbol::NAME] . ' ->';
     my @rhs_names =
         map { $_->[Marpa::Internal::Symbol::NAME] } @{$original_rhs};
-    if ( $dot_position >= scalar @{$chaf_rhs} ) {
-        $dot_position = scalar @rhs_names;
+
+    my @chaf_symbol_start;
+    my @chaf_symbol_end;
+
+    # Mark the beginning and end of the non-CHAF symbols
+    # in the CHAF rule.
+    for my $chaf_ix ( $chaf_start .. $chaf_end ) {
+        $chaf_symbol_start[$chaf_ix] = 1;
+        $chaf_symbol_end[ $chaf_ix + 1 ] = 1;
     }
-    else {
-        $dot_position += $chaf_start;
+
+    # Mark the beginning and special CHAF symbol
+    # for the "rest" of the rule.
+    if ( $chaf_end < $#rhs_names ) {
+        $chaf_symbol_start[ $chaf_end + 1 ] = 1;
+        $chaf_symbol_end[ scalar @rhs_names ] = 1;
     }
-    POSITION: for my $position ( 0 .. scalar @rhs_names ) {
-        if ( $position == $chaf_start ) {
-            $text .= ' {';
+
+    $dot_position =
+        $dot_position >= scalar @{$chaf_rhs}
+        ? scalar @rhs_names
+        : ( $chaf_start + $dot_position );
+
+    for ( 0 .. scalar @rhs_names ) {
+        when ( defined $chaf_symbol_end[$_] )   { $text .= ' >>'; continue }
+        when ($dot_position)                    { $text .= q{ .}; continue; }
+        when ( defined $chaf_symbol_start[$_] ) { $text .= ' <<'; continue }
+        when ( $_ < scalar @rhs_names ) {
+            $text .= q{ } . $rhs_names[$_]
         }
-        if ( $position == $dot_position ) {
-            $text .= q{ .};
-        }
-        if ( $position == $chaf_end + 1 ) {
-            $text .= ' }';
-        }
-        my $name = $rhs_names[$position];
-        next POSITION if not defined $name;
-        $text .= " $name";
-    } ## end for my $position ( 0 .. scalar @rhs_names )
+    } ## end for ( 0 .. scalar @rhs_names )
+
     return $text;
+
 } ## end sub Marpa::brief_virtual_rule
 
 sub Marpa::show_rule {
@@ -1648,8 +1697,8 @@ sub Marpa::show_rule {
         (   [ 1, 'unproductive', Marpa::Internal::Rule::PRODUCTIVE, ],
             [ 1, 'inaccessible', Marpa::Internal::Rule::ACCESSIBLE, ],
             [ 0, 'nullable',     Marpa::Internal::Rule::NULLABLE, ],
-            [ 0, 'nulling',      Marpa::Internal::Rule::NULLING, ],
             [ 0, 'maximal',      Marpa::Internal::Rule::MAXIMAL, ],
+            [ 0, 'minimal',      Marpa::Internal::Rule::MINIMAL, ],
         )
         )
     {
@@ -1856,7 +1905,8 @@ sub add_terminal {
     my ( $regex, $prefix, $suffix, );
     my $action;
     my $user_priority = 0;
-    my $maximal       = 0;
+    my $maximal;
+    my $minimal;
 
     while ( my ( $key, $value ) = each %{$options} ) {
         given ($key) {
@@ -1866,6 +1916,7 @@ sub add_terminal {
             when ('suffix')   { $suffix        = $value; }
             when ('regex')    { $regex         = $value; }
             when ('maximal')  { $maximal       = $value; }
+            when ('minimal')  { $minimal       = $value; }
             default {
                 Marpa::exception(
                     "Attempt to add terminal named $name with unknown option $key"
@@ -1874,11 +1925,12 @@ sub add_terminal {
         } ## end given
     } ## end while ( my ( $key, $value ) = each %{$options} )
 
-    my ( $symbol_hash, $symbols, $default_null_value ) = @{$grammar}[
-        Marpa::Internal::Grammar::SYMBOL_HASH,
-        Marpa::Internal::Grammar::SYMBOLS,
-        Marpa::Internal::Grammar::DEFAULT_NULL_VALUE,
-    ];
+    my $symbol_hash = $grammar->[Marpa::Internal::Grammar::SYMBOL_HASH];
+    my $symbols     = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
+    my $default_null_value =
+        $grammar->[Marpa::Internal::Grammar::DEFAULT_NULL_VALUE];
+    my $default_minimal = $grammar->[Marpa::Internal::Grammar::MINIMAL];
+    my $default_maximal = $grammar->[Marpa::Internal::Grammar::MAXIMAL];
 
     # I allow redefinition of a LHS symbol as a terminal
     # I need to test that this works, or disallow it
@@ -1901,7 +1953,10 @@ sub add_terminal {
         $symbol->[Marpa::Internal::Symbol::SUFFIX]     = $suffix;
         $symbol->[Marpa::Internal::Symbol::ACTION]     = $action;
         $symbol->[Marpa::Internal::Symbol::TERMINAL]   = 1;
-        $symbol->[Marpa::Internal::Symbol::MAXIMAL]    = $maximal;
+        $symbol->[Marpa::Internal::Symbol::MAXIMAL]    = $maximal
+            // $default_maximal;
+        $symbol->[Marpa::Internal::Symbol::MINIMAL] = $minimal
+            // $default_minimal;
 
         return;
     } ## end if ( defined $symbol )
@@ -1920,7 +1975,10 @@ sub add_terminal {
     $new_symbol->[Marpa::Internal::Symbol::ACTION]        = $action;
     $new_symbol->[Marpa::Internal::Symbol::TERMINAL]      = 1;
     $new_symbol->[Marpa::Internal::Symbol::USER_PRIORITY] = 0;
-    $new_symbol->[Marpa::Internal::Symbol::MAXIMAL]       = $maximal;
+    $new_symbol->[Marpa::Internal::Symbol::MAXIMAL]       = $maximal
+        // $default_maximal;
+    $new_symbol->[Marpa::Internal::Symbol::MINIMAL] = $minimal
+        // $default_minimal;
 
     push @{$symbols}, $new_symbol;
     return weaken( $symbol_hash->{$name} = $new_symbol );
@@ -1943,6 +2001,8 @@ sub assign_symbol {
         $symbol->[Marpa::Internal::Symbol::LHS]           = [];
         $symbol->[Marpa::Internal::Symbol::RHS]           = [];
         $symbol->[Marpa::Internal::Symbol::USER_PRIORITY] = 0;
+        $symbol->[Marpa::Internal::Symbol::NULLABLE]      = 0;
+        $symbol->[Marpa::Internal::Symbol::NULLING]       = 0;
         push @{$symbols}, $symbol;
         weaken( $symbol_hash->{$name} = $symbol );
     } ## end if ( not defined $symbol )
@@ -1977,7 +2037,6 @@ sub add_user_rule {
     my $action            = $arg_copy{action};
     my $user_priority     = $arg_copy{user_priority};
     my $internal_priority = $arg_copy{internal_priority};
-    $arg_copy{significant} = 1;
 
     my ($rule_hash) = @{$grammar}[Marpa::Internal::Grammar::RULE_HASH];
 
@@ -2033,14 +2092,31 @@ sub add_user_rule {
 
 sub add_rule {
 
-    my ($arg_hash)        = @_;
-    my $grammar           = $arg_hash->{grammar};
-    my $lhs               = $arg_hash->{lhs};
-    my $rhs               = $arg_hash->{rhs};
-    my $action            = $arg_hash->{action};
-    my $user_priority     = $arg_hash->{user_priority};
-    my $internal_priority = $arg_hash->{internal_priority};
-    my $significant       = $arg_hash->{significant};
+    my ($arg_hash) = @_;
+    my $grammar;
+    my $lhs;
+    my $rhs;
+    my $action;
+    my $user_priority;
+    my $internal_priority;
+    my $maximal;
+    my $minimal;
+
+    while ( my ( $option, $value ) = each %{$arg_hash} ) {
+        given ($option) {
+            when ('grammar')           { $grammar           = $value }
+            when ('lhs')               { $lhs               = $value }
+            when ('rhs')               { $rhs               = $value }
+            when ('action')            { $action            = $value }
+            when ('internal_priority') { $internal_priority = $value }
+            when ('user_priority')     { $user_priority     = $value }
+            when ('maximal')           { $maximal           = $value }
+            when ('minimal')           { $minimal           = $value }
+            default {
+                Marpa::exception("Unknown option in rule: $option");
+            };
+        } ## end given
+    } ## end while ( my ( $option, $value ) = each %{$arg_hash} )
 
     my $rules       = $grammar->[Marpa::Internal::Grammar::RULES];
     my $package     = $grammar->[Marpa::Internal::Grammar::NAME];
@@ -2119,12 +2195,14 @@ sub add_rule {
     $new_rule->[Marpa::Internal::Rule::RHS]           = $rhs;
     $new_rule->[Marpa::Internal::Rule::NULLABLE]      = $nulling;
     $new_rule->[Marpa::Internal::Rule::PRODUCTIVE]    = $nulling;
-    $new_rule->[Marpa::Internal::Rule::NULLING]       = $nulling;
     $new_rule->[Marpa::Internal::Rule::ACTION]        = $action;
-    $new_rule->[Marpa::Internal::Rule::MAXIMAL]       = 0;
     $new_rule->[Marpa::Internal::Rule::USER_PRIORITY] = $user_priority;
     $new_rule->[Marpa::Internal::Rule::INTERNAL_PRIORITY] =
         $internal_priority;
+    $new_rule->[Marpa::Internal::Rule::MINIMAL] = $minimal
+        // $grammar->[Marpa::Internal::Grammar::MINIMAL];
+    $new_rule->[Marpa::Internal::Rule::MAXIMAL] = $maximal
+        // $grammar->[Marpa::Internal::Grammar::MAXIMAL];
 
     push @{$rules}, $new_rule;
     {
@@ -2186,7 +2264,7 @@ sub add_user_rules {
 
             } ## end when ('ARRAY')
             when ('HASH') {
-                add_rules_from_hash( $grammar, $rule );
+                add_rule_from_hash( $grammar, $rule );
             }
             default {
                 Marpa::exception( 'Invalid rule reftype ',
@@ -2200,7 +2278,7 @@ sub add_user_rules {
 
 } ## end sub add_user_rules
 
-sub add_rules_from_hash {
+sub add_rule_from_hash {
     my $grammar = shift;
     my $options = shift;
 
@@ -2211,6 +2289,7 @@ sub add_rules_from_hash {
     my $left_associative  = 1;
     my $user_priority     = 0;
 
+    my @rule_options;
     while ( my ( $option, $value ) = each %{$options} ) {
         given ($option) {
             when ('rhs')               { $rhs_names         = $value }
@@ -2221,9 +2300,11 @@ sub add_rules_from_hash {
             when ('proper_separation') { $proper_separation = $value }
             when ('left_associative')  { $left_associative  = $value }
             when ('right_associative') { $left_associative  = !$value }
-            when ('priority')          { $user_priority     = $value }
+            when ('priority') {
+                push @rule_options, user_priority => $value
+            }
             default {
-                Marpa::exception("Unknown option in counted rule: $option");
+                push @rule_options, $option => $value;
             };
         } ## end given
     } ## end while ( my ( $option, $value ) = each %{$options} )
@@ -2245,11 +2326,11 @@ sub add_rules_from_hash {
         # This is an ordinary, non-counted rule,
         # which we'll take care of first as a special case
         my $ordinary_rule = add_user_rule(
-            {   grammar       => $grammar,
-                lhs           => $lhs_name,
-                rhs           => $rhs_names,
-                action        => $action,
-                user_priority => $user_priority
+            {   grammar => $grammar,
+                lhs     => $lhs_name,
+                rhs     => $rhs_names,
+                action  => $action,
+                @rule_options
             }
         );
 
@@ -2272,11 +2353,11 @@ sub add_rules_from_hash {
             }
         } ## end given
         add_user_rule(
-            {   grammar       => $grammar,
-                lhs           => $lhs_name,
-                rhs           => [],
-                action        => $rule_action,
-                user_priority => $user_priority
+            {   grammar => $grammar,
+                lhs     => $lhs_name,
+                rhs     => [],
+                action  => $rule_action,
+                @rule_options
             }
         );
         $min = 1;
@@ -2353,11 +2434,11 @@ EO_CODE
     } ## end given
 
     add_rule(
-        {   grammar     => $grammar,
-            lhs         => $lhs,
-            rhs         => [$sequence],
-            action      => $rule_action,
-            significant => 1,
+        {   grammar => $grammar,
+            lhs     => $lhs,
+            rhs     => [$sequence],
+            action  => $rule_action,
+            @rule_options
         }
     );
 
@@ -2368,11 +2449,11 @@ EO_CODE
             ## use critic
         }
         add_rule(
-            {   grammar     => $grammar,
-                lhs         => $lhs,
-                rhs         => [ $sequence, $separator, ],
-                action      => $rule_action,
-                significant => 1,
+            {   grammar => $grammar,
+                lhs     => $lhs,
+                rhs     => [ $sequence, $separator, ],
+                action  => $rule_action,
+                @rule_options
             }
         );
     } ## end if ( defined $separator and not $proper_separation )
@@ -2415,6 +2496,7 @@ EO_CODE
             lhs     => $sequence,
             rhs     => $counted_rhs,
             action  => $rule_action,
+            @rule_options
         }
     );
 
@@ -2444,13 +2526,14 @@ EO_CODE
         {   grammar => $grammar,
             lhs     => $sequence,
             rhs     => \@iterating_rhs,
-            action  => $rule_action
+            action  => $rule_action,
+            @rule_options
         }
     );
 
     return;
 
-} ## end sub add_rules_from_hash
+} ## end sub add_rule_from_hash
 
 sub add_user_terminals {
     my $grammar   = shift;
@@ -2766,7 +2849,6 @@ sub mark_all_symbols_terminal {
     } ## end for my $symbol ( @{$symbols} )
     my $rules = $grammar->[Marpa::Internal::Grammar::RULES];
     for my $rule ( @{$rules} ) {
-        $rule->[Marpa::Internal::Rule::NULLING]    = 0;
         $rule->[Marpa::Internal::Rule::NULLABLE]   = 0;
         $rule->[Marpa::Internal::Rule::PRODUCTIVE] = 1;
     }
@@ -2781,135 +2863,45 @@ sub nulling {
         Marpa::Internal::Grammar::SYMBOLS,
     ];
 
-    my $symbol_work_set = [];
-    $#{$symbol_work_set} = $#{$symbols};
-    my $rule_work_set = [];
-    $#{$rule_work_set} = $#{$rules};
+    my @workset;
+    my @potential_nulling_symbol_ids = (
+        map {
+            $_->[Marpa::Internal::Rule::LHS]->[Marpa::Internal::Symbol::ID]
+            }
+            grep { not scalar @{ $_->[Marpa::Internal::Rule::RHS] } }
+            @{$rules}
+    );
+    @workset[@potential_nulling_symbol_ids] =
+        (1) x scalar @potential_nulling_symbol_ids;
 
-    for my $rule_id (
-        map  { $_->[Marpa::Internal::Rule::ID] }
-        grep { $_->[Marpa::Internal::Rule::NULLING] } @{$rules}
-        )
-    {
-        $rule_work_set->[$rule_id] = 1;
-    } ## end for my $rule_id ( map { $_->[Marpa::Internal::Rule::ID...]})
+    while ( my @symbol_ids = grep { $workset[$_] } ( 0 .. $#{$symbols} ) ) {
+        @workset = ();
+        SYMBOL: for my $symbol ( map { $symbols->[$_] } @symbol_ids ) {
 
-    for my $symbol_id (
-        map  { $_->[Marpa::Internal::Symbol::ID] }
-        grep { $_->[Marpa::Internal::Symbol::NULLING] } @{$symbols}
-        )
-    {
-        $symbol_work_set->[$symbol_id] = 1;
-    } ## end for my $symbol_id ( map { $_->[Marpa::Internal::Symbol::ID...]})
+            # Terminals are never nulling
+            next SYMBOL if $symbol->[Marpa::Internal::Symbol::TERMINAL];
 
-    my $work_to_do = 1;
-
-    while ($work_to_do) {
-        $work_to_do = 0;
-
-        RULE:
-        for my $rule_id ( grep { $rule_work_set->[$_] }
-            ( 0 .. $#{$rule_work_set} ) )
-        {
-            my $work_rule = $rules->[$rule_id];
-            $rule_work_set->[$rule_id] = 0;
-            my $lhs_symbol = $work_rule->[Marpa::Internal::Rule::LHS];
-
-            # no work to do -- this symbol already is marked one way or the other
-            next RULE
-                if defined $lhs_symbol->[Marpa::Internal::Symbol::NULLING];
-
-            # assume nulling until we hit an unmarked or non-nulling symbol
-            my $symbol_nulling = 1;
-
-            # make sure that all rules for this lhs are nulling
-            LHS_RULE:
-            for my $rule ( @{ $lhs_symbol->[Marpa::Internal::Symbol::LHS] } )
-            {
-
-                my $nulling = $rule->[Marpa::Internal::Rule::NULLING];
-
-                # unmarked rule, change the assumption for the symbol to undef,
-                # but keep scanning for rule marked non-nulling,
-                # which will override everything else
-                if ( not defined $nulling ) {
-                    $symbol_nulling = undef;
-                    next LHS_RULE;
+            # This is not a nulling symbol unless every symbol on the rhs
+            # of every rule that has this symbol on its lhs is nulling
+            next SYMBOL
+                if (
+                defined List::Util::first {
+                    not $_->[Marpa::Internal::Symbol::NULLING];
                 }
+                map { @{ $_->[Marpa::Internal::Rule::RHS] } }
+                @{ $symbol->[Marpa::Internal::Symbol::LHS] }
+                );
 
-                # any non-nulling rule means the LHS is not nulling
-                if ( $nulling == 0 ) {
-                    $symbol_nulling = 0;
-                    last LHS_RULE;
-                }
-            } ## end for my $rule ( @{ $lhs_symbol->[...]})
-
-            # if this pass found the symbol nulling or non-nulling
-            #  mark the symbol
-            if ( defined $symbol_nulling ) {
-                $lhs_symbol->[Marpa::Internal::Symbol::NULLING] =
-                    $symbol_nulling;
-                $work_to_do++;
-
-                $symbol_work_set->[ $lhs_symbol->[Marpa::Internal::Symbol::ID]
-                ] = 1;
-            } ## end if ( defined $symbol_nulling )
-
-        }    # RULE
-
-        SYMBOL_PASS:
-        for my $symbol_id ( grep { $symbol_work_set->[$_] }
-            ( 0 .. $#{$symbol_work_set} ) )
-        {
-            my $work_symbol = $symbols->[$symbol_id];
-            $symbol_work_set->[$symbol_id] = 0;
-
-            my $rules_producing =
-                $work_symbol->[Marpa::Internal::Symbol::RHS];
-            PRODUCING_RULE: for my $rule ( @{$rules_producing} ) {
-
-                # no work to do -- this rule already has nulling marked
-                next PRODUCING_RULE
-                    if defined $rule->[Marpa::Internal::Rule::NULLING];
-
-                # assume nulling until we hit an unmarked or non-nulling symbol
-                my $rule_nulling = 1;
-
-                # are all symbols on the RHS of this rule marked?
-                RHS_SYMBOL:
-                for my $rhs_symbol (
-                    @{ $rule->[Marpa::Internal::Rule::RHS] } )
-                {
-                    my $nulling =
-                        $rhs_symbol->[Marpa::Internal::Symbol::NULLING];
-
-                    # unmarked rule, change the assumption for rule to undef,
-                    # but keep scanning for non-nulling
-                    # rule, which will override everything else
-                    if ( not defined $nulling ) {
-                        $rule_nulling = undef;
-                        next RHS_SYMBOL;
-                    }
-
-                    # any non-nulling RHS symbol means the rule is non-nulling
-                    if ( $nulling == 0 ) {
-                        $rule_nulling = 0;
-                        last RHS_SYMBOL;
-                    }
-                } ## end for my $rhs_symbol ( @{ $rule->[...]})
-
-                # if this pass found the rule nulling or non-nulling, mark the rule
-                if ( defined $rule_nulling ) {
-                    $rule->[Marpa::Internal::Rule::NULLING] = $rule_nulling;
-                    $work_to_do++;
-                    $rule_work_set->[ $rule->[Marpa::Internal::Rule::ID] ] =
-                        1;
-                } ## end if ( defined $rule_nulling )
-
-            } ## end for my $rule ( @{$rules_producing} )
-        }    # SYMBOL_PASS
-
-    }    # work_to_do loop
+            $symbol->[Marpa::Internal::Symbol::NULLING] = 1;
+            my @potential_new_nulling_symbol_ids =
+                map {
+                $_->[Marpa::Internal::Rule::LHS]
+                    ->[Marpa::Internal::Symbol::ID]
+                } @{ $symbol->[Marpa::Internal::Symbol::RHS] };
+            @workset[@potential_new_nulling_symbol_ids] =
+                (1) x scalar @potential_new_nulling_symbol_ids;
+        } ## end for my $symbol ( map { $symbols->[$_] } @symbol_ids )
+    } ## end while ( my @symbol_ids = grep { $workset[$_] } ( 0 .. $#...))
 
     return 1;
 
@@ -2917,7 +2909,7 @@ sub nulling {
 
 # returns undef if there was a problem
 sub nullable {
-    my $grammar = shift;
+    my ($grammar) = @_;
     my ( $rules, $symbols, $tracing ) = @{$grammar}[
         Marpa::Internal::Grammar::RULES,
         Marpa::Internal::Grammar::SYMBOLS,
@@ -2929,133 +2921,63 @@ sub nullable {
         $trace_fh = $grammar->[Marpa::Internal::Grammar::TRACING];
     }
 
-    # boolean to track if current pass has changed anything
-    my $work_to_do = 1;
+    my @workset;
+    my @potential_nullable_symbol_ids = (
+        map {
+            $_->[Marpa::Internal::Rule::LHS]->[Marpa::Internal::Symbol::ID]
+            }
+            grep { not scalar @{ $_->[Marpa::Internal::Rule::RHS] } }
+            @{$rules}
+    );
+    @workset[@potential_nullable_symbol_ids] =
+        (1) x scalar @potential_nullable_symbol_ids;
 
-    my $symbol_work_set = [];
-    $#{$symbol_work_set} = @{$symbols};
-    my $rule_work_set = [];
-    $#{$rule_work_set} = @{$rules};
+    while ( my @symbol_ids = grep { $workset[$_] } ( 0 .. $#{$symbols} ) ) {
+        @workset = ();
+        SYMBOL: for my $symbol ( map { $symbols->[$_] } @symbol_ids ) {
 
-    for my $symbol_id (
-        map { $_->[Marpa::Internal::Symbol::ID] }
-        grep {
-                   $_->[Marpa::Internal::Symbol::NULLABLE]
-                or $_->[Marpa::Internal::Symbol::NULLING]
-        } @{$symbols}
-        )
-    {
-        $symbol_work_set->[$symbol_id] = 1;
-    } ## end for my $symbol_id ( map { $_->[Marpa::Internal::Symbol::ID...]})
-    for my $rule_id (
-        map  { $_->[Marpa::Internal::Rule::ID] }
-        grep { defined $_->[Marpa::Internal::Rule::NULLABLE] } @{$rules}
-        )
-    {
-        $rule_work_set->[$rule_id] = 1;
-    } ## end for my $rule_id ( map { $_->[Marpa::Internal::Rule::ID...]})
+            # Terminals can be nullable
 
-    while ($work_to_do) {
-        $work_to_do = 0;
-
-        SYMBOL_PASS:
-        for my $symbol_id ( grep { $symbol_work_set->[$_] }
-            ( 0 .. $#{$symbol_work_set} ) )
-        {
-            my $work_symbol = $symbols->[$symbol_id];
-            $symbol_work_set->[$symbol_id] = 0;
-            my $rules_producing =
-                $work_symbol->[Marpa::Internal::Symbol::RHS];
-
-            PRODUCING_RULE: for my $rule ( @{$rules_producing} ) {
-
-                # assume nullable until we hit an unmarked or non-nullable symbol
-                my $rule_nullable = 1;
-
-                # no work to do -- this rule already has nullability marked
-                next PRODUCING_RULE
-                    if defined $rule->[Marpa::Internal::Rule::NULLABLE];
-
-                # are all symbols on the RHS of this rule bottom marked?
-                RHS_SYMBOL:
-                for my $rhs_symbol (
-                    @{ $rule->[Marpa::Internal::Rule::RHS] } )
-                {
-                    my $nullable =
-                        $rhs_symbol->[Marpa::Internal::Symbol::NULLABLE];
-
-                    # unmarked symbol, change the assumption for rule to undef, but keep scanning for non-nullable
-                    # symbol, which will override everything else
-                    if ( not defined $nullable ) {
-                        $rule_nullable = undef;
-                        next RHS_SYMBOL;
-                    }
-
-                    # any non-nullable RHS symbol means the rule is not nullable
-                    if ( $nullable == 0 ) {
-                        $rule_nullable = 0;
-                        last RHS_SYMBOL;
-                    }
-                } ## end for my $rhs_symbol ( @{ $rule->[...]})
-
-                # if this pass found the rule nullable or not, so mark the rule
-                if ( defined $rule_nullable ) {
-                    $rule->[Marpa::Internal::Rule::NULLABLE] = $rule_nullable;
-                    $work_to_do++;
-                    $rule_work_set->[ $rule->[Marpa::Internal::Rule::ID] ] =
-                        1;
-                } ## end if ( defined $rule_nullable )
-
-            } ## end for my $rule ( @{$rules_producing} )
-        }    # SYMBOL_PASS
-
-        RULE:
-        for my $rule_id ( grep { $rule_work_set->[$_] }
-            ( 0 .. $#{$rule_work_set} ) )
-        {
-            my $work_rule  = $rules->[$rule_id];
-            my $lhs_symbol = $work_rule->[Marpa::Internal::Rule::LHS];
-
-            # no work to do -- this symbol already has nullability marked
-            next RULE
-                if defined $lhs_symbol->[Marpa::Internal::Symbol::NULLABLE];
-
-            # assume non-nullable until we hit an unmarked or non-nullable symbol
-            my $symbol_nullable = 0;
-
-            LHS_RULE:
-            for my $rule ( @{ $lhs_symbol->[Marpa::Internal::Symbol::LHS] } )
-            {
-
-                my $nullable = $rule->[Marpa::Internal::Rule::NULLABLE];
-
-                # unmarked symbol, change the assumption for rule to undef,
-                # but keep scanning for nullable
-                # rule, which will override everything else
-                if ( not defined $nullable ) {
-                    $symbol_nullable = undef;
-                    next LHS_RULE;
+            # This is a nullable symbol if every symbol on the rhs
+            # of any rule that has this symbol on its lhs, is nullable
+            my $nullable = List::Util::min
+                map {
+                (   List::Util::sum
+                        map { $_->[Marpa::Internal::Symbol::NULLABLE]; }
+                        @{ $_->[Marpa::Internal::Rule::RHS] }
+                    )
+                    // 1
                 }
-
-                # any nullable rule means the LHS is nullable
-                if ( $nullable == 1 ) {
-                    $symbol_nullable = 1;
-                    last LHS_RULE;
+                grep {
+                not defined List::Util::first {
+                    not $_->[Marpa::Internal::Symbol::NULLABLE];
                 }
-            } ## end for my $rule ( @{ $lhs_symbol->[...]})
+                @{ $_->[Marpa::Internal::Rule::RHS] }
+                } @{ $symbol->[Marpa::Internal::Symbol::LHS] };
+            next SYMBOL if not $nullable;
 
-            # if this pass found the symbol nullable or not, mark the symbol
-            if ( defined $symbol_nullable ) {
-                $lhs_symbol->[Marpa::Internal::Symbol::NULLABLE] =
-                    $symbol_nullable;
-                $work_to_do++;
-                $symbol_work_set->[ $lhs_symbol->[Marpa::Internal::Symbol::ID]
-                ] = 1;
-            } ## end if ( defined $symbol_nullable )
+            my $old_nullable = $symbol->[Marpa::Internal::Symbol::NULLABLE];
+            if ( $old_nullable and $nullable > $old_nullable ) {
+                my $name = $symbol->[Marpa::Internal::Symbol::NAME];
+                my $problem =
+                    "Symbol $name has ambiguous nullable count: $old_nullable vs. $nullable";
+                push @{ $grammar->[Marpa::Internal::Grammar::PROBLEMS] },
+                    $problem;
+                next SYMBOL;
+            } ## end if ( $old_nullable and $nullable > $old_nullable )
 
-        }    # RULE
+            $symbol->[Marpa::Internal::Symbol::NULLABLE] = $nullable;
+            my @potential_new_nullable_symbol_ids =
+                map {
+                $_->[Marpa::Internal::Rule::LHS]
+                    ->[Marpa::Internal::Symbol::ID]
+                } @{ $symbol->[Marpa::Internal::Symbol::RHS] };
+            @workset[@potential_new_nullable_symbol_ids] =
+                (1) x scalar @potential_new_nullable_symbol_ids;
 
-    }    # work_to_do loop
+        } ## end for my $symbol ( map { $symbols->[$_] } @symbol_ids )
+
+    } ## end while ( my @symbol_ids = grep { $workset[$_] } ( 0 .. $#...))
 
     my $counted_nullable_count;
     for my $symbol ( @{$symbols} ) {
@@ -3077,6 +2999,15 @@ sub nullable {
         push @{ $grammar->[Marpa::Internal::Grammar::PROBLEMS] }, $problem;
         return;
     } ## end if ($counted_nullable_count)
+
+    for my $rule ( @{$rules} ) {
+        $rule->[Marpa::Internal::Rule::NULLABLE] = (
+            not defined List::Util::first {
+                not $_->[Marpa::Internal::Symbol::NULLABLE];
+            }
+            @{ $rule->[Marpa::Internal::Rule::RHS] }
+        );
+    } ## end for my $rule ( @{$rules} )
 
     return 1;
 
@@ -3576,16 +3507,21 @@ sub alias_symbol {
     my $alias_name = $nullable_symbol->[Marpa::Internal::Symbol::NAME] . '[]';
     my $alias      = [];
     $#{$alias} = Marpa::Internal::Symbol::LAST_FIELD;
-    $alias->[ Marpa::Internal::Symbol::ID, ]         = $symbol_count;
+    $alias->[Marpa::Internal::Symbol::ID]            = $symbol_count;
     $alias->[Marpa::Internal::Symbol::NAME]          = $alias_name;
     $alias->[Marpa::Internal::Symbol::LHS]           = [];
     $alias->[Marpa::Internal::Symbol::RHS]           = [];
     $alias->[Marpa::Internal::Symbol::ACCESSIBLE]    = $accessible;
     $alias->[Marpa::Internal::Symbol::PRODUCTIVE]    = $productive;
-    $alias->[Marpa::Internal::Symbol::NULLABLE]      = 1;
     $alias->[Marpa::Internal::Symbol::NULLING]       = 1;
     $alias->[Marpa::Internal::Symbol::NULL_VALUE]    = $null_value;
     $alias->[Marpa::Internal::Symbol::USER_PRIORITY] = 0;
+    $alias->[Marpa::Internal::Symbol::NULLABLE] =
+        $nullable_symbol->[Marpa::Internal::Symbol::NULLABLE];
+    $alias->[Marpa::Internal::Symbol::MINIMAL] =
+        $nullable_symbol->[Marpa::Internal::Symbol::MINIMAL];
+    $alias->[Marpa::Internal::Symbol::MAXIMAL] =
+        $nullable_symbol->[Marpa::Internal::Symbol::MAXIMAL];
     push @{$symbols}, $alias;
     weaken( $symbol->{$alias_name} = $alias );
 
@@ -3644,35 +3580,42 @@ sub rewrite_as_CHAF {
 
     # mark, or create as needed, the useful rules
 
-    my $position_format = do {
-        my $max_rhs_length = 10;
-        RULE: for my $rule ( @{$rules} ) {
-            my $rhs = $rule->[Marpa::Internal::Rule::RHS];
-            next RULE if $max_rhs_length >= @{$rhs};
-            $max_rhs_length = @{$rhs};
-        }
-        my $format_length = 1 + length sprintf '%u', $max_rhs_length;
-        q{%0} . $format_length . 'u';
-    };
-
     # get the initial rule count -- new rules will be added but we don't iterate
     # over them
     my $rule_count = @{$rules};
     RULE: for my $rule_id ( 0 .. ( $rule_count - 1 ) ) {
         my $rule = $rules->[$rule_id];
 
-        # unreachable and nulling rules are useless
+        # unreachable rules are useless
         my $productive = $rule->[Marpa::Internal::Rule::PRODUCTIVE];
         next RULE if not $productive;
         my $accessible = $rule->[Marpa::Internal::Rule::ACCESSIBLE];
         next RULE if not $accessible;
-        my $nulling = $rule->[Marpa::Internal::Rule::NULLING];
-        next RULE if $nulling;
 
-        my $lhs           = $rule->[Marpa::Internal::Rule::LHS];
-        my $rhs           = $rule->[Marpa::Internal::Rule::RHS];
-        my $nullable      = $rule->[Marpa::Internal::Rule::NULLABLE];
-        my $user_priority = $rule->[Marpa::Internal::Rule::USER_PRIORITY];
+        my $rhs = $rule->[Marpa::Internal::Rule::RHS];
+
+        # A nulling rule -- one with only nulling symbols on
+        # the rhs is useless.
+        # By this definition, it is vacuously true
+        # that empty rules are nulling.
+        next RULE
+            if (
+            not defined List::Util::first {
+                not $_->[Marpa::Internal::Symbol::NULLING];
+            }
+            @{$rhs}
+            );
+
+        my $lhs      = $rule->[Marpa::Internal::Rule::LHS];
+        my $nullable = $rule->[Marpa::Internal::Rule::NULLABLE];
+
+        # options to be "inherited" by all the rules we create
+        # from this one
+        my @rule_options = (
+            user_priority => $rule->[Marpa::Internal::Rule::USER_PRIORITY],
+            maximal       => $rule->[Marpa::Internal::Rule::MAXIMAL],
+            minimal       => $rule->[Marpa::Internal::Rule::MINIMAL],
+        );
 
         # Keep track of whether the lhs side of any new rules we create should
         # be nullable.  If any symbol in a production is not nullable, the lhs
@@ -3688,140 +3631,163 @@ sub rewrite_as_CHAF {
         # that lhs will be non-nullable, and since that
         # new lhs is on the far rhs of subsequent (going left) subproductions,
         # all subsequent subproductions and their lhs's will be non-nullable.
-        #
-        # Finally, in one more complication, remember that the nullable flag
-        # was unset if a nullable was aliased.  So we need to check both the
-        # NULL_ALIAS (for proper nullables) and the NULLING flags to see if
-        # the original rule was nullable.
 
-        my $last_nonnullable = -1;
-        my $proper_nullables = [];
-        RHS_SYMBOL: for my $ix ( 0 .. $#{$rhs} ) {
-            my $symbol = $rhs->[$ix];
-            my ( $null_alias, $rhs_symbol_nulling, $null_value ) = @{$symbol}[
-                Marpa::Internal::Symbol::NULL_ALIAS,
-                Marpa::Internal::Symbol::NULLING,
-                Marpa::Internal::Symbol::NULL_VALUE,
-            ];
-            next RHS_SYMBOL if $rhs_symbol_nulling;
-            if ($null_alias) {
-                push @{$proper_nullables}, $ix;
-                next RHS_SYMBOL;
+        my @aliased_rhs =
+            map { $_->[Marpa::Internal::Symbol::NULL_ALIAS] // $_ } @{$rhs};
+        my @proper_nullable_ixes =
+            grep { $rhs->[$_]->[Marpa::Internal::Symbol::NULL_ALIAS] }
+            ( 0 .. $#{$rhs} );
+        my $last_nonnullable_ix = (
+            List::Util::first {
+                not $aliased_rhs[$_]->[Marpa::Internal::Symbol::NULLABLE];
             }
-            $last_nonnullable = $ix;
-        } ## end for my $ix ( 0 .. $#{$rhs} )
+            ( reverse 0 .. $#aliased_rhs )
+        ) // -1;
+
+        my @trailing_null_width = (0) x scalar @{$rhs};
+        my $null_width_so_far   = 0;
+        IX: for my $ix ( reverse( $last_nonnullable_ix + 1 ) .. $#{$rhs} ) {
+            my $null_width =
+                $aliased_rhs[$ix]->[Marpa::Internal::Symbol::NULLABLE];
+            $trailing_null_width[$ix] = $null_width_so_far + $null_width;
+            $null_width_so_far = $trailing_null_width[$ix];
+        } ## end for my $ix ( reverse( $last_nonnullable_ix + 1 ) .. $#...)
 
         # we found no properly nullable symbols in the RHS, so this rule is useful without
         # any changes
-        if ( @{$proper_nullables} == 0 ) {
+        if ( not scalar @proper_nullable_ixes ) {
             $rule->[Marpa::Internal::Rule::USEFUL] = 1;
             next RULE;
         }
 
         # The left hand side of the first subproduction is the lhs of the original rule
-        my $subp_lhs   = $lhs;
-        my $subp_start = 0;
+        my $subproduction_lhs      = $lhs;
+        my $subproduction_start_ix = 0;
 
         # break this production into subproductions with a fixed number of proper nullables,
         # then factor out the proper nullables into a set of productions
         # with only non-nullable and nulling symbols.
         SUBPRODUCTION: while (1) {
 
-            my $subp_end;
-            my $proper_nullable0      = $proper_nullables->[0];
-            my $subp_proper_nullable0 = $proper_nullable0 - $subp_start;
-            my $proper_nullable1;
-            my $subp_proper_nullable1;
-            my $subp_factor0_rhs;
-            my $next_subp_lhs;
+            my $subproduction_end_ix;
+            my $proper_nullable_0_ix = $proper_nullable_ixes[0];
+            my $proper_nullable_0_subproduction_ix =
+                $proper_nullable_0_ix - $subproduction_start_ix;
 
-            SETUP_SUBPRODUCTION: {
+            my $proper_nullable_1_ix = $proper_nullable_ixes[1];
+            my $proper_nullable_1_subproduction_ix;
+            if ( defined $proper_nullable_1_ix ) {
+                $proper_nullable_1_subproduction_ix =
+                    $proper_nullable_1_ix - $subproduction_start_ix;
+            }
 
-                if ( @{$proper_nullables} == 1 ) {
-                    $subp_end = $#{$rhs};
-                    $subp_factor0_rhs =
-                        [ @{$rhs}[ $subp_start .. $subp_end ] ];
-                    $proper_nullables = [];
-                    last SETUP_SUBPRODUCTION;
-                } ## end if ( @{$proper_nullables} == 1 )
+            my $subproduction_factor_0_rhs;
+            my $next_subproduction_lhs;
 
-                $proper_nullable1      = $proper_nullables->[1];
-                $subp_proper_nullable1 = $proper_nullable1 - $subp_start;
+            given ( scalar @proper_nullable_ixes ) {
 
-                if ( @{$proper_nullables} == 2 ) {
-                    $subp_end = $#{$rhs};
-                    $subp_factor0_rhs =
-                        [ @{$rhs}[ $subp_start .. $subp_end ] ];
-                    $proper_nullables = [];
-                    last SETUP_SUBPRODUCTION;
-                } ## end if ( @{$proper_nullables} == 2 )
+                # When there is 1 proper nullables
+                when (1) {
+                    $subproduction_end_ix       = $#{$rhs};
+                    $subproduction_factor_0_rhs = [
+                        @{$rhs}[
+                            $subproduction_start_ix .. $subproduction_end_ix
+                        ]
+                    ];
+                    @proper_nullable_ixes = ();
+                } ## end when (1)
 
-                # The following subproduction is non-nullable.
-                if ( $proper_nullable1 < $last_nonnullable ) {
-                    $subp_end = $proper_nullable1;
-                    splice @{$proper_nullables}, 0, 2;
+                # When there are 2 proper nullables
+                when (2) {
+                    $subproduction_end_ix       = $#{$rhs};
+                    $subproduction_factor_0_rhs = [
+                        @{$rhs}[
+                            $subproduction_start_ix .. $subproduction_end_ix
+                        ]
+                    ];
+                    @proper_nullable_ixes = ();
+                } ## end when (2)
+
+                # When there are 3 or more proper nullables
+                # and following subproduction is non-nullable.
+                when ( $proper_nullable_1_ix < $last_nonnullable_ix ) {
+                    $subproduction_end_ix = $proper_nullable_1_ix;
+                    splice @proper_nullable_ixes, 0, 2;
 
                     my $unique_name_piece = sprintf '[x%x]',
                         (
                         scalar
                             @{ $grammar->[Marpa::Internal::Grammar::SYMBOLS] }
                         );
-                    $next_subp_lhs = assign_symbol( $grammar,
+                    $next_subproduction_lhs = assign_symbol( $grammar,
                               $lhs->[Marpa::Internal::Symbol::NAME] . '[R'
                             . $rule_id . q{:}
-                            . ( $subp_end + 1 ) . ']'
+                            . ( $subproduction_end_ix + 1 ) . ']'
                             . $unique_name_piece );
-                    @{$next_subp_lhs}[
+                    @{$next_subproduction_lhs}[
                         Marpa::Internal::Symbol::NULLABLE,
                         Marpa::Internal::Symbol::ACCESSIBLE,
                         Marpa::Internal::Symbol::PRODUCTIVE,
                         Marpa::Internal::Symbol::NULLING,
                         ]
                         = ( 0, 1, 1, 0 );
-                    $subp_factor0_rhs = [
-                        @{$rhs}[ $subp_start .. $subp_end ],
-                        $next_subp_lhs
+                    $subproduction_factor_0_rhs = [
+                        @{$rhs}[
+                            $subproduction_start_ix .. $subproduction_end_ix
+                        ],
+                        $next_subproduction_lhs
                     ];
-                    last SETUP_SUBPRODUCTION;
-                } ## end if ( $proper_nullable1 < $last_nonnullable )
+                } ## end when ( $proper_nullable_1_ix < $last_nonnullable_ix )
 
-                # if we got this far we have 3 or more proper nullables, and the next
-                # subproduction is nullable
-                $subp_end = $proper_nullable1 - 1;
-                shift @{$proper_nullables};
+                default {
 
-                my $unique_name_piece = sprintf '[x%x]',
-                    (
-                    scalar @{ $grammar->[Marpa::Internal::Grammar::SYMBOLS] }
+                    # if we got this far we have 3 or more proper nullables, and the next
+                    # subproduction is nullable
+                    $subproduction_end_ix = $proper_nullable_1_ix - 1;
+                    shift @proper_nullable_ixes;
+
+                    my $unique_name_piece = sprintf '[x%x]',
+                        (
+                        scalar
+                            @{ $grammar->[Marpa::Internal::Grammar::SYMBOLS] }
+                        );
+
+                    $next_subproduction_lhs = assign_symbol(
+                        $grammar,
+                        (         $lhs->[Marpa::Internal::Symbol::NAME] . '[R'
+                                . $rule_id . q{:}
+                                . ( $subproduction_end_ix + 1 ) . ']'
+                                . $unique_name_piece
+                        )
                     );
 
-                #<<< perltidy gets confused here
-                $next_subp_lhs = assign_symbol( $grammar,
-                              $lhs->[Marpa::Internal::Symbol::NAME]
-                            . '[R'
-                                . $rule_id . q{:}
-                                . ( $subp_end + 1 )
-                            . ']'
-                            . $unique_name_piece
-                        );
-                #>>>
-                @{$next_subp_lhs}[
-                    Marpa::Internal::Symbol::NULLABLE,
-                    Marpa::Internal::Symbol::ACCESSIBLE,
-                    Marpa::Internal::Symbol::PRODUCTIVE,
-                    Marpa::Internal::Symbol::NULLING,
-                    ]
-                    = ( 1, 1, 1, 0, );
-                my $nulling_subp_lhs =
-                    alias_symbol( $grammar, $next_subp_lhs );
-                $nulling_subp_lhs->[Marpa::Internal::Symbol::IS_CHAF_NULLING]
-                    = [ @{$rhs}[ ( $subp_end + 1 ) .. $#{$rhs} ] ];
-                $subp_factor0_rhs =
-                    [ @{$rhs}[ $subp_start .. $subp_end ], $next_subp_lhs ];
+                    $next_subproduction_lhs
+                        ->[Marpa::Internal::Symbol::NULLABLE] =
+                        $trailing_null_width[ $subproduction_end_ix + 1 ];
+                    $next_subproduction_lhs
+                        ->[Marpa::Internal::Symbol::NULLING] = 0;
+                    $next_subproduction_lhs
+                        ->[Marpa::Internal::Symbol::ACCESSIBLE] = 1;
+                    $next_subproduction_lhs
+                        ->[Marpa::Internal::Symbol::PRODUCTIVE] = 1;
 
+                    my $nulling_subproduction_lhs =
+                        alias_symbol( $grammar, $next_subproduction_lhs );
+                    $nulling_subproduction_lhs
+                        ->[Marpa::Internal::Symbol::IS_CHAF_NULLING] =
+                        [ @{$rhs}[ ( $subproduction_end_ix + 1 ) .. $#{$rhs} ]
+                        ];
+                    $subproduction_factor_0_rhs = [
+                        @{$rhs}[
+                            $subproduction_start_ix .. $subproduction_end_ix
+                        ],
+                        $next_subproduction_lhs
+                    ];
+
+                } ## end default
             }    # SETUP_SUBPRODUCTION
 
-            my $factored_rhs = [$subp_factor0_rhs];
+            my $factored_rhs = [$subproduction_factor_0_rhs];
 
             FACTOR: {
 
@@ -3836,23 +3802,26 @@ sub rewrite_as_CHAF {
                 # If substituting nulling symbols for all proper nullables does not
                 # make a production nulling, then it is not nullable, and vice versa.
 
-                last FACTOR if $nullable and not defined $proper_nullable1;
+                last FACTOR
+                    if $nullable and not defined $proper_nullable_1_ix;
 
                 # The second factored production, with a nulling symbol substituted for
                 # the first proper nullable.
                 # and nulling it would make this factored subproduction nulling, don't
                 # bother.
-                $factored_rhs->[1] = [ @{$subp_factor0_rhs} ];
-                $factored_rhs->[1]->[$subp_proper_nullable0] =
-                    $subp_factor0_rhs->[$subp_proper_nullable0]
+                $factored_rhs->[1] = [ @{$subproduction_factor_0_rhs} ];
+                $factored_rhs->[1]->[$proper_nullable_0_subproduction_ix] =
+                    $subproduction_factor_0_rhs
+                    ->[$proper_nullable_0_subproduction_ix]
                     ->[Marpa::Internal::Symbol::NULL_ALIAS];
 
                 # The third factored production, with a nulling symbol replacing the
                 # second proper nullable.  Make sure there ARE two proper nullables.
-                last FACTOR if not defined $proper_nullable1;
-                $factored_rhs->[2] = [ @{$subp_factor0_rhs} ];
-                $factored_rhs->[2]->[$subp_proper_nullable1] =
-                    $subp_factor0_rhs->[$subp_proper_nullable1]
+                last FACTOR if not defined $proper_nullable_1_ix;
+                $factored_rhs->[2] = [ @{$subproduction_factor_0_rhs} ];
+                $factored_rhs->[2]->[$proper_nullable_1_subproduction_ix] =
+                    $subproduction_factor_0_rhs
+                    ->[$proper_nullable_1_subproduction_ix]
                     ->[Marpa::Internal::Symbol::NULL_ALIAS];
 
                 # The fourth and last factored production, with a nulling symbol replacing
@@ -3860,8 +3829,9 @@ sub rewrite_as_CHAF {
                 # production.
                 last FACTOR if $nullable;
                 $factored_rhs->[3] = [ @{ $factored_rhs->[2] } ];
-                $factored_rhs->[3]->[$subp_proper_nullable0] =
-                    $subp_factor0_rhs->[$subp_proper_nullable0]
+                $factored_rhs->[3]->[$proper_nullable_0_subproduction_ix] =
+                    $subproduction_factor_0_rhs
+                    ->[$proper_nullable_0_subproduction_ix]
                     ->[Marpa::Internal::Symbol::NULL_ALIAS];
 
             }    # FACTOR
@@ -3876,13 +3846,13 @@ sub rewrite_as_CHAF {
                 # figure out which closure to use
                 # if the LHS is the not LHS of the original rule, we have a
                 # special CHAF header
-                my $has_chaf_lhs = ( $subp_lhs != $lhs );
+                my $has_chaf_lhs = ( $subproduction_lhs != $lhs );
 
                 # if a CHAF LHS was created for the next subproduction,
                 # there is a CHAF continuation for this subproduction.
                 # It applies to this factor if there is one of the first two
                 # factors of more than two.
-                my $has_chaf_rhs = $next_subp_lhs;
+                my $has_chaf_rhs = $next_subproduction_lhs;
 
                 # Add new rule.   In assigning internal priority:
                 # Leftmost subproductions have highest priority.
@@ -3891,14 +3861,14 @@ sub rewrite_as_CHAF {
                 # highest, last is lowest, but middle two are
                 # reversed.
                 my $new_internal_priority =
-                    10 * ( @{$rhs} - $subp_start ) + ( qw(4 2 3 1) [$ix] );
+                    10 * ( @{$rhs} - $subproduction_start_ix )
+                    + ( qw(4 2 3 1) [$ix] );
                 my $new_rule = add_rule(
                     {   grammar           => $grammar,
-                        lhs               => $subp_lhs,
+                        lhs               => $subproduction_lhs,
                         rhs               => $factor_rhs,
-                        user_priority     => $user_priority,
                         internal_priority => $new_internal_priority,
-                        significant       => !$has_chaf_lhs
+                        @rule_options
                     }
                 );
 
@@ -3906,25 +3876,26 @@ sub rewrite_as_CHAF {
                 $new_rule->[Marpa::Internal::Rule::ACCESSIBLE] = 1;
                 $new_rule->[Marpa::Internal::Rule::PRODUCTIVE] = 1;
                 $new_rule->[Marpa::Internal::Rule::NULLABLE]   = 0;
-                $new_rule->[Marpa::Internal::Rule::NULLING]    = 0;
                 $new_rule->[Marpa::Internal::Rule::HAS_CHAF_LHS] =
                     $has_chaf_lhs;
                 $new_rule->[Marpa::Internal::Rule::HAS_CHAF_RHS] =
                     $has_chaf_rhs;
 
                 $new_rule->[Marpa::Internal::Rule::ORIGINAL_RULE] = $rule;
-                $new_rule->[Marpa::Internal::Rule::CHAF_START] = $subp_start;
-                $new_rule->[Marpa::Internal::Rule::CHAF_END]   = $subp_end;
+                $new_rule->[Marpa::Internal::Rule::CHAF_START] =
+                    $subproduction_start_ix;
+                $new_rule->[Marpa::Internal::Rule::CHAF_END] =
+                    $subproduction_end_ix;
                 $new_rule->[Marpa::Internal::Rule::ACTION] =
                     $rule->[Marpa::Internal::Rule::ACTION];
 
             }    # for each factored rhs
 
             # no more
-            last SUBPRODUCTION if not $next_subp_lhs;
-            $subp_lhs   = $next_subp_lhs;
-            $subp_start = $subp_end + 1;
-            $nullable   = $subp_start > $last_nonnullable;
+            last SUBPRODUCTION if not $next_subproduction_lhs;
+            $subproduction_lhs      = $next_subproduction_lhs;
+            $subproduction_start_ix = $subproduction_end_ix + 1;
+            $nullable = $subproduction_start_ix > $last_nonnullable_ix;
 
         }    # SUBPRODUCTION
 
@@ -3948,10 +3919,9 @@ sub rewrite_as_CHAF {
 
     # Create a new start rule
     my $new_start_rule = add_rule(
-        {   grammar     => $grammar,
-            lhs         => $new_start_symbol,
-            rhs         => [$old_start_symbol],
-            significant => 1
+        {   grammar => $grammar,
+            lhs     => $new_start_symbol,
+            rhs     => [$old_start_symbol],
         }
     );
 
@@ -3970,10 +3940,9 @@ sub rewrite_as_CHAF {
         my $new_start_alias = alias_symbol( $grammar, $new_start_symbol );
         $new_start_alias->[Marpa::Internal::Symbol::START] = 1;
         my $new_start_alias_rule = add_rule(
-            {   grammar     => $grammar,
-                lhs         => $new_start_alias,
-                rhs         => [],
-                significant => 1
+            {   grammar => $grammar,
+                lhs     => $new_start_alias,
+                rhs     => [],
             }
         );
 

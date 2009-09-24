@@ -6,7 +6,7 @@
 # then hacking it by hand as needed
 # to bootstrap the new self.marpa.
 
-# This file was automatically generated using Marpa 0.001_014
+# This file was automatically generated using Marpa 0.001_017
 #!perl
 # This is the beginning of bootstrap_header.pl
 
@@ -49,7 +49,7 @@ my $trailer_file_name = shift @ARGV;
 # This is the end of bootstrap_header.pl
 $new_semantics = 'perl5';
 
-$new_version = '0.001_016';
+$new_version = '0.001_017';
 
 $new_start_symbol = 'grammar';
 
@@ -811,7 +811,7 @@ push @{$new_rules}, {
 ,    rhs => ['optional-rhs-element'],
     action =>$strings{ 'concatenate-lines' },
 ,
-,
+priority => 1000,
 
 };
 push @{$new_rules}, {

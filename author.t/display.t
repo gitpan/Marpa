@@ -406,7 +406,7 @@ package main;
 
 my %exclude = map { ( $_, 1 ) } qw(
     Makefile.PL
-    t/lib/Test/Weaken.pm
+    inc/Test/Weaken.pm
 );
 
 my @test_files = @ARGV;

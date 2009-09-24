@@ -8,11 +8,10 @@ use 5.010;
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 12;
 
 use lib 'lib';
-use lib 't/lib';
-use Marpa::Test;
+use t::lib::Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');
@@ -25,7 +24,7 @@ BEGIN {
 # apart at each step.  But I wanted to test having
 # a start symbol that appears repeatedly on the RHS.
 
-my $g = Marpa::Grammar->new(
+my $grammar = Marpa::Grammar->new(
     {   start => 'E',
         strip => 0,
 
@@ -34,8 +33,10 @@ my $g = Marpa::Grammar->new(
         max_parses => 20,
 
         rules => [
-            [   'E', [qw/E Minus E/],
-                <<'EOCODE'
+            {   lhs      => 'E',
+                rhs      => [qw/E Minus E/],
+                priority => 50,
+                action   => <<'EOCODE'
     my ($right_string, $right_value)
         = ($_[2] =~ /^(.*)==(.*)$/);
     my ($left_string, $left_value)
@@ -43,34 +44,41 @@ my $g = Marpa::Grammar->new(
     my $value = $left_value - $right_value;
     "(" . $left_string . "-" . $right_string . ")==" . $value;
 EOCODE
-            ],
-            [   'E', [qw/E MinusMinus/],
-                <<'EOCODE'
+            },
+            {   lhs      => 'E',
+                rhs      => [qw/E MinusMinus/],
+                priority => 40,
+                action   => <<'EOCODE'
     my ($string, $value)
         = ($_[0] =~ /^(.*)==(.*)$/);
     "(" . $string . "--" . ")==" . $value--;
 EOCODE
-            ],
-            [   'E', [qw/MinusMinus E/],
-                <<'EOCODE'
+            },
+            {   lhs      => 'E',
+                rhs      => [qw/MinusMinus E/],
+                priority => 30,
+                action   => <<'EOCODE'
     my ($string, $value)
         = ($_[1] =~ /^(.*)==(.*)$/);
     "(" . "--" . $string . ")==" . --$value;
 EOCODE
-            ],
-            [   'E', [qw/Minus E/],
-                <<'EOCODE'
+            },
+            {   lhs      => 'E',
+                rhs      => [qw/Minus E/],
+                priority => 20,
+                action   => <<'EOCODE'
     my ($string, $value)
         = ($_[1] =~ /^(.*)==(.*)$/);
     "(" . "-" . $string . ")==" . -$value;
 EOCODE
-            ],
-            [   'E', [qw/Number/],
-                <<'EOCODE'
+            },
+            {   lhs    => 'E',
+                rhs    => [qw/Number/],
+                action => <<'EOCODE'
     my $value = $_[0];
     "$value==$value";
 EOCODE
-            ],
+            },
         ],
         terminals => [
             [ 'Number'     => { regex => qr/\d+/xms } ],
@@ -86,18 +94,19 @@ EOCODE
     }
 );
 
-my $recce = Marpa::Recognizer->new( { grammar => $g, } );
+my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
 
-Marpa::Test::is( $g->show_rules, <<'END_RULES', 'Minuses Equation Rules' );
-0: E -> E Minus E
-1: E -> E MinusMinus
-2: E -> MinusMinus E
-3: E -> Minus E
+Marpa::Test::is( $grammar->show_rules,
+    <<'END_RULES', 'Minuses Equation Rules' );
+0: E -> E Minus E /* priority=50.0 */
+1: E -> E MinusMinus /* priority=40.0 */
+2: E -> MinusMinus E /* priority=30.0 */
+3: E -> Minus E /* priority=20.0 */
 4: E -> Number
 5: E['] -> E
 END_RULES
 
-Marpa::Test::is( $g->show_QDFA, <<'END_QDFA', 'Minuses Equation QDFA' );
+Marpa::Test::is( $grammar->show_QDFA, <<'END_QDFA', 'Minuses Equation QDFA' );
 Start States: S0; S1
 S0: 16
 E['] -> . E
@@ -144,12 +153,12 @@ my @expected_values = (
     #<<< no perltidy
     '(((6--)--)-1)==5',
     '((6--)-(--1))==6',
+    '((6--)-(-(-1)))==5',
     '(6-(--(--1)))==7',
     '(6-(--(-(-1))))==6',
-    '((6--)-(-(-1)))==5',
+    '(6-(-(--(-1))))==4',
     '(6-(-(-(--1))))==6',
     '(6-(-(-(-(-1)))))==5',
-    '(6-(-(--(-1))))==4',
     #>>>
 );
 
@@ -166,14 +175,27 @@ $recce->end_input();
 my $evaler = Marpa::Evaluator->new( { recce => $recce, clone => 0 } );
 Marpa::exception('Could not initialize parse') if not $evaler;
 
-my @values;
-while ( defined( my $value = $evaler->value() ) ) {
-    push @values, ${$value};
+for my $i ( 0 .. $#expected_values ) {
+    my $value_ref = $evaler->value();
+    my $test_name = "Minus Equation Value $i";
+    if ( not defined $value_ref ) {
+        Test::More::fail("No value for $test_name");
+    }
+    else {
+        Marpa::Test::is( ${$value_ref}, $expected_values[$i], $test_name );
+    }
+} ## end for my $i ( 0 .. $#expected_values )
+
+my @extra_values = ();
+while ( my $value = $evaler->value() ) {
+    push @extra_values, ${$value};
 }
 
-my $values          = join( "\n", sort @values ) . "\n";
-my $expected_values = join( "\n", sort @expected_values ) . "\n";
-Marpa::Test::is( $values, $expected_values, 'Minuses Equation Values' );
+my $extra_values_count = scalar @extra_values;
+for my $extra_value (@extra_values) {
+    Test::More::diag("Extra Value: $extra_value");
+}
+Marpa::Test::is( $extra_values_count, 0, 'Minuses Equation Value Count' );
 
 # Local Variables:
 #   mode: cperl

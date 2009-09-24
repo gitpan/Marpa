@@ -1,12 +1,12 @@
 #!perl
 
+use 5.010;
 use warnings;
 use strict;
-use 5.010;
-use lib 't/lib';
-use lib 'lib';
+
 use Test::More tests => 3;
-use Marpa::Test;
+use lib 'lib';
+use t::lib::Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');

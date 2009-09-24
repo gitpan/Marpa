@@ -19,7 +19,7 @@ my %exclude = map { ( $_, 1 ) } qw(
     lib/Marpa/Raw_Source.pm
     lib/Marpa/header_Raw_Source.pm
     lib/Marpa/trailer_Raw_Source.pm
-    t/lib/Test/Weaken.pm
+    inc/Test/Weaken.pm
 );
 
 # usually workarounds for perlcritic bugs

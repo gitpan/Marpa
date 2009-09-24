@@ -7,9 +7,8 @@ use 5.010;
 use strict;
 use warnings;
 use lib 'lib';
-use lib 't/lib';
 use Test::More tests => 8;
-use Marpa::Test;
+use t::lib::Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');
@@ -44,16 +43,16 @@ Marpa::Test::is( $g->show_rules, <<'EOS', 'Aycock/Horspool Rules' );
 0: S' -> S /* nullable */
 1: S -> A A A A /* nullable */
 2: A -> a
-3: A -> E /* nullable nulling */
-4: E -> /* empty nullable nulling */
+3: A -> E /* nullable */
+4: E -> /* empty nullable */
 EOS
 
 Marpa::Test::is( $g->show_symbols, <<'EOS', 'Aycock/Horspool Symbols' );
-0: S', lhs=[0] rhs=[] nullable
-1: S, lhs=[1] rhs=[0] nullable
-2: A, lhs=[2 3] rhs=[1] nullable
+0: S', lhs=[0] rhs=[] nullable=4
+1: S, lhs=[1] rhs=[0] nullable=4
+2: A, lhs=[2 3] rhs=[1] nullable=1
 3: a, lhs=[] rhs=[2] terminal
-4: E, lhs=[4] rhs=[3] nullable nulling
+4: E, lhs=[4] rhs=[3] nullable=1 nulling
 EOS
 
 Marpa::Test::is( $g->show_nullable_symbols, q{A E S S'},

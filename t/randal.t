@@ -4,19 +4,18 @@ use 5.010;
 use strict;
 use warnings;
 use lib 'lib';
-use lib 't/lib';
 use English qw( -no_match_vars );
 
 use Test::More tests => 5;
-use Marpa::Test;
+use t::lib::Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');
 }
 
 my @tests = split /\n/xms, <<'EO_TESTS';
-time  / 25 ; # / ; die "this dies!";
 sin  / 25 ; # / ; die "this dies!";
+time  / 25 ; # / ; die "this dies!";
 EO_TESTS
 
 # my @tests = split /\n/xms, <<'EO_TESTS';
@@ -47,7 +46,7 @@ TEST: while ( my $test = pop @tests ) {
     my $evaler = Marpa::Evaluator->new( { recce => $recce } );
     my @parses;
     while ( defined( my $value = $evaler->value ) ) {
-        push @parses, $value;
+        push @parses, ${$value};
     }
     my @expected_parses;
     my ($test_name) = ( $test =~ /\A([a-z]+) /xms );
@@ -57,7 +56,7 @@ TEST: while ( my $test = pop @tests ) {
         }
         when ('sin') {
             @expected_parses =
-                ( 'division, comment', 'sin function call, die statement', );
+                ( 'sin function call, die statement', 'division, comment' );
         }
         default {
             Marpa::exception("unexpected test: $test_name");
@@ -67,26 +66,14 @@ TEST: while ( my $test = pop @tests ) {
     my $parse_count          = scalar @parses;
     Marpa::Test::is( $parse_count, $expected_parse_count,
         "Parse count for $test_name is $parse_count" );
-    my $mismatch_count = 0;
-    my $parses_to_check =
-          $parse_count < $expected_parse_count
-        ? $expected_parse_count
-        : $parse_count;
-    for my $i ( 0 .. ( $parses_to_check - 1 ) ) {
-        if ( ${ $parses[$i] } ne $expected_parses[$i] ) {
-            Test::More::diag( "Mismatch on parse $i for test $test_name: "
-                    . ${ $parses[$i] } . ' vs. '
-                    . $expected_parses[$i] );
-            $mismatch_count++;
-        } ## end if ( ${ $parses[$i] } ne $expected_parses[$i] )
-    } ## end for my $i ( 0 .. ( $parses_to_check - 1 ) )
-    Test::More::ok( !$mismatch_count,
-        ( $expected_parse_count - $mismatch_count )
-            . " of the $expected_parse_count parses expected succeeded" );
+
+    my $expected = join "\n", @expected_parses;
+    my $actual   = join "\n", @parses;
+    Marpa::Test::is( $actual, $expected, 'Parses match' );
 } ## end while ( my $test = pop @tests )
 
 __DATA__
-semantics are perl5.  version is 0.001_016.  the start symbol is perl line.
+semantics are perl5.  version is 0.001_017.  the start symbol is perl line.
 the default lex prefix is qr/\s*/.
 
 perl line: perl statements, optional comment.

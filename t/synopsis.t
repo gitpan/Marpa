@@ -4,14 +4,13 @@ use 5.010;
 use strict;
 use warnings;
 use lib 'lib';
-use lib 't/lib';
 use English qw( -no_match_vars );
 use Config;
 use Fatal qw( chdir close waitpid );
 use IPC::Open2;
 
 use Test::More;
-use Marpa::Test;
+use t::lib::Marpa::Test;
 
 if ( $Config{'d_fork'} ) {
     Test::More::plan tests => 2;

@@ -7,6 +7,8 @@ use Test::More tests => 2;
 use lib 'lib';
 use Marpa;
 
+$Marpa::EVALUATOR = 'old';
+
 # This is code to test examples, in order to prove that they do actually
 # compile and execute.  No checking other than for compilation errors
 # or fatal exceptions is done.  This code DOES NOT do anything sensible.
@@ -15,7 +17,7 @@ Test::More::pass('misc.t compiled');
 
 my $mdl_source = <<'END';
 semantics are perl5.
-version is 0.001_016.
+version is 0.001_017.
 start symbol is S.
 
 S: Document.

@@ -1,4 +1,4 @@
-semantics are perl5.  version is 0.001_016.  the start symbol is
+semantics are perl5.  version is 0.001_017.  the start symbol is
 grammar.
 
 the default lex prefix is qr/(?:[ \t]*(?:\n|(?:\#[^\n]*\n)))*[ \t]*/xms.
@@ -328,7 +328,7 @@ q{
 
 rhs element: mandatory rhs element.  concatenate lines.
 
-rhs element: Optional rhs element. concatenate lines.
+rhs element: Optional rhs element. priority 1000. concatenate lines.
 
 mandatory rhs element: rhs symbol specifier.
 q{ q{'} . $_[0] . q{'} }.

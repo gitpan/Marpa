@@ -5,12 +5,11 @@ use 5.010;
 use strict;
 use warnings;
 use lib 'lib';
-use lib 't/lib';
 use English qw( -no_match_vars );
 use Fatal qw(open close chdir);
 
 use Test::More tests => 6;
-use Marpa::Test;
+use t::lib::Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');
@@ -46,26 +45,24 @@ if ( $fail_offset >= 0 ) {
 
 $recce->end_input();
 
-my @expected = (
-    '(((2-0)*3)+1)==7', '((2-(0*3))+1)==3',
-    '((2-0)*(3+1))==8', '(2-((0*3)+1))==1',
-    '(2-(0*(3+1)))==2',
+my %expected_value = (
+    '(2-(0*(3+1)))==2' => 1,
+    '(((2-0)*3)+1)==7' => 1,
+    '((2-(0*3))+1)==3' => 1,
+    '((2-0)*(3+1))==8' => 1,
+    '(2-((0*3)+1))==1' => 1,
 );
 
+# Note: code below used in display
 my $evaler = Marpa::Evaluator->new( { recognizer => $recce } );
 Marpa::exception('Parse failed') if not $evaler;
 
-my $i = -1;
+my $i = 0;
 while ( defined( my $value = $evaler->value() ) ) {
+    my $value = ${$value};
+    Test::More::ok( $expected_value{$value}, "Value $i (unspecified order)" );
+    delete $expected_value{$value};
     $i++;
-    if ( $i > $#expected ) {
-        Test::More::fail(
-            'Ambiguous equation has extra value: ' . ${$value} . "\n" );
-    }
-    else {
-        Marpa::Test::is( ${$value}, $expected[$i],
-            "Ambiguous Equation Value $i" );
-    }
 } ## end while ( defined( my $value = $evaler->value() ) )
 
 # Local Variables:

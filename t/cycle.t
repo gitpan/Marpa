@@ -9,15 +9,14 @@ use Fatal qw(open close chdir);
 
 use Test::More tests => 7;
 use lib 'lib';
-use lib 't/lib';
-use Marpa::Test;
+use t::lib::Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');
 }
 
 my $mdl_header = <<'EOF';
-semantics are perl5.  version is 0.001_016.
+semantics are perl5.  version is 0.001_017.
 start symbol is S.
 default action is q{join(q{ }, grep { defined $_ } @_)}.
 
@@ -77,6 +76,7 @@ X: .
 EOF
 
 my $cycle1_test = [
+    'cycle1',
     \$cycle1_mdl,
     \('1'),
     '1',
@@ -86,6 +86,7 @@ EOS
 ];
 
 my $cycle2_test = [
+    'cycle2',
     \$cycle2_mdl,
     \('1'),
     '1',
@@ -96,6 +97,7 @@ EOS
 ];
 
 my $cycle8_test = [
+    'cycle8',
     \$cycle8_mdl,
     \('123456'),
     '1 2 3 4 5 6',
@@ -112,7 +114,7 @@ EOS
 my @test_data = ( $cycle1_test, $cycle2_test, $cycle8_test );
 
 for my $test_data (@test_data) {
-    my ( $grammar_source, $input, $expected, $expected_trace ) =
+    my ( $test_name, $grammar_source, $input, $expected, $expected_trace ) =
         @{$test_data};
     my $trace = q{};
     open my $MEMORY, '>', \$trace;
@@ -125,17 +127,24 @@ for my $test_data (@test_data) {
 
     my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
     my $fail_offset = $recce->text($input);
-    if ( $fail_offset >= 0 ) {
-        Marpa::exception("Parse failed at offset $fail_offset");
-    }
+    my $result;
+    given ($fail_offset) {
+        when ( $_ < 0 ) {
+            $recce->end_input();
+            my $evaler =
+                Marpa::Evaluator->new( { recce => $recce, clone => 0 } );
+            $result = $evaler->value();
+        } ## end when ( $_ < 0 )
+        default {
+            $result = \"Parse failed at offset $fail_offset";
+        }
+    };
 
-    $recce->end_input();
-    my $evaler = Marpa::Evaluator->new( { recce => $recce, clone => 0 } );
-    my $result = $evaler->value();
     close $MEMORY;
 
-    Marpa::Test::is( ${$result}, $expected );
-    Marpa::Test::is( $trace,     $expected_trace );
+    Marpa::Test::is( ${$result}, $expected,       "$test_name result" );
+    Marpa::Test::is( $trace,     $expected_trace, "$test_name trace" );
+
 } ## end for my $test_data (@test_data)
 
 # Local Variables:

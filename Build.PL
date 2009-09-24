@@ -6,7 +6,7 @@ use warnings;
 
 use Module::Build;
 
-my $marpa_version = '0.001_016';
+my $marpa_version = '0.001_017';
 
 my $build = Module::Build->new(
     dist_name     => 'Marpa',

@@ -5,11 +5,10 @@ use 5.010;
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 8;
 
 use lib 'lib';
-use lib 't/lib';
-use Marpa::Test;
+use t::lib::Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');
@@ -125,25 +124,23 @@ TOKEN: for my $token (@tokens) {
 
 $recce->end_input();
 
-my @expected_values = (
-    #<<< no perltidy
-    '(((2-0)*3)+1)==7',
-    '((2-(0*3))+1)==3',
-    '((2-0)*(3+1))==8',
-    '(2-((0*3)+1))==1',
-    '(2-(0*(3+1)))==2',
-    #>>>
+my %expected_value = (
+    '(2-(0*(3+1)))==2' => 1,
+    '(((2-0)*3)+1)==7' => 1,
+    '((2-(0*3))+1)==3' => 1,
+    '((2-0)*(3+1))==8' => 1,
+    '(2-((0*3)+1))==1' => 1,
 );
 my $evaler = Marpa::Evaluator->new( { recce => $recce, clone => 0 } );
+Marpa::exception('Parse failed') if not $evaler;
 
-my @values;
+my $i = 0;
 while ( defined( my $value = $evaler->value() ) ) {
-    push @values, ${$value};
-}
-
-my $values          = ( join "\n", sort @values ) . "\n";
-my $expected_values = ( join "\n", sort @expected_values ) . "\n";
-Marpa::Test::is( $values, $expected_values, 'Ambiguous Equation Values' );
+    my $value = ${$value};
+    Test::More::ok( $expected_value{$value}, "Value $i (unspecified order)" );
+    delete $expected_value{$value};
+    $i++;
+} ## end while ( defined( my $value = $evaler->value() ) )
 
 # Local Variables:
 #   mode: cperl

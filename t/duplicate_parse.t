@@ -49,7 +49,7 @@ Marpa::Test::is( $grammar->show_rules,
     <<'END_OF_STRING', 'final nonnulling Rules' );
 0: S -> p p p n /* !useful */
 1: p -> a
-2: p -> /* !useful empty nullable nulling */
+2: p -> /* !useful empty nullable */
 3: n -> a
 4: S -> p p S[R0:2][x5] /* priority=0.44 */
 5: S -> p[] p S[R0:2][x5] /* priority=0.42 */
@@ -152,47 +152,47 @@ S2@0-3L6o0a1 -> S8@0-3L1o2
 S13@0-3L1o1 -> S13@0-3L1o1a2
 S13@0-3L1o1a2 -> S10@0-2R4:2o3 S5@2-3L5o4
     rule 4: S -> p p S[R0:2][x5] .
-    (part of 0) S -> { p p } p n .
+    (part of 0) S -> << p >> << p >> << p n >> .
     rhs length = 3; closure
 S8@0-3L1o2 -> S8@0-3L1o2a3
 S8@0-3L1o2a3 -> S6@0-1R5:2o5 S9@1-3L5o6
     rule 5: S -> p[] p S[R0:2][x5] .
-    (part of 0) S -> { p p } p n .
+    (part of 0) S -> << p >> << p >> << p n >> .
     rhs length = 3; closure
 S8@0-3L1o2 -> S8@0-3L1o2a4
 S8@0-3L1o2a4 -> S6@0-1R6:2o7 S9@1-3L5o6
     rule 6: S -> p p[] S[R0:2][x5] .
-    (part of 0) S -> { p p } p n .
+    (part of 0) S -> << p >> << p >> << p n >> .
     rhs length = 3; closure
 S10@0-2R4:2o3 -> S10@0-2R4:2o3a5
 S10@0-2R4:2o3a5 -> S6@0-1R4:1o8 S4@1-2L2o9
     rule 4: S -> p p . S[R0:2][x5]
-    (part of 0) S -> { p p . } p n
+    (part of 0) S -> << p >> << p >> . << p n >>
     rhs length = 3
 S5@2-3L5o4 -> S5@2-3L5o4a7
 S5@2-3L5o4a7 -> S7@2-2R9:1o17 S14@2-3L3o12
     rule 9: S[R0:2][x5] -> p[] n .
-    (part of 0) S -> p p { p n . }
+    (part of 0) S -> p p << p >> << n >> .
     rhs length = 2; closure
 S6@0-1R5:2o5 -> S6@0-1R5:2o5a8
 S6@0-1R5:2o5a8 -> S1@0-0R5:1o13 S4@0-1L2o14
     rule 5: S -> p[] p . S[R0:2][x5]
-    (part of 0) S -> { p p . } p n
+    (part of 0) S -> << p >> << p >> . << p n >>
     rhs length = 3
 S9@1-3L5o6 -> S9@1-3L5o6a10
 S9@1-3L5o6a10 -> S11@1-2R8:1o15 S14@2-3L3o12
     rule 8: S[R0:2][x5] -> p n .
-    (part of 0) S -> p p { p n . }
+    (part of 0) S -> p p << p >> << n >> .
     rhs length = 2; closure
 S6@0-1R6:2o7 -> S6@0-1R6:2o7a11
 S6@0-1R6:2o7a11 -> S6@0-1R6:1o16 undef
     rule 6: S -> p p[] . S[R0:2][x5]
-    (part of 0) S -> { p p . } p n
+    (part of 0) S -> << p >> << p >> . << p n >>
     rhs length = 3
 S6@0-1R4:1o8 -> S6@0-1R4:1o8a12
 S6@0-1R4:1o8a12 -> S4@0-1L2o14
     rule 4: S -> p . p S[R0:2][x5]
-    (part of 0) S -> { p . p } p n
+    (part of 0) S -> << p >> . << p >> << p n >>
     rhs length = 3
 S4@1-2L2o9 -> S4@1-2L2o9a13
 S4@1-2L2o9a13 -> 'b'
@@ -205,7 +205,7 @@ S14@2-3L3o12a16 -> 'c'
 S1@0-0R5:1o13 -> S1@0-0R5:1o13a17
 S1@0-0R5:1o13a17 -> undef
     rule 5: S -> p[] . p S[R0:2][x5]
-    (part of 0) S -> { p . p } p n
+    (part of 0) S -> << p >> . << p >> << p n >>
     rhs length = 3
 S4@0-1L2o14 -> S4@0-1L2o14a18
 S4@0-1L2o14a18 -> 'a'
@@ -214,17 +214,17 @@ S4@0-1L2o14a18 -> 'a'
 S11@1-2R8:1o15 -> S11@1-2R8:1o15a19
 S11@1-2R8:1o15a19 -> S4@1-2L2o9
     rule 8: S[R0:2][x5] -> p . n
-    (part of 0) S -> p p { p . n }
+    (part of 0) S -> p p << p >> . << n >>
     rhs length = 2
 S6@0-1R6:1o16 -> S6@0-1R6:1o16a20
 S6@0-1R6:1o16a20 -> S4@0-1L2o14
     rule 6: S -> p . p[] S[R0:2][x5]
-    (part of 0) S -> { p . p } p n
+    (part of 0) S -> << p >> . << p >> << p n >>
     rhs length = 3
 S7@2-2R9:1o17 -> S7@2-2R9:1o17a21
 S7@2-2R9:1o17a21 -> undef
     rule 9: S[R0:2][x5] -> p[] . n
-    (part of 0) S -> p p { p . n }
+    (part of 0) S -> p p << p >> . << n >>
     rhs length = 2
 END_OF_STRING
 

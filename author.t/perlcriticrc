@@ -104,7 +104,7 @@ severity=5
 
 [ControlStructures::ProhibitPostfixControls]
 severity=5
-flowcontrol = warn die Carp::carp Carp::croak Carp::cluck Carp::confess goto exit Marpa::exception last next
+flowcontrol = warn die Carp::carp Carp::croak Carp::cluck Carp::confess goto exit Marpa::exception last next break
 
 [ControlStructures::ProhibitUnlessBlocks]
 severity=5

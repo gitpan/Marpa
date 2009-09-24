@@ -1,7 +1,18 @@
 Add Test::Pod Test::CPAN::Meta Test::MinimumVersion Test::Perl::Critic
-Add minimal, maximal to show_rule, show_symbol
-Eliminate internal priority?  If so, rename user priority to PRIORITY.
-Convert user priority to string?
+
+Make minimal work for null symbols.
+
+Forbid both MAXIMAL & MINIMAL setting on rules & symbols.
+
+Eliminate internal priority?
+    If so, rename user priority to PRIORITY.
+
+Add ah_minimal.t -- ah2.t with minimal set on the grammar
 
 Add optimizations when max_parses <= 1
     For example, no need to prune duplicate parses
+
+Ensure -ENV is not on for smart comments when I leave alpha
+
+Should or_map's be hashes instead of array?  How many duplicate
+entries are there and what's the cost?

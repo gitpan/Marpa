@@ -6,13 +6,12 @@ use 5.010;
 use strict;
 use warnings;
 use lib 'lib';
-use lib 't/lib';
 
 use English qw( -no_match_vars );
 use Fatal qw(open close chdir);
 
 use Test::More tests => 7;
-use Marpa::Test;
+use t::lib::Marpa::Test;
 
 use constant A_LOT_OF_VALUES => 25;
 
@@ -127,7 +126,7 @@ for my $test_data (@test_data) {
     my $t       = $grammar->get_symbol('t');
 
     close $MEMORY;
-    Marpa::Test::is( $trace, $expected_trace );
+    Marpa::Test::is( $trace, $expected_trace, "$test_name trace" );
 
     my $recce = Marpa::Recognizer->new(
         { grammar => $grammar, trace_file_handle => \*STDERR } );
@@ -138,7 +137,6 @@ for my $test_data (@test_data) {
     if ( not defined $evaler ) {
         Marpa::exception('Input not recognized');
     }
-    $evaler->audit();
 
     my @values = ();
     while ( my $value = $evaler->value() ) {

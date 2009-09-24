@@ -10,16 +10,16 @@ use warnings;
 use Test::More tests => 7;
 
 use lib 'lib';
-use lib 't/lib';
-use Marpa::Test;
+use t::lib::Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');
 }
 
 my $grammar = Marpa::Grammar->new(
-    {   start => 'S',
-        strip => 0,
+    {   start   => 'S',
+        strip   => 0,
+        maximal => 1,
 
         # Set max at 10 just in case there's an infinite loop.
         # This is for debugging, after all
@@ -48,17 +48,17 @@ $grammar->precompute();
 
 Marpa::Test::is( $grammar->show_rules,
     <<'END_OF_STRING', 'final nonnulling Rules' );
-0: S -> p p p n /* !useful */
-1: p -> a
-2: p -> /* !useful empty nullable nulling */
-3: n -> a
-4: S -> p p S[R0:2][x5] /* priority=0.44 */
-5: S -> p[] p S[R0:2][x5] /* priority=0.42 */
-6: S -> p p[] S[R0:2][x5] /* priority=0.43 */
-7: S -> p[] p[] S[R0:2][x5] /* priority=0.41 */
-8: S[R0:2][x5] -> p n /* priority=0.24 */
-9: S[R0:2][x5] -> p[] n /* priority=0.22 */
-10: S['] -> S
+0: S -> p p p n /* !useful maximal */
+1: p -> a /* maximal */
+2: p -> /* !useful empty nullable maximal */
+3: n -> a /* maximal */
+4: S -> p p S[R0:2][x5] /* maximal priority=0.44 */
+5: S -> p[] p S[R0:2][x5] /* maximal priority=0.42 */
+6: S -> p p[] S[R0:2][x5] /* maximal priority=0.43 */
+7: S -> p[] p[] S[R0:2][x5] /* maximal priority=0.41 */
+8: S[R0:2][x5] -> p n /* maximal priority=0.24 */
+9: S[R0:2][x5] -> p[] n /* maximal priority=0.22 */
+10: S['] -> S /* maximal */
 END_OF_STRING
 
 Marpa::Test::is( $grammar->show_QDFA,
@@ -138,13 +138,8 @@ for my $input_length ( 1 .. 4 ) {
     $recce->end_input();
     my $evaler = Marpa::Evaluator->new( { recce => $recce, clone => 0 } );
     my $value = $evaler->value();
-    TODO: {
-        ## no critic (ControlStructures::ProhibitPostfixControls)
-        local $TODO = 'new evaluator not yet finished' if $input_length == 2;
-        ## use critic
-        Marpa::Test::is( ${$value}, $results[$input_length],
-            "final nonnulling, input length=$input_length" );
-    } ## end TODO:
+    Marpa::Test::is( ${$value}, $results[$input_length],
+        "final nonnulling, input length=$input_length" );
 } ## end for my $input_length ( 1 .. 4 )
 
 # Local Variables:
