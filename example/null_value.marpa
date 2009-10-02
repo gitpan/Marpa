@@ -1,4 +1,4 @@
-semantics are perl5.  version is 0.001_017.  start symbol is S.
+semantics are perl5.  version is 0.001_018.  start symbol is S.
 
 S: A, Y. q{ $_[0] . ", but " . $_[1] }. # Call me the start rule
 note: you can also call me Rule 0.

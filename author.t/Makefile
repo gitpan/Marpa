@@ -9,19 +9,21 @@ source_files: \
     equation_show_QDFA.out \
     equation_show_earley_sets.out \
     equation_show_bocage.out \
-    equation_show_tree.out \
     equation_trace_values.out \
     self_show_rules.out \
     MDL_displays.errs
 
 all_tests:
-	-(cd ..; prove author.t/*.t)
+	-(cd ..; prove author.t/*.t ) 2>&1 | tee all.errs
 
 critic:
-	-(cd ..; prove author.t/critic.t)
+	-(cd ..; prove author.t/critic.t) 2>&1 | tee critic.errs
 
 display:
 	-(cd ..; prove author.t/display.t)
+
+pod:
+	-(cd ..; prove author.t/pod.t)
 
 equation_show_symbols.out:
 	echo 2+2 | perl -I../lib ../bin/mdl parse -grammar \
@@ -46,11 +48,6 @@ equation_show_earley_sets.out:
 equation_show_bocage.out:
 	echo 2+2 | perl -I../lib ../bin/mdl parse -grammar \
         ../example/equation.marpa --bocage=3 | \
-	sed -e '/(2+2)==4/d' > $@
-
-equation_show_tree.out:
-	echo 2+2 | perl -I../lib ../bin/mdl parse -grammar \
-        ../example/equation.marpa --tree=1 | \
 	sed -e '/(2+2)==4/d' > $@
 
 equation_trace_values.out:

@@ -52,12 +52,12 @@ Marpa::Test::is( $grammar->show_rules,
 1: p -> a /* maximal */
 2: p -> /* !useful empty nullable maximal */
 3: n -> a /* maximal */
-4: S -> p p S[R0:2][x5] /* maximal priority=0.44 */
-5: S -> p[] p S[R0:2][x5] /* maximal priority=0.42 */
-6: S -> p p[] S[R0:2][x5] /* maximal priority=0.43 */
-7: S -> p[] p[] S[R0:2][x5] /* maximal priority=0.41 */
-8: S[R0:2][x5] -> p n /* maximal priority=0.24 */
-9: S[R0:2][x5] -> p[] n /* maximal priority=0.22 */
+4: S -> p p S[R0:2][x5] /* maximal vrhs real=2 */
+5: S -> p p[] S[R0:2][x5] /* maximal vrhs real=2 */
+6: S -> p[] p S[R0:2][x5] /* maximal vrhs real=2 */
+7: S -> p[] p[] S[R0:2][x5] /* maximal vrhs real=2 */
+8: S[R0:2][x5] -> p n /* maximal vlhs real=2 */
+9: S[R0:2][x5] -> p[] n /* maximal vlhs real=2 */
 10: S['] -> S /* maximal */
 END_OF_STRING
 
@@ -67,12 +67,12 @@ Start States: S0; S1
 S0: 27
 S['] -> . S
  <S> => S2
-S1: predict; 1,3,5,10,13,19,21,25
+S1: predict; 1,3,5,9,14,19,21,25
 p -> . a
 n -> . a
 S -> . p p S[R0:2][x5]
-S -> p[] . p S[R0:2][x5]
 S -> . p p[] S[R0:2][x5]
+S -> p[] . p S[R0:2][x5]
 S -> p[] p[] . S[R0:2][x5]
 S[R0:2][x5] -> . p n
 S[R0:2][x5] -> p[] . n
@@ -91,8 +91,8 @@ S5: 26
 S[R0:2][x5] -> p[] n .
 S6: 6,11,15,22
 S -> p . p S[R0:2][x5]
-S -> p[] p . S[R0:2][x5]
 S -> p p[] . S[R0:2][x5]
+S -> p[] p . S[R0:2][x5]
 S[R0:2][x5] -> p . n
  <S[R0:2][x5]> => S8
  <n> => S9
@@ -106,8 +106,8 @@ S[R0:2][x5] -> p[] . n
  <n> => S5
  <p> => S11; S12
 S8: 12,16
-S -> p[] p S[R0:2][x5] .
 S -> p p[] S[R0:2][x5] .
+S -> p[] p S[R0:2][x5] .
 S9: 23
 S[R0:2][x5] -> p n .
 S10: 7

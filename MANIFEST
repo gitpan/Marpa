@@ -9,6 +9,7 @@ author.t/minimal.marpa
 author.t/misc.t
 author.t/perlcriticrc
 author.t/perltidyrc
+author.t/pod.t
 author.t/spelling_exceptions.list
 author.t/test_pod
 author.t/tidy1
@@ -54,7 +55,7 @@ Makefile.PL
 MANIFEST
 META.yml
 README
-sandbox/TODO
+sandbox/TODO.pod
 t/00-load.t
 t/ah2.t
 t/ah_s.t
@@ -78,6 +79,7 @@ t/minus.t
 t/pascal.t
 t/priority.t
 t/randal.t
+t/sequence.t
 t/stripped.t
 t/synopsis.t
 t/timeflies.t

@@ -16,7 +16,7 @@ BEGIN {
 }
 
 my $mdl_header = <<'EOF';
-semantics are perl5.  version is 0.001_017.
+semantics are perl5.  version is 0.001_018.
 start symbol is S.
 default action is q{join(q{ }, grep { defined $_ } @_)}.
 

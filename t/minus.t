@@ -98,10 +98,10 @@ my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
 
 Marpa::Test::is( $grammar->show_rules,
     <<'END_RULES', 'Minuses Equation Rules' );
-0: E -> E Minus E /* priority=50.0 */
-1: E -> E MinusMinus /* priority=40.0 */
-2: E -> MinusMinus E /* priority=30.0 */
-3: E -> Minus E /* priority=20.0 */
+0: E -> E Minus E /* priority=50 */
+1: E -> E MinusMinus /* priority=40 */
+2: E -> MinusMinus E /* priority=30 */
+3: E -> Minus E /* priority=20 */
 4: E -> Number
 5: E['] -> E
 END_RULES

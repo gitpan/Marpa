@@ -1,6 +1,6 @@
 ---
 name: Marpa
-version: 0.001_017
+version: 0.001_018
 author:
   - Jeffrey Kegler
 abstract: Generate Parsers from any BNF grammar
@@ -12,22 +12,22 @@ requires:
 provides:
   Marpa:
     file: lib/Marpa.pm
-    version: 0.001_017
+    version: 0.001_018
   Marpa::Evaluator:
     file: lib/Marpa/Evaluator.pm
-    version: 0.001_017
+    version: 0.001_018
   Marpa::Grammar:
     file: lib/Marpa/Grammar.pm
-    version: 0.001_017
+    version: 0.001_018
   Marpa::Lex:
     file: lib/Marpa/Lex.pm
-    version: 0.001_017
+    version: 0.001_018
   Marpa::MDL:
     file: lib/Marpa/MDL.pm
-    version: 0.001_017
+    version: 0.001_018
   Marpa::Recognizer:
     file: lib/Marpa/Recognizer.pm
-    version: 0.001_017
+    version: 0.001_018
 generated_by: Module::Build version 0.280801
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.2.html

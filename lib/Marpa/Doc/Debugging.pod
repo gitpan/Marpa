@@ -53,11 +53,10 @@ Next, depending on where in the process you're having problems,
 you might want to
 turn on some of the more helpful traces.
 C<trace_actions> will show you the actions as they are being finalized.
-C<trace_iterations> traces the initialization of, and the iteration of,
-the parse tree.
+C<trace_iterations> traces the initialization and iteration of
+the parse.
 C<trace_values> traces the values of the nodes as they are pushed on, and 
 popped off, the evaluation stack.
-After an evaluation, C<show_tree> will show the entire tree.
 
 For a complete investigation of a parse,
 do the following:
@@ -80,7 +79,6 @@ do the following:
 
 =item * Run C<show_bocage> in verbose mode on the evaluator after it is created.
 
-=item * Run C<show_tree> in verbose mode
 on the evaluator after each call of the C<value> method.
 
 =item * Turn on C<trace_journal>.
@@ -93,7 +91,6 @@ the evaluation stack, popped off it, calculated and pushed back on.
 Note that when the input text to the grammar is of any length,
 the outputs from C<show_earley_sets>,
 C<show_bocage>,
-C<show_tree>,
 C<trace_lex>,
 and C<trace_journal>
 and C<trace_values>
@@ -102,9 +99,9 @@ You'll want to work with short inputs if at all possible.
 The L<internals document|Marpa::Doc::Internals>
 has example outputs from the C<show_QDFA>,
 C<show_earley_sets>,
-C<show_bocage>,
 and
-C<show_tree> methods,
+C<show_bocage>
+methods,
 and explains how to read them.
 
 =head1 OPTIONS
@@ -186,8 +183,8 @@ Setting it after that point will result in a warning.
 
 =item trace_iterations
 
-Traces creation of, and iteration of,
-the parse tree.
+Traces initialization and iteration of
+the parse.
 Knowledge of Marpa internals very useful.
 May usefully be set at any point in the parse.
 
@@ -628,44 +625,6 @@ parse bocages grammars contain or-productions.
 The information in or-productions is redundant --
 all of it is evident from the and-productions.
 Or-productions are shown only if I<verbosity> is set at 2 or more.
-
-=head3 show_tree
-
-=begin Marpa::Test::Display:
-
-## next display
-in_file($_, 'bin/mdl');
-
-=end Marpa::Test::Display:
-
-    print $evaler->show_tree($show_tree_flag)
-        or Marpa::exception "print failed: $OS_ERROR";
-
-When called after a successful call to the C<value> method,
-C<show_tree>
-returns a multi-line string describing the parse tree
-produced in the C<value> call.
-The tree is listed in pre-order.
-For each parse tree node,
-its depth and and-node are given.
-Also,
-for the current choice of and-node at that parse tree node,
-C<show_tree> gives
-the cause and predecessor or-nodes, if any;
-the rule;
-and the argument count (that is, the rule length).
-
-The optional I<flag> argument, if a true value,
-causes verbose output.
-In verbose output,
-the value of the node is given,
-when the tree node has a value.
-Also in verbose output, if the node tree has a Perl closure,
-that is indicated.
-
-If the C<value> method was never called,
-or if the last call to C<value> returned failure,
-the result returned by C<show_tree> is unpredictable.
 
 =head1 SUPPORT
 

@@ -255,8 +255,7 @@ sub prepare_grammar_for_recognizer {
     my $package = $parse->[Marpa::Internal::Recognizer::PACKAGE] =
         sprintf 'Marpa::P_%x', $parse_number++;
 
-    my $lex_preamble   = $grammar->[Marpa::Internal::Grammar::LEX_PREAMBLE];
-    my $default_action = $grammar->[Marpa::Internal::Grammar::DEFAULT_ACTION];
+    my $lex_preamble = $grammar->[Marpa::Internal::Grammar::LEX_PREAMBLE];
     my $default_null_value =
         $grammar->[Marpa::Internal::Grammar::DEFAULT_NULL_VALUE];
 
@@ -1137,8 +1136,8 @@ sub complete_set {
 
     my $lexables = [
         sort {
-            $a->[Marpa::Internal::Symbol::USER_PRIORITY]
-                <=> $b->[Marpa::Internal::Symbol::USER_PRIORITY]
+            $a->[Marpa::Internal::Symbol::PRIORITY]
+                <=> $b->[Marpa::Internal::Symbol::PRIORITY]
             }
             map { $symbols->[$_] }
             grep { $lexable_seen->[$_] } ( 0 .. $#{$symbols} )

@@ -65,7 +65,7 @@ for my $i ( 0 .. 4 ) {
 # vim: expandtab shiftwidth=4:
 
 __DATA__
-semantics are perl5.  version is 0.001_017.  the start symbol is
+semantics are perl5.  version is 0.001_018.  the start symbol is
 S.  the default null value is q{}.  the default action is q{
      my $v_count = scalar @_;
      return q{} if $v_count <= 0;

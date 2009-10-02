@@ -973,7 +973,6 @@ in_file($_, 'author.t/equation_show_bocage.out');
 
     S2@0-3L3o0a0 -> S6@0-3L0o1
         rule 2: e['] -> e .
-        rhs length = 1; closure
 
 Parse bocage and-productions always have one or two rhs symbols.
 Either a token or a closure or-node will be on the right hand side.
@@ -1010,7 +1009,6 @@ in_file($_, 'author.t/equation_show_bocage.out');
     S5@0-2R0:2o2 -> S5@0-2R0:2o2a2
     S5@0-2R0:2o2a2 -> S3@0-1R0:1o4 '+'
         rule 0: e -> e op . e
-        rhs length = 3
 
 Z<>
 
@@ -1040,7 +1038,6 @@ in_file($_, 'author.t/equation_show_bocage.out');
     S4@0-1L0o5 -> S4@0-1L0o5a5
     S4@0-1L0o5a5 -> '2'
         rule 1: e -> number .
-        rhs length = 1; closure
 
 The and-production above has only a token on its rhs.
 There is no kernel or-node, because the pre-dot
@@ -1061,52 +1058,14 @@ with C<e> as its lhs.
 
 =head1 THE PARSE TREES
 
-The parse tree for our example parse is shown in an
-appendix.
-Every node in a Marpa parse tree comes from
-an and-node
-in the parse bocage.
+B<Parse trees have been elminated.  The following
+needs to be rewritten.>
 
-A parse bocage contains all possible parses,
-but a parse tree is for a specific parse.
-Only those and-nodes actually used in the specific
-parse become nodes in the parse tree.
-In the case of an unambiguous parse,
-every parse bocage and-node becomes a tree node.
-In the case of an ambiguous parse,
-some and-nodes will not be used in the parse tree.
-
-=begin Marpa::Test::Display:
-
-## next display
-in_file($_, 'author.t/equation_show_tree.out');
-
-=end Marpa::Test::Display:
-
-    Tree Node #1: S6@0-3L0o1[0]; Parent = 0; Depth = 1; Rhs Length = 3
-        Rule: e -> e op e .
-        Kernel: S5@0-2R0:2o2
-        Closure: S4@2-3L0o3
-        Perl Closure: Y
-    Tree Node #2: S4@2-3L0o3[0]; Parent = 1; Depth = 2; Rhs Length = 1
-        Rule: e -> number .
-        Perl Closure: Y; Token: '2'
-
-Most of the information in the tree nodes is repeated from
-the parse bocage and-nodes.
-The "depth" is the distance of the tree node from the root
-of the tree.
-
-Marpa's parse trees are kept in pre-order.
-They can be traversed as a tree, starting from the root.
-They can also be traversed from the end,
-which is what Marpa does when it evaluates a parse.
-
-Marpa evaluates a parse tree using an evaluation stack,
+Marpa evaluates using an evaluation stack,
 which is initialized to empty.
-Every time Marpa evaluates a tree node,
+Every time Marpa evaluates a node,
 it pushes the result onto the evaluation stack.
-If a tree node needs values as input,
+If a node needs values as input,
 perhaps because a Perl closure requires arguments,
 the values are popped from the evaluation stack.
 When Marpa reaches the root tree-node,
@@ -1263,53 +1222,48 @@ Z<>
     100: production-paragraph ->
         non-structural-production-sentences
         production-sentence
-        production-paragraph[R11:2][x5f]
-        /* priority=0.54 */
+        production-paragraph[R11:2][x5f] /* vrhs real=2 */
     101: production-paragraph ->
-        non-structural-production-sentences[]
-        production-sentence
-        production-paragraph[R11:2][x5f]
-        /* priority=0.52 */
-    102: production-paragraph ->
         non-structural-production-sentences
         production-sentence
-        production-paragraph[R11:2][x5f][]
-        /* priority=0.53 */
+        non-structural-production-sentences[]
+        action-sentence:optional[]
+        non-structural-production-sentences[]
+    102: production-paragraph ->
+        non-structural-production-sentences[]
+        production-sentence
+        production-paragraph[R11:2][x5f] /* vrhs real=2 */
     103: production-paragraph ->
         non-structural-production-sentences[]
         production-sentence
-        production-paragraph[R11:2][x5f][]
-        /* priority=0.51 */
+        non-structural-production-sentences[]
+        action-sentence:optional[]
+        non-structural-production-sentences[]
 
 Z<>
 
     104: production-paragraph[R11:2][x5f] ->
         non-structural-production-sentences
-        production-paragraph[R11:3][x61]
-        /* priority=0.34 */
+        production-paragraph[R11:3][x60] /* vlhs vrhs real=1 */
     105: production-paragraph[R11:2][x5f] ->
-        non-structural-production-sentences[]
-        production-paragraph[R11:3][x61]
-        /* priority=0.32 */
-    106: production-paragraph[R11:2][x5f] ->
         non-structural-production-sentences
-        production-paragraph[R11:3][x61][]
-        /* priority=0.33 */
+        action-sentence:optional[]
+        non-structural-production-sentences[] /* vlhs real=3 */
+    106: production-paragraph[R11:2][x5f] ->
+        non-structural-production-sentences[]
+        production-paragraph[R11:3][x60] /* vlhs vrhs real=1 */
 
 Z<>
 
-    107: production-paragraph[R11:3][x61] ->
+    107: production-paragraph[R11:3][x60] ->
         action-sentence:optional
-        non-structural-production-sentences
-        /* priority=0.24 */
-    108: production-paragraph[R11:3][x61] ->
+        non-structural-production-sentences /* vlhs real=2 */
+    108: production-paragraph[R11:3][x60] ->
+        action-sentence:optional
+        non-structural-production-sentences[] /* vlhs real=2 */
+    109: production-paragraph[R11:3][x60] ->
         action-sentence:optional[]
-        non-structural-production-sentences
-        /* priority=0.22 */
-    109: production-paragraph[R11:3][x61] ->
-        action-sentence:optional
-        non-structural-production-sentences[]
-        /* priority=0.23 */
+        non-structural-production-sentences /* vlhs real=2 */
 
 Rule 11 is the original rule.  Because Marpa has rewritten it,
 the rule is marked C<!useful>, telling later stages in the precomputation to ignore it.
@@ -1378,11 +1332,11 @@ in_file($_, 'author.t/self_show_rules.out');
 
 =end Marpa::Test::Display:
 
-    1: paragraphs -> paragraph[Seq:1-*][Sep:empty_line][x5]
-    2: paragraphs -> paragraph[Seq:1-*][Sep:empty_line][x5] empty-line
-    3: paragraph[Seq:1-*][Sep:empty_line][x5] -> paragraph
-    4: paragraph[Seq:1-*][Sep:empty_line][x5] ->
-	paragraph[Seq:1-*][Sep:empty_line][x5] empty-line paragraph
+    1: paragraphs -> paragraph[Seq:1-*][Sep:empty_line][x5] /* vrhs discard_sep real=0 */
+    2: paragraphs -> paragraph[Seq:1-*][Sep:empty_line][x5] empty-line /* vrhs discard_sep real=1 */
+    3: paragraph[Seq:1-*][Sep:empty_line][x5] -> paragraph /* vlhs real=1 */
+    4: paragraph[Seq:1-*][Sep:empty_line][x5]
+        -> paragraph empty-line paragraph[Seq:1-*][Sep:empty_line][x5] /* vlhs vrhs real=2 */
 
 In the added symbol, the tag "C<[Seq:1-*]>" indicates this is a symbol for a sequence
 of from 1 to an infinite number of symbols
@@ -1409,9 +1363,10 @@ in_file($_, 'author.t/self_show_rules.out');
 
 =end Marpa::Test::Display:
 
-    8: definition-paragraph -> definition[Seq:1-*][xa]
-    9: definition[Seq:1-*][xa] -> definition
-    10: definition[Seq:1-*][xa] -> definition[Seq:1-*][xa] definition
+    8: definition-paragraph -> definition[Seq:1-*][xa] /* vrhs real=0 */
+    9: definition[Seq:1-*][xa] -> definition /* vlhs real=1 */
+    10: definition[Seq:1-*][xa]
+        -> definition definition[Seq:1-*][xa] /* vlhs vrhs real=1 */
 
 =head1 SELF-TUTORIALS
 
@@ -1449,7 +1404,7 @@ is_file($_, 'example/equation.marpa');
 =end Marpa::Test::Display:
 
 
-    semantics are perl5.  version is 0.001_017.
+    semantics are perl5.  version is 0.001_018.
 
     start symbol is E.
 
@@ -1597,60 +1552,21 @@ is_file($_, 'author.t/equation_show_bocage.out');
     S2@0-3L3o0 -> S2@0-3L3o0a0
     S2@0-3L3o0a0 -> S6@0-3L0o1
         rule 2: e['] -> e .
-        rhs length = 1; closure
     S6@0-3L0o1 -> S6@0-3L0o1a1
     S6@0-3L0o1a1 -> S5@0-2R0:2o2 S4@2-3L0o3
         rule 0: e -> e op e .
-        rhs length = 3; closure
     S5@0-2R0:2o2 -> S5@0-2R0:2o2a2
     S5@0-2R0:2o2a2 -> S3@0-1R0:1o4 '+'
         rule 0: e -> e op . e
-        rhs length = 3
     S4@2-3L0o3 -> S4@2-3L0o3a3
     S4@2-3L0o3a3 -> '2'
         rule 1: e -> number .
-        rhs length = 1; closure
     S3@0-1R0:1o4 -> S3@0-1R0:1o4a4
     S3@0-1R0:1o4a4 -> S4@0-1L0o5
         rule 0: e -> e . op e
-        rhs length = 3
     S4@0-1L0o5 -> S4@0-1L0o5a5
     S4@0-1L0o5a5 -> '2'
         rule 1: e -> number .
-        rhs length = 1; closure
-
-=head2 C<show_tree> Output
-
-=begin Marpa::Test::Display:
-
-## next display
-is_file($_, 'author.t/equation_show_tree.out');
-
-=end Marpa::Test::Display:
-
-    Tree Node #0: S2@0-3L3o0[0]; Depth = 0; Rhs Length = 1
-        Rule: e['] -> e .
-        Closure: S6@0-3L0o1
-        Perl Closure: Y
-    Tree Node #1: S6@0-3L0o1[0]; Parent = 0; Depth = 1; Rhs Length = 3
-        Rule: e -> e op e .
-        Kernel: S5@0-2R0:2o2
-        Closure: S4@2-3L0o3
-        Perl Closure: Y
-    Tree Node #2: S4@2-3L0o3[0]; Parent = 1; Depth = 2; Rhs Length = 1
-        Rule: e -> number .
-        Perl Closure: Y; Token: '2'
-    Tree Node #3: S5@0-2R0:2o2[0]; Parent = 1; Depth = 2; Rhs Length = 3
-        Rule: e -> e op . e
-        Kernel: S3@0-1R0:1o4
-        Perl Closure: N; Token: '+'
-    Tree Node #4: S3@0-1R0:1o4[0]; Parent = 3; Depth = 3; Rhs Length = 3
-        Rule: e -> e . op e
-        Closure: S4@0-1L0o5
-        Perl Closure: N
-    Tree Node #5: S4@0-1L0o5[0]; Parent = 4; Depth = 4; Rhs Length = 1
-        Rule: e -> number .
-        Perl Closure: Y; Token: '2'
 
 =head2 C<trace_values> Output
 

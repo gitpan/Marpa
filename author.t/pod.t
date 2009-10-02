@@ -6,8 +6,8 @@ use warnings;
 use English qw( -no_match_vars );
 use Fatal qw( open close );
 use Carp;
-use Perl::Critic;
-use Test::Perl::Critic;
+use Pod::Simple;
+use Test::Pod;
 use Test::More;
 
 # Test that the module passes perlcritic
@@ -33,22 +33,20 @@ my @test_files = ();
 FILE: while ( my $file = <$manifest> ) {
     chomp $file;
     $file =~ s/\s*[#].*\z//xms;
+    next FILE if -d $file;
     next FILE if $exclude{$file};
     my ($ext) = $file =~ / [.] ([^.]+) \z /xms;
-    given ( lc $ext ) {
-        when (undef) {
-            break
-        }
-        when ('pl') { push @test_files, $file }
-        when ('pm') { push @test_files, $file }
-        when ('t')  { push @test_files, $file }
+    next FILE if not defined $ext;
+    $ext = lc $ext;
+    given ($ext) {
+        when ('pl')  { push @test_files, $file }
+        when ('pod') { push @test_files, $file }
+        when ('t')   { push @test_files, $file }
+        when ('pm')  { push @test_files, $file }
     } ## end given
-} ## end while ( my $file = <$manifest> )
-
+}    # FILE
 close $manifest;
 
-my $rcfile = File::Spec->catfile( 'author.t', 'perlcriticrc' );
-Test::Perl::Critic->import( -profile => $rcfile );
-Test::Perl::Critic::all_critic_ok(@test_files);
+Test::Pod::all_pod_files_ok();
 
 1;
