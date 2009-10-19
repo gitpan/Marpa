@@ -7,42 +7,63 @@ use warnings;
 use lib 'lib';
 use English qw( -no_match_vars );
 use Fatal qw(open close chdir);
-use Test::More tests => 4;
+use Test::More tests => 5;
 use t::lib::Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');
+    Test::More::use_ok('Marpa::MDLex');
 }
-
-my $example_dir = 'example';
-chdir $example_dir;
 
 my @expected_values = split /\n/xms, <<'EOS';
 A(B(a))
 a
 EOS
 
-my $mdl = <<'EOF';
-semantics are perl5.  version is 0.001_018.
-start symbol is S.
-default action is q{join(q{ }, @_)}.
+## no critic (Subroutines::RequireArgUnpacking)
+sub show_a         { return 'A(' . $_[1] . ')' }
+sub show_b         { return 'B(' . $_[1] . ')' }
+sub default_action { shift; return join q{ }, @_ }
+## use critic
 
-S: A.
+package Test_Grammar;
 
-A: B. q{ 'A(' . $_[0] . ')' }.
+$Test_Grammar::MARPA_OPTIONS = [
+    {   'default_action' => 'main::default_action',
+        'rules'          => [
+            {   'lhs' => 's',
+                'rhs' => ['a']
+            },
+            {   'action' => 'main::show_a',
+                'lhs'    => 'a',
+                'rhs'    => ['b']
+            },
+            {   'lhs' => 'a',
+                'rhs' => ['a:k0']
+            },
+            {   'action' => 'main::show_b',
+                'lhs'    => 'b',
+                'rhs'    => ['a']
+            }
+        ],
+        'start'     => 's',
+        'terminals' => ['a:k0'],
+    }
+];
 
-A: /a/.
-
-B: A. q{ 'B(' . $_[0] . ')' }.
-EOF
+$Test_Grammar::MDLEX_OPTIONS = [
+    {   'terminals' => [
+            {   'name'  => 'a:k0',
+                'regex' => 'a'
+            }
+        ]
+    }
+];
 
 my $trace;
 open my $MEMORY, '>', \$trace;
-my $grammar = Marpa::Grammar->new(
-    {   mdl_source        => \$mdl,
-        trace_file_handle => $MEMORY,
-    }
-);
+my $grammar = Marpa::Grammar->new( { trace_file_handle => $MEMORY },
+    @{$Test_Grammar::MARPA_OPTIONS} );
 $grammar->precompute();
 close $MEMORY;
 
@@ -57,8 +78,10 @@ my $recce = Marpa::Recognizer->new(
     }
 );
 
+my $lexer =
+    Marpa::MDLex->new( { recce => $recce }, @{$Test_Grammar::MDLEX_OPTIONS} );
 my $text          = 'a';
-my $fail_location = $recce->text( \$text );
+my $fail_location = $lexer->text( \$text );
 if ( $fail_location >= 0 ) {
     Marpa::exception(
         Marpa::show_location( 'Parsing failed', \$text, $fail_location ) );

@@ -6,34 +6,36 @@ use warnings;
 
 use Getopt::Long qw(GetOptionsFromArray);
 use Marpa;
+use Marpa::MDLex;
 use English qw( -no_match_vars ) ;
 use Fatal qw(open close);
 
-my $grammar_file;
-my $stringified_grammar_file;
-my $text_to_parse;
-my $inaccessible_symbols;
 my $accessible_symbols;
+my $actions;
+my $all_parses;
+my $grammar_file;
+my $inaccessible_symbols;
 my $nullable_symbols;
 my $nulling_symbols;
-my $unproductive_symbols;
+my %options;
 my $productive_symbols;
+my $show_bocage_verbosity;
+my $show_earley_sets;
+my $show_NFA;
+my $show_problems;
+my $show_QDFA;
+my $show_rules;
+my $show_symbols;
+my %source_options;
+my $stdout;
+my $stringified_grammar_file;
+my $text_to_parse;
 my $trace_actions;
+my $trace_iterations;
 my $trace_lex;
 my $trace_predefineds;
 my $trace_values;
-my $trace_iterations;
-my $show_NFA;
-my $show_QDFA;
-my $show_bocage_verbosity;
-my $show_earley_sets;
-my $show_problems;
-my $show_rules;
-my $show_symbols;
-my $stdout;
-my $all_parses;
-my %options;
-my %source_options;
+my $unproductive_symbols;
 
 mdl_command(\@ARGV);
 
@@ -54,32 +56,37 @@ sub mdl_command
             Marpa::exception
                 unless GetOptionsFromArray(
                 $argvp,
-                'grammar=s'             => \$grammar_file,
-                'stringified_grammar=s' => \$stringified_grammar_file,
-                'text=s'                => \$text_to_parse,
-                'QDFA'                  => \$show_QDFA,
-                'NFA'                   => \$show_NFA,
-                'bocage=i'              => \$show_bocage_verbosity,
-                'inaccessible_symbols'  => \$inaccessible_symbols,
                 'accessible_symbols'    => \$accessible_symbols,
+                'actions=s'             => \$actions,
+                'all_parses'            => \$all_parses,
+                'bocage=i'              => \$show_bocage_verbosity,
+                'earley_sets'           => \$show_earley_sets,
+                'grammar=s'             => \$grammar_file,
+                'inaccessible_symbols'  => \$inaccessible_symbols,
+                'NFA'                   => \$show_NFA,
                 'nullable_symbols'      => \$nullable_symbols,
                 'nulling_symbols'       => \$nulling_symbols,
-                'unproductive_symbols'  => \$unproductive_symbols,
-                'productive_symbols'    => \$productive_symbols,
-                'trace_actions'         => \$trace_actions,
-                'trace_predefineds'     => \$trace_predefineds,
-                'trace_values'          => \$trace_values,
-                'trace_iterations=i'    => \$trace_iterations,
-                'trace_lex'             => \$trace_lex,
-                'rules'                 => \$show_rules,
+                'option=s'              => \%options,
                 'problems'              => \$show_problems,
-                'symbols'               => \$show_symbols,
-                'earley_sets'           => \$show_earley_sets,
+                'productive_symbols'    => \$productive_symbols,
+                'QDFA'                  => \$show_QDFA,
+                'rules'                 => \$show_rules,
                 'source_option=s'       => \%source_options,
                 'stdout'                => \$stdout,
-                'all_parses'            => \$all_parses,
-                'option=s'              => \%options,
+                'stringified_grammar=s' => \$stringified_grammar_file,
+                'symbols'               => \$show_symbols,
+                'text=s'                => \$text_to_parse,
+                'trace_actions'         => \$trace_actions,
+                'trace_iterations=i'    => \$trace_iterations,
+                'trace_lex'             => \$trace_lex,
+                'trace_predefineds'     => \$trace_predefineds,
+                'trace_values'          => \$trace_values,
+                'unproductive_symbols'  => \$unproductive_symbols,
                 );
+
+            if ($actions) {
+                $options{actions} = $actions;
+            }
 
             if ($trace_actions) {
                 $options{trace_actions} = 1;
@@ -109,7 +116,7 @@ sub mdl_command
 
             return do_parse();
 
-        }
+        } ## end when ('parse')
         default {
             Marpa::exception("Unimplemented marpa command: $command");
         }
@@ -153,6 +160,7 @@ sub do_parse {
         close $grammar_fh;
 
         # don't string data needed for debugging
+        $options{strip} = 0 if $show_earley_sets;
         $options{strip} = 0 if $show_rules;
         $options{strip} = 0 if $show_symbols;
         $options{strip} = 0 if $show_QDFA;
@@ -226,6 +234,8 @@ sub do_parse {
         }
     }
 
+    my $lexer_args = $grammar->lexer_args();
+
     my $recce = new Marpa::Recognizer( {
         grammar => $grammar,
         clone => 0
@@ -235,7 +245,9 @@ sub do_parse {
         $text_to_parse = <ARGV>;
     }
 
-    my $fail_location = $recce->text( \$text_to_parse );
+    my $lexer = Marpa::MDLex->new( { recce => $recce, %{$lexer_args} } );
+
+    my $fail_location = $lexer->text( \$text_to_parse );
 
     if ($show_earley_sets) {
 	$recce->end_input();

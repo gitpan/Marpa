@@ -39,10 +39,11 @@ sub ah_extended {
             warnings => ( $n ? 1 : 0 ),
         }
     );
+    $g->precompute();
 
     my $recce = Marpa::Recognizer->new( { grammar => $g } );
 
-    my $a = $g->get_symbol('a');
+    my $a = $g->get_terminal('a');
     for ( 0 .. $n ) { $recce->earleme( [ $a, 'a', 1 ] ); }
     $recce->end_input();
 

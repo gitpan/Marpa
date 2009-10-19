@@ -26,44 +26,47 @@ use warnings;
 use lib 'lib';
 use English qw( -no_match_vars );
 
-use Test::More tests => 2;
+use Test::More tests => 3;
 use t::lib::Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');
+    Test::More::use_ok('Marpa::MDLex');
 }
 
+## no critic (Subroutines::RequireArgUnpacking)
+
+sub sva_sentence      { return "sva($_[1];$_[2];$_[3])" }
+sub svo_sentence      { return "svo($_[1];$_[2];$_[3])" }
+sub adjunct           { return "adju($_[1];$_[2])" }
+sub adjective         { return "adje($_[1])" }
+sub qualified_subject { return "s($_[1];$_[2])" }
+sub bare_subject      { return "s($_[1])" }
+sub noun              { return "n($_[1])" }
+sub verb              { return "v($_[1])" }
+sub object            { return "o($_[1];$_[2])" }
+sub article           { return "art($_[1])" }
+sub preposition       { return "pr($_[1])" }
+
+## use critic
+
 my $grammar = Marpa::Grammar->new(
-    {   start              => 'sentence',
-        strip              => 0,
-        default_lex_prefix => '\s+|\A',
-        ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
-        rules => [
-            [   'sentence', [qw(subject verb adjunct)],
-                q{ "sva($_[0];$_[1];$_[2])" }
-            ],
-            [   'sentence', [qw(subject verb object)],
-                q{ "svo($_[0];$_[1];$_[2])" }
-            ],
-            [ 'adjunct', [qw(preposition object)], q{ "adju($_[0];$_[1])" } ],
-            [ 'adjective', [qw(adjective_noun_lex)], q{ "adje($_[0])" } ],
-            [ 'subject',   [qw(adjective noun)],     q{ "s($_[0];$_[1])" } ],
-            [ 'subject',   [qw(noun)],               q{ "s($_[0])" } ],
-            [ 'noun',      [qw(adjective_noun_lex)], q{ "n($_[0])" } ],
-            [ 'verb',      [qw(verb_lex)],           q{ "v($_[0])" } ],
-            [ 'object',    [qw(article noun)],       q{ "o($_[0];$_[1])" } ],
-            [ 'article',   [qw(article_lex)],        q{ "art($_[0])" } ],
-            [ 'preposition', [qw(preposition_lex)], q{ "pr($_[0])" } ],
+    {   start   => 'sentence',
+        strip   => 0,
+        actions => 'main',
+        rules   => [
+            [ 'sentence', [qw(subject verb adjunct)], 'sva_sentence' ],
+            [ 'sentence', [qw(subject verb object)],  'svo_sentence' ],
+            [ 'adjunct',  [qw(preposition object)] ],
+            [ 'adjective',   [qw(adjective_noun_lex)] ],
+            [ 'subject',     [qw(adjective noun)], 'qualified_subject' ],
+            [ 'subject',     [qw(noun)], 'bare_subject' ],
+            [ 'noun',        [qw(adjective_noun_lex)] ],
+            [ 'verb',        [qw(verb_lex)] ],
+            [ 'object',      [qw(article noun)] ],
+            [ 'article',     [qw(article_lex)] ],
+            [ 'preposition', [qw(preposition_lex)] ],
         ],
-        ## use critic
-        terminals => [
-            [ preposition_lex => { regex => qr/like/xms } ],
-            [ verb_lex        => { regex => qr/like|flies/xms } ],
-            [   adjective_noun_lex =>
-                    { regex => qr/fruit|banana|time|arrow|flies/xms }
-            ],
-            [ article_lex => { regex => qr/a\b|an/xms } ],
-        ]
     }
 );
 
@@ -75,10 +78,28 @@ svo(s(adje(fruit);n(flies));v(like);o(art(a);n(banana)))
 EOS
 my $actual = q{};
 
+$grammar->precompute();
+
 for my $data ( 'time flies like an arrow.', 'fruit flies like a banana.' ) {
 
     my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
-    my $fail_offset = $recce->text($data);
+    Carp::croak('Failed to create recognizer') if not $recce;
+
+    my $lexer = Marpa::MDLex->new(
+        {   recognizer     => $recce,
+            default_prefix => '\s+|\A',
+            terminals      => [
+                { name => 'preposition_lex', regex => 'like' },
+                { name => 'verb_lex',        regex => 'like|flies' },
+                {   name  => 'adjective_noun_lex',
+                    regex => 'fruit|banana|time|arrow|flies'
+                },
+                { name => 'article_lex', regex => 'a\b|an' }
+            ]
+        }
+    );
+
+    my $fail_offset = $lexer->text($data);
     if ( $fail_offset >= 0 ) {
         Carp::croak("Parse failed at offset $fail_offset");
     }

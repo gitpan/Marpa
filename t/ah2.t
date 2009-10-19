@@ -16,24 +16,30 @@ BEGIN {
     Test::More::use_ok('Marpa');
 }
 
+## no critic (Subroutines::RequireArgUnpacking)
+
+sub default_action {
+    shift;
+    my $v_count = scalar @_;
+    return q{}   if $v_count <= 0;
+    return $_[0] if $v_count == 1;
+    return '(' . join( q{;}, @_ ) . ')';
+} ## end sub default_action
+
+## use critic
+
 my $grammar = Marpa::Grammar->new(
-    {   precompute => 0,
-        start      => 'S',
-        strip      => 0,
-        maximal    => 1,
-        rules      => [
+    {   start   => 'S',
+        strip   => 0,
+        maximal => 1,
+        rules   => [
             [ 'S', [qw/A A A A/] ],
             [ 'A', [qw/a/] ],
             [ 'A', [qw/E/] ],
             ['E'],
         ],
         default_null_value => q{},
-        default_action     => <<'EOCODE'
-     my $v_count = scalar @_;
-     return q{} if $v_count <= 0;
-     return $_[0] if $v_count == 1;
-     '(' . join(';', @_) . ')';
-EOCODE
+        default_action     => 'main::default_action',
     }
 );
 
@@ -45,7 +51,7 @@ Marpa::Test::is( $grammar->show_rules, <<'EOS', 'Aycock/Horspool Rules' );
 0: S -> A A A A /* !useful nullable maximal */
 1: A -> a /* maximal */
 2: A -> E /* !useful nullable maximal */
-3: E -> /* !useful empty nullable maximal */
+3: E -> /* empty !useful nullable maximal */
 4: S -> A S[R0:1][x6] /* maximal vrhs real=1 */
 5: S -> A A[] A[] A[] /* maximal */
 6: S -> A[] S[R0:1][x6] /* maximal vrhs real=1 */
@@ -55,7 +61,7 @@ Marpa::Test::is( $grammar->show_rules, <<'EOS', 'Aycock/Horspool Rules' );
 10: S[R0:2][x7] -> A A /* maximal vlhs real=2 */
 11: S[R0:2][x7] -> A A[] /* maximal vlhs real=2 */
 12: S[R0:2][x7] -> A[] A /* maximal vlhs real=2 */
-13: S['] -> S /* maximal */
+13: S['] -> S /* maximal vlhs real=1 */
 14: S['][] -> /* empty nullable maximal */
 EOS
 
@@ -262,31 +268,22 @@ EOS
 
 my $recce = Marpa::Recognizer->new( { grammar => $grammar, clone => 0 } );
 
-my $set0_new = <<'EOS';
+my @set = (
+    <<'END_OF_SET0', <<'END_OF_SET1', <<'END_OF_SET2', <<'END_OF_SET3', <<'END_OF_SET4', );
 Earley Set 0
 S0@0-0
 S1@0-0
-EOS
-
-my $set1_at_0 = <<'EOS';
+END_OF_SET0
 Earley Set 1
 S7@0-1 [p=S1@0-0; s=a; t=\'a']
-EOS
-
-my $set1_at_1 = <<'EOS';
 S3@0-1 [p=S1@0-0; c=S7@0-1]
 S4@1-1
 S2@0-1 [p=S0@0-0; c=S3@0-1] [p=S0@0-0; c=S5@0-1]
 S5@0-1 [p=S1@0-0; c=S3@0-1] [p=S1@0-0; c=S6@0-1]
 S6@0-1 [p=S1@0-0; c=S3@0-1]
-EOS
-
-my $set2_at_1 = <<'EOS';
+END_OF_SET1
 Earley Set 2
 S7@1-2 [p=S4@1-1; s=a; t=\'a']
-EOS
-
-my $set2_at_2 = <<'EOS';
 S8@0-2 [p=S3@0-1; c=S7@1-2]
 S11@1-2 [p=S4@1-1; c=S7@1-2]
 S12@2-2
@@ -296,14 +293,9 @@ S10@0-2 [p=S3@0-1; c=S11@1-2]
 S6@1-2 [p=S4@1-1; c=S11@1-2]
 S5@0-2 [p=S1@0-0; c=S6@0-2] [p=S1@0-0; c=S10@0-2]
 S2@0-2 [p=S0@0-0; c=S9@0-2] [p=S0@0-0; c=S5@0-2]
-EOS
-
-my $set3_at_2 = <<'EOS';
+END_OF_SET2
 Earley Set 3
 S7@2-3 [p=S12@2-2; s=a; t=\'a']
-EOS
-
-my $set3_at_3 = <<'EOS';
 S8@1-3 [p=S11@1-2; c=S7@2-3]
 S13@2-3 [p=S12@2-2; c=S7@2-3]
 S14@3-3
@@ -313,77 +305,40 @@ S10@1-3 [p=S11@1-2; c=S13@2-3]
 S5@0-3 [p=S1@0-0; c=S10@0-3]
 S9@0-3 [p=S3@0-1; c=S6@1-3] [p=S3@0-1; c=S10@1-3]
 S2@0-3 [p=S0@0-0; c=S5@0-3] [p=S0@0-0; c=S9@0-3]
-EOS
-
-my $set4_at_3 = <<'EOS';
+END_OF_SET3
 Earley Set 4
 S7@3-4 [p=S14@3-3; s=a; t=\'a']
-EOS
-
-my $set4_at_4 = <<'EOS';
 S8@2-4 [p=S13@2-3; c=S7@3-4]
 S10@1-4 [p=S11@1-2; c=S8@2-4]
 S9@0-4 [p=S3@0-1; c=S10@1-4]
 S2@0-4 [p=S0@0-0; c=S9@0-4]
-EOS
+END_OF_SET4
 
-my $sets_new  = $set0_new;
-my $sets_at_0 = $sets_new . $set1_at_0;
-my $sets_at_1 = $sets_at_0 . $set1_at_1 . $set2_at_1;
-my $sets_at_2 = $sets_at_1 . $set2_at_2 . $set3_at_2;
-my $sets_at_3 = $sets_at_2 . $set3_at_3 . $set4_at_3;
-my $sets_at_4 = $sets_at_3 . $set4_at_4;
-
-Marpa::Test::is(
-    $recce->show_earley_sets(1),
-    "Current Earley Set: 0; Furthest: 0\n" . $sets_new,
-    'Aycock/Horspool Parse Status before parse'
-);
-
-my $a = $grammar->get_symbol('a');
-$recce->earleme( [ $a, 'a', 1 ] ) or Marpa::exception('Parsing exhausted');
-
-Marpa::Test::is(
-    $recce->show_earley_sets(1),
-    "Current Earley Set: 1; Furthest: 1\n" . $sets_at_0,
-    'Aycock/Horspool Parse Status at 0'
-);
-
-$recce->earleme( [ $a, 'a', 1 ] ) or Marpa::exception('Parsing exhausted');
-
-Marpa::Test::is(
-    $recce->show_earley_sets(1),
-    "Current Earley Set: 2; Furthest: 2\n" . $sets_at_1,
-    'Aycock/Horspool Parse Status at 1'
-);
-
-$recce->earleme( [ $a, 'a', 1 ] ) or Marpa::exception('Parsing exhausted');
-
-Marpa::Test::is(
-    $recce->show_earley_sets(1),
-    "Current Earley Set: 3; Furthest: 3\n" . $sets_at_2,
-    'Aycock/Horspool Parse Status at 2'
-);
-
-$recce->earleme( [ $a, 'a', 1 ] ) or Marpa::exception('Parsing exhausted');
-
-Marpa::Test::is(
-    $recce->show_earley_sets(1),
-    "Current Earley Set: 4; Furthest: 4\n" . $sets_at_3,
-    'Aycock/Horspool Parse Status at 3'
-);
-
-$recce->end_input();
-
-Marpa::Test::is(
-    $recce->show_earley_sets(1),
-    "Current Earley Set: 4; Furthest: 4\n" . $sets_at_4,
-    'Aycock/Horspool Parse Status at 4'
-);
+my $input_length = 4;
+EARLEME: for my $earleme ( 0 .. $input_length + 1 ) {
+    my $furthest = List::Util::min( $earleme, $input_length );
+    Marpa::Test::is(
+        $recce->show_earley_sets(1),
+        "Current Earley Set: $earleme; Furthest: $furthest\n"
+            . join( q{}, @set[ 0 .. $furthest ] ),
+        'Aycock/Horspool Parse Status at 0'
+    );
+    given ($earleme) {
+        when ($input_length) {
+            $recce->end_input();
+        }
+        when ( $input_length + 1 ) {break}
+        default {
+            my $a = $grammar->get_terminal('a');
+            $recce->earleme( [ $a, 'a', 1 ] )
+                or Marpa::exception('Parsing exhausted');
+        }
+    } ## end given
+} ## end for my $earleme ( 0 .. $input_length + 1 )
 
 my @expected = ( q{}, qw[(a;;;) (a;a;;) (a;a;a;) (a;a;a;a)] );
 
-for my $i ( 0 .. 4 ) {
+for my $i ( 0 .. $input_length ) {
     my $evaler = Marpa::Evaluator->new(
         {   recce => $recce,
             end   => $i,
@@ -393,7 +348,7 @@ for my $i ( 0 .. 4 ) {
     my $result = $evaler->value();
     Test::More::is( ${$result}, $expected[$i], "parse permutation $i" );
 
-} ## end for my $i ( 0 .. 4 )
+} ## end for my $i ( 0 .. $input_length )
 
 # Local Variables:
 #   mode: cperl

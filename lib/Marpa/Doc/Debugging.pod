@@ -163,22 +163,6 @@ Little or no knowledge of Marpa internals required.
 This option is useless once the recognizer has been created.
 Setting it after that point will result in a warning.
 
-=begin undocumented:
-
-# =item trace_completions
-
-# Traces each Earley set as it is completed.
-# May be set at any point.
-
-#   Add warning if set after recognition?
-
-# I find it better to wait until evaluation time,
-# when there's more information
-# and then use C<Marpa::show_status()>.
-# Requires knowledge of Marpa internals.
-
-=end undocumented:
-
 =item trace_evaluation
 
 =item trace_iterations
@@ -260,6 +244,7 @@ May usefully be set at any point.
 
 =begin Marpa::Test::Display:
 
+## skip display
 ## next display
 in_file($_, 't/equation_s.t');
 
@@ -274,7 +259,7 @@ in_file($_, 'bin/mdl');
 
 =end Marpa::Test::Display:
 
-    my $fail_location = $recce->text( \$text_to_parse );
+    my $fail_location = $lexer->text( \$text_to_parse );
 
     if ( $fail_location >= 0 ) {
         print {*STDERR} Marpa::show_location(
@@ -574,7 +559,7 @@ in_file($_, 'bin/mdl');
 
 =end Marpa::Test::Display:
 
-    my $fail_location = $recce->text( \$text_to_parse );
+    my $fail_location = $lexer->text( \$text_to_parse );
 
     print $recce->show_earley_sets
         or Marpa::exception "print failed: $OS_ERROR";

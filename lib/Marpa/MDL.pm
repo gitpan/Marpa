@@ -3,44 +3,54 @@ package Marpa::MDL;
 use 5.010;
 use strict;
 use warnings;
+use Marpa;
+use Marpa::MDLex;
+use Marpa::MDL::Symbol;
 
-sub gen_symbol_from_regex {
-    my $regex = shift;
-    my $data  = shift;
-    if ( scalar @{$data} == 0 ) {
-        my $number = 0;
-        push @{$data}, {}, \$number;
-    }
-    my ( $regex_hash, $uniq_number ) = @{$data};
-    given ($regex) {
-        when (/^qr/xms) { $regex = substr $regex, 3, -1; }
-        default         { $regex = substr $regex, 1, -1; };
-    }
-    my $symbol = $regex_hash->{$regex};
-    return $symbol if defined $symbol;
+## no critic (Variables::ProhibitPackageVars)
+BEGIN {
+    $Marpa::MDL::Self_Raw::raw_mdl_file = 'Marpa/MDL/self.mdl.raw';
 
-    ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
-    $symbol = substr $regex, 0, 20;
+    package Marpa::MDL::Self_Raw;
+    require $Marpa::MDL::Self_Raw::raw_mdl_file;
+} ## end BEGIN
+## use critic
+
+use Marpa::MDL::Internal::Actions;
+
+sub to_raw {
+    my ($mdl_source) = @_;
+
+    ## no critic (Variables::ProhibitPackageVars)
+    my $marpa_options = $Marpa::MDL::Self_Raw::data->{marpa_options};
+    Carp::croak("No marpa_options in $Marpa::MDL::Self_Raw::raw_mdl_file")
+        if not $marpa_options;
+
+    my $mdlex_options = $Marpa::MDL::Self_Raw::data->{mdlex_options};
+    Carp::croak("No marpa_options in $Marpa::MDL::Self_Raw::raw_mdl_file")
+        if not $mdlex_options;
     ## use critic
-    $symbol =~ s/%/%%/gxms;
-    $symbol =~ s/([^[:alnum:]_-])/sprintf("%%%.2x", ord($1))/gexms;
-    $symbol .= sprintf ':k%x', ( ${$uniq_number} )++;
-    $regex_hash->{$regex} = $symbol;
-    return ( $symbol, 1 );
-} ## end sub gen_symbol_from_regex
 
-sub canonical_symbol_name {
-    my $symbol = lc shift;
-    $symbol =~ s/[-_\s]+/-/gxms;
-    return $symbol;
-}
+    my $data = Marpa::MDLex::mdlex(
+        [   { action_object => 'Marpa::MDL::Internal::Actions' },
+            @{$marpa_options}
+        ],
+        $mdlex_options,
+        $mdl_source
+    );
 
-sub get_symbol {
-    my $grammar     = shift;
-    my $symbol_name = shift;
-    return Marpa::Grammar::get_symbol( $grammar,
-        canonical_symbol_name($symbol_name) );
-} ## end sub get_symbol
+    Carp::croak('mdlex returned undef') if not defined $data;
+
+    return ${$data}->{marpa_options}, ${$data}->{mdlex_options}
+        if wantarray;
+
+    my $d = Data::Dumper->new( [ ${$data} ], [qw(data)] );
+    $d->Sortkeys(1);
+    $d->Purity(1);
+    $d->Deepcopy(1);
+    $d->Indent(1);
+    return $d->Dump();
+} ## end sub to_raw
 
 1;
 
@@ -88,25 +98,29 @@ in_file($_, 'author.t/misc.t');
 
 =end Marpa::Test::Display:
 
-    $g->set( {
-        start => Marpa::MDL::canonical_symbol_name('Document')
-    } );
+    $g->set( { start => Marpa::MDL::canonical_symbol_name('Document') } );
 
 This static method takes as its one argument an MDL symbol
 name.
 It returns the canonical MDL name, which is also
 the symbol's plumbing name.
 
-=head2 get_symbol
+=head2 get_terminal
+
+=begin Marpa::Test::Commented_Out_Display:
+
+## next display
+is_file($_, 'author.t/misc.t', 'get_terminal snippet');
+
+=end Marpa::Test::Commented_Out_Display:
 
 =begin Marpa::Test::Display:
 
-## next display
-is_file($_, 'author.t/misc.t', 'get_symbol snippet');
+## skip display
 
 =end Marpa::Test::Display:
 
-    my $op = Marpa::MDL::get_symbol( $grammar, 'Op' );
+    my $op = Marpa::MDL::get_terminal( $grammar, 'Op' );
 
 This static method takes a Marpa grammar object as its first argument and an MDL symbol name as its second.
 It returns the symbol's "cookie".

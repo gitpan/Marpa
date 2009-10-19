@@ -1,0 +1,20 @@
+#!/usr/bin/perl
+
+use 5.010;
+use strict;
+use warnings;
+use Fatal qw(open);
+use English qw( -no_match_vars ) ; 
+use Data::Dumper;
+use Carp;
+
+sub usage {
+    Carp::croak(
+        "usage: $PROGRAM_NAME mdl_source");
+}
+
+use Marpa::MDL;
+
+my $mdl_source = do { local $RS = undef; <> };
+
+say scalar Marpa::MDL::to_raw($mdl_source);

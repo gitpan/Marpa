@@ -1,13 +1,12 @@
 package Marpa;
 
 use 5.010;
-
 use warnings;
 no warnings 'recursion';
 use strict;
 
 BEGIN {
-    our $VERSION = '0.001_018';
+    our $VERSION = '0.001_019';
 }
 
 use integer;
@@ -16,10 +15,6 @@ use Marpa::Internal;
 use Marpa::Grammar;
 use Marpa::Recognizer;
 use Marpa::Evaluator;
-use Marpa::Lex;
-
-# Maybe MDL will be optional someday, but not today
-use Marpa::MDL;
 
 =begin Apology:
 
@@ -60,7 +55,7 @@ are because I can't agree with Damian.
 
 An example of a deliberate exception I've made to Damian's guidelines:
 I don't append "_ref" to the name references -- almost every variable
-name in the below is a reference.  This may not be easy code to
+name in this code is a reference.  This may not be easy code to
 read, but I can't believe having 90% of the variable names end in
 "_ref" is going to make it any easier.  As Damian notes, his own
 CPAN modules don't follow his guidelines all that closely.
@@ -70,90 +65,8 @@ CPAN modules don't follow his guidelines all that closely.
 =cut
 
 package Marpa::Internal;
-use English qw( -no_match_vars );
-use Marpa::Internal;
 
 my @CARP_NOT = @Marpa::Internal::CARP_NOT;
-
-our $STRINGIFIED_EVAL_ERROR;
-
-BEGIN {
-
-## no critic (BuiltinFunctions::ProhibitStringyEval)
-    if ( not eval ' use Marpa::Source ' ) {
-## use critic
-        $STRINGIFIED_EVAL_ERROR = $EVAL_ERROR;
-        my $marpa_version  = $Marpa::VERSION         // 'undef';
-        my $source_version = $Marpa::Source::VERSION // 'undef';
-        if ( $marpa_version ne $source_version ) {
-            $STRINGIFIED_EVAL_ERROR =
-                  'MDL/Marpa version mismatch:'
-                . " Marpa is version '$marpa_version'; "
-                . " MDL source is for version '$source_version'";
-        } ## end if ( $marpa_version ne $source_version )
-    } ## end if ( not eval ' use Marpa::Source ' )
-
-    if ($STRINGIFIED_EVAL_ERROR) {
-        undef $Marpa::Internal::STRINGIFIED_SOURCE_GRAMMAR;
-    }
-
-} ## end BEGIN
-
-package Marpa::Internal;
-
-# Returns failure if no parses.
-# On success, returns first parse in scalar context,
-# all of them in list context.
-sub Marpa::mdl {
-    my $grammar = shift;
-    my $text    = shift;
-    my $options = shift;
-
-    my $ref = ref $grammar;
-    Marpa::exception(
-        qq{grammar arg to mdl() was ref type "$ref", must be string ref})
-        if $ref ne 'SCALAR';
-
-    $ref = ref $text;
-    Marpa::exception(
-        qq{text arg to mdl() was ref type "$ref", must be string ref})
-        if $ref ne 'SCALAR';
-
-    $options //= {};
-    $ref = ref $options;
-    Marpa::exception(
-        qq{text arg to mdl() was ref type "$ref", must be hash ref})
-        if $ref ne 'HASH';
-
-    my $g = Marpa::Grammar->new( { mdl_source => $grammar, %{$options} } );
-    my $recce = Marpa::Recognizer->new(
-        {   grammar => $g,
-            clone   => 0
-        }
-    );
-
-    my $failed_at_earleme = $recce->text($text);
-    if ( $failed_at_earleme >= 0 ) {
-        Marpa::die_with_parse_failure( $text, $failed_at_earleme );
-    }
-
-    $recce->end_input();
-
-    my $evaler = Marpa::Evaluator->new(
-        {   recce => $recce,
-            clone => 0,
-        }
-    );
-    if ( not defined $evaler ) {
-        Marpa::die_with_parse_failure( $text, length $text );
-    }
-    return $evaler->value if not wantarray;
-    my @values;
-    while ( defined( my $value = $evaler->value() ) ) {
-        push @values, $value;
-    }
-    return @values;
-} ## end sub Marpa::mdl
 
 1;    # End of Marpa
 
@@ -165,11 +78,18 @@ Marpa - General BNF Parsing (Experimental version)
 
 =head1 SYNOPSIS
 
-=begin Marpa::Test::Display:
+=begin Marpa::Test::Commented_Out_Display:
 
 ## start display
 ## next display
 is_file($_, 'example/synopsis.pl');
+
+=end Marpa::Test::Commented_Out_Display:
+
+=begin Marpa::Test::Display:
+
+## start display
+## skip display
 
 =end Marpa::Test::Display:
 
@@ -190,7 +110,7 @@ is_file($_, 'example/synopsis.pl');
     say ${$value};
 
     __DATA__
-    semantics are perl5.  version is 0.001_018.  start symbol is Expression.
+    semantics are perl5.  version is 0.001_019.  start symbol is Expression.
 
     Expression: Expression, /[*]/, Expression.  priority 200.  q{
         $_[0] * $_[2]
@@ -338,16 +258,28 @@ can be used to initialize that namespace.
 The result of an action is the result of running its Perl 5 code string.
 From L<the synopsis|"SYNOPSIS">, here's a rule for an expression that does addition:
 
-=begin Marpa::Test::Display:
+=begin Marpa::Test::Commented_Out_Display:
 
 ## next 2 displays
 in_file($_, 'example/synopsis.pl');
+
+=end Marpa::Test::Commented_Out_Display:
+
+=begin Marpa::Test::Display:
+
+## skip display
 
 =end Marpa::Test::Display:
 
     Expression: Expression, /[+]/, Expression.
 
 and here's its action:
+
+=begin Marpa::Test::Display:
+
+## skip display
+
+=end Marpa::Test::Display:
 
     $_[0] + $_[2]
 

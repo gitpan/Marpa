@@ -1,7 +1,7 @@
 
-.PHONY: all all_tests critic display
+.PHONY: all all_tests critic
 
-all: source_files all_tests
+all: all_tests
 
 source_files: \
     equation_show_symbols.out \
@@ -26,39 +26,70 @@ pod:
 	-(cd ..; prove author.t/pod.t)
 
 equation_show_symbols.out:
-	echo 2+2 | perl -I../lib ../bin/mdl parse -grammar \
-        ../example/equation.marpa --symbols | \
+	echo 2+2 | \
+	perl -I../lib -I../example -Mequation \
+	../bin/mdl parse \
+	-grammar ../example/equation.marpa \
+	--actions Marpa::Example::Equation \
+	--symbols | \
 	sed -e '/(2+2)==4/d' > $@
 
 equation_show_rules.out:
-	echo 2+2 | perl -I../lib ../bin/mdl parse -grammar \
-        ../example/equation.marpa --rules | \
+	echo 2+2 | \
+	perl -I../lib -I../example -Mequation \
+	../bin/mdl parse \
+	-grammar ../example/equation.marpa \
+	--actions Marpa::Example::Equation \
+        --rules | \
 	sed -e '/(2+2)==4/d' > $@
 
 equation_show_QDFA.out:
-	echo 2+2 | perl -I../lib ../bin/mdl parse -grammar \
-        ../example/equation.marpa --QDFA | \
+	echo 2+2 | \
+	perl -I../lib -I../example -Mequation \
+	../bin/mdl parse \
+	-grammar ../example/equation.marpa \
+	--actions Marpa::Example::Equation \
+	--QDFA | \
 	sed -e '/(2+2)==4/d' > $@
 
 equation_show_earley_sets.out:
-	echo 2+2 | perl -I../lib ../bin/mdl parse -grammar \
-        ../example/equation.marpa --earley_sets | \
+	echo 2+2 | \
+	perl -I../lib -I../example -Mequation \
+	../bin/mdl parse \
+	-grammar ../example/equation.marpa \
+	--actions Marpa::Example::Equation \
+        --earley_sets | \
 	sed -e '/(2+2)==4/d' > $@
 
 equation_show_bocage.out:
-	echo 2+2 | perl -I../lib ../bin/mdl parse -grammar \
-        ../example/equation.marpa --bocage=3 | \
+	echo 2+2 | \
+	perl -I../lib -I../example -Mequation \
+	../bin/mdl parse \
+	-grammar ../example/equation.marpa \
+	--actions Marpa::Example::Equation \
+        --bocage=3 | \
 	sed -e '/(2+2)==4/d' > $@
 
 equation_trace_values.out:
-	echo 2+2 | perl -I../lib ../bin/mdl parse -grammar \
-        ../example/equation.marpa --stdout --trace_values > $@
+	echo 2+2 | \
+	perl -I../lib -I../example -Mequation \
+	../bin/mdl parse \
+	-grammar ../example/equation.marpa \
+	--actions Marpa::Example::Equation \
+	--stdout --trace_values > $@
 
 self_show_rules.out:
 	cat minimal.marpa | \
-	perl -I../lib ../bin/mdl parse -grammar ../bootstrap/self.marpa -rules > $@
+	perl -I../lib -MMarpa::MDL::Internal::Actions \
+	../bin/mdl parse \
+	--option self_arg=0 \
+	--actions Marpa::MDL::Internal::Actions \
+	--grammar ../bootstrap/self.marpa \
+	-rules > $@
 
 MDL_displays.errs:
-	echo a | perl -I../lib ../bin/mdl parse \
-	    -grammar MDL_displays.marpa 2>&1 | tee $@
+	echo a | \
+	perl -I../lib -I. -MMDL_displays ../bin/mdl parse \
+	    --actions Marpa::Example::MDL_Displays \
+	    --grammar MDL_displays.marpa 2>&1 | tee $@
 

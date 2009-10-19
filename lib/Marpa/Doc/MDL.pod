@@ -65,7 +65,7 @@ Paragraphs contain sentences, which must end in a period.
 There are definition paragraphs, production paragraphs and terminal paragraphs.
 Here's an example of a definition paragraph:
 
-    semantics are perl5.  version is 0.001_018.  the start symbol is
+    semantics are perl5.  version is 0.001_019.  the start symbol is
     grammar.
 
 =head2 MDL Keywords
@@ -279,7 +279,7 @@ once Perl 6 becomes the default.
 
 =head2 Version Definition
 
-    version is 0.001_018.
+    version is 0.001_019.
 
 The version definition is also not optional,
 The version has to match B<exactly>.
@@ -301,6 +301,12 @@ In Marpa, semantic actions are specified by strings with Perl 5 code in them.
 
 Here's an example of a string definition:
 
+=begin Marpa::Test::Display:
+
+## skip display
+in_file($_, 'author.t/MDL_displays.marpa');
+
+=end Marpa::Test::Display:
 
     concatenate lines is q{
         (scalar @_) ? (join "\n", (grep { $_ } @_)) : undef;
@@ -315,7 +321,7 @@ Here's the specification of a default action from an earlier version:
 
 =begin Marpa::Test::Display:
 
-## next display
+## skip display
 in_file($_, 'author.t/MDL_displays.marpa');
 
 =end Marpa::Test::Display:
@@ -383,6 +389,13 @@ This differs from most definitions in MDL, where any new value overwrites the ol
 Also, the article to be used before the name of the predefined must be
 C<a> and not C<the>.  As with other definitions, the article may be omitted.
 This is an example of a preamble:
+
+=begin Marpa::Test::Display:
+
+## skip display
+in_file($_, 'author.t/MDL_displays.marpa');
+
+=end Marpa::Test::Display:
 
     a preamble is q{
         our $regex_data = [];
@@ -587,11 +600,25 @@ An action sentence describes a semantic action.  In MDL,
 actions are strings containing Perl 5 code.
 For example, in C<self.marpa>:
 
+=begin Marpa::Test::Display:
+
+## skip display
+in_file($_, 'author.t/MDL_displays.marpa');
+
+=end Marpa::Test::Display:
+
     action sentence:
     optional /the/, /action/, /is/, action specifier, period.
     q{ '    action =>' . $_[3] }.
 
 the last line is an action sentence.  You can also be more verbose.
+
+=begin Marpa::Test::Display:
+
+## skip display
+in_file($_, 'author.t/MDL_displays.marpa');
+
+=end Marpa::Test::Display:
 
     action sentence: action specifier, period.
     the action is q{ '    action =>' . $_[0] }.
@@ -633,6 +660,13 @@ preamble definitions.
 A priority sentence is the keyword C<priority> followed by an integer value, which
 may be negative.  The default priority is 0.
 
+=begin Marpa::Test::Display:
+
+## skip display
+in_file($_, 'author.t/MDL_displays.marpa');
+
+=end Marpa::Test::Display:
+
     definition: predefined setting, period.
     q{ $_[0] }.
     priority 1000.
@@ -643,6 +677,13 @@ the rule that produces a C<predefined setting> from a C<definition> is given a p
 Priorities are used to affect the order in which ambiguous parses are returned,
 and they are a very important tool in Marpa.
 The priority setting in the above example directly affects the parsing of this sentence:
+
+=begin Marpa::Test::Display:
+
+## skip display
+in_file($_, 'author.t/MDL_displays.marpa');
+
+=end Marpa::Test::Display:
 
     a preamble is q{ our $regex_data = []; 1; }.
 
@@ -660,6 +701,13 @@ The above example sets the priority for C<definition>'s
 which match C<predefined setting>'s to 1000.
 Here's the production paragraph for
 producing a C<string definition> from a C<definition>:
+
+=begin Marpa::Test::Display:
+
+## skip display
+in_file($_, 'author.t/MDL_displays.marpa');
+
+=end Marpa::Test::Display:
 
     definition: string definition.  concatenate lines.
 
@@ -735,6 +783,13 @@ These buffers are reserved for Marpa's use.
 The closure form of a terminal sentence is the keyword C<match>; a symbol name;
 the keyword C<using>; and finally, a string name or a string literal.
 For example,
+
+=begin Marpa::Test::Display:
+
+## skip display
+in_file($_, 'author.t/MDL_displays.marpa');
+
+=end Marpa::Test::Display:
 
     match single quoted string using q{
 	my $match_start = pos ${$STRING};

@@ -25,20 +25,13 @@ my $g = Marpa::Grammar->new(
             [ 'A',   [qw/E/] ],
             ['E'],
         ],
-        academic   => 1,
-        precompute => 0
+        academic => 1,
     }
 );
 
-$g->set(
-    {
-    #<<<
-    terminals => [
-        [ 'a' => { regex => 'a' } ],
-    ],
-    #>>>
-    }
-);
+$g->set( { terminals => [ [ 'a' => { regex => 'a' } ], ], } );
+
+$g->precompute();
 
 Marpa::Test::is( $g->show_rules, <<'EOS', 'Aycock/Horspool Rules' );
 0: S' -> S /* stripped */

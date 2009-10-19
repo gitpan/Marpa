@@ -13,26 +13,19 @@ use English qw( -no_match_vars );
 use Test::More tests => 6;
 
 BEGIN {
-    Test::More::use_ok('Marpa');
+    Test::More::use_ok('Marpa::MDL');
 }
 
-my $source;
-{ local ($RS) = undef; $source = <DATA> };
+my $source = do { local $RS = undef; <main::DATA> };
+my ($marpa_options) = Marpa::MDL::to_raw($source);
 
-my $grammar = Marpa::Grammar->new(
-    {   warnings   => 1,
-        code_lines => -1,
-        maximal    => 1,
-    }
-);
-
-$grammar->set( { mdl_source => \$source } );
+my $grammar = Marpa::Grammar->new( { maximal => 1, }, @{$marpa_options} );
 
 $grammar->precompute();
 
 my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
 
-my $lc_a = Marpa::MDL::get_symbol( $grammar, 'lowercase a' );
+my $lc_a = Marpa::MDL::get_terminal( $grammar, 'lowercase a' );
 $recce->earleme( [ $lc_a, 'lowercase a', 1 ] );
 $recce->earleme( [ $lc_a, 'lowercase a', 1 ] );
 $recce->earleme( [ $lc_a, 'lowercase a', 1 ] );
@@ -57,6 +50,18 @@ for my $i ( 0 .. 4 ) {
     Test::More::is( ${$result}, $answer[$i], "parse permutation $i" );
 } ## end for my $i ( 0 .. 4 )
 
+## no critic (Subroutines::RequireArgUnpacking)
+
+sub default_action {
+    shift;
+    my $v_count = scalar @_;
+    return q{}   if $v_count <= 0;
+    return $_[0] if $v_count == 1;
+    return '(' . join( q{;}, @_ ) . ')';
+} ## end sub default_action
+
+## use critic
+
 # Local Variables:
 #   mode: cperl
 #   cperl-indent-level: 4
@@ -65,13 +70,9 @@ for my $i ( 0 .. 4 ) {
 # vim: expandtab shiftwidth=4:
 
 __DATA__
-semantics are perl5.  version is 0.001_018.  the start symbol is
-S.  the default null value is q{}.  the default action is q{
-     my $v_count = scalar @_;
-     return q{} if $v_count <= 0;
-     return $_[0] if $v_count == 1;
-     '(' . join(';', @_) . ')';
-}.
+semantics are perl5.  version is 0.001_019.  the start symbol is
+S.  the default null value is q{}.
+the default action is 'main::default_action'.
 
 S: A, A, A, A.
 

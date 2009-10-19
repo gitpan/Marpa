@@ -17,12 +17,15 @@ BEGIN {
     Test::More::use_ok('Marpa');
 }
 
-my $default_action = <<'EOCODE';
-     my $v_count = scalar @_;
-     return q{} if $v_count <= 0;
-     return $_[0] if $v_count == 1;
-     '(' . join(';', @_) . ')';
-EOCODE
+## no critic (Subroutines::RequireArgUnpacking)
+sub default_action {
+    shift;
+    my $v_count = scalar @_;
+    return q{}   if $v_count <= 0;
+    return $_[0] if $v_count == 1;
+    return '(' . join( q{;}, @_ ) . ')';
+} ## end sub default_action
+## use critic
 
 sub test_grammar {
     my ( $grammar_args, $earleme_length ) = @_;
@@ -33,6 +36,7 @@ sub test_grammar {
     Marpa::exception("Exception while creating Grammar:\n$EVAL_ERROR")
         if not $eval_ok;
     Marpa::exception("Grammar not created\n") if not $grammar;
+    $grammar->precompute();
 
     my $recce;
     $eval_ok = eval {
@@ -42,7 +46,7 @@ sub test_grammar {
     Marpa::exception("Exception while creating Recognizer:\n$EVAL_ERROR")
         if not $eval_ok;
     Marpa::exception("Recognizer not created\n") if not $recce;
-    my $a = $grammar->get_symbol('a');
+    my $a = $grammar->get_terminal('a');
 
     my $earleme_result;
     $eval_ok =
@@ -92,7 +96,7 @@ my $placebo = {
         #>>>
     ],
     default_null_value => q{},
-    default_action     => $default_action,
+    default_action     => 'main::default_action',
 };
 
 sub test_rule_priority {
@@ -106,7 +110,7 @@ sub test_rule_priority {
         #>>>
         ],
         default_null_value => q{},
-        default_action     => $default_action,
+        default_action     => 'main::default_action',
     };
 } ## end sub test_rule_priority
 

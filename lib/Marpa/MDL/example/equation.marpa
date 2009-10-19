@@ -1,0 +1,14 @@
+semantics are perl5.  version is 0.001_019.
+
+default action is 'default_action'.
+
+start symbol is E.
+
+E: E, Op, E.  'op'.
+
+E: Number. 'number'.
+
+Number matches qr/\d+/.
+ 
+Op matches qr/[-+*]/.
+

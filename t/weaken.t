@@ -25,7 +25,8 @@ my $test = sub {
             terminals => ['a'],
         }
     );
-    my $a = $g->get_symbol('a');
+    my $a = $g->get_terminal('a');
+    $g->precompute();
     my $recce = Marpa::Recognizer->new( { grammar => $g } );
     $recce->earleme( [ $a, 'a', 1 ] );
     $recce->earleme( [ $a, 'a', 1 ] );
@@ -59,9 +60,7 @@ DELETE_UNDEF_CONSTANT: for my $ix ( 0 .. $#{$unfreed_proberefs} ) {
 } ## end for my $ix ( 0 .. $#{$unfreed_proberefs} )
 $unfreed_count = @{$unfreed_proberefs};
 
-Test::More::diag(
-    "Freed=$freed_count, ignored=$ignored_count, unfreed=$unfreed_count, total=$total"
-);
+# "Freed=$freed_count, ignored=$ignored_count, unfreed=$unfreed_count, total=$total"
 
 Test::More::cmp_ok( $unfreed_count, q{==}, 0, 'All refs freed' )
     or Test::More::diag("Unfreed refs: $unfreed_count");

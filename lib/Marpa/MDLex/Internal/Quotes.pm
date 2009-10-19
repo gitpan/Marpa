@@ -1,9 +1,11 @@
-package Marpa::Lex;
+package Marpa::MDLex::Internal::Quotes;
 
 use 5.010;
 
 use warnings;
 use strict;
+
+# use Smart::Comments '-ENV';
 
 # It's all integers, except for the version number
 use integer;
@@ -90,8 +92,9 @@ sub lex_q_quote {
 sub lex_regex {
     my $string       = shift;
     my $lexeme_start = shift;
-    my $value_start  = pos ${$string};
+
     my ($left_side) = ( ${$string} =~ m{\G(qr$punct|/)}xmsogc );
+    my $value_start = pos ${$string};
     return if not defined $left_side;
     my $left_bracket = substr $left_side, -1;
     my $prefix = ( $left_side =~ /^qr/xms ) ? q{} : 'qr';
@@ -119,14 +122,19 @@ sub lex_regex {
             next MATCH if not defined $1;
             if ( $1 eq $left_bracket ) {
 
+                my $before_options = pos ${$string};
+
                 # also take in trailing options
                 ${$string} =~ /\G[msixpo]*/gxms;
-                my $pos = pos ${$string};
-                my $value =
-                    $prefix
-                    . ( substr ${$string}, $value_start,
-                    $pos - $value_start );
-                return ( $value, $pos - $lexeme_start );
+                my $after_options = pos ${$string};
+
+                my $value = q{"}
+                    . (
+                    quotemeta substr ${$string},
+                    $value_start, ( $before_options - $value_start ) - 1
+                    ) . q{"};
+
+                return ( $value, $after_options - $lexeme_start );
             } ## end if ( $1 eq $left_bracket )
         } ## end while ( ${$string} =~ /$regex/xmsgc )
         return;
@@ -140,127 +148,63 @@ sub lex_regex {
         if ( $right_bracket eq $1 ) { $depth--; }
         if ( $depth <= 0 ) {
 
+            my $before_options = pos ${$string};
+
             # also take in trailing options
             ${$string} =~ /\G[msixpo]*/gxms;
-            my $pos   = pos ${$string};
-            my $value = $prefix
-                . ( substr ${$string}, $value_start, $pos - $value_start );
-            return ( $value, $pos - $lexeme_start );
+            my $after_options = pos ${$string};
+
+            my $value = q{"}
+                . (
+                quotemeta substr ${$string},
+                $value_start, ( $before_options - $value_start ) - 1
+                ) . q{"};
+
+            return ( $value, $after_options - $lexeme_start );
 
         } ## end if ( $depth <= 0 )
     } ## end while ( ${$string} =~ /$regex/gxms )
     return;
 } ## end sub lex_regex
 
+sub lex_single_quote {
+    my $string       = shift;
+    my $lexeme_start = shift;
+    my $match_start  = pos ${$string};
+    state $prefix_regex = qr/\G'/oxms;
+    return if ${$string} !~ /$prefix_regex/gxms;
+    state $regex = qr/\G[^'\0134]*('|\0134')/xms;
+    MATCH: while ( ${$string} =~ /$regex/gcxms ) {
+        next MATCH if not defined $1;
+        if ( $1 eq q{'} ) {
+            my $end_pos      = pos ${$string};
+            my $match_length = $end_pos - $match_start;
+            my $lex_length   = $end_pos - $lexeme_start;
+            return ( substr( ${$string}, $match_start, $match_length ),
+                $lex_length );
+        } ## end if ( $1 eq q{'} )
+    } ## end while ( ${$string} =~ /$regex/gcxms )
+    return;
+} ## end sub lex_single_quote
+
+sub lex_double_quote {
+    my $string       = shift;
+    my $lexeme_start = shift;
+    my $match_start  = pos ${$string};
+    state $prefix_regex = qr/\G"/oxms;
+    return if ${$string} !~ /$prefix_regex/gxms;
+    state $regex = qr/\G[^"\0134]*("|\0134")/xms;
+    MATCH: while ( ${$string} =~ /$regex/gxmsc ) {
+        next MATCH if not defined $1;
+        if ( $1 eq q{"} ) {
+            my $end_pos      = pos ${$string};
+            my $match_length = $end_pos - $match_start;
+            my $lex_length   = $end_pos - $lexeme_start;
+            return ( substr( ${$string}, $match_start, $match_length ),
+                $lex_length );
+        } ## end if ( $1 eq q{"} )
+    } ## end while ( ${$string} =~ /$regex/gxmsc )
+    return;
+} ## end sub lex_double_quote
+
 1;    # End of Marpa
-
-__END__
-
-=head1 NAME
-
-Marpa::Lex -- Utility Methods for Lexing
-
-=head1 DESCRIPTION
-
-These routines are used internally by MDL to implement lexing of regexes
-and of C<q-> and C<qq->quoted strings.
-They are documented here to make them available for general use within
-Marpa.
-
-=head1 METHODS
-
-=head2 lex_regex
-
-=begin Marpa::Test::Display:
-
-## next display
-is_file($_, 'author.t/misc.t', 'lex_regex snippet');
-
-=end Marpa::Test::Display:
-
-    my ( $regex, $token_length ) =
-        Marpa::Lex::lex_regex( \$input_string, $lexeme_start );
-
-Takes two required arguments.
-C<$string>
-must be a reference to a string that might contain a regex.
-The regex will be expected to start at the position pointed to by C<pos $$string>.
-
-C<$lexeme_start> must be the start earleme of the regex for lexing purposes.
-In many cases (such as the removal of leading whitespace), it's useful to discard
-prefixes.
-If a prefix was removed
-prior to the call to C<lex_regex>,
-C<$lexeme_start>
-should be the location where the prefix started.
-If no prefix was removed, C<$lexeme_start> will be the same as C<pos ${$string}>.
-
-How C<lex_regex> delimits a regex is described in L<the MDL document|Marpa::Doc::MDL>.
-C<lex_regex> returns the null array if no regex was found.
-If a regex was found,
-C<lex_regex> returns an array of two elements.
-The first element is a string containing the regex,
-its delimiters,
-any postfix modifiers it had,
-and its C<qr-> "operator" if there was one.
-The second is the regex's length for lexing purposes,
-which will include the length of any discarded prefix.
-
-=head2 lex_q_quote
-
-=begin Marpa::Test::Display:
-
-## next display
-is_file( $_, 'author.t/misc.t', 'lex_q_quote snippet' );
-
-=end Marpa::Test::Display:
-
-    my ( $string, $token_length ) =
-        Marpa::Lex::lex_q_quote( \$input_string, $lexeme_start );
-
-Takes two required arguments, a I<string reference> and a I<start earleme>.
-The I<string reference> must be to a string that might contain a C<q-> or C<qq->quoted string.
-The C<q-> or C<qq->quoted string will be expected
-to start at the position pointed to by C<pos ${$string}>.
-
-C<$lexeme_start> must contain the start earleme of the quoted string for lexing purposes.
-In many cases (such as the removal of leading whitespace), it's useful to discard
-prefixes.
-If a prefix was removed
-prior to the call to C<lex_regex>,
-C<$lexeme_start>
-should be the location where the prefix started.
-If no prefix was removed, C<$lexeme_start> should be the same as C<pos $$string>.
-
-How C<lex_q_quote> delimits a C<q-> or C<qq->quoted string is described in L<the MDL document|Marpa::Doc::MDL>.
-C<lex_q_quote> returns the null array if no string was found.
-If a string was found,
-C<lex_q_quote> returns an array of two elements.
-The first element is a string containing the C<q-> or C<qq->quoted string,
-including the C<q-> or C<qq-> "operator" and the delimiters.
-The second is the quoted string's length for lexing purposes,
-which will include the length of any discarded prefix.
-
-=head1 SUPPORT
-
-See the L<support section|Marpa/SUPPORT> in the main module.
-
-=head1 AUTHOR
-
-Jeffrey Kegler
-
-=head1 LICENSE AND COPYRIGHT
-
-Copyright 2007 - 2009 Jeffrey Kegler
-
-This program is free software; you can redistribute
-it and/or modify it under the same terms as Perl 5.10.0.
-
-=cut
-
-# Local Variables:
-#   mode: cperl
-#   cperl-indent-level: 4
-#   fill-column: 100
-# End:
-# vim: expandtab shiftwidth=4:

@@ -1,0 +1,255 @@
+semantics are perl5.  version is 0.001_019.  the start symbol is
+grammar.
+
+the default lex prefix is qr/(?:[ \t]*(?:\n|(?:\#[^\n]*\n)))*[ \t]*/xms.
+
+grammar: paragraphs, trailing matter.  'grammar'.
+
+paragraphs: empty line separated paragraph sequence.
+
+comment: NOT USED: paragraph: empty paragraph.
+
+paragraph: definition paragraph.
+
+paragraph: production paragraph.
+
+paragraph: terminal paragraph.
+
+definition paragraph: definition sequence.
+
+production paragraph:
+    non structural production sentences,
+    production sentence,
+    non structural production sentences,
+    optional action sentence,
+    non structural production sentences.
+    'production_paragraph'.
+
+non structural production sentences:
+optional non structural production sentence sequence.
+'concatenate_lines'.
+
+non structural production sentence: /priority/, integer, period.
+'non_structural_production_sentence'.
+
+action sentence:
+optional /the/, /action/, /is/, action specifier, period.
+'long_action_sentence'.
+
+action sentence: action specifier, period.
+'short_action_sentence'.
+
+action specifier: string specifier.  'first_arg'.
+
+non-structural production sentence: comment sentence.
+
+non-structural terminal sentence: comment sentence.
+
+definition: predefined setting, period.  'definition_of_predefined'.  priority 1000.
+
+definition: comment sentence.
+
+definition: bracketed comment.
+
+definition: string definition.  'concatenate_lines'.
+
+predefined setting: default action setting.  'concatenate_lines'.
+
+predefined setting: default null value setting.  'concatenate_lines'.
+
+predefined setting: semantics setting.  'concatenate_lines'.
+
+predefined setting: version setting.  'concatenate_lines'.
+
+predefined setting: start symbol setting.  'concatenate_lines'.
+
+predefined setting: default lex prefix setting.  'concatenate_lines'.
+
+semantics setting:  optional /the/, /semantics/, copula, /perl5/.
+'semantics_predicate'.
+
+semantics setting: /perl5/, copula, optional /the/, /semantics/.
+'semantics_subject'.
+
+version setting: optional /the/, /version/, copula, version number.
+'version_predicate'.
+
+version setting: /version number/, copula, optional /the/, /version/.
+'version_subject'.
+
+start symbol setting: optional /the/, /start/, /symbol/, copula,
+symbol phrase.
+'start_symbol_predicate'.
+
+start symbol setting: symbol phrase, copula, optional /the/, /start/,
+/symbol/, .
+'start_symbol_subject'.
+
+default lex prefix setting: regex, copula, optional /the/, /default/,
+/lex/, /prefix/, .
+'default_lex_prefix_subject'.
+
+default lex prefix setting: optional /the/, /default/, /lex/,
+/prefix/, copula, regex, .
+'default_lex_prefix_predicate'.
+
+default null value setting: string specifier, copula, optional /the/, /default/,
+/null/, /value/, .
+'default_null_value_subject'.
+
+default null value setting: optional /the/, /default/, /null/,
+/value/, copula, string specifier, .
+'default_null_value_predicate'.
+ 
+copula: /is/.
+
+copula: /are/.
+
+string definition:
+symbol phrase, /is/, string specifier, period.
+'string_definition'.
+
+default action setting:
+action specifier, /is/, optional /the/, /default/, /action/.
+'default_action_subject'.
+
+default action setting:
+optional /the/, /default/, /action/, /is/, action specifier.
+'default_action_predicate'.
+
+comment sentence: comment tag, /:/, comment words, period.
+
+comment words: comment word sequence.
+
+literal string: q string.
+'q_string'.
+
+literal string: double quoted string.  'literal_string'.
+
+literal string: single quoted string.  'literal_string'.
+
+production sentence: lhs, production copula, rhs, period.
+'production_sentence'.
+
+production copula: /:/.
+
+production copula: /::=/.
+
+symbol phrase: symbol word sequence.
+'symbol_phrase'.
+
+lhs: symbol phrase.
+'lhs'.
+
+rhs: .
+'empty_rhs'.
+
+rhs: comma separated rhs element sequence.
+'comma_separated_rhs'.
+
+rhs: symbol phrase, /sequence/.
+'sequence_rhs'.
+priority 1000.
+
+rhs: /optional/, symbol phrase, /sequence/.
+priority 2000.
+'optional_sequence_rhs'.
+
+rhs: symbol phrase, /separated/, symbol phrase, /sequence/.
+priority 2000.
+'separated_sequence_rhs'.
+
+rhs: /optional/, symbol phrase, /separated/, symbol phrase, /sequence/.
+priority 3000.
+'optional_separated_sequence_rhs'.
+
+rhs element: mandatory rhs element.  'concatenate_lines'.
+
+rhs element: Optional rhs element. priority 1000. 'concatenate_lines'.
+
+mandatory rhs element: rhs symbol specifier.
+'mandatory_rhs_element'.
+
+optional rhs element: /optional/, rhs symbol specifier.
+'optional_rhs_element'.
+
+rhs symbol specifier: symbol phrase.
+'rhs_symbol_phrase_specifier'.
+
+rhs symbol specifier: regex.
+'rhs_regex_specifier'.
+
+terminal paragraph: non structural terminal sentences, terminal
+sentence, non structural terminal sentences.  'concatenate_lines'.
+
+non structural terminal sentences: optional non structural terminal sentence
+sequence.  'concatenate_lines'.
+
+terminal sentence:
+symbol phrase, /matches/, regex, period.
+'regex_terminal_sentence'.
+
+terminal sentence:
+/match/, symbol phrase, /using/, string specifier, period.
+'string_terminal_sentence'.
+
+string specifier: literal string.  'first_arg'.
+
+string specifier: symbol phrase.
+'string_name_specifier'.
+
+match q string using 'q_quote'.
+
+match regex using 'regex'.
+
+empty line matches qr/^\h*\n/xms.
+
+# Some hackery here: The lex prefix will take care of most
+# trailing whitespace, but since it is a *PREFIX*, in some
+# cases it needs something to look for.  So I provide for
+# a single final whitespace, or a single final comment, and
+# let the lex prefix do the rest.
+#
+# A Marpa terminal is not allowed if it matches the null
+# string, and that causes some of the complexity here.
+trailing matter: final comment.
+
+trailing matter: final whitespace.
+
+trailing matter: .
+
+# a final comment in the document, without or without a proper
+# end of line.
+final comment matches qr/\#[^\n]*\Z/xms.
+
+# a final character of whitespace.
+final whitespace matches qr/\s\z/xms.
+
+bracketed comment matches qr/\x{5b}[^\x{5d}]*\x{5d}/xms.
+
+match single quoted string using 'single_quote'.
+
+match double quoted string using 'double_quote'.
+
+version number matches qr/\d+\.[\d_.]+\d/.
+
+symbol word matches qr/[a-zA-Z_][a-zA-Z0-9_-]*/.
+
+period matches qr/\./.
+
+integer matches qr/\d+/.
+
+# Do I want to allow comments between "to" and "do" ?
+comment tag matches qr/(to\s+do|note|comment)/.
+
+# Includes all non-whitespace printable characters except period
+comment word matches qr/[\x{21}-\x{2d}\x{2f}-\x{7e}]+/.
+
+comma matches qr/\,/.
+
+# Local Variables:
+#   mode: cperl
+#   cperl-indent-level: 4
+#   fill-column: 100
+# End:
+# vim: expandtab shiftwidth=4:

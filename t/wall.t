@@ -28,6 +28,49 @@ BEGIN {
 # apart at each step.  But I wanted to test having
 # a start symbol that appears repeatedly on the RHS.
 
+## no critic (Subroutines::RequireArgUnpacking)
+
+sub minus {
+    shift;
+    my ( $right_string, $right_value ) = ( $_[2] =~ /^(.*)==(.*)$/xms );
+    my ( $left_string,  $left_value )  = ( $_[0] =~ /^(.*)==(.*)$/xms );
+    my $value = $left_value - $right_value;
+    return '(' . $left_string . q{-} . $right_string . ')==' . $value;
+} ## end sub minus
+
+sub postfix_decr {
+    shift;
+    my ( $string, $value ) = ( $_[0] =~ /^(.*)==(.*)$/xms );
+    return '(' . $string . q{--} . ')==' . $value--;
+}
+
+sub prefix_decr {
+    shift;
+    my ( $string, $value ) = ( $_[2] =~ /^(.*)==(.*)$/xms );
+    return '(' . q{--} . $string . ')==' . --$value;
+}
+
+sub negation {
+    shift;
+    my ( $string, $value ) = ( $_[1] =~ /^(.*)==(.*)$/xms );
+    return '(' . q{-} . $string . ')==' . -$value;
+}
+
+sub number {
+    shift;
+    return "$_[0]==$_[0]";
+}
+
+sub default_action {
+    shift;
+    my $v_count = scalar @_;
+    return q{}   if $v_count <= 0;
+    return $_[0] if $v_count == 1;
+    return '(' . join( q{;}, @_ ) . ')';
+} ## end sub default_action
+
+## use critic
+
 my $g = Marpa::Grammar->new(
     {   start => 'E',
 
@@ -35,63 +78,30 @@ my $g = Marpa::Grammar->new(
         # This is for debugging, after all
         max_parses => 300,
 
-        rules => [
-            [   'E', [qw/E Minus E/],
-                <<'EOCODE'
-    my ($right_string, $right_value)
-        = ($_[2] =~ /^(.*)==(.*)$/);
-    my ($left_string, $left_value)
-        = ($_[0] =~ /^(.*)==(.*)$/);
-    my $value = $left_value - $right_value;
-    "(" . $left_string . "-" . $right_string . ")==" . $value;
-EOCODE
-            ],
-            [   'E', [qw/E Minus Minus/],
-                <<'EOCODE'
-    my ($string, $value)
-        = ($_[0] =~ /^(.*)==(.*)$/);
-    "(" . $string . "--" . ")==" . $value--;
-EOCODE
-            ],
-            [   'E', [qw/Minus Minus E/],
-                <<'EOCODE'
-    my ($string, $value)
-        = ($_[2] =~ /^(.*)==(.*)$/);
-    "(" . "--" . $string . ")==" . --$value;
-EOCODE
-            ],
-            [   'E', [qw/Minus E/],
-                <<'EOCODE'
-    my ($string, $value)
-        = ($_[1] =~ /^(.*)==(.*)$/);
-    "(" . "-" . $string . ")==" . -$value;
-EOCODE
-            ],
-            [   'E', [qw/Number/],
-                <<'EOCODE'
-            my $value = $_[0];
-            "$value==$value";
-EOCODE
-            ],
+        actions => 'main',
+        rules   => [
+            [ 'E', [qw/E Minus E/],     'minus' ],
+            [ 'E', [qw/E Minus Minus/], 'postfix_decr' ],
+            [ 'E', [qw/Minus Minus E/], 'prefix_decr' ],
+            [ 'E', [qw/Minus E/],       'negation', ],
+            [ 'E', [qw/Number/],        'number' ],
         ],
-        default_action => <<'EOCODE'
-     my $v_count = scalar @_;
-     return "" if $v_count <= 0;
-     return $_[0] if $v_count == 1;
-     "(" . join(";", @_) . ")";
-EOCODE
+        default_action => 'default_action'
     }
 );
 
 my @expected = qw(0 1 1 3 4 8 12 21 33 55 88 144 232 );
+
+$g->precompute();
 
 ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
 for my $n ( 1 .. 12 ) {
 ## use critic
 
     my $recce  = Marpa::Recognizer->new( { grammar => $g } );
-    my $minus  = $g->get_symbol('Minus');
-    my $number = $g->get_symbol('Number');
+    my $minus  = $g->get_terminal('Minus');
+    my $number = $g->get_terminal('Number');
+    $g->precompute();
     ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
     $recce->earleme( [ $number, 6, 1 ] );
     ## use critic

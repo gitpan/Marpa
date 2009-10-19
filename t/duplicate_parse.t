@@ -15,6 +15,19 @@ BEGIN {
     Test::More::use_ok('Marpa');
 }
 
+## no critic (Subroutines::RequireArgUnpacking)
+
+sub default_action {
+    shift;
+    my $v_count = scalar @_;
+    return q{} if $v_count <= 0;
+    my @vals = map { $_ // q{-} } @_;
+    return $vals[0] if $v_count == 1;
+    return '(' . join( q{;}, @vals ) . ')';
+} ## end sub default_action
+
+## use critic
+
 my $grammar = Marpa::Grammar->new(
     {   start => 'S',
         strip => 0,
@@ -29,15 +42,8 @@ my $grammar = Marpa::Grammar->new(
             [ 'p', [], ],
             [ 'n', ['a'], ],
         ],
-        terminals => ['a'],
-
-        default_action => <<'EO_CODE',
-     my $v_count = scalar @_;
-     return q{} if $v_count <= 0;
-     my @vals = map { $_ // '-' } @_;
-     return $vals[0] if $v_count == 1;
-     '(' . join(q{;}, @vals) . ')';
-EO_CODE
+        terminals      => ['a'],
+        default_action => 'main::default_action',
 
     }
 );
@@ -48,7 +54,7 @@ Marpa::Test::is( $grammar->show_rules,
     <<'END_OF_STRING', 'final nonnulling Rules' );
 0: S -> p p p n /* !useful */
 1: p -> a
-2: p -> /* !useful empty nullable */
+2: p -> /* empty !useful nullable */
 3: n -> a
 4: S -> p p S[R0:2][x5] /* vrhs real=2 */
 5: S -> p p[] S[R0:2][x5] /* vrhs real=2 */
@@ -56,7 +62,7 @@ Marpa::Test::is( $grammar->show_rules,
 7: S -> p[] p[] S[R0:2][x5] /* vrhs real=2 */
 8: S[R0:2][x5] -> p n /* vlhs real=2 */
 9: S[R0:2][x5] -> p[] n /* vlhs real=2 */
-10: S['] -> S
+10: S['] -> S /* vlhs real=1 */
 END_OF_STRING
 
 Marpa::Test::is( $grammar->show_QDFA,
@@ -123,7 +129,7 @@ S14: 4
 n -> a .
 END_OF_STRING
 
-my $a = $grammar->get_symbol('a');
+my $a = $grammar->get_terminal('a');
 
 use constant SPACE => 0x60;
 
@@ -139,7 +145,7 @@ my $evaler = Marpa::Evaluator->new( { recce => $recce, clone => 0 } );
 my $bocage = $evaler->show_bocage(3);
 
 Marpa::Test::is( $bocage, <<'END_OF_STRING', 'Bocage' );
-package: Marpa::E_0; parse count: 0
+parse count: 0
 S2@0-3L6o0 -> S2@0-3L6o0a0
 S2@0-3L6o0a0 -> S13@0-3L1o1
     rule 10: S['] -> S .

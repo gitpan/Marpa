@@ -2,9 +2,78 @@
 
 Parse::Marpa::Doc::To_Do - Marpa's To Do List
 
+=head1 PRINCIPLES
+
+MDLex and MDL will know about Marpa, but B<not> vice versa.
+
+=head1 ORDERED TASKS
+
+=over 4
+
+=item * Add OBJECT flag to Grammar.
+
+=item * Make SELF_ARG flag operative.
+If on, first arg of actions is
+be the action object, or an unblessed hash if no object.
+Default to off.
+
+=item * Convert tests, ../bin/mdl, ::mdl(), etc.
+(everything but MDL bootstrap) to use SELF_ARG.
+The MDL will be
+replaced after conversion to the unfactored MDL.
+
+=item * Allow multiple hashes as args to Grammar constructor as
+mechanism for specifying an order in which the options should be
+applied.  I hope this will be sufficient as an interface for
+front-ends to Marpa like MDL.
+
+=item * Factor out MDL so that it works by calling
+(or creating options
+for a call to) Grammar::new or Grammar::set.
+
+=item * Default to SELF_ARG on.
+Add code to abend if SELF_ARG is off.
+Test.  Fix what breaks.
+
+=item * Test: Are regexes Storable's? -- NO
+
+=item * Allow cloning of unstripped recognizers.
+
+=item * Convert cloning to Storable.
+
+=item * Remove not longer needed "strip => 0" options.
+
+=item * Convert all stringization to Storable.
+
+=item * After MDL is factored out, and stripping & cloning is
+fully functional, create a matrix of tests of 
+valid grammars vs. their result.  Matrix is
+
+    grammars X inputs X clone grammar X clone recognizer X strip grammar X strip recognizer
+
+Do just one or two inputs per grammar.
+
+=item * MDLex currently does not sort terminals by priority.  This
+means terminal priorities are totally unused.  Change this?
+
+=back
+
 =head1 HIGH PRIORITY
 
 =over 4
+
+=item * Implement an recognizer option to simply skip
+ahead spans where no terminal can possibly be found.
+This means coming up with some way of passing
+Marpa's idea of where the
+next terminal should be expected to the lexer.
+Also the lexer should be able to inform Marpa
+which earleme a token is at.
+
+Use PREDICTIVE flag to the Recognizer to enable this?
+
+=item * Allow action options to be changed when evaluator
+is created, but not afterwards.
 
 =item * Create a "stress test" for zero-width and- and or- nodes:
 A grammar with two rules in a cycle.  Each rule is all
@@ -27,8 +96,6 @@ up rules into and-nodes with at most two children will not create cycles.
 Rules do not cycle internally.  A sequence of and- and or- nodes will
 descend via predecessors until it hit the beginning of the rule,
 and then stop.
-
-=item * Delete IS_CHAF_{R,L}HS
 
 =item * I should start to assume that anyone explicitly using
 separate recognizer and evaluator stages knows what they are doing.
@@ -61,30 +128,10 @@ Just abend with an error message.
 =item * Add optimizations when max_parses <= 1
     For example, no need to prune duplicate parses
 
-=item * Ensure -ENV is not on for smart comments when I leave alpha
-
-=item * Should or_map's be hashes instead of array?  How many duplicate
-entries are there and what's the cost?
+=item * Or_map's should be hashes instead of arrays.
 
 =item * Add MAX_COUNT for rules.  Implement on one of left- and right-
     recursion only.  No immediate need for both.
-
-=item * Factor out MDL so that it works by calling (or creating options
-    for a call to) Grammar::new or Grammar::set.
-
-=item * Factor out MDL Lexer.
-
-=item * Convert all cloning & stringization to Storable.
-
-=item * Test: Are regexes Storable's?
-
-=item * Remove code_diag.t tests for string closures.  Probably can
-    remove all of code_diag.t.
-
-=item * Check Parse::Marpa TODO list.
-
-=item * Add arguments for INITIAL_ACTION, FINAL_ACTION, ACTIONS.
-     Make sure there are tests for them.
 
 =back
 
@@ -92,13 +139,29 @@ entries are there and what's the cost?
 
 =over 4
 
-=item * Allow cloning of unstripped recognizers
+=item * In the MDL grammar, concatenate_lines is called uselessly in a number
+of places.  Eliminate this, for efficiency's sake?
+
+=item * bin/mdl in parsing equation.marpa
+(which is used
+for many examples in the author.t/Makefile) takes a final return
+and parses past it, but does not fail.
+
+The return is NOT
+in the grammar.
+What happens is that the call to ::text() is
+not recognized as a failure, and then the evaluator
+looks at the last successful parse.
+
+What to do here?  It should be failing, probably.
+And does the current behavior of the evaluator,
+(taking the default end as FURTHEST_EARLEME) set
+the user up for spurious successes.
 
 =item * Add a SYNOPSIS to the Plumbing document.
 
-=item * Parse bocage creation can probably be made a bit slightly cleaner.
-At least I think so, based on what I found when revising that part of the
-Internals doc.
+=item * When rereading Internals doc, check if
+parse bocage creation can probably be made a bit slightly cleaner.
 
 =item * Make sure that nulling symbols can never be terminals
 
@@ -108,16 +171,11 @@ Internals doc.
 
 =over 4
 
-=item * Add a trace_choices option.  There was an option to trace
+=item * Add a trace_choices option?  There was an option to trace
 non-trivial evaluation choices in the old evaluator, and the new trace_iterations
 doesn't entirely replace it.
 
 =item * Add a show_derivation option.
-
-=item * Add to test set: Basic tests of sequences.
-The matrix is separation (none/perl5/proper);
-and minimium count (0 or 1);
-keep vs. no-keep.
 
 =back
 
@@ -136,19 +194,11 @@ call to C<value>?
 
 =back
 
-=head2 Other Changes
-
-=over 4
-
-=item * Allow alternation?
-
-=item * Downgrade version conflict or semantics mismatch to warning?
-
-=item * Add C<{}> and C<[]> syntax to MDL production statements.
-
-=back
-
 =head1 OTHER FROZEN
+
+=head2 Downgrade MDL version conflict or semantics mismatch to warning?
+
+Probably not.  MDL is EOL'ed.
 
 =head2 Lifting Restrictions on Sequence Productions
 

@@ -283,6 +283,7 @@ terminal_funcs = Marpa::exception
 
 [TestingAndDebugging::ProhibitNoStrict]
 severity=5
+allow = refs
 
 [TestingAndDebugging::ProhibitNoWarnings]
 severity=5
@@ -394,6 +395,9 @@ severity=5
 [-Subroutines::ProhibitCallsToUnexportedSubs]
 
 [-Subroutines::ProhibitQualifiedSubDeclarations]
+
+[Subroutines::ProhibitCallsToUndeclaredSubs]
+severity=5
 
 [-Modules::RequireExplicitInclusion]
 

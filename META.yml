@@ -1,6 +1,6 @@
 ---
 name: Marpa
-version: 0.001_018
+version: 0.001_019
 author:
   - Jeffrey Kegler
 abstract: Generate Parsers from any BNF grammar
@@ -8,26 +8,26 @@ license: perl
 resources:
   license: http://dev.perl.org/licenses/
 requires:
+  Scalar::Util: 0
+build_requires:
+  Task::Weaken: 0
   Test::More: 0
 provides:
   Marpa:
     file: lib/Marpa.pm
-    version: 0.001_018
+    version: 0.001_019
   Marpa::Evaluator:
     file: lib/Marpa/Evaluator.pm
-    version: 0.001_018
+    version: 0.001_019
   Marpa::Grammar:
     file: lib/Marpa/Grammar.pm
-    version: 0.001_018
-  Marpa::Lex:
-    file: lib/Marpa/Lex.pm
-    version: 0.001_018
+    version: 0.001_019
   Marpa::MDL:
     file: lib/Marpa/MDL.pm
-    version: 0.001_018
+    version: 0.001_019
   Marpa::Recognizer:
     file: lib/Marpa/Recognizer.pm
-    version: 0.001_018
+    version: 0.001_019
 generated_by: Module::Build version 0.280801
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.2.html
@@ -37,12 +37,11 @@ no_index:
   directory:
     - inc
     - t
-    - example
-    - bootstrap
     - author.t
     - save
   namespace:
     - Marpa::Internal
+    - Marpa::MDL::Internal
   package:
     - Marpa::Internal
     - Marpa::Offset

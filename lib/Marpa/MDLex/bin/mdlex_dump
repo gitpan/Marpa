@@ -1,0 +1,85 @@
+#!/usr/bin/perl
+
+use 5.010;
+use strict;
+use warnings;
+use Fatal qw(open);
+use English qw( -no_match_vars ) ; 
+use Data::Dumper;
+use Getopt::Long qw(:config no_ignore_case bundling);
+use Carp;
+
+sub usage {
+    Carp::croak(
+        "$PROGRAM_NAME: usage [-Ilib|-Mpackage] ... [-Oaction_object | -oaction_object] raw_grammar text");
+}
+
+use Marpa;
+use Marpa::MDLex;
+
+my $small_o_object;
+my $cap_o_object;
+my @libs;
+my @packages;
+usage() if not GetOptions(
+    'I=s' => \@libs,
+    'M=s' => \@packages,
+    'O=s' => \$cap_o_object,
+    'o=s' => \$small_o_object
+);
+
+Carp::croak(
+    "$PROGRAM_NAME: one and only one action object must be specified:\n",
+    "Use either the -O or the -o option" )
+    if not defined $cap_o_object ^ defined $small_o_object;
+
+my $object = $cap_o_object // $small_o_object;
+
+push @INC, @libs;
+if ( defined $cap_o_object ) { push @packages, $cap_o_object }
+for my $package (@packages) {
+    my $eval_ok = eval "require $package";
+    Carp::croak("$package returned false") if not $eval_ok;
+}
+
+sub slurp {
+    my $file_name = shift;
+    open my $fh, q{<}, $file_name;
+    return do { local $RS = undef; \(<$fh>) };
+};
+
+if (@ARGV != 2) { usage() };
+my $arg_file_name  = shift;
+my $text_file_name = shift;
+my $arg_file       = slurp($arg_file_name);
+my $text           = slurp($text_file_name);
+
+package My::Args;
+our $data;
+my $eval_return = eval ${$arg_file};
+
+package main;
+Carp::croak("eval returned false: $@") if not $eval_return;
+
+my $marpa_options = $data->{marpa_options};
+Carp::croak("No marpa_options in $arg_file_name") if not $marpa_options;
+
+my $mdlex_options = $data->{mdlex_options};
+Carp::croak("No marpa_options in $arg_file_name") if not $mdlex_options;
+
+$data = Marpa::MDLex::mdlex(
+    [   { action_object => $object },
+        @{$marpa_options}
+    ],
+    $mdlex_options,
+    $text
+);
+
+Carp::croak("mdlex returned undef") if not defined $data;
+
+my $d = Data::Dumper->new( [${$data}], [qw(data)] );
+$d->Sortkeys(1);
+$d->Purity(1);
+$d->Deepcopy(1);
+$d->Indent(1);
+say $d->Dump();

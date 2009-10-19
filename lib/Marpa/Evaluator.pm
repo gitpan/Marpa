@@ -123,10 +123,10 @@ use Marpa::Offset qw(
     AND_NODES
     OR_NODES
     RULE_DATA
-    PACKAGE { Delete after conversion to symrefs }
     NULL_VALUES
     AND_ITERATIONS
     OR_ITERATIONS
+    ACTION_OBJECT_CONSTRUCTOR
 
 );
 
@@ -146,7 +146,6 @@ use Marpa::Offset qw(
 use Marpa::Offset qw(
 
     :package=Marpa::Internal::Evaluator_Rule
-    CODE
     OPS
 
 );
@@ -179,45 +178,10 @@ use constant NULL_SORT_ELEMENT_FILL_WIDTH => ( N_FORMAT_WIDTH * 2 );
 # in hex numbers
 use constant N_FORMAT_MAX => 0x7fff_ffff;
 
-sub run_preamble {
-    my $grammar = shift;
-    my $package = shift;
-
-    my $preamble = $grammar->[Marpa::Internal::Grammar::PREAMBLE];
-    return if not defined $preamble;
-
-    my $code = 'package ' . $package . ";\n" . $preamble;
-    my $eval_ok;
-    my @warnings;
-    DO_EVAL: {
-        local $SIG{__WARN__} =
-            sub { push @warnings, [ $_[0], ( caller 0 ) ]; };
-
-        ## no critic (BuiltinFunctions::ProhibitStringyEval)
-        $eval_ok = eval $code;
-        ## use critic
-    } ## end DO_EVAL:
-
-    if ( not $eval_ok or @warnings ) {
-        my $fatal_error = $EVAL_ERROR;
-        Marpa::Internal::code_problems(
-            {   grammar     => $grammar,
-                eval_ok     => $eval_ok,
-                fatal_error => $fatal_error,
-                warnings    => \@warnings,
-                where       => 'evaluating preamble',
-                code        => \$code,
-            }
-        );
-    } ## end if ( not $eval_ok or @warnings )
-
-    return;
-
-}    # run_preamble
-
 sub set_null_values {
-    my $grammar = shift;
-    my $package = shift;
+    my ($evaler) = @_;
+    my $recce    = $evaler->[Marpa::Internal::Evaluator::RECOGNIZER];
+    my $grammar  = $recce->[Marpa::Internal::Recognizer::GRAMMAR];
 
     my ( $rules, $symbols, $tracing, $default_null_value ) = @{$grammar}[
         Marpa::Internal::Grammar::RULES,
@@ -225,6 +189,7 @@ sub set_null_values {
         Marpa::Internal::Grammar::TRACING,
         Marpa::Internal::Grammar::DEFAULT_NULL_VALUE,
     ];
+    my $actions_package = $grammar->[Marpa::Internal::Grammar::ACTIONS];
 
     my $null_values;
     $#{$null_values} = $#{$symbols};
@@ -254,27 +219,25 @@ sub set_null_values {
         # Empty rule with action?
         if ( defined $action and @{$rhs} <= 0 ) {
 
+            my $closure =
+                Marpa::Internal::Evaluator::resolve_semantics( $evaler,
+                $action );
+            Marpa::exception("Action closure '$action' not found")
+                if not defined $closure;
+
             my $lhs            = $rule->[Marpa::Internal::Rule::LHS];
             my $nulling_symbol = $lhs->[Marpa::Internal::Symbol::NULL_ALIAS]
                 // $lhs;
 
             my $null_value;
-            my $code =
-                ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
-                '$null_value = do {' . "\n"
-                ## use critic
-                . "    package $package;\n" . $action . "};\n" . "1;\n";
 
             my @warnings;
             my $eval_ok;
             DO_EVAL: {
                 local $SIG{__WARN__} =
                     sub { push @warnings, [ $_[0], ( caller 0 ) ]; };
-
-                ## no critic (BuiltinFunctions::ProhibitStringyEval)
-                $eval_ok = eval $code;
-                ## use critic
-            } ## end DO_EVAL:
+                $eval_ok = eval { $null_value = $closure->(); 1; };
+            }
 
             if ( not $eval_ok or @warnings ) {
                 my $fatal_error = $EVAL_ERROR;
@@ -287,7 +250,6 @@ sub set_null_values {
                         long_where  => 'evaluating null value for '
                             . $nulling_symbol
                             ->[Marpa::Internal::Symbol::NAME],
-                        code => \$code,
                     }
                 );
             } ## end if ( not $eval_ok or @warnings )
@@ -298,12 +260,13 @@ sub set_null_values {
             if ($trace_actions) {
                 print {$trace_fh} 'Setting null value for symbol ',
                     $nulling_symbol->[Marpa::Internal::Symbol::NAME],
-                    " from\n", $code, "\n",
                     ' to ',
                     Data::Dumper->new( [ \$null_value ] )->Terse(1)->Dump,
                     "\n"
                     or Marpa::exception('Could not print to trace file');
             } ## end if ($trace_actions)
+
+            next RULE;
 
         } ## end if ( defined $action and @{$rhs} <= 0 )
 
@@ -326,9 +289,68 @@ sub set_null_values {
 
 }    # set_null_values
 
+# Given the grammar and an action name, resolve it to a closure,
+# or return undef
+sub resolve_semantics {
+    my ( $evaler, $closure_name ) = @_;
+    my $recce   = $evaler->[Marpa::Internal::Evaluator::RECOGNIZER];
+    my $grammar = $recce->[Marpa::Internal::Recognizer::GRAMMAR];
+
+    Marpa::exception(q{Trying to resolve 'undef' as closure name})
+        if not defined $closure_name;
+
+    my $fully_qualified_name;
+    DETERMINE_FULLY_QUALIFIED_NAME: {
+        if ( $closure_name =~ /([:][:])|[']/xms ) {
+            $fully_qualified_name = $closure_name;
+            ### direct fully qualified name: $fully_qualified_name
+            last DETERMINE_FULLY_QUALIFIED_NAME;
+        }
+        if (defined(
+                my $actions_package =
+                    $grammar->[Marpa::Internal::Grammar::ACTIONS]
+            )
+            )
+        {
+            $fully_qualified_name = $actions_package . q{::} . $closure_name;
+            last DETERMINE_FULLY_QUALIFIED_NAME;
+        } ## end if ( defined( my $actions_package = $grammar->[...]))
+
+        if (defined(
+                my $action_object =
+                    $grammar->[Marpa::Internal::Grammar::ACTION_OBJECT]
+            )
+            )
+        {
+            $fully_qualified_name = $action_object . q{::} . $closure_name;
+        } ## end if ( defined( my $action_object = $grammar->[...]))
+    } ## end DETERMINE_FULLY_QUALIFIED_NAME:
+
+    ### fully qualified name: $fully_qualified_name
+
+    return if not defined $fully_qualified_name;
+
+    no strict 'refs';
+    my $closure = *{$fully_qualified_name}{'CODE'};
+    use strict 'refs';
+
+    if ( $grammar->[Marpa::Internal::Grammar::TRACE_ACTIONS] ) {
+        my $trace_fh =
+            $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE];
+        print {$trace_fh} ( $closure ? 'Successful' : 'Failed' )
+            . qq{ resolution of "$closure_name" },
+            'to ', $fully_qualified_name, "\n"
+            or Marpa::exception('Could not print to trace file');
+    } ## end if ( $grammar->[Marpa::Internal::Grammar::TRACE_ACTIONS...])
+
+    return $closure;
+
+} ## end sub resolve_semantics
+
 sub set_actions {
-    my $grammar = shift;
-    my $package = shift;
+    my ($evaler) = @_;
+    my $recce    = $evaler->[Marpa::Internal::Evaluator::RECOGNIZER];
+    my $grammar  = $recce->[Marpa::Internal::Recognizer::GRAMMAR];
 
     my ( $rules, $tracing, $default_action, ) = @{$grammar}[
         Marpa::Internal::Grammar::RULES,
@@ -336,14 +358,17 @@ sub set_actions {
         Marpa::Internal::Grammar::DEFAULT_ACTION,
     ];
 
-    # need trace_fh for code problems here, even if not tracing
-    my $trace_fh = $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE];
-    my $trace_actions;
-    if ($tracing) {
-        $trace_actions = $grammar->[Marpa::Internal::Grammar::TRACE_ACTIONS];
-    }
-
     my $evaluator_rules = [];
+
+    my $default_action_closure;
+    if ( defined $default_action ) {
+        $default_action_closure =
+            Marpa::Internal::Evaluator::resolve_semantics( $evaler,
+            $default_action );
+        Marpa::exception(
+            "Could not resolve default action named '$default_action'")
+            if not $default_action_closure;
+    } ## end if ( defined $default_action )
 
     RULE: for my $rule ( @{$rules} ) {
 
@@ -377,70 +402,48 @@ sub set_actions {
                 : Marpa::Internal::Evaluator_Op::VIRTUAL_HEAD
                 ),
                 $rule->[Marpa::Internal::Rule::REAL_SYMBOL_COUNT];
-
         } ## end if ($virtual_rhs)
             # assignment instead of comparison is deliberate
         elsif ( my $argc = scalar @{ $rule->[Marpa::Internal::Rule::RHS] } ) {
             push @{$ops}, Marpa::Internal::Evaluator_Op::ARGC, $argc;
         }
 
-        my $action = $rule->[Marpa::Internal::Rule::ACTION]
-            // $default_action;
-
-        if ( not defined $action ) {
-
-            if ($trace_actions) {
-                print {$trace_fh} 'Setting action for rule ',
-                    Marpa::brief_rule($rule), " to undef by default\n"
-                    or Marpa::exception('Could not print to trace file');
-            }
-
-            $rule_data->[Marpa::Internal::Evaluator_Rule::CODE] =
-                'default to undef';
-            push @{$ops}, Marpa::Internal::Evaluator_Op::CONSTANT_RESULT,
-                \undef;
-
+        if ( my $action = $rule->[Marpa::Internal::Rule::ACTION] ) {
+            my $closure =
+                Marpa::Internal::Evaluator::resolve_semantics( $evaler,
+                $action );
+            Marpa::exception("Could not find find $action")
+                if not defined $closure;
+            push @{$ops}, Marpa::Internal::Evaluator_Op::CALL, $closure;
             next RULE;
-        } ## end if ( not defined $action )
+        } ## end if ( my $action = $rule->[Marpa::Internal::Rule::ACTION...])
 
-        my $code =
-            "sub {\n" . '    package ' . $package . ";\n" . $action . '}';
+        # If we can't resolve the LHS as a closure name, it's not
+        # a fatal error
+        if ( my $action =
+            $rule->[Marpa::Internal::Rule::LHS]
+            ->[Marpa::Internal::Symbol::NAME] )
+        {
+            my $closure =
+                Marpa::Internal::Evaluator::resolve_semantics( $evaler,
+                $action );
+            if ( defined $closure ) {
+                push @{$ops}, Marpa::Internal::Evaluator_Op::CALL, $closure;
+                next RULE;
+            }
+        } ## end if ( my $action = $rule->[Marpa::Internal::Rule::LHS...])
 
-        if ($trace_actions) {
-            print {$trace_fh} 'Setting action for rule ',
-                Marpa::brief_rule($rule), " to\n", $code, "\n"
-                or Marpa::exception('Could not print to trace file');
+        if ( defined $default_action_closure ) {
+            push @{$ops}, Marpa::Internal::Evaluator_Op::CALL,
+                $default_action_closure;
+            next RULE;
         }
 
-        my $closure;
-        my @warnings;
-        DO_EVAL: {
-            local $SIG{__WARN__} =
-                sub { push @warnings, [ $_[0], ( caller 0 ) ]; };
+        # If there is no default action specified, the fallback
+        # is to return an undef
+        push @{$ops}, Marpa::Internal::Evaluator_Op::CONSTANT_RESULT, \undef;
 
-            ## no critic (BuiltinFunctions::ProhibitStringyEval)
-            $closure = eval $code;
-            ## use critic
-        } ## end DO_EVAL:
-
-        if ( not $closure or @warnings ) {
-            my $fatal_error = $EVAL_ERROR;
-            Marpa::Internal::code_problems(
-                {   fatal_error => $fatal_error,
-                    grammar     => $grammar,
-                    warnings    => \@warnings,
-                    where       => 'compiling action',
-                    long_where  => 'compiling action for '
-                        . Marpa::brief_rule($rule),
-                    code => \$code,
-                }
-            );
-        } ## end if ( not $closure or @warnings )
-
-        $rule_data->[Marpa::Internal::Evaluator_Rule::CODE] = $code;
-        push @{$ops}, Marpa::Internal::Evaluator_Op::CALL, $closure;
-
-    }    # RULE
+    } ## end for my $rule ( @{$rules} )
 
     return $evaluator_rules;
 
@@ -1548,7 +1551,7 @@ sub Marpa::Evaluator::new {
     my $and_nodes = $self->[Marpa::Internal::Evaluator::AND_NODES] = [];
 
     my $current_parse_set = $parse_set_arg
-        // $recce->[Marpa::Internal::Recognizer::CURRENT_SET];
+        // $recce->[Marpa::Internal::Recognizer::FURTHEST_EARLEME];
 
     # Look for the start item and start rule
     my $earley_set = $earley_sets->[$current_parse_set];
@@ -1570,13 +1573,23 @@ sub Marpa::Evaluator::new {
     my $start_rule_id = $start_rule->[Marpa::Internal::Rule::ID];
 
     state $parse_number = 0;
-    my $package = $self->[Marpa::Internal::Evaluator::PACKAGE] =
-        sprintf 'Marpa::E_%x', $parse_number++;
-    run_preamble( $grammar, $package );
     my $null_values = $self->[Marpa::Internal::Evaluator::NULL_VALUES] =
-        set_null_values( $grammar, $package );
+        set_null_values($self);
     my $evaluator_rules = $self->[Marpa::Internal::Evaluator::RULE_DATA] =
-        set_actions( $grammar, $package );
+        set_actions($self);
+    if (defined(
+            my $action_object =
+                $grammar->[Marpa::Internal::Grammar::ACTION_OBJECT]
+        )
+        )
+    {
+        my $constructor_name = $action_object . q{::new};
+        my $closure = resolve_semantics( $self, $constructor_name );
+        Marpa::exception("Could not find find $constructor_name")
+            if not defined $closure;
+        $self->[Marpa::Internal::Evaluator::ACTION_OBJECT_CONSTRUCTOR] =
+            $closure;
+    } ## end if ( defined( my $action_object = $grammar->[...]))
 
     my $start_symbol = $start_rule->[Marpa::Internal::Rule::LHS];
     my ( $nulling, $symbol_id ) =
@@ -2135,10 +2148,8 @@ sub Marpa::Evaluator::show_bocage {
 
     my $parse_count = $evaler->[Marpa::Internal::Evaluator::PARSE_COUNT];
     my $or_nodes    = $evaler->[Marpa::Internal::Evaluator::OR_NODES];
-    my $package     = $evaler->[Marpa::Internal::Evaluator::PACKAGE];
 
-    my $text =
-        'package: ' . $package . '; parse count: ' . $parse_count . "\n";
+    my $text = 'parse count: ' . $parse_count . "\n";
 
     for my $or_node ( @{$or_nodes} ) {
 
@@ -2194,6 +2205,11 @@ sub Marpa::Evaluator::value {
 
     my $evaluator_rules = $evaler->[Marpa::Internal::Evaluator::RULE_DATA];
     my $null_values     = $evaler->[Marpa::Internal::Evaluator::NULL_VALUES];
+    my $use_self_arg    = $grammar->[Marpa::Internal::Grammar::SELF_ARG];
+    my $action_object_class =
+        $grammar->[Marpa::Internal::Grammar::ACTION_OBJECT];
+    my $action_object_constructor =
+        $evaler->[Marpa::Internal::Evaluator::ACTION_OBJECT_CONSTRUCTOR];
     my $parse_count = $evaler->[Marpa::Internal::Evaluator::PARSE_COUNT]++;
 
     my $and_nodes = $evaler->[Marpa::Internal::Evaluator::AND_NODES];
@@ -2470,6 +2486,9 @@ sub Marpa::Evaluator::value {
                     $and_node->[Marpa::Internal::And_Node::TOKEN] )
                 {
 
+                    my $nullable = $token->[Marpa::Internal::Symbol::NULLABLE]
+                        // 0;
+
                     # A null token must start at the end earleme
                     # This will not necessarily be the start earleme
                     # -- there may be a predecessor
@@ -2478,7 +2497,7 @@ sub Marpa::Evaluator::value {
                         [   $and_node
                                 ->[Marpa::Internal::And_Node::END_EARLEME]
                         ]
-                        ) x $token->[Marpa::Internal::Symbol::NULLABLE];
+                        ) x $nullable;
 
                 } ## end if ( my $token = $and_node->[...])
 
@@ -2967,6 +2986,38 @@ sub Marpa::Evaluator::value {
 
                 my @evaluation_stack   = ();
                 my @virtual_rule_stack = ();
+                my $action_object;
+
+                if ($action_object_constructor) {
+                    my @warnings;
+                    my $eval_ok;
+                    DO_EVAL: {
+                        local $SIG{__WARN__} = sub {
+                            push @warnings, [ $_[0], ( caller 0 ) ];
+                        };
+
+                        $eval_ok = eval {
+                            $action_object =
+                                $action_object_constructor->(
+                                $action_object_class);
+                            1;
+                        };
+                    } ## end DO_EVAL:
+
+                    if ( not $eval_ok or @warnings ) {
+                        my $fatal_error = $EVAL_ERROR;
+                        Marpa::Internal::code_problems(
+                            {   fatal_error => $fatal_error,
+                                grammar     => $grammar,
+                                eval_ok     => $eval_ok,
+                                warnings    => \@warnings,
+                                where       => 'constructing action object',
+                            }
+                        );
+                    } ## end if ( not $eval_ok or @warnings )
+                } ## end if ($action_object_constructor)
+
+                $action_object //= {};
 
                 TREE_NODE: for my $and_node ( reverse @preorder ) {
 
@@ -3179,15 +3230,15 @@ sub Marpa::Evaluator::value {
                                 ( Marpa::Internal::Evaluator_Op::CONSTANT_RESULT
                                 )
                             {
+                                my $result = $ops->[ $op_ix++ ];
                                 if ($trace_values) {
-                                    say {
-                                        $trace_fh
-                                    }
-                                    'Constant result: Pushing 1 value on stack',
+                                    print {$trace_fh}
+                                        'Constant result: Pushing 1 value on stack: ',
+                                        Data::Dumper->new( [$result] )
+                                        ->Terse(1)->Dump
                                         or Marpa::exception(
                                         'Could not print to trace file');
                                 } ## end if ($trace_values)
-                                my $result = $ops->[ $op_ix++ ];
                                 push @evaluation_stack, $result;
                             } ## end when ( Marpa::Internal::Evaluator_Op::CONSTANT_RESULT)
 
@@ -3205,9 +3256,15 @@ sub Marpa::Evaluator::value {
 
                                     $eval_ok = eval {
                                         $result =
-                                            $closure->( @{$current_data} );
+                                            $use_self_arg
+                                            ? $closure->(
+                                            $action_object,
+                                            @{$current_data}
+                                            )
+                                            : $closure->( @{$current_data} );
                                         1;
                                     };
+
                                 } ## end DO_EVAL:
 
                                 if ( not $eval_ok or @warnings ) {
@@ -3217,10 +3274,6 @@ sub Marpa::Evaluator::value {
                                         ];
                                     my $rule        = $rules->[$rule_id];
                                     my $fatal_error = $EVAL_ERROR;
-                                    my $code =
-                                        $evaluator_rules->[$rule_id]->[
-                                        Marpa::Internal::Evaluator_Rule::CODE
-                                        ];
                                     Marpa::Internal::code_problems(
                                         {   fatal_error => $fatal_error,
                                             grammar     => $grammar,
@@ -3230,7 +3283,6 @@ sub Marpa::Evaluator::value {
                                             long_where =>
                                                 'computing value for rule: '
                                                 . Marpa::brief_rule($rule),
-                                            code => \$code,
                                         }
                                     );
                                 } ## end if ( not $eval_ok or @warnings )
@@ -3294,7 +3346,7 @@ in_file($_, 't/equation_s.t')
 
 =end Marpa::Test::Display:
 
-    my $fail_offset = $recce->text('2-0*3+1');
+    my $fail_offset = $lexer->text('2-0*3+1');
     if ( $fail_offset >= 0 ) {
         Marpa::exception("Parse failed at offset $fail_offset");
     }
@@ -3344,10 +3396,16 @@ For example, in MDL,
 the following says that whenever the symbol C<A> is nulled,
 its value should be a string that says it is missing.
 
-=begin Marpa::Test::Display:
+=begin Marpa::Test::Commented_out_Display:
 
 ## next display
 in_file($_, 'example/null_value.marpa');
+
+=end Marpa::Test::Commented_out_Display:
+
+=begin Marpa::Test::Display:
+
+## skip display
 
 =end Marpa::Test::Display:
 
@@ -3441,13 +3499,22 @@ and arrange to have that closure run by the parent node.
 
 Suppose a grammar has these rules
 
-=begin Marpa::Test::Display:
+=begin Marpa::Test::Commented_Out_Display:
 
 ## start display
 ## next display
 in_file($_, 'example/null_value.marpa');
 
+=end Marpa::Test::Commented_Out_Display:
+
+=begin Marpa::Test::Display:
+
+## start display
+## skip display
+
 =end Marpa::Test::Display:
+
+    THIS NEEDS TO CHANGE SO THAT IT NO LONGER USES MDL.
 
     S: A, Y. q{ $_[0] . ", but " . $_[1] }. # Call me the start rule
     note: you can also call me Rule 0.
@@ -3463,7 +3530,6 @@ in_file($_, 'example/null_value.marpa');
     C: Y.  q{'C matches Y'}. # Call me Rule 5
 
     Y: /Z/. q{'Zorro was here'}. # Call me Rule 6
-
 
 =begin Marpa::Test::Display:
 

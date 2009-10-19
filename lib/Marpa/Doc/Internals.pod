@@ -1219,21 +1219,21 @@ in_file($_, 'author.t/self_show_rules.out');
 
 Z<>
 
-    100: production-paragraph ->
+    94: production-paragraph ->
         non-structural-production-sentences
         production-sentence
-        production-paragraph[R11:2][x5f] /* vrhs real=2 */
-    101: production-paragraph ->
+        production-paragraph[R11:2][x5b] /* vrhs real=2 */
+    95: production-paragraph ->
         non-structural-production-sentences
         production-sentence
         non-structural-production-sentences[]
         action-sentence:optional[]
         non-structural-production-sentences[]
-    102: production-paragraph ->
+    96: production-paragraph ->
         non-structural-production-sentences[]
         production-sentence
-        production-paragraph[R11:2][x5f] /* vrhs real=2 */
-    103: production-paragraph ->
+        production-paragraph[R11:2][x5b] /* vrhs real=2 */
+    97: production-paragraph ->
         non-structural-production-sentences[]
         production-sentence
         non-structural-production-sentences[]
@@ -1242,26 +1242,26 @@ Z<>
 
 Z<>
 
-    104: production-paragraph[R11:2][x5f] ->
+    98: production-paragraph[R11:2][x5b] ->
         non-structural-production-sentences
-        production-paragraph[R11:3][x60] /* vlhs vrhs real=1 */
-    105: production-paragraph[R11:2][x5f] ->
+        production-paragraph[R11:3][x5c] /* vlhs vrhs real=1 */
+    99: production-paragraph[R11:2][x5b] ->
         non-structural-production-sentences
         action-sentence:optional[]
         non-structural-production-sentences[] /* vlhs real=3 */
-    106: production-paragraph[R11:2][x5f] ->
+    100: production-paragraph[R11:2][x5b] ->
         non-structural-production-sentences[]
-        production-paragraph[R11:3][x60] /* vlhs vrhs real=1 */
+        production-paragraph[R11:3][x5c] /* vlhs vrhs real=1 */
 
 Z<>
 
-    107: production-paragraph[R11:3][x60] ->
+    101: production-paragraph[R11:3][x5c] ->
         action-sentence:optional
         non-structural-production-sentences /* vlhs real=2 */
-    108: production-paragraph[R11:3][x60] ->
+    102: production-paragraph[R11:3][x5c] ->
         action-sentence:optional
         non-structural-production-sentences[] /* vlhs real=2 */
-    109: production-paragraph[R11:3][x60] ->
+    103: production-paragraph[R11:3][x5c] ->
         action-sentence:optional[]
         non-structural-production-sentences /* vlhs real=2 */
 
@@ -1393,6 +1393,9 @@ Below are the MDL grammar and outputs for the example used in this
 document.
 The input text was "C<2+2>".
 
+B<THE FOLLOWING DISPLAY NEEDS TO CHANGE SO THAT IT NO
+LONGER USES MDL.>
+
 =head2 MDL Grammar
 
 =begin Marpa::Test::Display:
@@ -1403,48 +1406,19 @@ is_file($_, 'example/equation.marpa');
 
 =end Marpa::Test::Display:
 
+    semantics are perl5.  version is 0.001_019.
 
-    semantics are perl5.  version is 0.001_018.
+    default action is 'default_action'.
 
     start symbol is E.
 
-	    E: E, Op, E.
-    q{
-		my ($right_string, $right_value)
-		    = ($_[2] =~ /^(.*)==(.*)$/);
-		my ($left_string, $left_value)
-		    = ($_[0] =~ /^(.*)==(.*)$/);
-		my $op = $_[1];
-		my $value;
-		if ($op eq "+") {
-		   $value = $left_value + $right_value;
-		} elsif ($op eq "*") {
-		   $value = $left_value * $right_value;
-		} elsif ($op eq "-") {
-		   $value = $left_value - $right_value;
-		} else {
-		   Marpa::exception("Unknown op: $op");
-		}
-		"(" . $left_string . $op . $right_string . ")==" . $value;
-    }.
+    E: E, Op, E.  'op'.
 
-    E: Number.
-    q{
-	       my $v0 = pop @_;
-	       $v0 . "==" . $v0;
-    }.
+    E: Number. 'number'.
 
     Number matches qr/\d+/.
-
+ 
     Op matches qr/[-+*]/.
-     
-    the default action is q{
-	     my $v_count = scalar @_;
-	     return "" if $v_count <= 0;
-	     return $_[0] if $v_count == 1;
-	     "(" . join(";", @_) . ")";
-	}.
-
 
 =begin Marpa::Test::Display:
 
@@ -1479,7 +1453,7 @@ is_file($_, 'author.t/equation_show_rules.out');
 
     0: e -> e op e
     1: e -> number
-    2: e['] -> e
+    2: e['] -> e /* vlhs real=1 */
 
 =head2 C<show_QDFA> Output
 
@@ -1521,7 +1495,7 @@ is_file($_, 'author.t/equation_show_earley_sets.out');
 
 =end Marpa::Test::Display:
 
-    At End of Input
+    Current Earley Set: 5; Furthest: 3
     Earley Set 0
     S0@0-0
     S1@0-0
@@ -1548,7 +1522,7 @@ is_file($_, 'author.t/equation_show_bocage.out');
 
 =end Marpa::Test::Display:
 
-    package: Marpa::E_1; parse count: 0
+    parse count: 0
     S2@0-3L3o0 -> S2@0-3L3o0a0
     S2@0-3L3o0a0 -> S6@0-3L0o1
         rule 2: e['] -> e .
@@ -1586,8 +1560,8 @@ is_file($_, 'author.t/equation_trace_values.out');
     Calculated and pushed value: '2==2'
     Popping 3 values to evaluate S6@0-3L0o1a1, rule: 0: e -> e op e
     Calculated and pushed value: '(2+2)==4'
-    Popping 1 values to evaluate S2@0-3L3o0a0, rule: 2: e['] -> e
-    Calculated and pushed value: '(2+2)==4'
+    New Virtual Rule: S2@0-3L3o0a0, rule: 2: e['] -> e
+    Symbol count is 1, now 1 rules
     (2+2)==4
 
 =head1 SUPPORT

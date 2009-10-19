@@ -1,0 +1,18 @@
+semantics are perl5.  version is 0.001_019.  start symbol is S.
+
+S: A, Y. 'rule0'. # Call me the start rule
+note: you can also call me Rule 0.
+
+A: . 'rule1'. # Call me Rule 1
+
+A: B, C. 'rule2'. # Call me Rule 2
+
+B: . q{rule3}. # Call me Rule 3
+
+C: . q{rule4}. # Call me Rule 4
+
+C: Y.  q{rule5}. # Call me Rule 5
+
+Y: /Z/. 'rule6'. # Call me Rule 6
+
+

@@ -21,11 +21,22 @@ BEGIN {
 
 sub make_rule {
     my ( $lhs_symbol_name, $rhs_symbol_name ) = @_;
-    ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
-    my $action = q{ '<<RULE>>(' . $_[0] . ')' };
-    ## use critic
-    $action =~ s/<<RULE>>/$lhs_symbol_name$rhs_symbol_name/xms;
-    return [ $lhs_symbol_name, [$rhs_symbol_name], $action ];
+    my $action_name = "main::action_$lhs_symbol_name$rhs_symbol_name";
+
+    no strict 'refs';
+    my $closure = *{$action_name}{'CODE'};
+    use strict;
+
+    if ( not defined $closure ) {
+        my $action =
+            sub { $lhs_symbol_name . $rhs_symbol_name . '(' . $_[1] . ')' };
+
+        no strict 'refs';
+        *{$action_name} = $action;
+        use strict;
+    } ## end if ( not defined $closure )
+
+    return [ $lhs_symbol_name, [$rhs_symbol_name], $action_name ];
 } ## end sub make_rule
 
 sub make_plex_rules {
@@ -115,6 +126,7 @@ my @test_data = ( $plex1_test, $plex2_test, $plex3_test );
 for my $test_data (@test_data) {
     my ( $test_name, $rules, $expected_values, $expected_trace ) =
         @{$test_data};
+
     my $trace = q{};
     open my $MEMORY, '>', \$trace;
     my %args = (
@@ -123,7 +135,8 @@ for my $test_data (@test_data) {
         trace_file_handle => $MEMORY,
     );
     my $grammar = Marpa::Grammar->new( \%args );
-    my $t       = $grammar->get_symbol('t');
+    $grammar->precompute();
+    my $t = $grammar->get_terminal('t');
 
     close $MEMORY;
     Marpa::Test::is( $trace, $expected_trace, "$test_name trace" );

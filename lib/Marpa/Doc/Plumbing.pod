@@ -43,7 +43,7 @@ means a plumbing symbol name.
 
 =begin Marpa::Test::Display:
 
-## next display
+## skip display
 in_file($_, 't/ah2.t');
 
 =end Marpa::Test::Display:

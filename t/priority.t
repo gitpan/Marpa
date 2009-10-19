@@ -10,12 +10,18 @@ use warnings;
 
 use lib 'lib';
 
-use Test::More tests => 5;
+use Test::More tests => 6;
 use t::lib::Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');
+    Test::More::use_ok('Marpa::MDLex');
 }
+
+sub str100 { return 100 }
+sub str200 { return 200 }
+sub str300 { return 300 }
+sub str400 { return 400 }
 
 my $g = Marpa::Grammar->new(
     {   start => 'S',
@@ -25,26 +31,34 @@ my $g = Marpa::Grammar->new(
         ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
         max_parses => 20,
         rules      => [
-            [ 'S', ['P300'], '300', 300 ],
-            [ 'S', ['P200'], '200', 200 ],
-            [ 'S', ['P400'], '400', 400 ],
-            [ 'S', ['P100'], '100', 100 ],
+            [ 'S', ['P300'], 'main::str300', 300 ],
+            [ 'S', ['P200'], 'main::str200', 200 ],
+            [ 'S', ['P400'], 'main::str400', 400 ],
+            [ 'S', ['P100'], 'main::str100', 100 ],
         ],
         ## use critic
-        terminals => [
-            [ 'P200' => { regex => qr/a/xms } ],
-            [ 'P400' => { regex => qr/a/xms } ],
-            [ 'P100' => { regex => qr/a/xms } ],
-            [ 'P300' => { regex => qr/a/xms } ],
-        ],
+        terminals => [qw(P100 P200 P300 P400)],
     }
 );
 
+$g->precompute();
+
 my $recce = Marpa::Recognizer->new( { grammar => $g, } );
+
+my $lexer = Marpa::MDLex->new(
+    {   recce     => $recce,
+        terminals => [
+            [ 'P200', 'a' ],
+            [ 'P400', 'a' ],
+            [ 'P100', 'a' ],
+            [ 'P300', 'a' ],
+        ]
+    }
+);
 
 my @expected = qw(400 300 200 100);
 
-my $fail_offset = $recce->text( \('a') );
+my $fail_offset = $lexer->text('a');
 if ( $fail_offset >= 0 ) {
     Marpa::exception("Parse failed at offset $fail_offset");
 }

@@ -7,12 +7,14 @@ use warnings;
 use lib 'lib';
 use English qw( -no_match_vars );
 use Fatal qw(open close chdir);
+use Carp;
 
-use Test::More tests => 6;
+use Test::More tests => 7;
 use t::lib::Marpa::Test;
 
 BEGIN {
-    Test::More::use_ok('Marpa');
+    Test::More::use_ok('Marpa::MDL');
+    Test::More::use_ok('Marpa::MDL::example::equation');
 }
 
 # The inefficiency (at least some of it) is deliberate.
@@ -22,23 +24,33 @@ BEGIN {
 # apart at each step.  But I wanted to test having
 # a start symbol that appears repeatedly on the RHS.
 
-my $example_dir = 'example';
-chdir $example_dir;
-
-open my $grammar_fh, q{<}, 'equation.marpa';
 my $source;
-{ local ($RS) = undef; $source = <$grammar_fh> };
-close $grammar_fh;
+{
+    local $RS = undef;
+    open my $fh, q{<}, 'lib/Marpa/MDL/example/equation.marpa';
+    $source = <$fh>;
+    close $fh;
+}
+
+my ( $marpa_options, $mdlex_options ) = Marpa::MDL::to_raw($source);
 
 # Set max_parses to 10 in case there's an infinite loop.
 # This is for debugging, after all
+my $grammar = Marpa::Grammar->new(
+    {   action_object => 'Marpa::MDL::Example::Equation',
+        max_parses    => 10
+    },
+    @{$marpa_options}
+);
 
-my $grammar =
-    Marpa::Grammar->new( { max_parses => 10, mdl_source => \$source, } );
+Carp::croak('Failed to create grammar') if not defined $grammar;
+
+$grammar->precompute();
 
 my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
+my $lexer = Marpa::MDLex->new( { recce => $recce }, @{$mdlex_options} );
 
-my $fail_offset = $recce->text('2-0*3+1');
+my $fail_offset = $lexer->text('2-0*3+1');
 if ( $fail_offset >= 0 ) {
     Marpa::exception("Parse failed at offset $fail_offset");
 }
@@ -58,12 +70,17 @@ my $evaler = Marpa::Evaluator->new( { recognizer => $recce } );
 Marpa::exception('Parse failed') if not $evaler;
 
 my $i = 0;
-while ( defined( my $value = $evaler->value() ) ) {
-    my $value = ${$value};
-    Test::More::ok( $expected_value{$value}, "Value $i (unspecified order)" );
-    delete $expected_value{$value};
+VALUE: while ( my $value_ref = $evaler->value() ) {
+    my $value     = ${$value_ref};
+    my $test_name = "Value $i (unspecified order)";
     $i++;
-} ## end while ( defined( my $value = $evaler->value() ) )
+    if ( defined $expected_value{$value} ) {
+        Test::More::pass($test_name);
+        delete $expected_value{$value};
+        next VALUE;
+    }
+    Test::More::fail($test_name);
+} ## end while ( my $value_ref = $evaler->value() )
 
 # Local Variables:
 #   mode: cperl

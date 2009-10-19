@@ -23,21 +23,14 @@ my $g = Marpa::Grammar->new(
             [ 'A',   [qw/E/] ],
             ['E'],
         ],
-        academic   => 1,
-        precompute => 0,
-        strip      => 0.
+        academic => 1,
+        strip    => 0.
     }
 );
 
-$g->set(
-    {
-    #<<< perltidy flattens this
-    terminals => [
-        [ 'a' => { regex => 'a' } ],
-    ],
-    #>>>
-    }
-);
+$g->set( { terminals => [ [ 'a' => { regex => 'a' } ], ], } );
+
+$g->precompute();
 
 Marpa::Test::is( $g->show_rules, <<'EOS', 'Aycock/Horspool Rules' );
 0: S' -> S /* nullable */
