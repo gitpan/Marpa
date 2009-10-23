@@ -40,7 +40,6 @@ $Test_Grammar::MARPA_OPTIONS_1 = [
         'semantics' => 'perl5',
         'start'     => 's',
         'terminals' => [ 's' ],
-        'version'   => '0.001_019'
     }
 ];
 
@@ -66,7 +65,6 @@ $Test_Grammar::MARPA_OPTIONS_2 = [
         'semantics' => 'perl5',
         'start'     => 's',
         'terminals' => [ 'a' ],
-        'version'   => '0.001_019'
     }
 ];
 
@@ -119,7 +117,6 @@ $Test_Grammar::MARPA_OPTIONS_8 = [
         'semantics' => 'perl5',
         'start'     => 's',
         'terminals' => [ 'e', 't', 'u', 'v', 'w', 'x' ],
-        'version'   => '0.001_019'
     }
 ];
 

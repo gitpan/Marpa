@@ -6,12 +6,18 @@ use warnings;
 use lib 'inc';
 use lib 'lib';
 
-use Scalar::Util qw(refaddr reftype isweak weaken);
-use Test::More tests => 2;
-use Test::Weaken;
-use t::lib::Marpa::Test;
+use Test::More;
 
-BEGIN { Test::More::use_ok('Marpa'); }
+BEGIN {
+    if ( eval { require Task::Weaken } ) {
+        Test::More::plan tests => 3;
+    }
+    else {
+        Test::More::plan skip_all => 'Scalar::Util::weaken() not implemented';
+    }
+    Test::More::use_ok('Marpa');
+    Test::More::use_ok('Test::Weaken');
+} ## end BEGIN
 
 my $test = sub {
     my $g = Marpa::Grammar->new(

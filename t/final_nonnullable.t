@@ -57,13 +57,13 @@ Marpa::Test::is( $grammar->show_rules,
 1: p -> a /* maximal */
 2: p -> /* empty !useful nullable maximal */
 3: n -> a /* maximal */
-4: S -> p p S[R0:2][x5] /* maximal vrhs real=2 */
-5: S -> p p[] S[R0:2][x5] /* maximal vrhs real=2 */
-6: S -> p[] p S[R0:2][x5] /* maximal vrhs real=2 */
-7: S -> p[] p[] S[R0:2][x5] /* maximal vrhs real=2 */
-8: S[R0:2][x5] -> p n /* maximal vlhs real=2 */
-9: S[R0:2][x5] -> p[] n /* maximal vlhs real=2 */
-10: S['] -> S /* maximal vlhs real=1 */
+4: S -> p p S[R0:2][x5] /* vrhs maximal real=2 */
+5: S -> p p[] S[R0:2][x5] /* vrhs maximal real=2 */
+6: S -> p[] p S[R0:2][x5] /* vrhs maximal real=2 */
+7: S -> p[] p[] S[R0:2][x5] /* vrhs maximal real=2 */
+8: S[R0:2][x5] -> p n /* vlhs maximal real=2 */
+9: S[R0:2][x5] -> p[] n /* vlhs maximal real=2 */
+10: S['] -> S /* vlhs maximal real=1 */
 END_OF_STRING
 
 Marpa::Test::is( $grammar->show_QDFA,

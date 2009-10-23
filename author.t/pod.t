@@ -16,13 +16,6 @@ BEGIN {
 }
 
 my %exclude = map { ( $_, 1 ) } qw(
-    Makefile.PL
-    bootstrap/bootstrap.pl
-    bootstrap/bootstrap_header.pl
-    bootstrap/bootstrap_trailer.pl
-    lib/Marpa/Raw_Source.pm
-    lib/Marpa/header_Raw_Source.pm
-    lib/Marpa/trailer_Raw_Source.pm
     inc/Test/Weaken.pm
 );
 
@@ -47,6 +40,6 @@ FILE: while ( my $file = <$manifest> ) {
 }    # FILE
 close $manifest;
 
-Test::Pod::all_pod_files_ok();
+Test::Pod::all_pod_files_ok(@test_files);
 
 1;

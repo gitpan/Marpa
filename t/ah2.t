@@ -52,30 +52,30 @@ Marpa::Test::is( $grammar->show_rules, <<'EOS', 'Aycock/Horspool Rules' );
 1: A -> a /* maximal */
 2: A -> E /* !useful nullable maximal */
 3: E -> /* empty !useful nullable maximal */
-4: S -> A S[R0:1][x6] /* maximal vrhs real=1 */
+4: S -> A S[R0:1][x6] /* vrhs maximal real=1 */
 5: S -> A A[] A[] A[] /* maximal */
-6: S -> A[] S[R0:1][x6] /* maximal vrhs real=1 */
-7: S[R0:1][x6] -> A S[R0:2][x7] /* maximal vlhs vrhs real=1 */
-8: S[R0:1][x6] -> A A[] A[] /* maximal vlhs real=3 */
-9: S[R0:1][x6] -> A[] S[R0:2][x7] /* maximal vlhs vrhs real=1 */
-10: S[R0:2][x7] -> A A /* maximal vlhs real=2 */
-11: S[R0:2][x7] -> A A[] /* maximal vlhs real=2 */
-12: S[R0:2][x7] -> A[] A /* maximal vlhs real=2 */
-13: S['] -> S /* maximal vlhs real=1 */
+6: S -> A[] S[R0:1][x6] /* vrhs maximal real=1 */
+7: S[R0:1][x6] -> A S[R0:2][x7] /* vlhs vrhs maximal real=1 */
+8: S[R0:1][x6] -> A A[] A[] /* vlhs maximal real=3 */
+9: S[R0:1][x6] -> A[] S[R0:2][x7] /* vlhs vrhs maximal real=1 */
+10: S[R0:2][x7] -> A A /* vlhs maximal real=2 */
+11: S[R0:2][x7] -> A A[] /* vlhs maximal real=2 */
+12: S[R0:2][x7] -> A[] A /* vlhs maximal real=2 */
+13: S['] -> S /* vlhs maximal real=1 */
 14: S['][] -> /* empty nullable maximal */
 EOS
 
 Marpa::Test::is( $grammar->show_symbols, <<'EOS', 'Aycock/Horspool Symbols' );
-0: S, lhs=[0 4 5 6] rhs=[13]
-1: A, lhs=[1 2] rhs=[0 4 5 7 8 10 11 12]
+0: S, lhs=[0 4 5 6] rhs=[13] maximal
+1: A, lhs=[1 2] rhs=[0 4 5 7 8 10 11 12] maximal
 2: a, lhs=[] rhs=[1] terminal maximal
-3: E, lhs=[3] rhs=[2] nullable=1 nulling
-4: S[], lhs=[] rhs=[] nullable=4 nulling
-5: A[], lhs=[] rhs=[5 6 8 9 11 12] nullable=1 nulling
-6: S[R0:1][x6], lhs=[7 8 9] rhs=[4 6]
-7: S[R0:2][x7], lhs=[10 11 12] rhs=[7 9]
-8: S['], lhs=[13] rhs=[]
-9: S['][], lhs=[14] rhs=[] nullable=1 nulling
+3: E, lhs=[3] rhs=[2] nullable=1 nulling maximal
+4: S[], lhs=[] rhs=[] nullable=4 nulling maximal
+5: A[], lhs=[] rhs=[5 6 8 9 11 12] nullable=1 nulling maximal
+6: S[R0:1][x6], lhs=[7 8 9] rhs=[4 6] maximal
+7: S[R0:2][x7], lhs=[10 11 12] rhs=[7 9] maximal
+8: S['], lhs=[13] rhs=[] maximal
+9: S['][], lhs=[14] rhs=[] nullable=1 nulling maximal
 EOS
 
 Marpa::Test::is(

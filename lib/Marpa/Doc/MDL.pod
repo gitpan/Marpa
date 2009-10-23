@@ -65,8 +65,7 @@ Paragraphs contain sentences, which must end in a period.
 There are definition paragraphs, production paragraphs and terminal paragraphs.
 Here's an example of a definition paragraph:
 
-    semantics are perl5.  version is 0.001_019.  the start symbol is
-    grammar.
+    semantics are perl5.  the start symbol is grammar.
 
 =head2 MDL Keywords
 
@@ -281,7 +280,6 @@ once Perl 6 becomes the default.
 
     version is 0.001_019.
 
-The version definition is also not optional,
 The version has to match B<exactly>.
 
 =head2 Start Symbol Definition

@@ -5,7 +5,7 @@ use 5.010;
 use strict;
 use warnings;
 
-use Test::More tests => 22;
+use Test::More tests => 11;
 
 use lib 'lib';
 use t::lib::Marpa::Test;
@@ -14,27 +14,15 @@ use English qw( -no_match_vars );
 # use Smart::Comments;
 
 BEGIN {
-    Test::More::use_ok('Marpa');
     Test::More::use_ok('Marpa::MDLex');
 }
 
-my @uncompiled_features = qw(
+my @features = qw(
     e_op_action default_action
     null_action
 );
 
-my @compiled_features = qw(
-    unstringify_grammar
-    unstringify_recce
-);
-
-my @features = ( @compiled_features, @uncompiled_features );
-
-my @compile_tests = ( 'compile phase warning', 'compile phase fatal', );
-my @runtime_tests =
-    ( 'run phase warning', 'run phase error', 'run phase die', );
-
-my @tests = ( @compile_tests, @runtime_tests );
+my @tests = ( 'run phase warning', 'run phase error', 'run phase die', );
 
 my %good_code = (
     'e_op_action'     => 'main::e_op_action',
@@ -69,25 +57,17 @@ sub run_phase_die {
 my %test_arg;
 my %expected;
 for my $test (@tests) {
-    for my $compiled_feature (@compiled_features) {
-        $test_arg{$test}{$compiled_feature} = '1;';
-        $expected{$test}{$compiled_feature} = q{};
+    for my $feature (@features) {
+        $test_arg{$test}{$feature} = '1;';
+        $expected{$test}{$feature} = q{};
     }
 } ## end for my $test (@tests)
-for my $runtime_test (@runtime_tests) {
-    for my $uncompiled_feature (@uncompiled_features) {
-        $test_arg{$runtime_test}{$uncompiled_feature} = '1;';
-        $expected{$runtime_test}{$uncompiled_feature} = q{};
-    }
-} ## end for my $runtime_test (@runtime_tests)
 
-for my $uncompiled_feature (@uncompiled_features) {
-    $test_arg{'run phase warning'}{$uncompiled_feature} =
-        'main::run_phase_warning';
-    $test_arg{'run phase error'}{$uncompiled_feature} =
-        'main::run_phase_error';
-    $test_arg{'run phase die'}{$uncompiled_feature} = 'main::run_phase_die';
-} ## end for my $uncompiled_feature (@uncompiled_features)
+for my $feature (@features) {
+    $test_arg{'run phase warning'}{$feature} = 'main::run_phase_warning';
+    $test_arg{'run phase error'}{$feature}   = 'main::run_phase_error';
+    $test_arg{'run phase die'}{$feature}     = 'main::run_phase_die';
+}
 
 my $getting_headers = 1;
 my @headers;
@@ -129,9 +109,6 @@ LINE: while ( my $line = <DATA> ) {
                 chomp $header;
                 Marpa::exception("test code given for unknown test: $header")
                     if not defined $test_arg{$header};
-                for my $compiled_feature (@compiled_features) {
-                    $test_arg{$header}{$compiled_feature} = $data;
-                }
                 next HEADER;
             } ## end if ( $header =~ s/\A bad \s code \s //xms )
             Marpa::exception("Bad header: $header");
@@ -184,12 +161,6 @@ sub run_test {
             when ('e_number_action') { $e_number_action = $value }
             when ('default_action')  { $default_action  = $value }
             when ('null_action')     { $null_action     = $value }
-            when ('unstringify_grammar') {
-                return Marpa::Grammar::unstringify( \$value );
-            }
-            when ('unstringify_recce') {
-                return Marpa::Recognizer::unstringify( \$value );
-            }
             default {
                 Marpa::exception("unknown argument to run_test: $arg");
             };
@@ -250,19 +221,15 @@ sub run_test {
 run_test( {} );
 
 my %where = (
-    e_op_action         => 'compiling action',
-    default_action      => 'compiling action',
-    null_action         => 'evaluating null value',
-    unstringify_grammar => 'unstringifying grammar',
-    unstringify_recce   => 'unstringifying recognizer',
+    e_op_action    => 'running action',
+    default_action => 'running action',
+    null_action    => 'evaluating null value',
 );
 
 my %long_where = (
-    e_op_action    => 'compiling action for 1: E -> E Op E',
-    default_action => 'compiling action for 3: optional_trailer1 -> trailer',
+    e_op_action    => 'running action for 1: E -> E Op E',
+    default_action => 'running action for 3: optional_trailer1 -> trailer',
     null_action    => 'evaluating null value for optional_trailer2',
-    unstringify_grammar => 'unstringifying grammar',
-    unstringify_recce   => 'unstringifying recognizer',
 );
 
 for my $test (@tests) {
@@ -335,59 +302,6 @@ sub default_action {
 # vim: expandtab shiftwidth=4:
 
 __DATA__
-| bad code compile phase warning
-# this should be a compile phase warning
-my $x = 0;
-my $x = 1;
-my $x = 2;
-$x++;
-1;
-__END__
-
-| expected unstringify_grammar compile phase warning
-| expected unstringify_recce compile phase warning
-Fatal problem(s) in <LONG_WHERE>
-2 Warning(s)
-Warning(s) treated as fatal problem
-6 lines in problem code, last warning occurred here:
-1: # this should be a compile phase warning
-2: my $x = 0;
-*3: my $x = 1;
-*4: my $x = 2;
-5: $x++;
-6: 1;
-======
-Warning #0 in <WHERE>:
-"my" variable $x masks earlier declaration in same scope at (eval <LINE_NO>) line 3, <DATA> line 1.
-======
-Warning #1 in <WHERE>:
-"my" variable $x masks earlier declaration in same scope at (eval <LINE_NO>) line 4, <DATA> line 1.
-======
-__END__
-
-| bad code compile phase fatal
-# this should be a compile phase error
-my $x = 0;
-$x=;
-$x++;
-1;
-__END__
-
-| expected unstringify_grammar compile phase fatal
-| expected unstringify_recce compile phase fatal
-Fatal problem(s) in <LONG_WHERE>
-Fatal Error
-5 lines in problem code, beginning:
-1: # this should be a compile phase error
-2: my $x = 0;
-3: $x=;
-4: $x++;
-5: 1;
-======
-Error in <WHERE>:
-syntax error at (eval <LINE_NO>) line 3, at EOF
-======
-__END__
 
 | bad code run phase warning
 # this should be a run phase warning
@@ -396,27 +310,6 @@ warn "Test Warning 1";
 warn "Test Warning 2";
 $x++;
 1;
-__END__
-
-| expected unstringify_grammar run phase warning
-| expected unstringify_recce run phase warning
-Fatal problem(s) in <LONG_WHERE>
-2 Warning(s)
-Warning(s) treated as fatal problem
-6 lines in problem code, last warning occurred here:
-1: # this should be a run phase warning
-2: my $x = 0;
-*3: warn "Test Warning 1";
-*4: warn "Test Warning 2";
-5: $x++;
-6: 1;
-======
-Warning #0 in <WHERE>:
-Test Warning 1 at (eval <LINE_NO>) line 3, <DATA> line <LINE_NO>.
-======
-Warning #1 in <WHERE>:
-Test Warning 2 at (eval <LINE_NO>) line 4, <DATA> line <LINE_NO>.
-======
 __END__
 
 | expected e_op_action run phase warning
@@ -463,22 +356,6 @@ $x++;
 1;
 __END__
 
-| expected unstringify_grammar run phase error
-| expected unstringify_recce run phase error
-Fatal problem(s) in <LONG_WHERE>
-Fatal Error
-5 lines in problem code, beginning:
-1: # this should be a run phase error
-2: my $x = 0;
-3: $x = 711/0;
-4: $x++;
-5: 1;
-======
-Error in <WHERE>:
-Illegal division by zero at (eval <LINE_NO>) line 3, <DATA> line <LINE_NO>.
-======
-__END__
-
 | expected e_op_action run phase error
 Fatal problem(s) in computing value for rule: 1: E -> E Op E
 Fatal Error
@@ -509,22 +386,6 @@ my $x = 0;
 die('test call to die');
 $x++;
 1;
-__END__
-
-| expected unstringify_grammar run phase die
-| expected unstringify_recce run phase die
-Fatal problem(s) in <LONG_WHERE>
-Fatal Error
-5 lines in problem code, beginning:
-1: # this is a call to die()
-2: my $x = 0;
-3: die('test call to die');
-4: $x++;
-5: 1;
-======
-Error in <WHERE>:
-test call to die at (eval <LINE_NO>) line 3, <DATA> line <LINE_NO>.
-======
 __END__
 
 | expected e_op_action run phase die

@@ -29,7 +29,7 @@ lib/Marpa/Doc/MDL.pod
 lib/Marpa/Doc/Options.pod
 lib/Marpa/Doc/Parse_Terms.pod
 lib/Marpa/Doc/Plumbing.pod
-lib/Marpa/Doc/To_Do.pod
+lib/Marpa/Doc/TODO.pod
 lib/Marpa/Evaluator.pm
 lib/Marpa/Grammar.pm
 lib/Marpa/Internal.pm
@@ -55,9 +55,9 @@ Makefile.PL
 MANIFEST
 META.yml
 README
-sandbox/TODO.pod
 t/00-load.t
 t/ah2.t
+t/ah_minimal.t
 t/ah.t
 t/code_diag.t
 t/cycle2.t
@@ -68,6 +68,7 @@ t/equation.t
 t/final_nonnullable.t
 t/gj.t
 t/hu.t
+t/initial_nulls.t
 t/lib/Marpa/Test.pm
 t/limits.t
 t/Makefile

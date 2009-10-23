@@ -33,14 +33,7 @@ my $g = Marpa::Grammar->new(
     }
 );
 
-$g->set(
-    {   terminals => [
-            [ 'a' => { regex => qr/a/xms } ],
-            [ 'b' => { regex => qr/b/xms } ],
-            [ 'c' => { regex => qr/c/xms } ],
-        ],
-    }
-);
+$g->set( { terminals => [qw(a b c)] } );
 
 $g->precompute();
 

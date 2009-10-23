@@ -148,71 +148,71 @@ Marpa::Test::is( $bocage, <<'END_OF_STRING', 'Bocage' );
 parse count: 0
 S2@0-3L6o0 -> S2@0-3L6o0a0
 S2@0-3L6o0a0 -> S13@0-3L1o1
-    rule 10: S['] -> S .
+    rule 10: S['] -> . S
 S2@0-3L6o0 -> S2@0-3L6o0a1
 S2@0-3L6o0a1 -> S8@0-3L1o2
-    rule 10: S['] -> S .
+    rule 10: S['] -> . S
 S13@0-3L1o1 -> S13@0-3L1o1a2
 S13@0-3L1o1a2 -> S10@0-2R4:2o3 S5@2-3L5o4
-    rule 4: S -> p p S[R0:2][x5] .
-    (part of 0) S -> << p >> << p >> << p n >> .
+    rule 4: S -> p p . S[R0:2][x5]
+    (part of 0) S -> < p > < p > . < p n >
 S8@0-3L1o2 -> S8@0-3L1o2a3
 S8@0-3L1o2a3 -> S6@0-1R5:2o5 S9@1-3L5o6
-    rule 5: S -> p p[] S[R0:2][x5] .
-    (part of 0) S -> << p >> << p >> << p n >> .
+    rule 5: S -> p p[] . S[R0:2][x5]
+    (part of 0) S -> < p > < p > . < p n >
 S8@0-3L1o2 -> S8@0-3L1o2a4
 S8@0-3L1o2a4 -> S6@0-1R6:2o7 S9@1-3L5o6
-    rule 6: S -> p[] p S[R0:2][x5] .
-    (part of 0) S -> << p >> << p >> << p n >> .
+    rule 6: S -> p[] p . S[R0:2][x5]
+    (part of 0) S -> < p > < p > . < p n >
 S10@0-2R4:2o3 -> S10@0-2R4:2o3a5
 S10@0-2R4:2o3a5 -> S6@0-1R4:1o8 S4@1-2L2o9
-    rule 4: S -> p p . S[R0:2][x5]
-    (part of 0) S -> << p >> << p >> . << p n >>
-S5@2-3L5o4 -> S5@2-3L5o4a7
-S5@2-3L5o4a7 -> S7@2-2R9:1o17 S14@2-3L3o12
-    rule 9: S[R0:2][x5] -> p[] n .
-    (part of 0) S -> p p << p >> << n >> .
+    rule 4: S -> p . p S[R0:2][x5]
+    (part of 0) S -> < p > . < p > < p n >
+S5@2-3L5o4 -> S5@2-3L5o4a6
+S5@2-3L5o4a6 -> S7@2-2R9:1o10 S4@2-3L3o11
+    rule 9: S[R0:2][x5] -> p[] . n
+    (part of 0) S -> p p < p > . < n >
 S6@0-1R5:2o5 -> S6@0-1R5:2o5a8
 S6@0-1R5:2o5a8 -> S6@0-1R5:1o13 undef
-    rule 5: S -> p p[] . S[R0:2][x5]
-    (part of 0) S -> << p >> << p >> . << p n >>
-S9@1-3L5o6 -> S9@1-3L5o6a10
-S9@1-3L5o6a10 -> S11@1-2R8:1o14 S14@2-3L3o12
-    rule 8: S[R0:2][x5] -> p n .
-    (part of 0) S -> p p << p >> << n >> .
+    rule 5: S -> p . p[] S[R0:2][x5]
+    (part of 0) S -> < p > . < p > < p n >
+S9@1-3L5o6 -> S9@1-3L5o6a9
+S9@1-3L5o6a9 -> S11@1-2R8:1o14 S4@2-3L3o11
+    rule 8: S[R0:2][x5] -> p . n
+    (part of 0) S -> p p < p > . < n >
 S6@0-1R6:2o7 -> S6@0-1R6:2o7a11
 S6@0-1R6:2o7a11 -> S1@0-0R6:1o15 S4@0-1L2o16
-    rule 6: S -> p[] p . S[R0:2][x5]
-    (part of 0) S -> << p >> << p >> . << p n >>
+    rule 6: S -> p[] . p S[R0:2][x5]
+    (part of 0) S -> < p > . < p > < p n >
 S6@0-1R4:1o8 -> S6@0-1R4:1o8a12
 S6@0-1R4:1o8a12 -> S4@0-1L2o16
-    rule 4: S -> p . p S[R0:2][x5]
-    (part of 0) S -> << p >> . << p >> << p n >>
+    rule 4: S -> . p p S[R0:2][x5]
+    (part of 0) S -> . < p > < p > < p n >
 S4@1-2L2o9 -> S4@1-2L2o9a13
 S4@1-2L2o9a13 -> 'b'
-    rule 1: p -> a .
-S14@2-3L3o12 -> S14@2-3L3o12a16
-S14@2-3L3o12a16 -> 'c'
-    rule 3: n -> a .
+    rule 1: p -> . a
+S7@2-2R9:1o10 -> S7@2-2R9:1o10a14
+S7@2-2R9:1o10a14 -> undef
+    rule 9: S[R0:2][x5] -> . p[] n
+    (part of 0) S -> p p . < p > < n >
+S4@2-3L3o11 -> S4@2-3L3o11a15
+S4@2-3L3o11a15 -> 'c'
+    rule 3: n -> . a
 S6@0-1R5:1o13 -> S6@0-1R5:1o13a17
 S6@0-1R5:1o13a17 -> S4@0-1L2o16
-    rule 5: S -> p . p[] S[R0:2][x5]
-    (part of 0) S -> << p >> . << p >> << p n >>
+    rule 5: S -> . p p[] S[R0:2][x5]
+    (part of 0) S -> . < p > < p > < p n >
 S11@1-2R8:1o14 -> S11@1-2R8:1o14a18
 S11@1-2R8:1o14a18 -> S4@1-2L2o9
-    rule 8: S[R0:2][x5] -> p . n
-    (part of 0) S -> p p << p >> . << n >>
+    rule 8: S[R0:2][x5] -> . p n
+    (part of 0) S -> p p . < p > < n >
 S1@0-0R6:1o15 -> S1@0-0R6:1o15a19
 S1@0-0R6:1o15a19 -> undef
-    rule 6: S -> p[] . p S[R0:2][x5]
-    (part of 0) S -> << p >> . << p >> << p n >>
+    rule 6: S -> . p[] p S[R0:2][x5]
+    (part of 0) S -> . < p > < p > < p n >
 S4@0-1L2o16 -> S4@0-1L2o16a20
 S4@0-1L2o16a20 -> 'a'
-    rule 1: p -> a .
-S7@2-2R9:1o17 -> S7@2-2R9:1o17a21
-S7@2-2R9:1o17a21 -> undef
-    rule 9: S[R0:2][x5] -> p[] . n
-    (part of 0) S -> p p << p >> . << n >>
+    rule 1: p -> . a
 END_OF_STRING
 
 # Local Variables:

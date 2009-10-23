@@ -72,8 +72,8 @@ package Marpa::Internal::Recognizer;
 
 ### Using smart comments <where>...
 
-use Scalar::Util qw(weaken);
 use Data::Dumper;
+use Storable;
 use English qw( -no_match_vars );
 
 use Marpa::Internal;
@@ -147,6 +147,9 @@ sub Marpa::Recognizer::new {
 
     # options are not set until *AFTER* the grammar is cloned
     Marpa::Grammar::set( $grammar, $args );
+
+    ### <where>
+    ### trace_fh: $grammar->[Marpa'Internal'Grammar'TRACE_FILE_HANDLE]
 
     # Pull lookup of terminal flag by symbol ID out of the loop
     # over the QDFA transitions
@@ -255,12 +258,11 @@ sub Marpa::Recognizer::stringify {
         );
     } ## end if ( $phase != Marpa::Internal::Phase::RECOGNIZED )
 
-    my $d = Data::Dumper->new( [$recce], ['recce'] );
-    $d->Purity(1);
-    $d->Indent(0);
+    $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE] = undef;
 
     # returns a ref -- dumps can be long
-    return \( $d->Dump() );
+    return \Storable::freeze($recce);
+
 } ## end sub Marpa::Recognizer::stringify
 
 # First arg is stringified recognizer
@@ -278,32 +280,7 @@ sub Marpa::Recognizer::unstringify {
     Marpa::exception('Arg to unstringify must be ref to SCALAR')
         if ref $stringified_recce ne 'SCALAR';
 
-    my $recce;
-    {
-        my @warnings;
-        my $eval_ok;
-        {
-            local $SIG{__WARN__} =
-                sub { push @warnings, [ $_[0], ( caller 0 ) ]; };
-
-            ## no critic (BuiltinFunctions::ProhibitStringyEval)
-            $eval_ok = eval ${$stringified_recce};
-            ## use critic
-
-        }
-
-        if ( not $eval_ok or @warnings ) {
-            my $fatal_error = $EVAL_ERROR;
-            Marpa::Internal::code_problems(
-                {   eval_ok     => $eval_ok,
-                    fatal_error => $fatal_error,
-                    warnings    => \@warnings,
-                    where       => 'unstringifying recognizer',
-                    code        => $stringified_recce,
-                }
-            );
-        } ## end if ( not $eval_ok or @warnings )
-    }
+    my $recce = Storable::unfreeze($stringified_recce);
 
     my $grammar = $recce->[Marpa::Internal::Recognizer::GRAMMAR];
     $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE] = $trace_fh;
@@ -313,21 +290,20 @@ sub Marpa::Recognizer::unstringify {
 } ## end sub Marpa::Recognizer::unstringify
 
 sub Marpa::Recognizer::clone {
-    my $recce = shift;
+    my $recce    = shift;
+    my $trace_fh = shift;
 
-    my $grammar  = $recce->[Marpa::Internal::Recognizer::GRAMMAR];
-    my $trace_fh = $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE];
+    my $grammar = $recce->[Marpa::Internal::Recognizer::GRAMMAR];
+    $trace_fh //= $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE];
 
-    if ( $#{$recce} > Marpa::Internal::Recognizer::LAST_EVALUATOR_FIELD ) {
-        Marpa::exception(
-            "Cloning of unstripped recognizers not yet implemented\n",
-            "Strip the recognizer or turn off cloning\n" );
-    }
-    my $stringified_recce = Marpa::Recognizer::stringify($recce);
+    $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE] = undef;
+    my $cloned_recce = Storable::dclone($recce);
+    my $cloned_grammar =
+        $cloned_recce->[Marpa::Internal::Recognizer::GRAMMAR];
+    $cloned_grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE] =
+        $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE] = $trace_fh;
 
-    # say $$stringified_recce;
-    # exit 0;
-    return Marpa::Recognizer::unstringify( $stringified_recce, $trace_fh );
+    return $cloned_recce;
 
 } ## end sub Marpa::Recognizer::clone
 

@@ -88,7 +88,7 @@ sub show_nullary { return $_[1] . ' function call' }
 ## use critic
 
 __DATA__
-semantics are perl5.  version is 0.001_019.  the start symbol is perl line.
+semantics are perl5.  the start symbol is perl line.
 the default lex prefix is qr/\s*/.
 
 perl line: perl statements, optional comment. 'show_perl_line'.

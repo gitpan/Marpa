@@ -7,11 +7,10 @@ use warnings;
 use lib 'lib';
 use English qw( -no_match_vars );
 use Fatal qw(open close chdir);
-use Test::More tests => 5;
+use Test::More tests => 4;
 use t::lib::Marpa::Test;
 
 BEGIN {
-    Test::More::use_ok('Marpa');
     Test::More::use_ok('Marpa::MDLex');
 }
 

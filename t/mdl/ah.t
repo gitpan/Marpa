@@ -70,7 +70,7 @@ sub default_action {
 # vim: expandtab shiftwidth=4:
 
 __DATA__
-semantics are perl5.  version is 0.001_019.  the start symbol is
+semantics are perl5.  the start symbol is
 S.  the default null value is q{}.
 the default action is 'main::default_action'.
 

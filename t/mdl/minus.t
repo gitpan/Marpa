@@ -127,7 +127,7 @@ sub default_action {
 # vim: expandtab shiftwidth=4:
 
 __DATA__
-semantics are perl5.  version is 0.001_019.
+semantics are perl5.
 
 the start symbol is E.
 

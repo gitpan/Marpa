@@ -659,7 +659,6 @@ $data = {
         'comment-word',
         'comma'
       ],
-      'version' => '0.001_019'
     }
   ],
   'mdlex_options' => [

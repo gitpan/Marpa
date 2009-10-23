@@ -6,7 +6,7 @@ use warnings;
 
 use Module::Build;
 
-my $marpa_version = '0.001_019';
+my $marpa_version = '0.001_020';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -16,6 +16,8 @@ my $class = Module::Build->subclass(
         my $self = shift;
         open( my $manifest_fh, q{<}, 'MANIFEST' )
             or die("Cannot open MANIFEST: $!");
+
+        my @problems;
         FILE: while ( my $file = <$manifest_fh> ) {
             chomp $file;
             next FILE if $file =~ /^\s*[#]/xms;
@@ -26,10 +28,11 @@ my $class = Module::Build->subclass(
                 <$fh>;
             };
             if ( $file_text =~ /^ \s+ use \s+ Smart[:][:]Comments /xms ) {
-                say STDERR "Fatal Error: Smart::Comments enabled in $file";
-                die("dist action abended\n");
+                push @problems, "Smart::Comments enabled in $file";
             }
         } ## end while ( my $file = <$manifest_fh> )
+
+        die(join "\n", @problems, "Fatal Error\n") if @problems;
         $self->SUPER::ACTION_dist;
     } ## end sub ACTION_dist
 SUBCLASS
@@ -42,14 +45,18 @@ my $build = $class->new(
     requires             => { 'Scalar::Util' => 0, },
     recursive_test_files => 1,
     build_requires       => {
-        'Test::More'   => 0,
-        'Task::Weaken' => 0,    #to be sure to have weaken in Scalar::Util
+
+        # Scalar::Util::weaken no longer required
+        'Test::More' => 0,
     },
     meta_merge => {
         no_index => {
             directory => [qw(inc t author.t save)],
-            namespace => [ 'Marpa::Internal', 'Marpa::MDL::Internal' ],
-            package   => [qw(Marpa::Internal Marpa::Offset)],
+            namespace => [
+                'Marpa::Internal', 'Marpa::MDL::Internal',
+                'Marpa::MDLex::Internal'
+            ],
+            package => [qw(Marpa::Internal Marpa::Offset)],
         },
     },
     meta_add => {

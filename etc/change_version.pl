@@ -6,23 +6,6 @@ use warnings;
 use Fatal qw(:void open close unlink select rename);
 use English qw( -no_match_vars );
 
-my @test_files = qw(
-    ./bootstrap/self.marpa
-    ./example/null_value.marpa
-    ./example/equation.marpa
-    ./example/synopsis.pl
-    ./lib/Marpa/Doc/Internals.pod
-    ./lib/Marpa/Doc/MDL.pod
-    ./t/ah_s.t
-    ./t/cycle.t
-    ./t/cycle2.t
-    ./t/minus_s.t
-    ./t/randal.t
-    ./author.t/MDL_displays.marpa
-    ./author.t/minimal.marpa
-    ./author.t/misc.t
-);
-
 our $FH;
 
 Marpa::exception("usage: $0: old_version new_version")
@@ -114,30 +97,6 @@ sub fix_marpa_pm {
     return $text_ref;
 } ## end sub fix_marpa_pm
 
-sub fix_bootstrap_pl {
-    my $text_ref  = shift;
-    my $file_name = shift;
-
-    if ( ${$text_ref} !~ s/(\$new_version\s*=\s*')$old';/$1$new';/xms ) {
-        say {*STDERR}
-            "failed to change version from $old to $new in $file_name"
-            or Marpa::exception("Could not print to STDERR: $ERRNO");
-    }
-    return $text_ref;
-} ## end sub fix_bootstrap_pl
-
-sub fix_test_files {
-    my $text_ref  = shift;
-    my $file_name = shift;
-
-    if ( ${$text_ref} !~ s/(version\s+is\s+)$old/$1$new/gxms ) {
-        say {*STDERR}
-            "failed to change version from $old to $new in $file_name"
-            or Marpa::exception("Could not print to STDERR: $ERRNO");
-    }
-    return $text_ref;
-} ## end sub fix_test_files
-
 sub update_changes {
     my $text_ref  = shift;
     my $file_name = shift;
@@ -152,12 +111,10 @@ sub update_changes {
     return $text_ref;
 } ## end sub update_changes
 
-change( \&fix_meta_yml,     'META.yml' );
-change( \&fix_build_pl,     'Build.PL' );
-change( \&fix_marpa_pm,     'lib/Marpa.pm' );
-change( \&fix_bootstrap_pl, 'bootstrap/bootstrap.pl' );
-change( \&fix_test_files,   @test_files );
-change( \&update_changes,   'Changes' );
+change( \&fix_meta_yml,   'META.yml' );
+change( \&fix_build_pl,   'Build.PL' );
+change( \&fix_marpa_pm,   'lib/Marpa.pm' );
+change( \&update_changes, 'Changes' );
 
 say {*STDERR} 'REMEMBER TO UPDATE Changes file'
     or Marpa::exception("Could not print to STDERR: $ERRNO");

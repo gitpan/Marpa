@@ -82,7 +82,6 @@ self_show_rules.out:
 	cat minimal.marpa | \
 	perl -I../lib -MMarpa::MDL::Internal::Actions \
 	../bin/mdl parse \
-	--option self_arg=0 \
 	--actions Marpa::MDL::Internal::Actions \
 	--grammar ../bootstrap/self.marpa \
 	-rules > $@

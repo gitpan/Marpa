@@ -29,7 +29,7 @@ my $g = Marpa::Grammar->new(
     }
 );
 
-$g->set( { terminals => [ [ 'a' => { regex => 'a' } ], ], } );
+$g->set( { terminals => ['a'] } );
 
 $g->precompute();
 
