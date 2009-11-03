@@ -63,7 +63,7 @@ if ( $fail_offset >= 0 ) {
     Marpa::exception("Parse failed at offset $fail_offset");
 }
 
-$recce->end_input();
+$recce->tokens();
 
 my $evaler = Marpa::Evaluator->new( { recce => $recce } );
 Marpa::exception('Could not initialize parse') if not $evaler;

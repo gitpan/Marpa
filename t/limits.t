@@ -46,24 +46,26 @@ sub test_grammar {
     Marpa::exception("Exception while creating Recognizer:\n$EVAL_ERROR")
         if not $eval_ok;
     Marpa::exception("Recognizer not created\n") if not $recce;
-    my $a = $grammar->get_terminal('a');
 
     my $earleme_result;
-    $eval_ok =
-        eval { $earleme_result = $recce->earleme( [ $a, 'a', 1 ] ); 1; };
-    Marpa::exception("Exception while recognizing earleme:\n$EVAL_ERROR")
-        if not $eval_ok;
-    Marpa::exception("Parsing exhausted\n") if not $earleme_result;
-
     $eval_ok = eval {
-        $earleme_result = $recce->earleme( [ $a, 'a', $earleme_length ] );
+        $earleme_result = $recce->tokens( [ [ 'a', 'a', 1 ] ], 'continue' );
         1;
     };
     Marpa::exception("Exception while recognizing earleme:\n$EVAL_ERROR")
         if not $eval_ok;
-    Marpa::exception("Parsing exhausted\n") if not $earleme_result;
+    Marpa::exception("Parsing exhausted\n") if not defined $earleme_result;
 
-    $eval_ok = eval { $recce->end_input(); 1; };
+    $eval_ok = eval {
+        $earleme_result =
+            $recce->tokens( [ [ 'a', 'a', $earleme_length ] ], 'continue' );
+        1;
+    };
+    Marpa::exception("Exception while recognizing earleme:\n$EVAL_ERROR")
+        if not $eval_ok;
+    Marpa::exception("Parsing exhausted\n") if not defined $earleme_result;
+
+    $eval_ok = eval { $recce->tokens(); 1; };
     Marpa::exception("Exception while recognizing end of input:\n$EVAL_ERROR")
         if not $eval_ok;
 

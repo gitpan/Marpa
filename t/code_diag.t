@@ -206,7 +206,7 @@ sub run_test {
         Marpa::exception("Parse failed at offset $fail_offset");
     }
 
-    $recce->end_input();
+    $recce->tokens();
 
     my $expected = '((2-(0*(3+1)))==2; q{trailer};[default null];[null])';
     my $evaler = Marpa::Evaluator->new( { recce => $recce } );

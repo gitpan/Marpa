@@ -89,11 +89,6 @@ sub fix_marpa_pm {
             "failed to change VERSION from $old to $new in $file_name"
             or Marpa::exception("Could not print to STDERR: $ERRNO");
     }
-    if ( ${$text_ref} !~ s/(version\s+is\s+)$old/$1$new/xms ) {
-        say {*STDERR}
-            "failed to change version from $old to $new in $file_name"
-            or Marpa::exception("Could not print to STDERR: $ERRNO");
-    }
     return $text_ref;
 } ## end sub fix_marpa_pm
 

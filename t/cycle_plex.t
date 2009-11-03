@@ -10,7 +10,7 @@ use lib 'lib';
 use English qw( -no_match_vars );
 use Fatal qw(open close chdir);
 
-use Test::More tests => 7;
+use Test::More tests => 10;
 use t::lib::Marpa::Test;
 
 use constant A_LOT_OF_VALUES => 25;
@@ -61,6 +61,10 @@ sA(AA(At(t)))
 sA(At(t))
 EOS
     <<'EOS',
+sA(AA(At(t)))
+sA(At(t))
+EOS
+    <<'EOS',
 Cycle found involving rule: 0: A -> A
 EOS
 ];
@@ -95,6 +99,22 @@ sB(BB(Bt(t)))
 sB(Bt(t))
 EOS
     <<'EOS',
+sA(AA(AB(Bt(t))))
+sA(AA(At(t)))
+sA(AB(Bt(t)))
+sA(At(t))
+sB(BA(AA(AB(Bt(t)))))
+sB(BA(AA(At(t))))
+sB(BA(AB(Bt(t))))
+sB(BA(At(t)))
+sB(BB(BA(AA(AB(Bt(t))))))
+sB(BB(BA(AA(At(t)))))
+sB(BB(BA(AB(Bt(t)))))
+sB(BB(BA(At(t))))
+sB(BB(Bt(t)))
+sB(Bt(t))
+EOS
+    <<'EOS',
 Cycle found involving rule: 5: B -> B
 Cycle found involving rule: 4: B -> A
 Cycle found involving rule: 1: A -> B
@@ -109,6 +129,9 @@ my $plex3_test = [
 1884 values
 EOS
     <<'EOS',
+119 values
+EOS
+    <<'EOS',
 Cycle found involving rule: 12: C -> C
 Cycle found involving rule: 11: C -> B
 Cycle found involving rule: 10: C -> A
@@ -121,55 +144,62 @@ Cycle found involving rule: 0: A -> A
 EOS
 ];
 
-my @test_data = ( $plex1_test, $plex2_test, $plex3_test );
-
-for my $test_data (@test_data) {
-    my ( $test_name, $rules, $expected_values, $expected_trace ) =
-        @{$test_data};
+for my $test_data ( $plex1_test, $plex2_test, $plex3_test ) {
+    my ( $test_name, $rules, $expected_values_rw, $expected_values_norw,
+        $expected_trace )
+        = @{$test_data};
 
     my $trace = q{};
     open my $MEMORY, '>', \$trace;
     my %args = (
         @{$rules},
         cycle_action => 'warn',
+        strip        => 0,
 
         # Let the cycles make the parse absurdly large
         # That's the point of the test
         cycle_scale       => 200,
         trace_file_handle => $MEMORY,
     );
-    my $grammar = Marpa::Grammar->new( \%args );
+    my $grammar =
+        Marpa::Grammar->new( { experimental => 'no warning' }, \%args );
     $grammar->precompute();
-    my $t = $grammar->get_terminal('t');
 
     close $MEMORY;
     Marpa::Test::is( $trace, $expected_trace, "$test_name trace" );
 
     my $recce = Marpa::Recognizer->new(
         { grammar => $grammar, trace_file_handle => \*STDERR } );
-    $recce->earleme( [ $t, 't', 1 ] )
-        or Marpa::exception('Parsing exhausted');
-    $recce->end_input();
-    my $evaler = Marpa::Evaluator->new( { recce => $recce, clone => 0 } );
-    if ( not defined $evaler ) {
-        Marpa::exception('Input not recognized');
-    }
+    $recce->tokens( [ [ 't', 't', 1 ] ] );
 
-    my @values = ();
-    while ( my $value = $evaler->value() ) {
-        push @values, ${$value};
-    }
+    for my $cycle_rewrite ( 0, 1 ) {
+        my $evaler = Marpa::Evaluator->new(
+            { recce => $recce, cycle_rewrite => $cycle_rewrite } );
+        if ( not defined $evaler ) {
+            Marpa::exception('Input not recognized');
+        }
 
-    my $values = q{};
-    if ( @values > A_LOT_OF_VALUES ) {
-        $values = @values . ' values';
-    }
-    else {
-        $values = join "\n", sort @values;
-    }
-    Marpa::Test::is( "$values\n", $expected_values, $test_name );
+        my @values = ();
+        while ( my $value = $evaler->value() ) {
+            push @values, ${$value};
+        }
 
-} ## end for my $test_data (@test_data)
+        my $values = q{};
+        if ( @values > A_LOT_OF_VALUES ) {
+            $values = @values . ' values';
+        }
+        else {
+            $values = join "\n", sort @values;
+        }
+        Marpa::Test::is(
+            "$values\n",
+            (   $cycle_rewrite ? $expected_values_rw : $expected_values_norw,
+                "$test_name " . ( $cycle_rewrite ? 'rewrite' : 'no rewrite' )
+            )
+        );
+    } ## end for my $cycle_rewrite ( 0, 1 )
+
+} ## end for my $test_data ( $plex1_test, $plex2_test, $plex3_test)
 
 # Local Variables:
 #   mode: cperl

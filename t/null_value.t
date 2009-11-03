@@ -79,8 +79,7 @@ $Test_Grammar::MDLEX_OPTIONS = [
 
 package main;
 
-my $g     = Marpa::Grammar->new( @{$Test_Grammar::MARPA_OPTIONS} );
-my $cap_z = $g->get_terminal('Z');
+my $g = Marpa::Grammar->new( @{$Test_Grammar::MARPA_OPTIONS} );
 $g->precompute();
 my $recce = Marpa::Recognizer->new( { grammar => $g } );
 my $lexer =
@@ -91,7 +90,7 @@ if ( $fail_offset >= 0 ) {
     Carp::croak("Parse failed at offset $fail_offset");
 }
 
-$recce->end_input();
+$recce->tokens();
 my $evaler = Marpa::Evaluator->new( { recce => $recce } );
 Marpa::exception('No parse found') if not $evaler;
 my $value = $evaler->value();

@@ -4,36 +4,21 @@ Marpa::Doc::To_Do - Marpa's To Do List
 
 =head1 PRINCIPLES
 
-MDLex and MDL will know about Marpa, but B<not> vice versa.
+=over 4
+
+=item * MDLex and MDL will know about Marpa, but B<not> vice versa.
+
+=item * I should assume that anyone explicitly using separate recognizer
+and evaluator stages knows what they are doing.  On the other hand,
+just because they are using the plumbing interface does not mean they
+want to know about the recognizer/evaluator distinction.  When I revise
+the documentation, I should think accordingly.
+
+=back
 
 =head1 ORDERED TASKS
 
 =over 4
-
-=item * Or_map's should be hashes instead of arrays.
-
-=item * Add tokens() call, to allow multiple earlemes
-in cookie/incremental form, to be added at once.
-
-Add complete() call, to allow completions up to an
-earleme specified in the arg.  Default is up to the
-furthest earleme, which is identical to the present
-end_input.  In array context, this should return
-the predicted terminals.
-
-=item * Allow action options to be changed when evaluator
-is created, but not afterwards.
-
-=item * Create a "stress test" for zero-width and-nodes
-and or-nodes:
-A grammar with two rules in a cycle.  Each rule is all
-nulling (nullable?) symbols
-except for the last symbol, which must be non-nulling.
-
-=item * I may assume in several places and zero-length and-nodes have
-no cause or predecessor.  I have to find any places where this
-assumption is being made, and change it.  In addition to the
-above test, I may want to reread the relevant evaluator code.
 
 =item * Create HTML Parser.
 
@@ -43,6 +28,13 @@ above test, I may want to reread the relevant evaluator code.
 
 =over 4
 
+=item * On ambiguous grammars, it may optimize to save values of reset
+bocage nodes from the first reset, and simply copy them back in
+on subsequent resets.  In particular for the sorted choices.
+Note this optimizes only to the degree the user wants multiple
+parses, or else require multiple interations to get the parse she
+wants.
+
 =item * After MDL is factored out, and stripping & cloning is
 fully functional, create a matrix of tests of 
 valid grammars vs. their result.  Matrix is
@@ -50,22 +42,6 @@ valid grammars vs. their result.  Matrix is
     grammars X inputs X clone grammar X clone recognizer X strip grammar X strip recognizer
 
 Do just one or two inputs per grammar.
-
-=item * Implement an recognizer option to simply skip
-ahead spans where no terminal can possibly be found.
-This means coming up with some way of passing
-Marpa's idea of where the
-next terminal should be expected to the lexer.
-Also the lexer should be able to inform Marpa
-which earleme a token is at.
-
-Use PREDICTIVE flag to the Recognizer to enable this?
-
-=item * I should start to assume that anyone explicitly using
-separate recognizer and evaluator stages knows what they are doing.
-Revise the documentation accordingly.  Just because they are
-using the plumbing interface does not mean they want to know about
-the recognizer/evaluator distinction.
 
 =item * Add optimizations when max_parses <= 1
     For example, no need to prune duplicate parses
@@ -86,14 +62,20 @@ parse bocage creation can probably be made a bit slightly cleaner.
 
 =item * Make sure that nulling symbols can never be terminals
 
+=item * Add code to do cycle rewrite only if there
+are cycles?
+
 =back
 
 =head1 LOW PRIORITY
 
 =over 4
 
+=item * Allow action options to be changed when evaluator
+is created, but not afterwards.
+
 =item * Add a trace_choices option?  There was an option to trace
-non-trivial evaluation choices in the old evaluator, and the new trace_iterations
+non-trivial evaluation choices in the old evaluator, and the trace_tasks
 doesn't entirely replace it.
 
 =item * Add a show_derivation option.

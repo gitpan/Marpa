@@ -33,7 +33,8 @@ sub ah_extended {
                 [ 'A', [qw/E/] ],
                 ['E'],
             ],
-            terminals => ['a'],
+            terminals   => ['a'],
+            parse_order => 'none',
 
             # no warnings for $n equals zero
             warnings => ( $n ? 1 : 0 ),
@@ -43,9 +44,7 @@ sub ah_extended {
 
     my $recce = Marpa::Recognizer->new( { grammar => $g } );
 
-    my $a = $g->get_terminal('a');
-    for ( 0 .. $n ) { $recce->earleme( [ $a, 'a', 1 ] ); }
-    $recce->end_input();
+    $recce->tokens( [ ( [ 'a', 'a', 1 ] ) x ( $n + 1 ) ] );
 
     my @parse_counts;
     for my $loc ( 0 .. $n ) {

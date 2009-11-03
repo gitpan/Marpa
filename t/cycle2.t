@@ -7,7 +7,7 @@ use warnings;
 use lib 'lib';
 use English qw( -no_match_vars );
 use Fatal qw(open close chdir);
-use Test::More tests => 4;
+use Test::More tests => 6;
 use t::lib::Marpa::Test;
 
 BEGIN {
@@ -45,8 +45,9 @@ $Test_Grammar::MARPA_OPTIONS = [
                 'rhs'    => ['a']
             }
         ],
-        'start'     => 's',
-        'terminals' => ['a:k0'],
+        'start'        => 's',
+        'terminals'    => ['a:k0'],
+        'cycle_action' => 'warn'
     }
 ];
 
@@ -61,8 +62,11 @@ $Test_Grammar::MDLEX_OPTIONS = [
 
 my $trace;
 open my $MEMORY, '>', \$trace;
-my $grammar = Marpa::Grammar->new( { trace_file_handle => $MEMORY },
-    @{$Test_Grammar::MARPA_OPTIONS} );
+my $grammar = Marpa::Grammar->new(
+    { experimental      => 'no warning' },
+    { trace_file_handle => $MEMORY, cycle_action => 'warn' },
+    @{$Test_Grammar::MARPA_OPTIONS}
+);
 $grammar->precompute();
 close $MEMORY;
 
@@ -85,10 +89,21 @@ if ( $fail_location >= 0 ) {
     Marpa::exception(
         Marpa::show_location( 'Parsing failed', \$text, $fail_location ) );
 }
-$recce->end_input();
+$recce->tokens();
 
-my $evaler = Marpa::Evaluator->new( { recce => $recce } );
+my $evaler = Marpa::Evaluator->new( { recce => $recce, cycle_rewrite => 0 } );
 my $parse_count = 0;
+while ( my $value = $evaler->value() ) {
+    Marpa::Test::is(
+        ${$value},
+        $expected_values[$parse_count],
+        "cycle depth test $parse_count"
+    );
+    $parse_count++;
+} ## end while ( my $value = $evaler->value() )
+
+$evaler = Marpa::Evaluator->new( { recce => $recce, cycle_rewrite => 1 } );
+$parse_count = 0;
 while ( my $value = $evaler->value() ) {
     Marpa::Test::is(
         ${$value},

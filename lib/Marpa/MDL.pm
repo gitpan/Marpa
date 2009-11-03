@@ -58,7 +58,7 @@ __END__
 
 =head1 NAME
 
-Marpa::MDL -- Utility Methods for MDL
+Marpa::MDL -- Marpa Demo Language
 
 =head1 DESCRIPTION
 
@@ -104,27 +104,6 @@ This static method takes as its one argument an MDL symbol
 name.
 It returns the canonical MDL name, which is also
 the symbol's plumbing name.
-
-=head2 get_terminal
-
-=begin Marpa::Test::Commented_Out_Display:
-
-## next display
-is_file($_, 'author.t/misc.t', 'get_terminal snippet');
-
-=end Marpa::Test::Commented_Out_Display:
-
-=begin Marpa::Test::Display:
-
-## skip display
-
-=end Marpa::Test::Display:
-
-    my $op = Marpa::MDL::get_terminal( $grammar, 'Op' );
-
-This static method takes a Marpa grammar object as its first argument and an MDL symbol name as its second.
-It returns the symbol's "cookie".
-Symbol cookies are needed to use the C<Marpa::Recognizer::earleme> method.
 
 =head1 SUPPORT
 

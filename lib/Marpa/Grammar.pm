@@ -86,8 +86,8 @@ use Marpa::Offset qw(
     ID NAME LHS RHS
     =LAST_BASIC_DATA_FIELD
 
-    USEFUL ACTION
-    CODE CYCLE
+    USEFUL
+    ACTION
     PRIORITY
     GREED
     VIRTUAL_LHS VIRTUAL_RHS
@@ -118,7 +118,6 @@ CLOSURE - closure for evaluating this rule
 ORIGINAL_RULE - for a rewritten rule, the original
 PRIORITY - rule priority, from user
 CODE - code used to create closure
-CYCLE - is this rule part of a cycle?
 
 =end Implementation:
 
@@ -197,7 +196,7 @@ use Marpa::Offset qw(
     DEFAULT_ACTION { Action for rules without one }
     TRACE_FILE_HANDLE TRACING
     STRIP
-    CODE_LINES { Delete me? }
+    EXPERIMENTAL
     =LAST_BASIC_DATA_FIELD
 
     { === Evaluator Fields === }
@@ -210,8 +209,10 @@ use Marpa::Offset qw(
     CYCLE_ACTION
     CYCLE_SCALE
     CYCLE_NODES
+    CYCLE_REWRITE
+    PARSE_ORDER
 
-    TRACE_ITERATIONS
+    TRACE_TASKS
     TRACE_EVALUATION { General evaluation trace }
     TRACE_ACTIONS
     TRACE_VALUES
@@ -276,7 +277,6 @@ AMBIGUOUS_LEX      - lex ambiguously?
 PROBLEMS - fatal problems
 WARNINGS - print warnings about grammar?
 VERSION - Marpa version this grammar was stringified from
-CODE_LINES - max lines to display on failure
 SEMANTICS - semantics (currently perl5 only)
 STRIP - Boolean.  If true, strip unused data to save space.
 TRACING - master flag, set if any tracing is being done
@@ -312,7 +312,7 @@ use Marpa::Offset qw(
 
     :package=Marpa::Internal::Phase
     NEW RULES
-    PRECOMPUTED RECOGNIZING RECOGNIZED EVALUATING
+    PRECOMPUTED RECOGNIZING EVALUATING
 
 );
 
@@ -326,8 +326,6 @@ sub Marpa::Internal::Phase::description {
         if $phase == Marpa::Internal::Phase::PRECOMPUTED;
     return 'grammar being recognized'
         if $phase == Marpa::Internal::Phase::RECOGNIZING;
-    return 'recognized grammar'
-        if $phase == Marpa::Internal::Phase::RECOGNIZED;
     return 'grammar being evaluated'
         if $phase == Marpa::Internal::Phase::EVALUATING;
     return 'unknown phase';
@@ -358,7 +356,6 @@ sub Marpa::Internal::code_problems {
     my $warnings = [];
     my $where    = '?where?';
     my $long_where;
-    my $code;
     my @msg = ();
     my $eval_value;
     my $eval_given = 0;
@@ -370,7 +367,6 @@ sub Marpa::Internal::code_problems {
             when ('where')       { $where       = $value }
             when ('long_where')  { $long_where  = $value }
             when ('warnings')    { $warnings    = $value }
-            when ('code')        { $code        = $value }
             when ('eval_ok') {
                 $eval_value = $value;
                 $eval_given = 1;
@@ -389,73 +385,6 @@ sub Marpa::Internal::code_problems {
     } ## end for my $warning_data ( @{$warnings} )
 
     $long_where //= $where;
-    my $code_lines;
-    if ( defined $grammar ) {
-        $code_lines = $grammar->[Marpa::Internal::Grammar::CODE_LINES];
-    }
-    $code_lines //= 3;
-
-    # if we have code
-    my $code_to_print;
-    my $code_length;
-
-    # block to look for the code to print
-    CODE_TO_PRINT: {
-
-        last CODE_TO_PRINT if not defined $code;
-        last CODE_TO_PRINT if not defined ${$code};
-
-        my @lines = split /\n/xms, ${$code};
-        $code_length = scalar @lines;
-
-        last CODE_TO_PRINT if $code_lines == 0;
-
-        # which lines to print?
-        my $first_line;
-        my $max_line;
-
-        # if code_lines < 0, print all lines
-        if ( $code_lines < 0 ) {
-            $code_lines = $code_length;
-        }
-
-        # if we know the problem line, print code_lines
-        # worth of context
-        if ( $max_problem_line >= 0 ) {
-            $first_line = $max_problem_line - $code_lines;
-            $first_line = List::Util::max 1, $first_line;
-            $max_line   = $max_problem_line + $code_lines;
-
-            # else print the first 2*code_lines+1 lines
-        } ## end if ( $max_problem_line >= 0 )
-        else {
-            $first_line = 1;
-            $max_line   = $code_lines * 2 + 1;
-            if ( $code_lines > $code_length ) {
-                $max_line = $code_length;
-            }
-        } ## end else [ if ( $max_problem_line >= 0 ) ]
-
-        # now create an array of the lines to print
-        my @lines_to_print = do {
-            my $start_splice = $first_line - 1;
-            my $end_splice   = $max_line - 1;
-            $end_splice = List::Util::min $#lines, $end_splice;
-            @lines[ $start_splice .. $end_splice ];
-        };
-
-        my @labeled_lines = ();
-        LINE: for my $i ( 0 .. $#lines_to_print ) {
-            my $line_number = $first_line + $i;
-            my $marker      = q{};
-            if ( $problem_line[$line_number] ) {
-                $marker = q{*};
-            }
-            push @labeled_lines,
-                "$marker$line_number: " . $lines_to_print[$i];
-        } ## end for my $i ( 0 .. $#lines_to_print )
-        $code_to_print = \( ( join "\n", @labeled_lines ) . "\n" );
-    } ## end CODE_TO_PRINT:
 
     push @msg, 'Fatal problem(s) in ' . $long_where . "\n";
     my $warnings_count = scalar @{$warnings};
@@ -476,20 +405,6 @@ sub Marpa::Internal::code_problems {
         if ( $warnings_count and not $false_eval and not $fatal_error ) {
             push @msg, "Warning(s) treated as fatal problem\n";
         }
-    }
-
-    # If we have a section of code to print
-    if ( defined $code_to_print ) {
-        my $header = "$code_length lines in problem code, beginning:";
-        if ( $max_problem_line >= 0 ) {
-            $header =
-                "$code_length lines in problem code, last warning occurred here:";
-        }
-        push @msg, "$header\n" . ${$code_to_print} . q{======} . "\n";
-    } ## end if ( defined $code_to_print )
-    elsif ( defined $code_length ) {
-        push @msg,
-            "$code_length lines in problem code, code printing disabled\n";
     }
 
     for my $warning_ix ( 0 .. ( $warnings_count - 1 ) ) {
@@ -529,22 +444,24 @@ sub Marpa::Grammar::new {
     $grammar->[Marpa::Internal::Grammar::NAME] = sprintf 'Marpa::G_%x',
         $grammar_number;
 
-    $grammar->[Marpa::Internal::Grammar::ACADEMIC]         = 0;
-    $grammar->[Marpa::Internal::Grammar::TRACE_RULES]      = 0;
-    $grammar->[Marpa::Internal::Grammar::TRACE_VALUES]     = 0;
-    $grammar->[Marpa::Internal::Grammar::TRACE_ITERATIONS] = 0;
-    $grammar->[Marpa::Internal::Grammar::TRACING]          = 0;
-    $grammar->[Marpa::Internal::Grammar::STRIP]            = 1;
-    $grammar->[Marpa::Internal::Grammar::WARNINGS]         = 1;
-    $grammar->[Marpa::Internal::Grammar::INACCESSIBLE_OK]  = {};
-    $grammar->[Marpa::Internal::Grammar::UNPRODUCTIVE_OK]  = {};
-    $grammar->[Marpa::Internal::Grammar::CYCLE_ACTION]     = 'warn';
-    $grammar->[Marpa::Internal::Grammar::CYCLE_SCALE]      = 2;
+    $grammar->[Marpa::Internal::Grammar::ACADEMIC]        = 0;
+    $grammar->[Marpa::Internal::Grammar::TRACE_RULES]     = 0;
+    $grammar->[Marpa::Internal::Grammar::TRACE_VALUES]    = 0;
+    $grammar->[Marpa::Internal::Grammar::TRACE_TASKS]     = 0;
+    $grammar->[Marpa::Internal::Grammar::TRACING]         = 0;
+    $grammar->[Marpa::Internal::Grammar::STRIP]           = 1;
+    $grammar->[Marpa::Internal::Grammar::EXPERIMENTAL]    = 0;
+    $grammar->[Marpa::Internal::Grammar::PARSE_ORDER]     = 'original';
+    $grammar->[Marpa::Internal::Grammar::WARNINGS]        = 1;
+    $grammar->[Marpa::Internal::Grammar::INACCESSIBLE_OK] = {};
+    $grammar->[Marpa::Internal::Grammar::UNPRODUCTIVE_OK] = {};
+    $grammar->[Marpa::Internal::Grammar::CYCLE_ACTION]    = 'fatal';
+    $grammar->[Marpa::Internal::Grammar::CYCLE_SCALE]     = 2;
+    $grammar->[Marpa::Internal::Grammar::CYCLE_REWRITE]   = 1;
     {
         ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
         $grammar->[Marpa::Internal::Grammar::CYCLE_NODES] = 1000;
     }
-    $grammar->[Marpa::Internal::Grammar::CODE_LINES]          = undef;
     $grammar->[Marpa::Internal::Grammar::SYMBOLS]             = [];
     $grammar->[Marpa::Internal::Grammar::SYMBOL_HASH]         = {};
     $grammar->[Marpa::Internal::Grammar::RULE_HASH]           = {};
@@ -612,28 +529,32 @@ sub Marpa::show_location {
 use constant GRAMMAR_OPTIONS => [
     qw{
         academic
-        actions
         action_object
+        actions
         code_lines
         cycle_action
-        cycle_scale
         cycle_nodes
+        cycle_rewrite
+        cycle_scale
         default_action
         default_null_value
+        experimental
         inaccessible_ok
         maximal
         max_parses
         minimal
+        parse_order
         rules
         semantics
+        sort_method
         start
         strip
         terminals
         trace_actions
         trace_evaluation
         trace_file_handle
-        trace_iterations
         trace_rules
+        trace_tasks
         trace_values
         unproductive_ok
         version
@@ -708,16 +629,15 @@ sub Marpa::Grammar::set {
             } ## end if ($value)
         } ## end if ( defined( my $value = $args->{'trace_rules'} ) )
 
-        if ( defined( my $value = $args->{'trace_iterations'} ) ) {
-            Marpa::exception('trace_iterations must be set to a number >= 0')
+        if ( defined( my $value = $args->{'trace_tasks'} ) ) {
+            Marpa::exception('trace_tasks must be set to a number >= 0')
                 if $value !~ /\A\d+\z/xms;
-            $grammar->[Marpa::Internal::Grammar::TRACE_ITERATIONS] =
-                $value + 0;
+            $grammar->[Marpa::Internal::Grammar::TRACE_TASKS] = $value + 0;
             if ($value) {
-                say {$trace_fh} "Setting trace_iterations option to $value";
+                say {$trace_fh} "Setting trace_tasks option to $value";
                 $grammar->[Marpa::Internal::Grammar::TRACING] = 1;
             }
-        } ## end if ( defined( my $value = $args->{'trace_iterations'...}))
+        } ## end if ( defined( my $value = $args->{'trace_tasks'} ) )
 
         if ( defined( my $value = $args->{'trace_evaluation'} ) ) {
             Marpa::exception('trace_evaluation must be set to a number >= 0')
@@ -792,6 +712,9 @@ sub Marpa::Grammar::set {
             Marpa::exception(
                 'academic option not allowed after grammar is precomputed')
                 if $phase >= Marpa::Internal::Phase::PRECOMPUTED;
+            Marpa::exception(
+                'academic option only allowed in experimental mode')
+                if $grammar->[Marpa::Internal::Grammar::EXPERIMENTAL] <= 0;
             $grammar->[Marpa::Internal::Grammar::ACADEMIC] = $value;
         } ## end if ( defined( my $value = $args->{'academic'} ) )
 
@@ -840,26 +763,40 @@ sub Marpa::Grammar::set {
             }
             Marpa::exception(
                 q{cycle_action must be 'warn', 'quiet' or 'fatal'})
-                if $value ne 'warn'
-                    and $value ne 'quiet'
-                    and $value ne 'fatal';
+                if not $value ~~ [qw(warn quiet fatal)];
+            Marpa::exception(
+                'cycle_action option only allowed in experimental mode')
+                if $grammar->[Marpa::Internal::Grammar::EXPERIMENTAL] <= 0;
             $grammar->[Marpa::Internal::Grammar::CYCLE_ACTION] = $value;
         } ## end if ( defined( my $value = $args->{'cycle_action'} ) )
 
         if ( defined( my $value = $args->{'cycle_scale'} ) ) {
-            no integer;
+            Marpa::exception(
+                'cycle_scale option only allowed in experimental mode')
+                if $grammar->[Marpa::Internal::Grammar::EXPERIMENTAL] <= 0;
             Marpa::exception(q{cycle_scale must be >1})
                 if $value <= 1;
+            no integer;
             $grammar->[Marpa::Internal::Grammar::CYCLE_SCALE] =
                 POSIX::ceil($value);
             use integer;
         } ## end if ( defined( my $value = $args->{'cycle_scale'} ) )
 
         if ( defined( my $value = $args->{'cycle_nodes'} ) ) {
+            Marpa::exception(
+                'cycle_nodes option only allowed in experimental mode')
+                if $grammar->[Marpa::Internal::Grammar::EXPERIMENTAL] <= 0;
             Marpa::exception(q{cycle_nodes must be >0})
                 if $value <= 0;
             $grammar->[Marpa::Internal::Grammar::CYCLE_NODES] = $value;
-        }
+        } ## end if ( defined( my $value = $args->{'cycle_nodes'} ) )
+
+        if ( defined( my $value = $args->{'cycle_rewrite'} ) ) {
+            Marpa::exception(
+                'cycle_rewrite option only allowed in experimental mode')
+                if $grammar->[Marpa::Internal::Grammar::EXPERIMENTAL] <= 0;
+            $grammar->[Marpa::Internal::Grammar::CYCLE_REWRITE] = $value;
+        } ## end if ( defined( my $value = $args->{'cycle_rewrite'} ))
 
         if ( defined( my $value = $args->{'warnings'} ) ) {
             if ( $value && $phase >= Marpa::Internal::Phase::PRECOMPUTED ) {
@@ -893,10 +830,6 @@ sub Marpa::Grammar::set {
                 { map { ( $_, 1 ) } @{$value} };
         } ## end if ( defined( my $value = $args->{'unproductive_ok'}...))
 
-        if ( defined( my $value = $args->{'code_lines'} ) ) {
-            $grammar->[Marpa::Internal::Grammar::CODE_LINES] = $value;
-        }
-
         if ( defined( my $value = $args->{'max_parses'} ) ) {
             $grammar->[Marpa::Internal::Grammar::MAX_PARSES] = $value;
         }
@@ -914,6 +847,30 @@ sub Marpa::Grammar::set {
                 if $phase >= Marpa::Internal::Phase::PRECOMPUTED;
             $grammar->[Marpa::Internal::Grammar::SEMANTICS] = $value;
         } ## end if ( defined( my $value = $args->{'semantics'} ) )
+
+        if ( defined( my $value = $args->{'experimental'} ) ) {
+            given ($value) {
+                when (undef) { $value = 0 }
+                when ('no warning') {
+                    $value = 1
+                }
+                default {
+                    say {
+                        $trace_fh
+                    }
+                    'Experimental (in other words, buggy) features enabled';
+                    $value = 1;
+                } ## end default
+            } ## end given
+            $grammar->[Marpa::Internal::Grammar::EXPERIMENTAL] = $value;
+        } ## end if ( defined( my $value = $args->{'experimental'} ) )
+
+        if ( defined( my $value = $args->{'parse_order'} ) ) {
+            Marpa::exception(q{parse_order must be 'original' or 'none'})
+                if not $value ~~ [qw(original none)];
+            $grammar->[Marpa::Internal::Grammar::PARSE_ORDER] = $value;
+        }
+
     } ## end for my $args (@arg_hashes)
 
     return 1;
@@ -1567,20 +1524,21 @@ sub Marpa::Grammar::show_QDFA {
     return $text;
 } ## end sub Marpa::Grammar::show_QDFA
 
-sub Marpa::Grammar::get_terminal {
+# Used by lexers to check that symbol is a terminal
+sub Marpa::Grammar::check_terminal {
     my ( $grammar, $name ) = @_;
-    Marpa::exception('Attempt to get cookie for undefined name')
+    Marpa::exception('Attempt to use symbol with undefined name')
         if not defined $name;
     my $symbol_hash = $grammar->[Marpa::Internal::Grammar::SYMBOL_HASH];
     my $symbol_id   = $symbol_hash->{$name};
-    Marpa::exception("Attempt to get cookie for unknown symbol: $name")
+    Marpa::exception("Attempt to use unknown symbol as terminal: $name")
         if not defined $symbol_id;
     my $symbols = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
     my $symbol  = $symbols->[$symbol_id];
-    Marpa::exception("Attempt to get cookie for non-terminal: $name")
+    Marpa::exception("Attempt to use non-terminal as terminal: $name")
         if not $symbol->[Marpa::Internal::Symbol::TERMINAL];
-    return $symbol_id;
-} ## end sub Marpa::Grammar::get_terminal
+    return 1;
+} ## end sub Marpa::Grammar::check_terminal
 
 sub add_terminal {
     my $grammar  = shift;
@@ -1684,8 +1642,8 @@ sub assign_user_symbol {
         Marpa::exception(
             "Symbol name was ref to $type; it must be a scalar string");
     }
-    Marpa::exception("Symbol name $name ends in '_': that's not allowed")
-        if $name =~ /_\z/xms;
+    Marpa::exception("Symbol name $name ends in ']': that's not allowed")
+        if $name =~ /\]\z/xms;
     return assign_symbol( $self, $name );
 } ## end sub assign_user_symbol
 
@@ -2134,8 +2092,8 @@ sub add_user_terminal {
         Marpa::exception(
             "Terminal name was ref to $type; it must be a scalar string");
     }
-    Marpa::exception("Symbol name $name ends in '_': that's not allowed")
-        if $name =~ /_\z/xms;
+    Marpa::exception("Symbol name $name ends in ']': that's not allowed")
+        if $name =~ /\]\z/xms;
     add_terminal( $grammar, $name, $options );
     return;
 } ## end sub add_user_terminal
@@ -2490,25 +2448,10 @@ sub nullable {
 
 } ## end sub nullable
 
-# This assumes the grammar has been rewritten into CHAF form.
-sub detect_cycle {
-    my $grammar = shift;
-    my ( $rules, $symbols, $cycle_action, $trace_fh ) = @{$grammar}[
-        Marpa::Internal::Grammar::RULES,
-        Marpa::Internal::Grammar::SYMBOLS,
-        Marpa::Internal::Grammar::CYCLE_ACTION,
-        Marpa::Internal::Grammar::TRACE_FILE_HANDLE,
-    ];
-
-    my $cycle_is_fatal = 1;
-    my $warn_on_cycle  = 1;
-    given ($cycle_action) {
-        when ('warn') { $cycle_is_fatal = 0; }
-        when ('quiet') {
-            $cycle_is_fatal = 0;
-            $warn_on_cycle  = 0;
-        }
-    } ## end given
+sub cycle_rules {
+    my ($grammar) = @_;
+    my $rules     = $grammar->[Marpa::Internal::Grammar::RULES];
+    my $symbols   = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
 
     my @unit_derivation;         # for the unit derivation matrix
     my @new_unit_derivations;    # a list of new unit derivations
@@ -2575,7 +2518,7 @@ sub detect_cycle {
 
     } ## end while ( my $new_unit_derivation = shift @new_unit_derivations)
 
-    my $cycle_count = 0;
+    my @cycle_rules = ();
 
     # produce a list of the rules which cycle
     RULE: while ( my $unit_rule_data = pop @unit_rules ) {
@@ -2583,38 +2526,49 @@ sub detect_cycle {
         my ( $rule, $start_symbol_id, $derived_symbol_id ) =
             @{$unit_rule_data};
 
-        if (   $start_symbol_id == $derived_symbol_id
-            || $unit_derivation[$derived_symbol_id][$start_symbol_id] )
-        {
-            $cycle_count++;
-            $rule->[Marpa::Internal::Rule::CYCLE] = 1;
-
-            my $warning_rule;
-
-            my $original_rule = $rule->[Marpa::Internal::Rule::ORIGINAL_RULE];
-            if ( defined $original_rule ) {
-                if ( not $original_rule->[Marpa::Internal::Rule::CYCLE] ) {
-                    $original_rule->[Marpa::Internal::Rule::CYCLE] = 1;
-                    $warning_rule = $original_rule;
-                }
-            } ## end if ( defined $original_rule )
-            else {
-
-                # always warn if there's no original rule
-                $warning_rule = $rule;
-            }
-
-            if ( $warn_on_cycle and defined $warning_rule ) {
-                print {$trace_fh}
-                    'Cycle found involving rule: ',
-                    Marpa::brief_rule($warning_rule), "\n"
-                    or Marpa::exception('Could not print to trace file');
-            } ## end if ( $warn_on_cycle and defined $warning_rule )
-        } ## end if ( $start_symbol_id == $derived_symbol_id || ...)
+        next RULE
+            if $start_symbol_id != $derived_symbol_id
+                and
+                not $unit_derivation[$derived_symbol_id][$start_symbol_id];
+        push @cycle_rules, $rule;
     } ## end while ( my $unit_rule_data = pop @unit_rules )
+    return \@cycle_rules;
+} ## end sub cycle_rules
+
+# This assumes the grammar has been rewritten into CHAF form.
+sub detect_cycle {
+    my $grammar  = shift;
+    my $rules    = $grammar->[Marpa::Internal::Grammar::RULES];
+    my $trace_fh = $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE];
+
+    my $cycle_is_fatal = 1;
+    my $warn_on_cycle  = 1;
+    given ( $grammar->[Marpa::Internal::Grammar::CYCLE_ACTION] ) {
+        when ('warn') { $cycle_is_fatal = 0; }
+        when ('quiet') {
+            $cycle_is_fatal = 0;
+            $warn_on_cycle  = 0;
+        }
+    } ## end given
+
+    my $cycle_rules = cycle_rules($grammar);
+
+    # produce a list of the rules which cycle
+    RULE: for my $rule ( @{$cycle_rules} ) {
+
+        my $warning_rule = $rule->[Marpa::Internal::Rule::ORIGINAL_RULE]
+            // $rule;
+
+        if ( $warn_on_cycle and defined $warning_rule ) {
+            print {$trace_fh}
+                'Cycle found involving rule: ',
+                Marpa::brief_rule($warning_rule), "\n"
+                or Marpa::exception('Could not print to trace file');
+        } ## end if ( $warn_on_cycle and defined $warning_rule )
+    } ## end for my $rule ( @{$cycle_rules} )
 
     Marpa::exception('Cycle in grammar, fatal error')
-        if $cycle_count and $cycle_is_fatal;
+        if scalar @{$cycle_rules} and $cycle_is_fatal;
 
     return 1;
 

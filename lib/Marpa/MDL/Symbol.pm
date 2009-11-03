@@ -1,7 +1,9 @@
-package Marpa::MDL::Symbol;
+package Marpa::MDL::Internal::Symbol;
 
-# These two routines are here, so they can be loaded without
-# the overname and namespace impact from loading all of MDL.
+# These two routines are here.
+# This allows them to be loaded, while avoiding
+# loading all of MDL, which has a measurable
+# overhead and substantial namespace impact.
 
 use 5.010;
 use strict;
@@ -16,8 +18,7 @@ sub Marpa::MDL::canonical_symbol_name {
 
 sub Marpa::MDL::get_terminal {
     my ( $grammar, $symbol_name ) = @_;
-    return Marpa::Grammar::get_terminal( $grammar,
-        Marpa::MDL::canonical_symbol_name($symbol_name) );
+    return Marpa::MDL::canonical_symbol_name($symbol_name);
 }
 
 1;

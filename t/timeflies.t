@@ -103,7 +103,7 @@ for my $data ( 'time flies like an arrow.', 'fruit flies like a banana.' ) {
     if ( $fail_offset >= 0 ) {
         Carp::croak("Parse failed at offset $fail_offset");
     }
-    $recce->end_input();
+    $recce->tokens();
 
     my $evaler =
         Marpa::Evaluator->new( { recognizer => $recce, clone => 0 } );

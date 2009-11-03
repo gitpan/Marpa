@@ -6,7 +6,7 @@ use warnings;
 
 use Module::Build;
 
-my $marpa_version = '0.001_020';
+my $marpa_version = '0.001_021';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -80,6 +80,10 @@ my $build = $class->new(
             },
             'Marpa::MDL' => {
                 file    => 'lib/Marpa/MDL.pm',
+                version => $marpa_version,
+            },
+            'Marpa::MDLex' => {
+                file    => 'lib/Marpa/MDLex.pm',
                 version => $marpa_version,
             },
         },

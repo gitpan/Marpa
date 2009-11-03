@@ -53,7 +53,7 @@ Next, depending on where in the process you're having problems,
 you might want to
 turn on some of the more helpful traces.
 C<trace_actions> will show you the actions as they are being finalized.
-C<trace_iterations> traces the initialization and iteration of
+C<trace_tasks> traces the initialization and iteration of
 the parse.
 C<trace_values> traces the values of the nodes as they are pushed on, and 
 popped off, the evaluation stack.
@@ -165,7 +165,7 @@ Setting it after that point will result in a warning.
 
 =item trace_evaluation
 
-=item trace_iterations
+=item trace_tasks
 
 Traces initialization and iteration of
 the parse.

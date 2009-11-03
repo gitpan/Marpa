@@ -31,7 +31,7 @@ use Marpa::Offset qw(
     CURRENT_EARLEME
     CURRENT_LEXABLES
 
-    TERMINAL_HASH { hash of terminals by cookie }
+    TERMINAL_HASH { hash of terminals by name }
 
     DEFAULT_PREFIX { default prefix for lexing }
 
@@ -75,7 +75,7 @@ sub Marpa::MDLex::mdlex {
     my $lexer =
         Marpa::MDLex->new( { recce => $recce }, @{$lexer_arg_hashes} );
     $lexer->text($text);
-    $recce->end_input();
+    $recce->tokens();    # complete parsing
     my $evaler = Marpa::Evaluator->new( { recce => $recce, clone => 0 } );
     return $evaler->value();
 } ## end sub Marpa::MDLex::mdlex
@@ -249,16 +249,15 @@ sub add_user_terminals {
         $priority ||= 0;
 
         Carp::croak('Terminal must have name') if not defined $name;
-        my $cookie = $recce->get_terminal($name);
-        if ( not defined $cookie ) {
+        if ( not $recce->check_terminal($name) ) {
             Carp::croak("Terminal '$name' not known to Marpa");
         }
         $terminal->[Marpa::MDLex::Internal::Terminal::NAME] = $name;
 
-        if ( $terminal_hash->{$cookie} ) {
+        if ( $terminal_hash->{$name} ) {
             Carp::croak("Terminal $name already defined");
         }
-        $terminal_hash->{$cookie} = $terminal;
+        $terminal_hash->{$name} = $terminal;
 
         $terminal->[Marpa::MDLex::Internal::Terminal::PRIORITY] = $priority;
 
@@ -425,7 +424,7 @@ sub Marpa::MDLex::text {
                     Carp::croak(
                         'Internal error, zero length token -- this is a Marpa bug'
                     ) if not $length;
-                    push @alternatives, [ $lexable, $match, $length ];
+                    push @alternatives, [ $lexable, $match, $length, 0 ];
                     if ($trace_matches) {
                         print {$trace_fh}
                             'Matched regex for ',
@@ -461,7 +460,7 @@ sub Marpa::MDLex::text {
 
             $length //= length $match;
 
-            push @alternatives, [ $lexable, $match, $length ];
+            push @alternatives, [ $lexable, $match, $length, 0 ];
             if ($trace_matches) {
                 print {$trace_fh}
                     'Matched Closure for ',
@@ -477,7 +476,8 @@ sub Marpa::MDLex::text {
         $pos++;
 
         ( $current_earleme, $lexables ) =
-            Marpa::Recognizer::earleme( $recce, @alternatives );
+            Marpa::Recognizer::tokens( $recce, [@alternatives], 'predict',
+            1 );
         return Marpa::MDLex::Internal::PARSING_EXHAUSTED
             if not defined $current_earleme;
 

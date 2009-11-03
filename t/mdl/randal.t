@@ -38,7 +38,7 @@ TEST: while ( my $test = pop @tests ) {
     my $recce = Marpa::Recognizer->new( { grammar => $g } );
     my $lexer = Marpa::MDLex->new( { recce => $recce }, @{$mdlex_options} );
     $lexer->text( \$test );
-    $recce->end_input();
+    $recce->tokens();
 
     my $evaler = Marpa::Evaluator->new( { recce => $recce } );
     my @parses;

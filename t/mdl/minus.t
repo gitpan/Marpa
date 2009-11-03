@@ -36,7 +36,7 @@ $g->precompute();
 my $recce = Marpa::Recognizer->new( { grammar => $g } );
 my $lexer = Marpa::MDLex->new( { recce => $recce }, @{$mdlex_options} );
 $lexer->text( \$text );
-$recce->end_input();
+$recce->tokens();
 
 my $evaler = Marpa::Evaluator->new( { recce => $recce } );
 my @values = ();

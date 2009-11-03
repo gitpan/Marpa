@@ -59,43 +59,37 @@ my $grammar = Marpa::Grammar->new(
 
 $grammar->precompute();
 
-my $a = $grammar->get_terminal('t');
-
 ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
 
 my @results;
-$results[1][0] = '(-;-;-;(-;-;-;-;-;a))';
-$results[1][1] = '(-;-;-;a)';
-$results[2][0] = '(a;-;-;(-;-;-;-;-;a))';
-$results[2][1] = '(a;-;-;a)';
-$results[2][2] = '(-;a;-;(-;-;-;-;-;a))';
-$results[3][0] = '(a;a;-;(-;-;-;-;-;a))';
-$results[3][1] = '(a;a;-;a)';
-$results[3][2] = '(a;-;a;(-;-;-;-;-;a))';
-$results[4][0] = '(a;a;a;(-;-;-;-;-;a))';
-$results[4][1] = '(a;a;a;a)';
-$results[4][2] = '(a;a;-;(a;-;-;-;-;a))';
-$results[5][0] = '(a;a;a;(a;-;-;-;-;a))';
-$results[5][1] = '(a;a;a;(-;a;-;-;-;a))';
-$results[5][2] = '(a;a;a;(-;-;a;-;-;a))';
-$results[6][0] = '(a;a;a;(a;a;-;-;-;a))';
-$results[6][1] = '(a;a;a;(a;-;a;-;-;a))';
-$results[6][2] = '(a;a;a;(a;-;-;a;-;a))';
-$results[7][0] = '(a;a;a;(a;a;a;-;-;a))';
-$results[7][1] = '(a;a;a;(a;a;-;a;-;a))';
-$results[7][2] = '(a;a;a;(a;a;-;-;a;a))';
-$results[8][0] = '(a;a;a;(a;a;a;a;-;a))';
-$results[8][1] = '(a;a;a;(a;a;a;-;a;a))';
-$results[8][2] = '(a;a;a;(a;a;-;a;a;a))';
-$results[9][0] = '(a;a;a;(a;a;a;a;a;a))';
+$results[1][0] = '(-;-;-;(-;-;-;-;-;t))';
+$results[1][1] = '(-;-;-;t)';
+$results[2][0] = '(t;-;-;(-;-;-;-;-;t))';
+$results[2][1] = '(t;-;-;t)';
+$results[2][2] = '(-;t;-;(-;-;-;-;-;t))';
+$results[3][0] = '(t;t;-;(-;-;-;-;-;t))';
+$results[3][1] = '(t;t;-;t)';
+$results[3][2] = '(t;-;t;(-;-;-;-;-;t))';
+$results[4][0] = '(t;t;t;(-;-;-;-;-;t))';
+$results[4][1] = '(t;t;t;t)';
+$results[4][2] = '(t;t;-;(t;-;-;-;-;t))';
+$results[5][0] = '(t;t;t;(t;-;-;-;-;t))';
+$results[5][1] = '(t;t;t;(-;t;-;-;-;t))';
+$results[5][2] = '(t;t;t;(-;-;t;-;-;t))';
+$results[6][0] = '(t;t;t;(t;t;-;-;-;t))';
+$results[6][1] = '(t;t;t;(t;-;t;-;-;t))';
+$results[6][2] = '(t;t;t;(t;-;-;t;-;t))';
+$results[7][0] = '(t;t;t;(t;t;t;-;-;t))';
+$results[7][1] = '(t;t;t;(t;t;-;t;-;t))';
+$results[7][2] = '(t;t;t;(t;t;-;-;t;t))';
+$results[8][0] = '(t;t;t;(t;t;t;t;-;t))';
+$results[8][1] = '(t;t;t;(t;t;t;-;t;t))';
+$results[8][2] = '(t;t;t;(t;t;-;t;t;t))';
+$results[9][0] = '(t;t;t;(t;t;t;t;t;t))';
 
 for my $input_length ( 1 .. 9 ) {
     my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
-    TOKEN: for my $token ( 1 .. $input_length ) {
-        next TOKEN if $recce->earleme( [ $a, 'a', 1 ] );
-        Marpa::exception( 'Parsing exhausted at character: ', $token );
-    }
-    $recce->end_input();
+    $recce->tokens( [ ( [ 't', 't', 1 ] ) x $input_length ] );
     my $evaler = Marpa::Evaluator->new( { recce => $recce, clone => 0 } );
     my $i = 0;
     while ( $i < 3 and my $value = $evaler->value() ) {

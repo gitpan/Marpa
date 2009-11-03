@@ -51,6 +51,8 @@ lib/Marpa/MDL/Symbol.pm
 lib/Marpa/Offset.pm
 lib/Marpa.pm
 lib/Marpa/Recognizer.pm
+lib/Marpa/UrHTML/dump_html.pl
+lib/Marpa/UrHTML.pm
 Makefile.PL
 MANIFEST
 META.yml
@@ -79,6 +81,8 @@ t/mdl/equation.t
 t/mdl/minus.t
 t/mdl/randal.t
 t/minus.t
+t/null_cycle1.t
+t/null_cycle4.t
 t/null_value.t
 t/pascal.t
 t/priority.t

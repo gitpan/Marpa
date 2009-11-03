@@ -50,20 +50,7 @@ $grammar->precompute();
 my $recce = Marpa::Recognizer->new( { grammar => $grammar, clone => 0 } );
 
 my $input_length = 4;
-EARLEME: for my $earleme ( 0 .. $input_length + 1 ) {
-    my $furthest = List::Util::min( $earleme, $input_length );
-    given ($earleme) {
-        when ($input_length) {
-            $recce->end_input();
-        }
-        when ( $input_length + 1 ) {break}
-        default {
-            my $a = $grammar->get_terminal('a');
-            $recce->earleme( [ $a, 'a', 1 ] )
-                or Marpa::exception('Parsing exhausted');
-        }
-    } ## end given
-} ## end for my $earleme ( 0 .. $input_length + 1 )
+$recce->tokens( [ ( [ 'a', 'a', 1 ] ) x $input_length ] );
 
 my @expected = ( q{}, qw[(;;;a) (;;a;a) (;a;a;a) (a;a;a;a)] );
 

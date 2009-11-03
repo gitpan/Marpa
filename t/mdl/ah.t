@@ -26,11 +26,7 @@ $grammar->precompute();
 my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
 
 my $lc_a = Marpa::MDL::get_terminal( $grammar, 'lowercase a' );
-$recce->earleme( [ $lc_a, 'lowercase a', 1 ] );
-$recce->earleme( [ $lc_a, 'lowercase a', 1 ] );
-$recce->earleme( [ $lc_a, 'lowercase a', 1 ] );
-$recce->earleme( [ $lc_a, 'lowercase a', 1 ] );
-$recce->end_input();
+$recce->tokens( [ ( [ $lc_a, 'lowercase a', 1 ] ) x 4 ] );
 
 my @answer = (
     q{},

@@ -197,7 +197,7 @@ for my $string_piece ( '6', '-----', '1' ) {
     }
 } ## end for my $string_piece ( '6', '-----', '1' )
 
-$recce->end_input();
+$recce->tokens();
 
 my $evaler = Marpa::Evaluator->new( { recce => $recce, clone => 0 } );
 Marpa::exception('Could not initialize parse') if not $evaler;
