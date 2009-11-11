@@ -32,7 +32,9 @@ sub to_raw {
     ## use critic
 
     my $data = Marpa::MDLex::mdlex(
-        [   { action_object => 'Marpa::MDL::Internal::Actions' },
+        [   {   action_object => 'Marpa::MDL::Internal::Actions',
+                parse_order   => 'original',
+            },
             @{$marpa_options}
         ],
         $mdlex_options,

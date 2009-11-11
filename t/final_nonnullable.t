@@ -46,6 +46,7 @@ my $grammar = Marpa::Grammar->new(
         ],
         terminals      => ['a'],
         default_action => 'main::default_action',
+        parse_order    => 'original',
     }
 );
 

@@ -6,7 +6,7 @@ use warnings;
 
 use Module::Build;
 
-my $marpa_version = '0.001_021';
+my $marpa_version = '0.001_022';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -91,6 +91,8 @@ my $build = $class->new(
     license            => 'perl',
     create_readme      => 0,
     create_makefile_pl => 'small',
+    test_files =>
+        [ map { glob $_ } qw(t/*.t t/*/*.t lib/Marpa/UrHTML/t/*.t) ],
 );
 
 $build->create_build_script;

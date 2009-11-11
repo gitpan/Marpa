@@ -51,8 +51,13 @@ lib/Marpa/MDL/Symbol.pm
 lib/Marpa/Offset.pm
 lib/Marpa.pm
 lib/Marpa/Recognizer.pm
-lib/Marpa/UrHTML/dump_html.pl
+lib/Marpa/Tie.pm
 lib/Marpa/UrHTML.pm
+lib/Marpa/UrHTML/t/copy.t
+lib/Marpa/UrHTML/Tie.pm
+lib/Marpa/UrHTML/t/no_tang.html
+lib/Marpa/UrHTML/t/tang.t
+lib/Marpa/UrHTML/t/test.html
 Makefile.PL
 MANIFEST
 META.yml
@@ -60,8 +65,10 @@ README
 t/00-load.t
 t/ah2.t
 t/ah_minimal.t
+t/ah_numeric.t
 t/ah.t
 t/code_diag.t
+t/counter.t
 t/cycle2.t
 t/cycle_plex.t
 t/cycle.t

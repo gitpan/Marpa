@@ -6,35 +6,16 @@ use warnings;
 use integer;
 use Carp;
 
-*Marpa::exception = \&Carp::croak;
+our @CARP_NOT = (__PACKAGE__);
 
-our @CARP_NOT = qw(
-    Marpa
-    Marpa::Evaluator
-    Marpa::Grammar
-    Marpa::Internal
-    Marpa::Internal::And_Node
-    Marpa::Internal::Earley_Item
-    Marpa::Internal::Evaluator
-    Marpa::Internal::Evaluator::Rule
-    Marpa::Internal::Grammar
-    Marpa::Internal::Interface
-    Marpa::Internal::Lex
-    Marpa::Internal::LR0_item
-    Marpa::Internal::NFA
-    Marpa::Internal::Or_Node
-    Marpa::Internal::Or_Sapling
-    Marpa::Internal::Phase
-    Marpa::Internal::QDFA
-    Marpa::Internal::Recognizer
-    Marpa::Internal::Rule
-    Marpa::Internal::Source_Eval
-    Marpa::Internal::Source_Raw
-    Marpa::Internal::Symbol
-    Marpa::Internal::Tree_Node
-    Marpa::Lex
-    Marpa::MDL
-    Marpa::Recognizer
-);
+sub import {
+    my $calling_package = ( caller 0 );
+    push @CARP_NOT, $calling_package;
+    no strict 'refs';
+    *{ $calling_package . q{::CARP_NOT} } = \@Marpa::Internal::CARP_NOT;
+    return 1;
+} ## end sub import
+
+*Marpa::exception = \&Carp::croak;
 
 1;

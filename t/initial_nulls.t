@@ -54,6 +54,7 @@ my $grammar = Marpa::Grammar->new(
         terminals      => ['t'],
         maximal        => 1,
         default_action => 'main::default_action',
+        parse_order    => 'original',
     }
 );
 

@@ -99,6 +99,7 @@ my $placebo = {
     ],
     default_null_value => q{},
     default_action     => 'main::default_action',
+    parse_order        => 'original',
 };
 
 sub test_rule_priority {
@@ -113,6 +114,7 @@ sub test_rule_priority {
         ],
         default_null_value => q{},
         default_action     => 'main::default_action',
+        parse_order        => 'original',
     };
 } ## end sub test_rule_priority
 

@@ -9,7 +9,7 @@ use strict;
 use warnings;
 
 use lib 'lib';
-use Test::More tests => 6;
+use Test::More tests => 11;
 use t::lib::Marpa::Test;
 
 BEGIN {
@@ -17,6 +17,10 @@ BEGIN {
 }
 
 ## no critic (Subroutines::RequireArgUnpacking)
+
+sub null_a {
+    return ( $MyTest::MAXIMAL ? -1 : 1 ) * $Marpa::LOCATION;
+}
 
 sub default_action {
     shift;
@@ -29,18 +33,17 @@ sub default_action {
 ## use critic
 
 my $grammar = Marpa::Grammar->new(
-    {   start   => 'S',
-        strip   => 0,
-        minimal => 1,
-        rules   => [
+    {   start       => 'S',
+        parse_order => 'numeric',
+        rules       => [
             [ 'S', [qw/A A A A/] ],
             [ 'A', [qw/a/] ],
             [ 'A', [qw/E/] ],
+            { lhs => 'A', rhs => [], ranking_action => 'main::null_a' },
             ['E'],
         ],
         default_null_value => q{},
         default_action     => 'main::default_action',
-        parse_order        => 'original',
     }
 );
 
@@ -53,18 +56,22 @@ my $recce = Marpa::Recognizer->new( { grammar => $grammar, clone => 0 } );
 my $input_length = 4;
 $recce->tokens( [ ( [ 'a', 'a', 1 ] ) x $input_length ] );
 
-my @expected = ( q{}, qw[(;;;a) (;;a;a) (;a;a;a) (a;a;a;a)] );
+my @maximal = ( q{}, qw[(;;;a) (;;a;a) (;a;a;a) (a;a;a;a)] );
+my @minimal = ( q{}, qw[(;;;a) (a;;;a) (a;a;;a) (a;a;a;a)] );
 
 for my $i ( 0 .. $input_length ) {
-    my $evaler = Marpa::Evaluator->new(
-        {   recce => $recce,
-            end   => $i,
-            clone => 0,
-        }
-    );
-    my $result = $evaler->value();
-    Test::More::is( ${$result}, $expected[$i], "parse permutation $i" );
+    for my $maximal ( 0, 1 ) {
+        local $MyTest::MAXIMAL = $maximal;
+        my $expected = $maximal ? \@maximal : \@minimal;
+        my $evaler = Marpa::Evaluator->new(
+            {   recce => $recce,
+                end   => $i,
+            }
+        );
+        my $result = $evaler->value();
+        Test::More::is( ${$result}, $expected->[$i], "parse permutation $i" );
 
+    } ## end for my $maximal ( 0, 1 )
 } ## end for my $i ( 0 .. $input_length )
 
 # Local Variables:

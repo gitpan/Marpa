@@ -40,6 +40,7 @@ my $grammar = Marpa::Grammar->new(
         ],
         default_null_value => q{},
         default_action     => 'main::default_action',
+        parse_order        => 'original',
     }
 );
 

@@ -28,6 +28,10 @@ the documentation, I should think accordingly.
 
 =over 4
 
+=item * Add symbol & rule ranker tests to code_diag.t.
+
+=item * Add a test for cycle_scale & cycle_rules.
+
 =item * On ambiguous grammars, it may optimize to save values of reset
 bocage nodes from the first reset, and simply copy them back in
 on subsequent resets.  In particular for the sorted choices.
@@ -62,17 +66,11 @@ parse bocage creation can probably be made a bit slightly cleaner.
 
 =item * Make sure that nulling symbols can never be terminals
 
-=item * Add code to do cycle rewrite only if there
-are cycles?
-
 =back
 
 =head1 LOW PRIORITY
 
 =over 4
-
-=item * Allow action options to be changed when evaluator
-is created, but not afterwards.
 
 =item * Add a trace_choices option?  There was an option to trace
 non-trivial evaluation choices in the old evaluator, and the trace_tasks

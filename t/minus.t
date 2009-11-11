@@ -107,6 +107,7 @@ my $grammar = Marpa::Grammar->new(
         ],
         terminals      => [qw( Number Minus MinusMinus )],
         default_action => 'default_action',
+        parse_order    => 'original',
     }
 );
 $grammar->precompute();

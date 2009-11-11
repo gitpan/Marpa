@@ -45,6 +45,7 @@ sub grammar {
     } ## end for my $terminal ( @{ $self->{lex_options}->[0]->{terminals...}})
     $self->{options}->[0]->{terminals} =
         [ map { $_->{name} } @{ $self->{lex_options}->[0]->{terminals} } ];
+    $self->{options}->[0]->{parse_order} = 'original';
     return {
         marpa_options => $self->{options},
         mdlex_options => $self->{lex_options}

@@ -87,7 +87,7 @@ severity=5
 severity=5
 perltidyrc=author.t/perltidyrc
 
-[ControlStructures::ProhibitCStyleForLoops]
+[-ControlStructures::ProhibitCStyleForLoops]
 severity=5
 
 [ControlStructures::ProhibitCascadingIfElse]
@@ -321,7 +321,12 @@ severity=5
 [ValuesAndExpressions::ProhibitLeadingZeros]
 severity=5
 
-[ValuesAndExpressions::ProhibitLongChainsOfMethodCalls]
+# I comment this out because it is
+# 1.) not a sin I'm prone to
+# 2.) obvious from the code when it happens, so that
+#     a perlcritic complaint is unneeded.
+# 3.) necessary to use Data::Dumper
+[-ValuesAndExpressions::ProhibitLongChainsOfMethodCalls]
 severity=5
 
 [ValuesAndExpressions::RequireInterpolationOfMetachars]

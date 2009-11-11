@@ -1,6 +1,7 @@
 $data = {
   'marpa_options' => [
     {
+      'parse_order' => 'original',
       'rules' => [
         {
           'action' => 'grammar',

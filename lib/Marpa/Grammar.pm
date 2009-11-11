@@ -9,6 +9,8 @@ use strict;
 # It's all integers, except for the version number
 use integer;
 
+use Marpa::Internal;
+
 =begin Implementation:
 
 Structures and Objects: The design is to present an object-oriented
@@ -30,6 +32,7 @@ use Marpa::Offset qw(
 
     NULL_ALIAS
     NULLING
+    RANKING_ACTION
 
     GREED { Maximal (longest possible)
         or minimal (shortest possible) evaluation
@@ -88,6 +91,7 @@ use Marpa::Offset qw(
 
     USEFUL
     ACTION
+    RANKING_ACTION
     PRIORITY
     GREED
     VIRTUAL_LHS VIRTUAL_RHS
@@ -197,6 +201,8 @@ use Marpa::Offset qw(
     TRACE_FILE_HANDLE TRACING
     STRIP
     EXPERIMENTAL
+    WARNINGS
+
     =LAST_BASIC_DATA_FIELD
 
     { === Evaluator Fields === }
@@ -225,13 +231,14 @@ use Marpa::Offset qw(
     PROBLEMS
     ACADEMIC
     START_STATES
+    TOO_MANY_EARLEY_ITEMS
+
     =LAST_RECOGNIZER_FIELD
 
     RULE_SIGNATURE_HASH
     START START_NAME
     NFA QDFA_BY_NAME
     NULLABLE_SYMBOL
-    WARNINGS
     INACCESSIBLE_OK
     UNPRODUCTIVE_OK
     SEMANTICS
@@ -312,7 +319,7 @@ use Marpa::Offset qw(
 
     :package=Marpa::Internal::Phase
     NEW RULES
-    PRECOMPUTED RECOGNIZING EVALUATING
+    PRECOMPUTED RECOGNIZING SETTLING_SEMANTICS EVALUATING
 
 );
 
@@ -326,6 +333,8 @@ sub Marpa::Internal::Phase::description {
         if $phase == Marpa::Internal::Phase::PRECOMPUTED;
     return 'grammar being recognized'
         if $phase == Marpa::Internal::Phase::RECOGNIZING;
+    return 'grammar settling semantics'
+        if $phase == Marpa::Internal::Phase::SETTLING_SEMANTICS;
     return 'grammar being evaluated'
         if $phase == Marpa::Internal::Phase::EVALUATING;
     return 'unknown phase';
@@ -338,6 +347,8 @@ use Storable;
 use English qw( -no_match_vars );
 use List::Util;
 
+use Marpa::Internal;
+
 # Longest RHS is 2**28-1.  It's 28 bits, not 32, so
 # it will fit in the internal priorities computed
 # for the CHAF rules
@@ -347,6 +358,8 @@ use constant RHS_LENGTH_MASK => ~(0x7ffffff);
 # so we don't have to
 # worry about signedness creeping in.
 use constant PRIORITY_MASK => ~(0x7fffffff);
+
+use constant DEFAULT_TOO_MANY_EARLEY_ITEMS => 100;
 
 sub Marpa::Internal::code_problems {
     my $args = shift;
@@ -451,13 +464,16 @@ sub Marpa::Grammar::new {
     $grammar->[Marpa::Internal::Grammar::TRACING]         = 0;
     $grammar->[Marpa::Internal::Grammar::STRIP]           = 1;
     $grammar->[Marpa::Internal::Grammar::EXPERIMENTAL]    = 0;
-    $grammar->[Marpa::Internal::Grammar::PARSE_ORDER]     = 'original';
+    $grammar->[Marpa::Internal::Grammar::PARSE_ORDER]     = 'numeric';
     $grammar->[Marpa::Internal::Grammar::WARNINGS]        = 1;
     $grammar->[Marpa::Internal::Grammar::INACCESSIBLE_OK] = {};
     $grammar->[Marpa::Internal::Grammar::UNPRODUCTIVE_OK] = {};
     $grammar->[Marpa::Internal::Grammar::CYCLE_ACTION]    = 'fatal';
     $grammar->[Marpa::Internal::Grammar::CYCLE_SCALE]     = 2;
     $grammar->[Marpa::Internal::Grammar::CYCLE_REWRITE]   = 1;
+    $grammar->[Marpa::Internal::Grammar::TOO_MANY_EARLEY_ITEMS] =
+        Marpa::Internal::Grammar::DEFAULT_TOO_MANY_EARLEY_ITEMS;
+
     {
         ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
         $grammar->[Marpa::Internal::Grammar::CYCLE_NODES] = 1000;
@@ -541,6 +557,7 @@ use constant GRAMMAR_OPTIONS => [
         experimental
         inaccessible_ok
         maximal
+        too_many_earley_items
         max_parses
         minimal
         parse_order
@@ -597,7 +614,7 @@ sub Marpa::Grammar::set {
             $grammar->[Marpa::Internal::Grammar::TRACE_ACTIONS] = $value;
             if ($value) {
                 say {$trace_fh} 'Setting trace_actions option';
-                if ( $phase >= Marpa::Internal::Phase::RECOGNIZING ) {
+                if ( $phase >= Marpa::Internal::Phase::EVALUATING ) {
                     say {$trace_fh}
                         'Warning: setting trace_actions option after semantics were finalized';
                 }
@@ -712,9 +729,6 @@ sub Marpa::Grammar::set {
             Marpa::exception(
                 'academic option not allowed after grammar is precomputed')
                 if $phase >= Marpa::Internal::Phase::PRECOMPUTED;
-            Marpa::exception(
-                'academic option only allowed in experimental mode')
-                if $grammar->[Marpa::Internal::Grammar::EXPERIMENTAL] <= 0;
             $grammar->[Marpa::Internal::Grammar::ACADEMIC] = $value;
         } ## end if ( defined( my $value = $args->{'academic'} ) )
 
@@ -752,7 +766,7 @@ sub Marpa::Grammar::set {
         if ( defined( my $value = $args->{'strip'} ) ) {
             Marpa::exception( 'strip option not allowed in ',
                 Marpa::Internal::Phase::description($phase) )
-                if $phase >= Marpa::Internal::Phase::EVALUATING;
+                if $phase >= Marpa::Internal::Phase::SETTLING_SEMANTICS;
             $grammar->[Marpa::Internal::Grammar::STRIP] = $value;
         } ## end if ( defined( my $value = $args->{'strip'} ) )
 
@@ -764,9 +778,6 @@ sub Marpa::Grammar::set {
             Marpa::exception(
                 q{cycle_action must be 'warn', 'quiet' or 'fatal'})
                 if not $value ~~ [qw(warn quiet fatal)];
-            Marpa::exception(
-                'cycle_action option only allowed in experimental mode')
-                if $grammar->[Marpa::Internal::Grammar::EXPERIMENTAL] <= 0;
             $grammar->[Marpa::Internal::Grammar::CYCLE_ACTION] = $value;
         } ## end if ( defined( my $value = $args->{'cycle_action'} ) )
 
@@ -792,11 +803,8 @@ sub Marpa::Grammar::set {
         } ## end if ( defined( my $value = $args->{'cycle_nodes'} ) )
 
         if ( defined( my $value = $args->{'cycle_rewrite'} ) ) {
-            Marpa::exception(
-                'cycle_rewrite option only allowed in experimental mode')
-                if $grammar->[Marpa::Internal::Grammar::EXPERIMENTAL] <= 0;
             $grammar->[Marpa::Internal::Grammar::CYCLE_REWRITE] = $value;
-        } ## end if ( defined( my $value = $args->{'cycle_rewrite'} ))
+        }
 
         if ( defined( my $value = $args->{'warnings'} ) ) {
             if ( $value && $phase >= Marpa::Internal::Phase::PRECOMPUTED ) {
@@ -834,6 +842,15 @@ sub Marpa::Grammar::set {
             $grammar->[Marpa::Internal::Grammar::MAX_PARSES] = $value;
         }
 
+        if ( defined( my $value = $args->{'too_many_earley_items'} ) ) {
+            Marpa::exception(
+                q{"too_many_earley_items" option not allowed in },
+                Marpa::Internal::Phase::description($phase)
+            ) if $phase >= Marpa::Internal::Phase::RECOGNIZING;
+            $grammar->[Marpa::Internal::Grammar::TOO_MANY_EARLEY_ITEMS] =
+                $value;
+        } ## end if ( defined( my $value = $args->{'too_many_earley_items'...}))
+
         if ( defined( my $value = $args->{'version'} ) ) {
             Marpa::exception(
                 'version option not allowed after grammar is precomputed')
@@ -867,7 +884,7 @@ sub Marpa::Grammar::set {
 
         if ( defined( my $value = $args->{'parse_order'} ) ) {
             Marpa::exception(q{parse_order must be 'original' or 'none'})
-                if not $value ~~ [qw(original none)];
+                if not $value ~~ [qw(original numeric none)];
             $grammar->[Marpa::Internal::Grammar::PARSE_ORDER] = $value;
         }
 
@@ -1546,11 +1563,13 @@ sub add_terminal {
     my $options  = shift;
     my $priority = 0;
     my $greed;
+    my $ranking_action;
 
     while ( my ( $key, $value ) = each %{$options} ) {
         given ($key) {
-            when ('maximal') { $greed = 1; }
-            when ('minimal') { $greed = -1; }
+            when ('maximal')        { $greed          = 1; }
+            when ('minimal')        { $greed          = -1; }
+            when ('ranking_action') { $ranking_action = $value; }
             default {
                 Marpa::exception(
                     "Attempt to add terminal named $name with unknown option $key"
@@ -1593,6 +1612,7 @@ sub add_terminal {
     $new_symbol->[Marpa::Internal::Symbol::RH_RULE_IDS] = [];
     $new_symbol->[Marpa::Internal::Symbol::TERMINAL]    = 1;
     $new_symbol->[Marpa::Internal::Symbol::GREED] = $greed // $default_greed;
+    $new_symbol->[Marpa::Internal::Symbol::RANKING_ACTION] = $ranking_action;
 
     $symbol_id = @{$symbols};
     push @{$symbols}, $new_symbol;
@@ -1654,6 +1674,7 @@ sub add_rule {
     my $lhs;
     my $rhs;
     my $action;
+    my $ranking_action;
     my $greed;
     my $priority;
     my $virtual_lhs;
@@ -1663,11 +1684,12 @@ sub add_rule {
 
     while ( my ( $option, $value ) = each %{$arg_hash} ) {
         given ($option) {
-            when ('grammar')  { $grammar  = $value }
-            when ('lhs')      { $lhs      = $value }
-            when ('rhs')      { $rhs      = $value }
-            when ('action')   { $action   = $value }
-            when ('priority') { $priority = $value }
+            when ('grammar')        { $grammar        = $value }
+            when ('lhs')            { $lhs            = $value }
+            when ('rhs')            { $rhs            = $value }
+            when ('action')         { $action         = $value }
+            when ('ranking_action') { $ranking_action = $value }
+            when ('priority')       { $priority       = $value }
 
             # greed is an internal option
             when ('greed')   { $greed = $value }
@@ -1741,12 +1763,13 @@ sub add_rule {
 
     my $nulling = @{$rhs} ? undef : 1;
 
-    $new_rule->[Marpa::Internal::Rule::ID]       = $new_rule_id;
-    $new_rule->[Marpa::Internal::Rule::LHS]      = $lhs;
-    $new_rule->[Marpa::Internal::Rule::RHS]      = $rhs;
-    $new_rule->[Marpa::Internal::Rule::ACTION]   = $action;
-    $new_rule->[Marpa::Internal::Rule::PRIORITY] = $priority;
-    $new_rule->[Marpa::Internal::Rule::GREED]    = $greed
+    $new_rule->[Marpa::Internal::Rule::ID]             = $new_rule_id;
+    $new_rule->[Marpa::Internal::Rule::LHS]            = $lhs;
+    $new_rule->[Marpa::Internal::Rule::RHS]            = $rhs;
+    $new_rule->[Marpa::Internal::Rule::ACTION]         = $action;
+    $new_rule->[Marpa::Internal::Rule::RANKING_ACTION] = $ranking_action;
+    $new_rule->[Marpa::Internal::Rule::PRIORITY]       = $priority;
+    $new_rule->[Marpa::Internal::Rule::GREED]          = $greed
         // $grammar->[Marpa::Internal::Grammar::GREED];
     $new_rule->[Marpa::Internal::Rule::VIRTUAL_LHS] = $virtual_lhs;
     $new_rule->[Marpa::Internal::Rule::VIRTUAL_RHS] = $virtual_rhs;
@@ -1815,9 +1838,13 @@ sub add_user_rules {
                 add_user_rule( $grammar, $rule );
             }
             default {
-                Marpa::exception( 'Invalid rule reftype ',
-                    ( $_ ? $_ : 'undefined' ) );
-            }
+                Marpa::exception(
+                    'Invalid rule: ',
+                    Data::Dumper->new( [$rule], ['Invalid_Rule'] )->Indent(2)
+                        ->Terse(1)->Maxdepth(2)->Dump,
+                    'Rule must be ref to HASH or ARRAY'
+                );
+            } ## end default
         } ## end given
 
     }    # RULE
@@ -1835,6 +1862,7 @@ sub add_user_rule {
 
     my ( $lhs_name, $rhs_names, $action );
     my ( $min, $separator_name );
+    my $ranking_action;
     my $proper_separation = 0;
     my $keep_separation   = 0;
     my $priority          = 0;
@@ -1842,13 +1870,14 @@ sub add_user_rule {
     my @rule_options;
     while ( my ( $option, $value ) = each %{$options} ) {
         given ($option) {
-            when ('rhs')       { $rhs_names         = $value }
-            when ('lhs')       { $lhs_name          = $value }
-            when ('action')    { $action            = $value }
-            when ('min')       { $min               = $value }
-            when ('separator') { $separator_name    = $value }
-            when ('proper')    { $proper_separation = $value }
-            when ('keep')      { $keep_separation   = $value }
+            when ('rhs')            { $rhs_names         = $value }
+            when ('lhs')            { $lhs_name          = $value }
+            when ('action')         { $action            = $value }
+            when ('ranking_action') { $ranking_action    = $value }
+            when ('min')            { $min               = $value }
+            when ('separator')      { $separator_name    = $value }
+            when ('proper')         { $proper_separation = $value }
+            when ('keep')           { $keep_separation   = $value }
             when ('priority') {
                 push @rule_options, priority => $value
             }
@@ -1943,10 +1972,11 @@ sub add_user_rule {
         # This is an ordinary, non-counted rule,
         # which we'll take care of first as a special case
         my $ordinary_rule = add_rule(
-            {   grammar => $grammar,
-                lhs     => $lhs,
-                rhs     => $rhs,
-                action  => $action,
+            {   grammar        => $grammar,
+                lhs            => $lhs,
+                rhs            => $rhs,
+                action         => $action,
+                ranking_action => $ranking_action,
                 @rule_options
             }
         );
@@ -1967,6 +1997,9 @@ sub add_user_rule {
             @rule_options,
         );
         if ($action) { push @rule_args, action => $action }
+        if ($ranking_action) {
+            push @rule_args, ranking_action => $ranking_action;
+        }
         add_rule( {@rule_args} );
         $min = 1;
     } ## end if ( $min == 0 )
@@ -2005,7 +2038,8 @@ sub add_user_rule {
             real_symbol_count => 0,
             discard_separation =>
                 ( not $keep_separation and defined $separator ),
-            action => $action,
+            action         => $action,
+            ranking_action => $ranking_action,
             @rule_options,
         }
     );
@@ -2020,17 +2054,18 @@ sub add_user_rule {
                 real_symbol_count  => 1,
                 discard_separation => !$keep_separation,
                 action             => $action,
+                ranking_action     => $ranking_action,
                 @rule_options,
             }
         );
     } ## end if ( defined $separator and not $proper_separation )
 
-    my @separated_rhs = ($sequence_item);
-    if ( defined $separator ) {
-        push @separated_rhs, $separator;
-    }
+    my @separated_rhs =
+        defined $separator
+        ? ( $separator, $sequence_item )
+        : ($sequence_item);
 
-    my $counted_rhs = [ (@separated_rhs) x ( $min - 1 ), $sequence_item ];
+    my $counted_rhs = [ $sequence_item, (@separated_rhs) x ( $min - 1 ) ];
 
     # Minimal sequence rule
     add_rule(
@@ -2044,7 +2079,7 @@ sub add_user_rule {
     );
 
     # iterating sequence rule
-    my @iterating_rhs = ( @separated_rhs, $sequence );
+    my @iterating_rhs = ( $sequence, @separated_rhs );
     add_rule(
         {   grammar           => $grammar,
             lhs               => $sequence,
@@ -2092,6 +2127,8 @@ sub add_user_terminal {
         Marpa::exception(
             "Terminal name was ref to $type; it must be a scalar string");
     }
+    Marpa::exception('Terminal options must be a hash of named arguments')
+        if defined $options and ref $options ne 'HASH';
     Marpa::exception("Symbol name $name ends in ']': that's not allowed")
         if $name =~ /\]\z/xms;
     add_terminal( $grammar, $name, $options );
@@ -2114,12 +2151,12 @@ sub check_start {
     my $symbols     = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
     my $start_id    = $symbol_hash->{$start_name};
 
-    if ( not defined $start_id or not $symbols->[$start_id] ) {
-        Marpa::exception( 'Start symbol: ' . $start_name . ' not defined' );
-    }
+    Marpa::exception(qq{Start symbol "$start_name" not in grammar})
+        if not defined $start_id;
 
     my $start = $symbols->[$start_id];
-    Marpa::exception( 'Start symbol: ' . $start_name . ' not defined' )
+    Marpa::exception(
+        qq{Internal error: Start symbol "$start_name" id not found})
         if not $start;
 
     my $lh_rule_ids = $start->[Marpa::Internal::Symbol::LH_RULE_IDS];
@@ -3277,6 +3314,8 @@ sub rewrite_as_CHAF {
                         virtual_rhs       => $virtual_rhs,
                         real_symbol_count => $real_symbol_count,
                         action => $rule->[Marpa::Internal::Rule::ACTION],
+                        ranking_action =>
+                            $rule->[Marpa::Internal::Rule::RANKING_ACTION],
                         @rule_options
                     }
                 );
