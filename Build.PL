@@ -6,7 +6,7 @@ use warnings;
 
 use Module::Build;
 
-my $marpa_version = '0.001_022';
+my $marpa_version = '0.001_023';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -53,8 +53,8 @@ my $build = $class->new(
         no_index => {
             directory => [qw(inc t author.t save)],
             namespace => [
-                'Marpa::Internal', 'Marpa::MDL::Internal',
-                'Marpa::MDLex::Internal'
+                'Marpa::Internal',        'Marpa::MDL::Internal',
+                'Marpa::MDLex::Internal', 'Marpa::UrHTML::Internal'
             ],
             package => [qw(Marpa::Internal Marpa::Offset)],
         },
