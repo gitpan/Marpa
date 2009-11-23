@@ -25,11 +25,11 @@ BEGIN {
 use constant TEST_INCREMENT => .001;
 
 sub rank_one {
-    #<<< perltidy (2009-Nov-11) inserts a trailing space here
+    #<<< perltidy adds trailing whitespace as of 2009-11-22
     return
           TEST_INCREMENT
         * ( $MyTest::UP ? -1 : 1 )
-        * ( 2**-$Marpa::LOCATION );
+        * ( 2**-( Marpa::location() ) );
     #>>>
 } ## end sub rank_one
 sub rank_zero { return 0 }

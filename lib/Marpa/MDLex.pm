@@ -490,34 +490,3 @@ sub Marpa::MDLex::text {
 }    # sub text
 
 1;
-
-__END__
-
-=pod
-
-=head1 NAME
-
-Marpa::MDLex - Marpa Demo Lexer
-
-=head1 SYNOPSIS
-
-=head1 DESCRIPTION
-
-=head1 METHODS
-
-=head1 SUPPORT
-
-See the L<support section|Marpa/SUPPORT> in the main module.
-
-=head1 AUTHOR
-
-Jeffrey Kegler
-
-=head1 LICENSE AND COPYRIGHT
-
-Copyright 2007 - 2009 Jeffrey Kegler
-
-This program is free software; you can redistribute
-it and/or modify it under the same terms as Perl 5.10.0.
-
-=cut

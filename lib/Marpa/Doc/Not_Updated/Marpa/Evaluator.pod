@@ -1,0 +1,459 @@
+=head1 NAME
+
+Marpa::Evaluator - Marpa Evaluator Objects
+
+=head1 SYNOPSIS
+
+=begin Marpa::Test::Display:
+
+## next 3 displays
+in_file($_, 't/equation_s.t')
+
+=end Marpa::Test::Display:
+
+    my $fail_offset = $lexer->text('2-0*3+1');
+    if ( $fail_offset >= 0 ) {
+        Marpa::exception("Parse failed at offset $fail_offset");
+    }
+
+    my $evaler = Marpa::Evaluator->new( { recognizer => $recce } );
+    Marpa::exception('Parse failed') if not $evaler;
+
+    my $i = 0;
+    while ( defined( my $value = $evaler->value() ) ) {
+        my $value = ${$value};
+        Test::More::ok( $expected_value{$value}, "Value $i (unspecified order)" );
+        delete $expected_value{$value};
+        $i++;
+    } ## end while ( defined( my $value = $evaler->value() ) )
+
+=head1 DESCRIPTION
+
+Parses are found and evaluated by Marpa's evaluator objects.
+Evaluators are created with the C<new> constructor,
+which requires a Marpa recognizer object
+as an argument.
+
+Marpa allows ambiguous parses, so evaluator objects are iterators.
+Iteration is performed with the C<value> method,
+which returns a reference to the value of the next parse.
+Often only the first parse is needed,
+in which case the C<value> method can be called just once.
+
+By default, the C<new> constructor clones the recognizer, so that
+multiple evaluators do not interfere with each other.
+
+=head2 Null Values
+
+A "null value" is the value used for a symbol when it is nulled in a parse.
+By default, the null value is a Perl undefined.
+The default null value is a Marpa option (C<default_null_value>) and can be reset.
+
+Each symbol can have its own null symbol value.
+The null symbol value for any symbol is calculated using the null symbol action.
+The B<null symbol action> for a symbol is the action
+specified for the empty rule with that symbol on its left hand side.
+The null symbol action is B<not> a rule action.
+It's a property of the symbol, and applies whenever the symbol is nulled,
+even when the symbol's empty rule is not involved.
+
+For example, in MDL,
+the following says that whenever the symbol C<A> is nulled,
+its value should be a string that says it is missing.
+
+=begin Marpa::Test::Commented_out_Display:
+
+## next display
+in_file($_, 'example/null_value.marpa');
+
+=end Marpa::Test::Commented_out_Display:
+
+=begin Marpa::Test::Display:
+
+## skip display
+
+=end Marpa::Test::Display:
+
+    A: . q{'A is missing'}.
+
+Null symbol actions are evaluated differently from rule actions.
+Null symbol actions are run at evaluator creation time and the value of the result
+at that point
+becomes fixed as the null symbol value.
+This is not the case with rule actions.
+During the creation of the evaluator object,
+rule actions are B<compiled into closures>.
+During parse evaluation,
+whenever a node for that rule needs its value recalculated,
+the compiled rule closure is run.
+A compiled rule closure
+can produce a different value every time it runs.
+
+I treat null symbol actions differently for efficiency.
+They have no child values,
+and a fixed value is usually what is wanted.
+If you want to calculate a symbol's null value with a closure run at parse evaluation time,
+the null symbol action can return a reference to a closure.
+Rules with that nullable symbol in their right hand side
+can then be set up to run that closure.
+
+=head3 Evaluating Null Derivations
+
+A null derivation may consist of many steps and may contain many symbols.
+Marpa's rule is that the value of a null derivation is
+the null symbol value of the B<highest null symbol> in that
+derivation.
+This section describes in detail how a parse is evaluated,
+focusing on what happens when nulled symbols are involved.
+
+The first step in evaluating a parse is to determine which nodes
+B<count> for the purpose of evaluation, and which do not.
+Marpa follows these principles:
+
+=over 4
+
+=item 1
+
+The start node always counts.
+
+=item 2
+
+Nodes count if they derive a non-empty sentence.
+
+=item 3
+
+All other nodes do not count.
+
+=item 4
+
+In evaluating a parse, Marpa uses only nodes that count.
+
+=back
+
+These are all consequences of the principles above:
+
+=over 4
+
+=item 1
+
+The value of null derivation is the value of the highest null symbol in it.
+
+=item 2
+
+A nulled node counts only if it is the start node.
+
+=item 3
+
+The value of a null parse is the null value of the start symbol.
+
+=back
+
+If you think some of the rules or symbols represented by nodes that don't count
+are important in your grammar,
+Marpa can probably accommodate your ideas.
+First,
+for every nullable symbol,
+determine how to calculate the value which your semantics produces
+when that nullable symbol is a "highest null symbol".
+If it's a constant, write a null action for that symbol which returns that constant.
+If your semantics do not produce a constant value by evaluator creation time,
+write a null action which returns a reference to a closure
+and arrange to have that closure run by the parent node.
+
+=head3 Example
+
+Suppose a grammar has these rules
+
+=begin Marpa::Test::Commented_Out_Display:
+
+## start display
+## next display
+in_file($_, 'example/null_value.marpa');
+
+=end Marpa::Test::Commented_Out_Display:
+
+=begin Marpa::Test::Display:
+
+## start display
+## skip display
+
+=end Marpa::Test::Display:
+
+    THIS NEEDS TO CHANGE SO THAT IT NO LONGER USES MDL.
+
+    S: A, Y. q{ $_[0] . ", but " . $_[1] }. # Call me the start rule
+    note: you can also call me Rule 0.
+
+    A: . q{'A is missing'}. # Call me Rule 1
+
+    A: B, C. q{"I'm sometimes null and sometimes not"}. # Call me Rule 2
+
+    B: . q{'B is missing'}. # Call me Rule 3
+
+    C: . q{'C is missing'}. # Call me Rule 4
+
+    C: Y.  q{'C matches Y'}. # Call me Rule 5
+
+    Y: /Z/. q{'Zorro was here'}. # Call me Rule 6
+
+=begin Marpa::Test::Display:
+
+## end display
+
+=end Marpa::Test::Display:
+
+In the above MDL, the Perl 5 regex "C</Z/>" occurs on the rhs of Rule 6.
+Where a regex is on the rhs of a rule, MDL internally creates a terminal symbol
+to match that regex in the input text.
+In this example, the MDL internal terminal symbol that
+matches input text using the regex
+C</Z/> will be called C<Z>.
+
+If the input text is the Perl 5 string "C<Z>",
+the derivation is as follows:
+
+=begin Marpa::Test::Display:
+
+## skip 2 displays
+
+=end Marpa::Test::Display:
+
+    S -> A Y      (Rule 0)
+      -> A "Z"    (Y produces "Z", by Rule 6)
+      -> B C "Z"  (A produces B C, by Rule 2)
+      -> B "Z"    (C produces the empty string, by Rule 4)
+      -> "Z"      (B produces the empty string, by Rule 3)
+
+The parse tree can be described as follows:
+
+    Node 0 (root): S (2 children, nodes 1 and 4)
+        Node 1: A (2 children, nodes 2 and 3)
+	    Node 2: B (matches empty string)
+	    Node 3: C (matches empty string)
+	Node 4: Y (1 child, node 5)
+	    Node 5: "Z" (terminal node)
+
+Here's a table showing, for each node, its lhs symbol,
+the sentence it derives, and
+its value.
+
+=begin Marpa::Test::Display:
+
+## skip 2 displays
+
+=end Marpa::Test::Display:
+
+                        Symbol      Sentence     Value
+                                    Derived
+
+    Node 0:                S         "Z"         "A is missing, but Zorro is here"
+        Node 1:            A         empty       "A is missing"
+	    Node 2:        B         empty       No value
+	    Node 3:        C         empty       No value
+	Node 4:            Y         "Z"         "Zorro was here"
+	    Node 5:        -         "Z"         "Z"
+
+In this derivation,
+nodes 1, 2 and 3 derive the empty sentence.
+None of them are the start node so that none of them count.
+
+Nodes 0, 4 and 5 all derive the same non-empty sentence, C<Z>,
+so they all count.
+Node 0 is the start node, so it would have counted in any case.
+
+Since node 5 is a terminal node, it's value comes from the lexer.
+Where the lexing is done with a Perl 5 regex,
+the value will be the Perl 5 string that the regex matched.
+In this case it's the string "C<Z>".
+
+Node 4 is not nulled,
+so it is evaluated normally, using the rule it represents.
+That is rule 6.
+The action for rule 6 returns "C<Zorro was here>", so that
+is the value of node 4.
+Node 4 has a child node, node 5, but rule 6's action pays no
+attention to child values.
+The action for each rule is free to use or not use child values.
+
+Nodes 1, 2 and 3 don't count and will all remain unevaluated.
+The only rule left to be evaluated
+is node 0, the start node.
+It is not nulled, so
+its value is calculated using the action for the rule it
+represents (rule 0).
+
+Rule 0's action uses the values of its child nodes.
+There are two child nodes and their values are
+elements 0 and 1 in the C<@_> array of the action.
+The child value represented by the symbol C<Y>,
+C<< $_[1] >>, comes from node 4.
+From the table above, we can see that that value was
+"C<Zorro was here>".
+
+The first child value is represented by the symbol C<A>,
+which is nulled.
+For nulled symbols, we must use the null symbol value.
+Null symbol values for each symbol can be explicitly set
+by specifying an rule action for an empty rule with that symbol
+as its lhs.
+For symbol C<A>,
+this was done in Rule 1.
+Rule 1's action evaluates to the Perl 5 string
+"C<A is missing>".
+
+Even though rule 1's action plays a role in calculating the value of this parse,
+rule 1 is not actually used in the derivation.
+No node in the derivation represents rule 1.
+Rule 1's action is used because it is the null symbol action for
+the symbol C<A>.
+
+Now that we have both child values, we can use rule 0's action
+to calculate the value of node 0.
+That value is "C<A is missing, but Zorro was here>",
+This becomes the value of C<S>, rule 0's left hand side symbol and
+the start symbol of the grammar.
+A parse has the value of its start symbol,
+so "C<A is missing, but Zorro was here>" is also
+the value of the parse.
+
+=head2 Cloning
+
+The C<new> constructor requires a recognizer object to be one of its arguments.
+By default, the C<new> constructor clones the recognizer object.
+This is done so that evaluators do not interfere with each other by
+modifying the same data.
+Cloning is the default behavior, and is always safe.
+
+While safe, cloning does impose an overhead in memory and time.
+This can be avoided by using the C<clone> option with the C<new>
+constructor.
+Not cloning is safe if you know that the recognizer object will not be shared by another evaluator.
+You must also be sure that the
+underlying grammar object is not being shared by multiple recognizers.
+
+It is very common for a Marpa program to have a simple
+structure, where no more than one recognizer is created from any grammar,
+and no more than one evaluator is created from any recognizer.
+When this is the case, cloning is unnecessary.
+
+=head1 METHODS
+
+=head2 new
+
+=begin Marpa::Test::Display:
+
+## next display
+in_file($_, 't/equation_s.t');
+
+=end Marpa::Test::Display:
+
+    my $evaler = Marpa::Evaluator->new(
+      { recognizer => $recce }
+    );
+
+Z<>
+
+=begin Marpa::Test::Display:
+
+## next display
+in_file($_, 'author.t/misc.t');
+
+=end Marpa::Test::Display:
+
+    my $evaler = Marpa::Evaluator->new( {
+        recce => $recce,
+        end => $location,
+        clone => 0,
+    } );
+
+The C<new> method's one, required, argument is a hash reference of named
+arguments.
+The C<new> method either returns a new evaluator object or throws an exception.
+The C<recognizer> option is required,
+Its value must be a recognizer object which has finished recognizing a text.
+The C<recce> option is a synonym for the the C<recognizer> option.
+
+By default,
+parsing ends at the default end of parsing,
+which was set in the recognizer.
+If an C<end> option is specified, 
+it will be used as the number of the earleme at which to end parsing.
+
+If the C<clone> argument is set to 1,
+C<new> clones the recognizer object, so that multiple
+evaluators do not interfere with each other's data.
+This is the default and is always safe.
+If C<clone> is set to 0, the evaluator will work directly with
+the recognizer object which was its argument.
+See L<above|/"Cloning"> for more detail.
+
+Marpa options can also
+be named arguments to C<new>.
+For these, see L<Marpa::Doc::Options>.
+
+=head2 set
+
+=begin Marpa::Test::Display:
+
+## next display
+is_file($_, 'author.t/misc.t', 'evaler set snippet')
+
+=end Marpa::Test::Display:
+
+    $evaler->set( { trace_values => 1 } );
+
+The C<set> method takes as its one, required, argument a reference to a hash of named arguments.
+It allows Marpa options
+to be specified for an evaluator object.
+Relatively few Marpa options are not available at
+evaluation time.
+The options which are available
+are mainly those which control evaluation time tracing.
+C<set> either returns true or throws an exception.
+
+=head2 value
+
+=begin Marpa::Test::Display:
+
+## next display
+in_file($_, 't/ah2.t');
+
+=end Marpa::Test::Display:
+
+    my $result = $evaler->value();
+
+Iterates the evaluator object, returning a reference to the value of the next parse.
+If there are no more parses, returns undefined.
+Successful parses may evaluate to a Perl 5 undefined,
+which the C<value> method will return as a reference to an undefined.
+Failures are thrown as exceptions.
+
+When the order of parses is important,
+it may be manipulated by assigning priorities to the rules and
+terminals.
+If a symbol can both match a token and derive a rule,
+the token match always takes priority.
+Otherwise the parse order is implementation dependent.
+
+A failed parse does not always show up as an exhausted parse in the recognizer.
+Just because the recognizer was active when it was used to create
+the evaluator, does not mean that the input matches the grammar.
+If it does not match, there will be no parses and the C<value> method will
+return undefined the first time it is called.
+
+=head1 SUPPORT
+
+See the L<support section|Marpa/SUPPORT> in the main module.
+
+=head1 AUTHOR
+
+Jeffrey Kegler
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright 2007 - 2009 Jeffrey Kegler
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl 5.10.0.
+
+=cut

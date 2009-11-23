@@ -115,12 +115,11 @@ severity=5
 [ControlStructures::ProhibitUntilBlocks]
 severity=5
 
-[Documentation::RequirePodAtEnd]
+[-Documentation::RequirePodAtEnd]
 severity=5
 
-[Documentation::RequirePodSections]
+[-Documentation::RequirePodSections]
 severity=5
-
 lib_sections    = NAME | DESCRIPTION | SUPPORT | AUTHOR | LICENSE AND COPYRIGHT
 script_sections = NAME | USAGE | OPTIONS | EXIT STATUS | AUTHOR
 
@@ -206,6 +205,7 @@ severity=5
 
 [NamingConventions::Capitalization]
 local_lexical_variable_exemptions=.*_NFA.* .*NFA_.* .*QDFA_.*
+file_lexical_variable_exemptions=.*SGML_.*
 subroutine_exemptions=.*_NFA.* .*_QDFA.* Marpa::.* .*_CHAF.*
 severity=5
 

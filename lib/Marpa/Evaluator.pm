@@ -137,7 +137,7 @@ use Marpa::Offset qw(
 
     :package=Marpa::Internal::Evaluator
 
-    RECOGNIZER
+    GRAMMAR
     PARSE_COUNT :{ number of parses in an ambiguous parse :}
     AND_NODES
     OR_NODES
@@ -182,7 +182,7 @@ use List::Util;
 use English qw( -no_match_vars );
 use Data::Dumper;
 use Storable;
-use Marpa::Tie;
+use Marpa::Callback;
 use Marpa::Internal;
 
 # Perl critic at present is not smart about underscores
@@ -201,8 +201,7 @@ use constant N_FORMAT_MAX => 0x7fff_ffff;
 
 sub set_null_values {
     my ($evaler) = @_;
-    my $recce    = $evaler->[Marpa::Internal::Evaluator::RECOGNIZER];
-    my $grammar  = $recce->[Marpa::Internal::Recognizer::GRAMMAR];
+    my $grammar = $evaler->[Marpa::Internal::Evaluator::GRAMMAR];
 
     my $rules   = $grammar->[Marpa::Internal::Grammar::RULES];
     my $symbols = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
@@ -220,6 +219,8 @@ sub set_null_values {
         my $id = $symbol->[Marpa::Internal::Symbol::ID];
         $null_values->[$id] = $default_null_value;
     }
+
+    local $Marpa::Internal::SETTING_NULL_VALUES = 1;
 
     # Set null values specified in
     # empty rules.
@@ -308,8 +309,7 @@ sub set_null_values {
 # or return undef
 sub resolve_semantics {
     my ( $evaler, $closure_name ) = @_;
-    my $recce   = $evaler->[Marpa::Internal::Evaluator::RECOGNIZER];
-    my $grammar = $recce->[Marpa::Internal::Recognizer::GRAMMAR];
+    my $grammar = $evaler->[Marpa::Internal::Evaluator::GRAMMAR];
 
     Marpa::exception(q{Trying to resolve 'undef' as closure name})
         if not defined $closure_name;
@@ -376,8 +376,7 @@ sub resolve_semantics {
 
 sub set_actions {
     my ($evaler) = @_;
-    my $recce    = $evaler->[Marpa::Internal::Evaluator::RECOGNIZER];
-    my $grammar  = $recce->[Marpa::Internal::Recognizer::GRAMMAR];
+    my $grammar = $evaler->[Marpa::Internal::Evaluator::GRAMMAR];
 
     my ( $rules, $default_action, ) = @{$grammar}[
         Marpa::Internal::Grammar::RULES,
@@ -437,8 +436,6 @@ sub set_actions {
             my $closure =
                 Marpa::Internal::Evaluator::resolve_semantics( $evaler,
                 $action );
-
-            ### Explicit closures: $evaler->[Marpa'Internal'Evaluator'EXPLICIT_CLOSURES]
 
             Marpa::exception(qq{Could not resolve action name: "$action"})
                 if not defined $closure;
@@ -903,8 +900,7 @@ sub rewrite_cycles {
     my $trace_fh;
     my $trace_evaluation;
 
-    my $recce   = $evaler->[Marpa::Internal::Evaluator::RECOGNIZER];
-    my $grammar = $recce->[Marpa::Internal::Recognizer::GRAMMAR];
+    my $grammar = $evaler->[Marpa::Internal::Evaluator::GRAMMAR];
     my $warn_on_cycle =
         $grammar->[Marpa::Internal::Grammar::CYCLE_ACTION] ne 'quiet';
     $trace_fh = $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE];
@@ -1297,8 +1293,7 @@ sub delete_duplicate_nodes {
 
     my ($evaler) = @_;
 
-    my $recce   = $evaler->[Marpa::Internal::Evaluator::RECOGNIZER];
-    my $grammar = $recce->[Marpa::Internal::Recognizer::GRAMMAR];
+    my $grammar = $evaler->[Marpa::Internal::Evaluator::GRAMMAR];
 
     my $trace_fh = $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE];
     my $trace_evaluation =
@@ -1517,16 +1512,17 @@ sub Marpa::Evaluator::new {
     delete $args->{clone};
     my $clone = $clone_arg // 1;
 
+    my $grammar = $recce->[Marpa::Internal::Recognizer::GRAMMAR];
     if ($clone) {
-        $recce = $recce->clone();
+        $grammar = $grammar->clone();
     }
+    $self->[Marpa::Internal::Evaluator::GRAMMAR] = $grammar;
 
     $self->[Marpa::Internal::Evaluator::EXPLICIT_CLOSURES] = $args->{closures}
         // {};
 
     delete $args->{closures};
 
-    my $grammar     = $recce->[Marpa::Internal::Recognizer::GRAMMAR];
     my $earley_sets = $recce->[Marpa::Internal::Recognizer::EARLEY_SETS];
 
     my $phase = $grammar->[Marpa::Internal::Grammar::PHASE] =
@@ -1550,8 +1546,6 @@ sub Marpa::Evaluator::new {
         "  Last token ends at location $furthest_earleme\n",
         "  Recognition done only as far as location $last_completed_earleme\n"
     ) if $furthest_earleme > $last_completed_earleme;
-
-    $self->[Marpa::Internal::Evaluator::RECOGNIZER] = $recce;
 
     $self->set($args);
 
@@ -2143,8 +2137,7 @@ sub Marpa::dump_sort_key {
 
 sub Marpa::Evaluator::show_sort_keys {
     my ($evaler)    = @_;
-    my $recce       = $evaler->[Marpa::Internal::Evaluator::RECOGNIZER];
-    my $grammar     = $recce->[Marpa::Internal::Recognizer::GRAMMAR];
+    my $grammar     = $evaler->[Marpa::Internal::Evaluator::GRAMMAR];
     my $parse_order = $grammar->[Marpa::Internal::Grammar::PARSE_ORDER];
     Marpa::exception(
         "show_sort_keys called when parse order is not original\n",
@@ -2175,8 +2168,7 @@ sub Marpa::Evaluator::show_and_node {
 
     my $return_value = q{};
 
-    my $recce   = $evaler->[Marpa::Internal::Evaluator::RECOGNIZER];
-    my $grammar = $recce->[Marpa::Internal::Recognizer::GRAMMAR];
+    my $grammar = $evaler->[Marpa::Internal::Evaluator::GRAMMAR];
     my $rules   = $grammar->[Marpa::Internal::Grammar::RULES];
 
     my $name = $and_node->[Marpa::Internal::And_Node::TAG];
@@ -2254,7 +2246,7 @@ sub Marpa::Evaluator::show_and_node {
 } ## end sub Marpa::Evaluator::show_and_node
 
 sub Marpa::Evaluator::show_or_node {
-    my ( $evaler, $or_node, $verbose ) = @_;
+    my ( $evaler, $or_node, $verbose, ) = @_;
     $verbose //= 0;
 
     return q{} if $or_node->[Marpa::Internal::Or_Node::DELETED];
@@ -2284,7 +2276,7 @@ sub Marpa::Evaluator::show_or_node {
 } ## end sub Marpa::Evaluator::show_or_node
 
 sub Marpa::Evaluator::show_bocage {
-    my ( $evaler, $verbose ) = @_;
+    my ( $evaler, $verbose, ) = @_;
     $verbose //= 0;
 
     my $parse_count = $evaler->[Marpa::Internal::Evaluator::PARSE_COUNT];
@@ -2302,11 +2294,78 @@ sub Marpa::Evaluator::show_bocage {
     return $text;
 } ## end sub Marpa::Evaluator::show_bocage
 
+sub Marpa::Evaluator::show_ambiguity {
+    my ( $evaler, $verbose, ) = @_;
+    my $and_nodes = $evaler->[Marpa::Internal::Evaluator::AND_NODES];
+    my $or_nodes  = $evaler->[Marpa::Internal::Evaluator::OR_NODES];
+    my $grammar   = $evaler->[Marpa::Internal::Evaluator::GRAMMAR];
+    my $QDFA      = $grammar->[Marpa::Internal::Grammar::QDFA];
+    $verbose //= 0;
+    my $text = q{};
+
+    OR_NODE:
+    for my $or_node ( @{$or_nodes} ) {
+        my $child_ids   = $or_node->[Marpa::Internal::Or_Node::CHILD_IDS];
+        my $child_count = scalar @{$child_ids};
+        next OR_NODE if $child_count <= 1;
+        my $or_tag = $or_node->[Marpa::Internal::Or_Node::TAG];
+        $text .= "$or_tag is Ambiguous: $child_count children\n";
+        for my $child_ix ( 0 .. $#{$child_ids} ) {
+            my $child_and_node_id = $child_ids->[$child_ix];
+            my $and_node          = $and_nodes->[$child_and_node_id];
+            my $and_tag = $and_node->[Marpa::Internal::And_Node::TAG];
+            $text .= "  choice #$child_ix: $and_tag ::=";
+            my $detail_text = q{};
+            if (defined(
+                    my $predecessor_id =
+                        $and_node->[Marpa::Internal::And_Node::PREDECESSOR_ID]
+                )
+                )
+            {
+                my $or_grandchild = $or_nodes->[$predecessor_id];
+                my $grandchild_tag =
+                    $or_grandchild->[Marpa::Internal::Or_Node::TAG];
+                my ($state) = ( $grandchild_tag =~ /\A S (\d+) [@]/xms );
+                $text .= " $grandchild_tag";
+                $detail_text
+                    .= Marpa::show_QDFA_state( $QDFA->[ $state + 0 ], 0 );
+            } ## end if ( defined( my $predecessor_id = $and_node->[...]))
+            if (defined(
+                    my $cause_id =
+                        $and_node->[Marpa::Internal::And_Node::CAUSE_ID]
+                )
+                )
+            {
+                my $or_grandchild = $or_nodes->[$cause_id];
+                my $grandchild_tag =
+                    $or_grandchild->[Marpa::Internal::Or_Node::TAG];
+                my ($state) = ( $grandchild_tag =~ /\A S (\d+) [@]/xms );
+                $text .= " $grandchild_tag";
+                $detail_text
+                    .= Marpa::show_QDFA_state( $QDFA->[ $state + 0 ], 0 );
+            } ## end if ( defined( my $cause_id = $and_node->[...]))
+            if (defined(
+                    my $value_ref =
+                        $and_node->[Marpa::Internal::And_Node::VALUE_REF]
+                )
+                )
+            {
+                $text .= ' Token';
+                $detail_text
+                    .= Data::Dumper->new($value_ref)->Terse(1)->Dump();
+            } ## end if ( defined( my $value_ref = $and_node->[...]))
+            $detail_text =~ s/^/    /gxms;
+            $text .= "\n$detail_text";
+        } ## end for my $child_ix ( 0 .. $#{$child_ids} )
+    } ## end for my $or_node ( @{$or_nodes} )
+
+    return $text;
+} ## end sub Marpa::Evaluator::show_ambiguity
+
 sub Marpa::Evaluator::set {
     my $evaler  = shift;
     my $args    = shift;
-    my $recce   = $evaler->[Marpa::Internal::Evaluator::RECOGNIZER];
-    my $grammar = $recce->[Marpa::Internal::Recognizer::GRAMMAR];
+    my $grammar = $evaler->[Marpa::Internal::Evaluator::GRAMMAR];
     Marpa::Grammar::set( $grammar, $args );
     return 1;
 } ## end sub Marpa::Evaluator::set
@@ -2343,9 +2402,8 @@ sub Marpa::Evaluator::value {
 
     local $Marpa::Internal::EVAL_INSTANCE = $evaler;
 
-    my $recognizer = $evaler->[Marpa::Internal::Evaluator::RECOGNIZER];
-    my $grammar    = $recognizer->[Marpa::Internal::Recognizer::GRAMMAR];
-    my $rules      = $grammar->[Marpa::Internal::Grammar::RULES];
+    my $grammar = $evaler->[Marpa::Internal::Evaluator::GRAMMAR];
+    my $rules   = $grammar->[Marpa::Internal::Grammar::RULES];
 
     my $action_object_class =
         $grammar->[Marpa::Internal::Grammar::ACTION_OBJECT];
@@ -2384,13 +2442,9 @@ sub Marpa::Evaluator::value {
                     if not my $token =
                         $and_node->[Marpa::Internal::And_Node::TOKEN];
 
-                ### Ranking token: $token->[Marpa'Internal'Symbol'NAME]
-
                 next AND_NODE
                     if not my $ranking_closure = $ranking_closures_by_symbol
                         ->[ $token->[Marpa::Internal::Symbol::ID] ];
-
-                ### Found closure for token: $token->[Marpa'Internal'Symbol'NAME]
 
                 my $rank;
                 my @warnings;
@@ -2417,8 +2471,6 @@ sub Marpa::Evaluator::value {
                 } ## end if ( not $eval_ok or @warnings )
                 $and_node->[Marpa::Internal::And_Node::FIXED_RANKING_DATA] =
                     $rank;
-
-                ### Token, rank: $token->[Marpa'Internal'Symbol'NAME], $rank
 
             } ## end for my $and_node ( @{$and_nodes} )
             last SET_UP_ITERATIONS;
@@ -2728,6 +2780,11 @@ sub Marpa::Evaluator::value {
                                 += $cause_and_node_iteration->[
                                 Marpa::Internal::And_Iteration::RANKING_DATA
                                 ];
+
+                            ### and node: Marpa'Evaluator'show_and_node($evaler, $and_nodes->[$cause_and_node_choice->[Marpa'Internal'And_Choice'ID]], 99)
+
+                            ### assert: defined $cause_and_node_iteration->[ Marpa'Internal'And_Iteration'RANKING_DATA ]
+
                         } ## end if ($cause_and_node_choice)
                         if ($predecessor_and_node_choice) {
                             $rank
@@ -2735,8 +2792,6 @@ sub Marpa::Evaluator::value {
                                 Marpa::Internal::And_Iteration::RANKING_DATA
                                 ];
                         } ## end if ($predecessor_and_node_choice)
-
-                        ### Ranking and_node, id, rank: $and_node_id, $rank
 
                         $and_node_iteration
                             ->[Marpa::Internal::And_Iteration::RANKING_DATA] =
@@ -2775,9 +2830,21 @@ sub Marpa::Evaluator::value {
                         );
                     } ## end if ( not $eval_ok or @warnings )
 
+                    if ( not defined $rank ) {
+                        my $rule_id =
+                            $and_node->[Marpa::Internal::And_Node::RULE_ID];
+                        my $rule = $rules->[$rule_id];
+                        Marpa::exception(
+                            'numeric ranking action returned undef, rule: ',
+                            Marpa::brief_rule($rule),
+                        );
+                    } ## end if ( not defined $rank )
+
                     $and_node_iteration
                         ->[Marpa::Internal::And_Iteration::RANKING_DATA] =
                         $rank;
+
+                    ### assert: defined $rank
 
                     # With the rank processing finished, the
                     # SETUP_AND_NODE task is finished
@@ -3031,10 +3098,8 @@ node appears more than once on the path back to the root node.
                     if ( not $use_this_and_node ) {
                         $and_iterations->[$and_node_id] = undef;
 
-                        ### breaking potential cycle, and-node-id: $and_node_id
-
                         break;    # next TASK
-                    } ## end if ( not $use_this_and_node )
+                    }
 
                     # The path must be
                     # re-copied.  If it is shared
@@ -3046,10 +3111,8 @@ node appears more than once on the path back to the root node.
                         for my $add_to_path (@add_to_path) {
                             my ( $key, $value ) = @{$add_to_path};
 
-                            ### Adding to path, key, value: $key, $value
-
                             $new_path{$key} = $value;
-                        } ## end for my $add_to_path (@add_to_path)
+                        }
                         $path = \%new_path;
                     } ## end if ( scalar @add_to_path )
 
@@ -3443,8 +3506,6 @@ node appears more than once on the path back to the root node.
                     } @descendant_or_node_ids;
                 } ## end while ( scalar @work_list )
 
-                #### FREEZE_TREE, and-node id: $and_node_id
-
                 my @or_values  = @{$or_iterations}[@or_slice];
                 my @and_values = @{$and_iterations}[@and_slice];
 
@@ -3646,8 +3707,6 @@ node appears more than once on the path back to the root node.
                                         ( splice @evaluation_stack, -$argc )
                                     ];
 
-                                ### <where> current_data: $current_data
-
                             } ## end when (Marpa::Internal::Evaluator_Op::ARGC)
 
                             when ( Marpa::Internal::Evaluator_Op::VIRTUAL_HEAD
@@ -3683,8 +3742,6 @@ node appears more than once on the path back to the root node.
                                         -$real_symbol_count
                                     )
                                 ];
-
-                                ### <where> current_data: $current_data
 
                             } ## end when ( Marpa::Internal::Evaluator_Op::VIRTUAL_HEAD )
 
@@ -3724,8 +3781,6 @@ node appears more than once on the path back to the root node.
                                         )
                                     ]
                                 ];
-
-                                ### <where> current_data: $current_data
 
                                 # truncate the evaluation stack
                                 $#evaluation_stack = $base - 1;
@@ -3807,8 +3862,6 @@ node appears more than once on the path back to the root node.
                                 my $closure = $ops->[ $op_ix++ ];
                                 my $result;
 
-                                ### current_data: $current_data
-
                                 my @warnings;
                                 my $eval_ok;
                                 DO_EVAL: {
@@ -3886,467 +3939,3 @@ node appears more than once on the path back to the root node.
 } ## end sub Marpa::Evaluator::value
 
 1;
-
-__END__
-
-=pod
-
-=head1 NAME
-
-Marpa::Evaluator - Marpa Evaluator Objects
-
-=head1 SYNOPSIS
-
-=begin Marpa::Test::Display:
-
-## next 3 displays
-in_file($_, 't/equation_s.t')
-
-=end Marpa::Test::Display:
-
-    my $fail_offset = $lexer->text('2-0*3+1');
-    if ( $fail_offset >= 0 ) {
-        Marpa::exception("Parse failed at offset $fail_offset");
-    }
-
-    my $evaler = Marpa::Evaluator->new( { recognizer => $recce } );
-    Marpa::exception('Parse failed') if not $evaler;
-
-    my $i = 0;
-    while ( defined( my $value = $evaler->value() ) ) {
-        my $value = ${$value};
-        Test::More::ok( $expected_value{$value}, "Value $i (unspecified order)" );
-        delete $expected_value{$value};
-        $i++;
-    } ## end while ( defined( my $value = $evaler->value() ) )
-
-=head1 DESCRIPTION
-
-Parses are found and evaluated by Marpa's evaluator objects.
-Evaluators are created with the C<new> constructor,
-which requires a Marpa recognizer object
-as an argument.
-
-Marpa allows ambiguous parses, so evaluator objects are iterators.
-Iteration is performed with the C<value> method,
-which returns a reference to the value of the next parse.
-Often only the first parse is needed,
-in which case the C<value> method can be called just once.
-
-By default, the C<new> constructor clones the recognizer, so that
-multiple evaluators do not interfere with each other.
-
-=head2 Null Values
-
-A "null value" is the value used for a symbol when it is nulled in a parse.
-By default, the null value is a Perl undefined.
-The default null value is a Marpa option (C<default_null_value>) and can be reset.
-
-Each symbol can have its own null symbol value.
-The null symbol value for any symbol is calculated using the null symbol action.
-The B<null symbol action> for a symbol is the action
-specified for the empty rule with that symbol on its left hand side.
-The null symbol action is B<not> a rule action.
-It's a property of the symbol, and applies whenever the symbol is nulled,
-even when the symbol's empty rule is not involved.
-
-For example, in MDL,
-the following says that whenever the symbol C<A> is nulled,
-its value should be a string that says it is missing.
-
-=begin Marpa::Test::Commented_out_Display:
-
-## next display
-in_file($_, 'example/null_value.marpa');
-
-=end Marpa::Test::Commented_out_Display:
-
-=begin Marpa::Test::Display:
-
-## skip display
-
-=end Marpa::Test::Display:
-
-    A: . q{'A is missing'}.
-
-Null symbol actions are evaluated differently from rule actions.
-Null symbol actions are run at evaluator creation time and the value of the result
-at that point
-becomes fixed as the null symbol value.
-This is not the case with rule actions.
-During the creation of the evaluator object,
-rule actions are B<compiled into closures>.
-During parse evaluation,
-whenever a node for that rule needs its value recalculated,
-the compiled rule closure is run.
-A compiled rule closure
-can produce a different value every time it runs.
-
-I treat null symbol actions differently for efficiency.
-They have no child values,
-and a fixed value is usually what is wanted.
-If you want to calculate a symbol's null value with a closure run at parse evaluation time,
-the null symbol action can return a reference to a closure.
-Rules with that nullable symbol in their right hand side
-can then be set up to run that closure.
-
-=head3 Evaluating Null Derivations
-
-A null derivation may consist of many steps and may contain many symbols.
-Marpa's rule is that the value of a null derivation is
-the null symbol value of the B<highest null symbol> in that
-derivation.
-This section describes in detail how a parse is evaluated,
-focusing on what happens when nulled symbols are involved.
-
-The first step in evaluating a parse is to determine which nodes
-B<count> for the purpose of evaluation, and which do not.
-Marpa follows these principles:
-
-=over 4
-
-=item 1
-
-The start node always counts.
-
-=item 2
-
-Nodes count if they derive a non-empty sentence.
-
-=item 3
-
-All other nodes do not count.
-
-=item 4
-
-In evaluating a parse, Marpa uses only nodes that count.
-
-=back
-
-These are all consequences of the principles above:
-
-=over 4
-
-=item 1
-
-The value of null derivation is the value of the highest null symbol in it.
-
-=item 2
-
-A nulled node counts only if it is the start node.
-
-=item 3
-
-The value of a null parse is the null value of the start symbol.
-
-=back
-
-If you think some of the rules or symbols represented by nodes that don't count
-are important in your grammar,
-Marpa can probably accommodate your ideas.
-First,
-for every nullable symbol,
-determine how to calculate the value which your semantics produces
-when that nullable symbol is a "highest null symbol".
-If it's a constant, write a null action for that symbol which returns that constant.
-If your semantics do not produce a constant value by evaluator creation time,
-write a null action which returns a reference to a closure
-and arrange to have that closure run by the parent node.
-
-=head3 Example
-
-Suppose a grammar has these rules
-
-=begin Marpa::Test::Commented_Out_Display:
-
-## start display
-## next display
-in_file($_, 'example/null_value.marpa');
-
-=end Marpa::Test::Commented_Out_Display:
-
-=begin Marpa::Test::Display:
-
-## start display
-## skip display
-
-=end Marpa::Test::Display:
-
-    THIS NEEDS TO CHANGE SO THAT IT NO LONGER USES MDL.
-
-    S: A, Y. q{ $_[0] . ", but " . $_[1] }. # Call me the start rule
-    note: you can also call me Rule 0.
-
-    A: . q{'A is missing'}. # Call me Rule 1
-
-    A: B, C. q{"I'm sometimes null and sometimes not"}. # Call me Rule 2
-
-    B: . q{'B is missing'}. # Call me Rule 3
-
-    C: . q{'C is missing'}. # Call me Rule 4
-
-    C: Y.  q{'C matches Y'}. # Call me Rule 5
-
-    Y: /Z/. q{'Zorro was here'}. # Call me Rule 6
-
-=begin Marpa::Test::Display:
-
-## end display
-
-=end Marpa::Test::Display:
-
-In the above MDL, the Perl 5 regex "C</Z/>" occurs on the rhs of Rule 6.
-Where a regex is on the rhs of a rule, MDL internally creates a terminal symbol
-to match that regex in the input text.
-In this example, the MDL internal terminal symbol that
-matches input text using the regex
-C</Z/> will be called C<Z>.
-
-If the input text is the Perl 5 string "C<Z>",
-the derivation is as follows:
-
-=begin Marpa::Test::Display:
-
-## skip 2 displays
-
-=end Marpa::Test::Display:
-
-    S -> A Y      (Rule 0)
-      -> A "Z"    (Y produces "Z", by Rule 6)
-      -> B C "Z"  (A produces B C, by Rule 2)
-      -> B "Z"    (C produces the empty string, by Rule 4)
-      -> "Z"      (B produces the empty string, by Rule 3)
-
-The parse tree can be described as follows:
-
-    Node 0 (root): S (2 children, nodes 1 and 4)
-        Node 1: A (2 children, nodes 2 and 3)
-	    Node 2: B (matches empty string)
-	    Node 3: C (matches empty string)
-	Node 4: Y (1 child, node 5)
-	    Node 5: "Z" (terminal node)
-
-Here's a table showing, for each node, its lhs symbol,
-the sentence it derives, and
-its value.
-
-=begin Marpa::Test::Display:
-
-## skip 2 displays
-
-=end Marpa::Test::Display:
-
-                        Symbol      Sentence     Value
-                                    Derived
-
-    Node 0:                S         "Z"         "A is missing, but Zorro is here"
-        Node 1:            A         empty       "A is missing"
-	    Node 2:        B         empty       No value
-	    Node 3:        C         empty       No value
-	Node 4:            Y         "Z"         "Zorro was here"
-	    Node 5:        -         "Z"         "Z"
-
-In this derivation,
-nodes 1, 2 and 3 derive the empty sentence.
-None of them are the start node so that none of them count.
-
-Nodes 0, 4 and 5 all derive the same non-empty sentence, C<Z>,
-so they all count.
-Node 0 is the start node, so it would have counted in any case.
-
-Since node 5 is a terminal node, it's value comes from the lexer.
-Where the lexing is done with a Perl 5 regex,
-the value will be the Perl 5 string that the regex matched.
-In this case it's the string "C<Z>".
-
-Node 4 is not nulled,
-so it is evaluated normally, using the rule it represents.
-That is rule 6.
-The action for rule 6 returns "C<Zorro was here>", so that
-is the value of node 4.
-Node 4 has a child node, node 5, but rule 6's action pays no
-attention to child values.
-The action for each rule is free to use or not use child values.
-
-Nodes 1, 2 and 3 don't count and will all remain unevaluated.
-The only rule left to be evaluated
-is node 0, the start node.
-It is not nulled, so
-its value is calculated using the action for the rule it
-represents (rule 0).
-
-Rule 0's action uses the values of its child nodes.
-There are two child nodes and their values are
-elements 0 and 1 in the C<@_> array of the action.
-The child value represented by the symbol C<Y>,
-C<< $_[1] >>, comes from node 4.
-From the table above, we can see that that value was
-"C<Zorro was here>".
-
-The first child value is represented by the symbol C<A>,
-which is nulled.
-For nulled symbols, we must use the null symbol value.
-Null symbol values for each symbol can be explicitly set
-by specifying an rule action for an empty rule with that symbol
-as its lhs.
-For symbol C<A>,
-this was done in Rule 1.
-Rule 1's action evaluates to the Perl 5 string
-"C<A is missing>".
-
-Even though rule 1's action plays a role in calculating the value of this parse,
-rule 1 is not actually used in the derivation.
-No node in the derivation represents rule 1.
-Rule 1's action is used because it is the null symbol action for
-the symbol C<A>.
-
-Now that we have both child values, we can use rule 0's action
-to calculate the value of node 0.
-That value is "C<A is missing, but Zorro was here>",
-This becomes the value of C<S>, rule 0's left hand side symbol and
-the start symbol of the grammar.
-A parse has the value of its start symbol,
-so "C<A is missing, but Zorro was here>" is also
-the value of the parse.
-
-=head2 Cloning
-
-The C<new> constructor requires a recognizer object to be one of its arguments.
-By default, the C<new> constructor clones the recognizer object.
-This is done so that evaluators do not interfere with each other by
-modifying the same data.
-Cloning is the default behavior, and is always safe.
-
-While safe, cloning does impose an overhead in memory and time.
-This can be avoided by using the C<clone> option with the C<new>
-constructor.
-Not cloning is safe if you know that the recognizer object will not be shared by another evaluator.
-You must also be sure that the
-underlying grammar object is not being shared by multiple recognizers.
-
-It is very common for a Marpa program to have a simple
-structure, where no more than one recognizer is created from any grammar,
-and no more than one evaluator is created from any recognizer.
-When this is the case, cloning is unnecessary.
-
-=head1 METHODS
-
-=head2 new
-
-=begin Marpa::Test::Display:
-
-## next display
-in_file($_, 't/equation_s.t');
-
-=end Marpa::Test::Display:
-
-    my $evaler = Marpa::Evaluator->new(
-      { recognizer => $recce }
-    );
-
-Z<>
-
-=begin Marpa::Test::Display:
-
-## next display
-in_file($_, 'author.t/misc.t');
-
-=end Marpa::Test::Display:
-
-    my $evaler = Marpa::Evaluator->new( {
-        recce => $recce,
-        end => $location,
-        clone => 0,
-    } );
-
-The C<new> method's one, required, argument is a hash reference of named
-arguments.
-The C<new> method either returns a new evaluator object or throws an exception.
-The C<recognizer> option is required,
-Its value must be a recognizer object which has finished recognizing a text.
-The C<recce> option is a synonym for the the C<recognizer> option.
-
-By default,
-parsing ends at the default end of parsing,
-which was set in the recognizer.
-If an C<end> option is specified, 
-it will be used as the number of the earleme at which to end parsing.
-
-If the C<clone> argument is set to 1,
-C<new> clones the recognizer object, so that multiple
-evaluators do not interfere with each other's data.
-This is the default and is always safe.
-If C<clone> is set to 0, the evaluator will work directly with
-the recognizer object which was its argument.
-See L<above|/"Cloning"> for more detail.
-
-Marpa options can also
-be named arguments to C<new>.
-For these, see L<Marpa::Doc::Options>.
-
-=head2 set
-
-=begin Marpa::Test::Display:
-
-## next display
-is_file($_, 'author.t/misc.t', 'evaler set snippet')
-
-=end Marpa::Test::Display:
-
-    $evaler->set( { trace_values => 1 } );
-
-The C<set> method takes as its one, required, argument a reference to a hash of named arguments.
-It allows Marpa options
-to be specified for an evaluator object.
-Relatively few Marpa options are not available at
-evaluation time.
-The options which are available
-are mainly those which control evaluation time tracing.
-C<set> either returns true or throws an exception.
-
-=head2 value
-
-=begin Marpa::Test::Display:
-
-## next display
-in_file($_, 't/ah2.t');
-
-=end Marpa::Test::Display:
-
-    my $result = $evaler->value();
-
-Iterates the evaluator object, returning a reference to the value of the next parse.
-If there are no more parses, returns undefined.
-Successful parses may evaluate to a Perl 5 undefined,
-which the C<value> method will return as a reference to an undefined.
-Failures are thrown as exceptions.
-
-When the order of parses is important,
-it may be manipulated by assigning priorities to the rules and
-terminals.
-If a symbol can both match a token and derive a rule,
-the token match always takes priority.
-Otherwise the parse order is implementation dependent.
-
-A failed parse does not always show up as an exhausted parse in the recognizer.
-Just because the recognizer was active when it was used to create
-the evaluator, does not mean that the input matches the grammar.
-If it does not match, there will be no parses and the C<value> method will
-return undefined the first time it is called.
-
-=head1 SUPPORT
-
-See the L<support section|Marpa/SUPPORT> in the main module.
-
-=head1 AUTHOR
-
-Jeffrey Kegler
-
-=head1 LICENSE AND COPYRIGHT
-
-Copyright 2007 - 2009 Jeffrey Kegler
-
-This program is free software; you can redistribute
-it and/or modify it under the same terms as Perl 5.10.0.
-
-=cut
