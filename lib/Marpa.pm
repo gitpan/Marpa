@@ -6,7 +6,7 @@ no warnings 'recursion';
 use strict;
 
 BEGIN {
-    our $VERSION = '0.001_025';
+    our $VERSION = '0.001_026';
 }
 
 use integer;

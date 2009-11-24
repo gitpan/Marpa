@@ -22,8 +22,11 @@ package Marpa::UrHTML::Internal;
 use Marpa::Internal;
 
 BEGIN {
-    use Devel::Size;
-}
+    ## no critic (BuiltinFunctions::ProhibitStringyEval)
+    ## no critic (ErrorHandling::RequireCheckingReturnValueOfEval)
+    eval 'use Devel::Size';
+    ## use critic
+} ## end BEGIN
 
 sub total_size {
     Marpa::exception('Devel::Size not loaded')

@@ -6,7 +6,7 @@ use warnings;
 
 use Module::Build;
 
-my $marpa_version = '0.001_025';
+my $marpa_version = '0.001_026';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -59,9 +59,9 @@ my $build = $class->new(
             package => [
 
                 # temporarily on the noindex list, til the documentation is ready
-                qw( Marpa Marpa::Recognizer Marpa::Evaluator Marpa::Grammar ),
+                qw( Marpa::Recognizer Marpa::Evaluator Marpa::Grammar ),
 
-                # permanently on the noindex list, as they are EOL'd
+                # now permanently on the noindex list, as they are EOL'd
                 # and will not be documented
                 qw( Marpa::MDL Marpa::MDLex ),
 
