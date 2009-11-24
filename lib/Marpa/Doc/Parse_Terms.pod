@@ -8,8 +8,16 @@ This document is intended
 as a reminder of
 the standard vocabulary of parsing.
 I put B<defining uses> of terms in boldface, for easy skimming.
-A reader who feels comfortable with parsing terminology,
+A reader who feels comfortable with parsing terminology
 can skip this document entirely.
+A reader completely new to parsing will find this document too
+terse and should look elsewhere first.
+
+As an introduction, I recommend
+L<Mark Jason Dominus's
+excellent chapter on parsing in the Perl context|Marpa::Doc::Bibliography/"Dominus 2005">.
+It's available on-line.
+L<Wikipedia|Marpa::Doc::Bibliography/"Wikipedia"> is also an excellent place to start.
 
 All the definitions here are consistent with
 at least some of the textbook definitions,
@@ -19,13 +27,6 @@ cover the full range of standard meaning,
 or even to give the most common meaning.
 The focus is on the meaning of the terms as used in the Marpa documentation.
 
-If you've never looked into parsing before,
-you'll probably find this document too terse.
-As an introduction, I reccommend
-L<Mark Jason Dominus's
-excellent chapter on parsing in the Perl context|Marpa::Doc::Bibliography/"Dominus 2005">.
-It's available on-line.
-L<Wikipedia|Marpa::Doc::Bibliography/"Wikipedia"> is also an excellent place to start.
 
 =head2 Basic terms
 
@@ -75,16 +76,6 @@ In one common way of writing BNF, a production looks like this.
 
     Expression ::= Term Factor
 
-The equivalent in Marpa's MDL language looks like this:
-
-=begin Marpa::Test::Display:
-
-## skip display
-
-=end Marpa::Test::Display:
-
-    Expression: Term, Factor.
-
 In the production above, C<Expression>, C<Term> and C<Factor> are symbols.
 A production consists of a B<left hand side> and a B<right hand side>.
 In a B<context-free grammar>,
@@ -119,7 +110,7 @@ and
 
 =end Marpa::Test::Display:
 
-    X: B, C.
+    X ::= B C
 
 is a production, then
 
@@ -137,8 +128,10 @@ string to the second string.  Every symbol string is said to derive itself in a 
 of length 0.  Such a zero length derivation is a B<trivial derivation>.
 
 If a derivation is not trivial or direct, that is, if it has more than one step,
-then it is an B<indirect> derivation.  A derivation which is not trivial, that is,
-one which has one or more steps, is a B<non-trivial> derivation.
+then it is an B<indirect> derivation.  A derivation which is not trivial
+(that is,
+a derivation which has one or more steps)
+is a B<non-trivial> derivation.
 
 Where the symbol string beginning a derivation consists of a single symbol,
 we often say that symbol B<produces> the symbol string which results from the derivation.
@@ -192,7 +185,8 @@ that rule is said to be B<productive>.
 A rule that is not productive is called B<unproductive>.
 A simple case of an unproductive rule is one whose rhs contains a symbol which is not
 a terminal and not on the lhs of any other rule.
-A B<useless> rule is one which is inaccessible or unproductive.
+A rule which is inaccessible or unproductive is called a
+B<useless> rule.
 
 A symbol is B<reachable> if it appears in a reachable production.
 A symbol is B<productive> if it appears on the lhs of a productive rule,
@@ -209,14 +203,18 @@ the grammar is said to be B<left-recursive>.
 If any symbol non-trivially produces a symbol string with itself on the right,
 the grammar is said to be B<right-recursive>.
 
-A non-trivial derivation from any symbol to the symbol string of length
-one containing the original symbol is a cycle.
-Put less formally, any non-trivial derivation, which starts from a symbol
-and ends with a symbol string containing nothing but the same symbol, 
-completely unchanged, is a cycle.
+A B<cycle> is a non-trivial derivation
+from any symbol to a string of symbols of length 1, where the one
+symbol in the result string is the same as the original symbol.
+Since the result of a cycle is exactly the same as the beginning of
+a cycle, a cycle is the parsing equivalent of an infinite loop.
 A grammar which contains no cycles is B<cycle-free>.
+
 A B<proper context-free grammar> in one which is
 cycle-free and has no useless rules or empty productions.
+Marpa does not require the context-free grammars it parses to
+be proper.  Marpa can handles grammars with cycles, useless rules
+or both.
 
 =head2 Structure
 
@@ -229,8 +227,9 @@ Wherever a production is used in the parse,
 its lhs is represented by a B<parent node>
 and the rhs symbols are represented by B<child nodes>.
 The start symbol is the B<root> of the tree.
-Terminals and symbols on the
-left hand side of empty productions are B<leaf nodes>.
+Terminals are B<leaf nodes>.
+Symbols on the
+left hand side of empty productions are also B<leaf nodes>.
 If a node is not a B<leaf node>, it is an B<inner node>.
 A B<nulled node> is one that represents a nulled symbol.
 
@@ -246,6 +245,7 @@ The B<depth> of a node is its distance from the root.
 The root node is at depth 0.
 If a parent node is at depth C<n>,
 its children are at depth C<n+1>.
+
 As with depths in bodies of water, the concepts of B<higher> and B<lower>
 have the sense opposite to that of the numerical values.
 The node at depth 0 is higher than any other node.
@@ -257,14 +257,21 @@ In real life, the structure of a parse is usually a means to an end.
 Grammars usually have a B<semantics> associated with them,
 and what the user actually wants is the B<value> of the parse
 according to the semantics.
-The tree representation is especially useful when evaluating a parse.
 
-Every node which represents a terminal symbol
+The tree representation is especially useful when evaluating a parse.
+The rest of this section describes the traditional textbook method
+of evaluating parse trees.
+In practice trees can be transformed and evaluated in many ways,
+but the traditional method is very much in use and in practical
+applications the traditional method is usually the first considered,
+if not the one ultimately used.
+
+In the traditional method of evaluating a parse tree,
+every node which represents a terminal symbol
 has a value associated with it on input.
 Non-null inner nodes 
 take their semantics from the production whose lhs they represent.
-Nulled nodes are often deal with in special ways.
-Their handling in Marpa is described L<elsewhere|Marpa/"Null Symbol Values">.
+Nulled nodes are dealt with as special cases.
 
 The semantics for a production
 describe how to calculate the value of the node which represents the lhs

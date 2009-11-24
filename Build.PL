@@ -6,7 +6,7 @@ use warnings;
 
 use Module::Build;
 
-my $marpa_version = '0.001_024';
+my $marpa_version = '0.001_025';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -56,7 +56,18 @@ my $build = $class->new(
                 'Marpa::Internal',        'Marpa::MDL::Internal',
                 'Marpa::MDLex::Internal', 'Marpa::UrHTML::Internal'
             ],
-            package => [qw(Marpa::Internal Marpa::Offset)],
+            package => [
+
+                # temporarily on the noindex list, til the documentation is ready
+                qw( Marpa Marpa::Recognizer Marpa::Evaluator Marpa::Grammar ),
+
+                # permanently on the noindex list, as they are EOL'd
+                # and will not be documented
+                qw( Marpa::MDL Marpa::MDLex ),
+
+                # never at any point intended to see the light of day
+                qw(Marpa::Offset Marpa::Internal),
+            ],
         },
     },
     meta_add => {

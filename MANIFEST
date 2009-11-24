@@ -22,8 +22,9 @@ etc/not_in_manifest.pl
 etc/perlcriticrc
 inc/Test/Weaken.pm
 lib/Marpa/Callback.pm
+lib/Marpa/Doc/Bibliography.pod
+lib/Marpa/Doc/Marpa.pod
 lib/Marpa/Doc/Not_Updated/Algorithm.pod
-lib/Marpa/Doc/Not_Updated/Bibliography.pod
 lib/Marpa/Doc/Not_Updated/Debugging.pod
 lib/Marpa/Doc/Not_Updated/Internals.pod
 lib/Marpa/Doc/Not_Updated/Marpa/Evaluator.pod
@@ -34,8 +35,8 @@ lib/Marpa/Doc/Not_Updated/Marpa.pod
 lib/Marpa/Doc/Not_Updated/Marpa/Recognizer.pod
 lib/Marpa/Doc/Not_Updated/MDL.pod
 lib/Marpa/Doc/Not_Updated/Options.pod
-lib/Marpa/Doc/Not_Updated/Parse_Terms.pod
 lib/Marpa/Doc/Not_Updated/Plumbing.pod
+lib/Marpa/Doc/Parse_Terms.pod
 lib/Marpa/Doc/TODO.pod
 lib/Marpa/Evaluator.pm
 lib/Marpa/Grammar.pm

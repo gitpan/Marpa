@@ -1,0 +1,159 @@
+=head1 NAME
+
+Marpa - Overview of the Marpa Modules
+
+=head1 DESCRIPTION
+
+This is a branch from L<Parse::Marpa>.
+This branch started out experimental,
+but is gradually being released in alpha.
+The first alpha release will be an HTML parser,
+L<Marpa::UrHTML>.
+
+=head1 AUTHOR
+
+Jeffrey Kegler
+
+=head2 Why is it Called "Marpa"?
+
+Marpa is the name of the greatest of the Tibetan "translators".
+In his time (the 11th century AD) Indian Buddhism was
+at its height.  A generation of scholars was devoting
+itself to producing Tibetan versions of Buddhism's Sanskrit scriptures.
+Marpa became the greatest of them,
+and today is known as Marpa Lotsawa: "Marpa the Translator".
+
+Translation in the 11th century was not a job for the indoors type.
+A translator needed to study in India,
+with the teachers who had the
+texts and could explain them.
+From Marpa's home in Tibet's
+Lhotrak Valley,
+the best way across the Himalayas to India was over
+the Khala Chela Pass.
+To reach the Khala Chela's
+three-mile high summit,
+Marpa had to cross two hundred lawless miles of Tibet.
+Once a pilgrim crested the Himalayas,
+the road to Nalanda University was all downhill.
+Eager to reach their destination,
+the first travelers from Tibet had descended the four hundred miles straight to the hot plains.
+
+The last part of the journey had turned out to be by far
+the most deadly.
+Almost no germs live in the cold,
+thin air of Tibet.
+Pilgrims who didn't stop to acclimatize themselves
+reached the great Buddhist center
+with no immunity to India's diseases.
+Several large expeditions reached Nalanda
+only to have every single member die within weeks.
+
+=head2 Blatant Plug
+
+There's more about Marpa in my novel, B<The God Proof>, in which
+his studies, travels and adventures are a subplot.  B<The God
+Proof> centers around Kurt GE<ouml>del's proof of God's existence.
+Yes, I<that> Kurt GE<ouml>del, and yes, he really did work out a
+God Proof (it's in his I<Collected Works>, Vol. 3, pp. 403-404).
+B<The God Proof> is available
+as a free download (L<http://www.lulu.com/content/933192>)
+and in print form at Amazon.com:
+L<http://www.amazon.com/God-Proof-Jeffrey-Kegler/dp/1434807355>.
+
+=head1 BUGS
+
+Please report any bugs or feature requests to
+C<bug-parse-marpa at rt.cpan.org>, or through the web interface at
+L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Marpa>.
+I will be notified, and then you'll automatically be notified of progress on
+your bug as I make changes.
+
+=head1 SUPPORT
+
+You can find documentation for this module with the perldoc command.
+
+=begin Marpa::Test::Display:
+
+## skip display
+
+=end Marpa::Test::Display:
+
+    perldoc Marpa
+    
+You can also look for information at:
+
+=over 4
+
+=item * AnnoCPAN: Annotated CPAN documentation
+
+L<http://annocpan.org/dist/Marpa>
+
+=item * CPAN Ratings
+
+L<http://cpanratings.perl.org/d/Marpa>
+
+=item * RT: CPAN's request tracker
+
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Marpa>
+
+=item * Search CPAN
+
+L<http://search.cpan.org/dist/Marpa>
+
+=back
+
+=head1 ACKNOWLEDGMENTS
+
+Marpa is
+derived from the parser described in
+L<Aycock and Horspool 2002|Marpa::Doc::Bibliography/"Aycock and Horspool 2002">.
+I've made significant changes to it,
+which are documented separately (L<Marpa::Doc::Algorithm>).
+Aycock and Horspool, for their part,
+built on the
+L<algorithm discovered by Jay Earley|Marpa::Doc::Bibliography/"Earley 1970">.
+
+I'm grateful to Randal Schwartz for his encouragement over the years that
+I've been working on Marpa.  My one conversation
+with Larry Wall
+about Marpa
+was brief and long ago, but his openness to the idea was a major
+encouragement,
+and his insights into how humans do programming,
+how they do languages,
+and how those two endeavors interconnect,
+a major influence.
+More recently,
+Allison Randal and Patrick Michaud have been generous with their
+very valuable time.
+They might have preferred that I volunteered as a Parrot cage-cleaner,
+but if so, they were too polite to say.
+
+Many at perlmonks.org answered questions for me.
+I used answers from
+chromatic, Corion, dragonchild,
+jdporter, samtregar and Juerd,
+among others,
+in writing this module.
+I'm just as grateful to those whose answers I didn't use.
+My inquiries were made while I was thinking out the code and
+it wasn't always 100% clear what I was after.
+If the butt is moved after the round,
+it shouldn't count against the archer.
+
+In writing the Pure Perl version of Marpa, I benefited from studying
+the work of Francois Desarmenien (C<Parse::Yapp>), 
+Damian Conway (C<Parse::RecDescent>) and
+Graham Barr (C<Scalar::Util>).
+Adam Kennedy patiently instructed me
+in module writing,
+both on the finer points and
+on issues about which I really should have know better.
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright 2007-2009 Jeffrey Kegler, all rights reserved.
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl 5.10.0.

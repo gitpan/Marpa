@@ -28,15 +28,14 @@ came to me from this article.
 
 The Aycock and Horspool paper 
 summarizes Earley's very nicely and is
-available on the web: L<http://www.cs.uvic.ca/~nigelh/Publications/PracticalEarleyParsing.pdf>,
-unlike L<"Earley 1970">.
-Aycock and Horspool 2002 is B<not>, however, easy reading.
+available on the web: L<http://www.cs.uvic.ca/~nigelh/Publications/PracticalEarleyParsing.pdf>.
+Unlike L<"Earley 1970">,
+Aycock and Horspool 2002 is B<not> easy reading.
 I have been following
-this particular topic on and off for years.
-Nonetheless I found this paper very heavy going.
+this particular topic on and off for years
+and nonetheless found this paper very heavy going.
 Readers who want to delve into Aycock and Horspool 2002
-might find it helpful to read the Marpa documentation,
-up to and including L<Marpa::Doc::Internals>, first.
+might find it helpful to read the Marpa documentation first.
 
 =head2 Dominus 2005
 
@@ -119,6 +118,10 @@ by Dick Grune
 Ceriel Jacobs,
 2nd Edition.
 (Springer: New York NY, 2008).
+This is the most authoritative and comprehensive introduction
+to parsing I know of.
+In theory it requires no mathematics, only a programming background,
+but even so it is moderately difficult reading.
 
 This is L<Grune and Jacobs 1990> updated.
 The bibliography for this book is available in enlarged form
@@ -130,7 +133,6 @@ Wikipedia's article on Backus-Naur form is
 L<http://en.wikipedia.org/wiki/Backus-Naur_form>.
 It's a great place to start if you don't know the
 basics of grammars and parsing.
-
 As Wikipedia points out, 
 BNF might better be called Panini-Backus Form.
 The grammarian Panini

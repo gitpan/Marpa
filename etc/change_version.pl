@@ -5,10 +5,11 @@ use strict;
 use warnings;
 use Fatal qw(:void open close unlink select rename);
 use English qw( -no_match_vars );
+use Carp;
 
 our $FH;
 
-Marpa::exception("usage: $0: old_version new_version")
+Carp::croak("usage: $0: old_version new_version")
     if scalar @ARGV != 2;
 
 my ( $old, $new ) = @ARGV;
@@ -20,14 +21,13 @@ sub check_version {
     my ( $major, $minor1, $underscore, $minor2 ) =
         ( $version =~ m/^ ([0-9]+) [.] ([0-9.]{3}) ([_]?) ([0-9.]{3}) $/xms );
     if ( not defined $minor2 ) {
-        Marpa::exception("Bad format in version number: $version");
+        Carp::croak("Bad format in version number: $version");
     }
     if ( $minor1 % 2 and $underscore ne '_' ) {
-        Marpa::exception(
-            "No underscore in developer's version number: $version");
+        Carp::croak("No underscore in developer's version number: $version");
     }
     if ( $minor1 % 2 == 0 and $underscore eq '_' ) {
-        Marpa::exception(
+        Carp::croak(
             "Underscore in official release version number: $version");
     }
 } ## end sub check_version
@@ -36,7 +36,7 @@ check_version($old);
 check_version($new);
 
 ## no critic (BuiltinFunctions::ProhibitStringyEval)
-Marpa::exception("$old >= $new") if eval $old >= eval $new;
+Carp::croak("$old >= $new") if eval $old >= eval $new;
 ## use critic
 
 sub change {
@@ -49,7 +49,7 @@ sub change {
         rename $file, $backup;
         open my $argvout, '>', $file;
         print {$argvout} ${ $fix->( \$text, $file ) }
-            or Marpa::exception("Could not print to argvout: $ERRNO");
+            or Carp::croak("Could not print to argvout: $ERRNO");
         close $argvout;
     } ## end for my $file (@files)
     return 1;
@@ -62,7 +62,7 @@ sub fix_meta_yml {
     if ( ${$text_ref} !~ s/(version:\s*)$old/$1$new/gxms ) {
         say {*STDERR}
             "failed to change version from $old to $new in $file_name"
-            or Marpa::exception("Could not print to STDERR: $ERRNO");
+            or Carp::croak("Could not print to STDERR: $ERRNO");
     }
     return $text_ref;
 } ## end sub fix_meta_yml
@@ -75,7 +75,7 @@ sub fix_build_pl {
     {
         say {*STDERR}
             "failed to change VERSION from $old to $new in $file_name"
-            or Marpa::exception("Could not print to STDERR: $ERRNO");
+            or Carp::croak("Could not print to STDERR: $ERRNO");
     } ## end if ( ${$text_ref} !~ ...)
     return $text_ref;
 } ## end sub fix_build_pl
@@ -87,7 +87,7 @@ sub fix_marpa_pm {
     if ( ${$text_ref} !~ s/(our\s+\$VERSION\s*=\s*')$old';/$1$new';/xms ) {
         say {*STDERR}
             "failed to change VERSION from $old to $new in $file_name"
-            or Marpa::exception("Could not print to STDERR: $ERRNO");
+            or Carp::croak("Could not print to STDERR: $ERRNO");
     }
     return $text_ref;
 } ## end sub fix_marpa_pm
@@ -101,7 +101,7 @@ sub update_changes {
         !~ s/(\ARevision\s+history\s+[^\n]*\n\n)/$1$new $date_stamp\n/xms )
     {
         say {*STDERR} "failed to add $new to $file_name"
-            or Marpa::exception("Could not print to STDERR: $ERRNO");
+            or Carp::croak("Could not print to STDERR: $ERRNO");
     } ## end if ( ${$text_ref} !~ ...)
     return $text_ref;
 } ## end sub update_changes
@@ -112,4 +112,4 @@ change( \&fix_marpa_pm,   'lib/Marpa.pm' );
 change( \&update_changes, 'Changes' );
 
 say {*STDERR} 'REMEMBER TO UPDATE Changes file'
-    or Marpa::exception("Could not print to STDERR: $ERRNO");
+    or Carp::croak("Could not print to STDERR: $ERRNO");
