@@ -30,10 +30,8 @@ lib/Marpa/Doc/Not_Updated/Internals.pod
 lib/Marpa/Doc/Not_Updated/Marpa/Evaluator.pod
 lib/Marpa/Doc/Not_Updated/Marpa/Grammar.pod
 lib/Marpa/Doc/Not_Updated/Marpa/MDLex.pod
-lib/Marpa/Doc/Not_Updated/Marpa/MDL.pod
 lib/Marpa/Doc/Not_Updated/Marpa.pod
 lib/Marpa/Doc/Not_Updated/Marpa/Recognizer.pod
-lib/Marpa/Doc/Not_Updated/MDL.pod
 lib/Marpa/Doc/Not_Updated/Options.pod
 lib/Marpa/Doc/Not_Updated/Plumbing.pod
 lib/Marpa/Doc/Parse_Terms.pod
@@ -63,10 +61,11 @@ lib/Marpa/UrHTML/Callback.pm
 lib/Marpa/UrHTML.pm
 lib/Marpa/UrHTML/t/copy.t
 lib/Marpa/UrHTML/t/no_tang.html
+lib/Marpa/UrHTML/t/parse.t
 lib/Marpa/UrHTML/t/store.t
 lib/Marpa/UrHTML/t/tang.t
 lib/Marpa/UrHTML/t/test.html
-lib/Marpa/UrHTML/t/test.storable
+lib/Marpa/UrHTML/t/test.storable.old
 Makefile.PL
 MANIFEST
 META.yml

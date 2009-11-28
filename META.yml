@@ -1,6 +1,6 @@
 ---
 name: Marpa
-version: 0.001_026
+version: 0.001_027
 author:
   - Jeffrey Kegler
 abstract: Generate Parsers from any BNF grammar
@@ -14,7 +14,7 @@ build_requires:
 provides:
   Marpa::UrHTML:
     file: lib/Marpa/UrHTML.pm
-    version: 0.001_026
+    version: 0.001_027
 generated_by: Module::Build version 0.280801
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.2.html
