@@ -6,7 +6,7 @@ use warnings;
 
 use Module::Build;
 
-my $marpa_version = '0.001_028';
+my $marpa_version = '0.001_029';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',

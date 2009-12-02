@@ -122,10 +122,8 @@ A count of the elements of that kind in the document
 =item *
 The total number of character in elements of that type.
 This counts characters in nested elements multiple times.
-For example, if a page contains a table within a table.
-Characters in the inner table will be counted twice, once as
-characters in the outer table and again as characters in the
-inner table.
+For example, if a page contains a table within a table,
+characters in the inner table will be counted twice.
 
 =item *
 The average size of elements of this type, in characters.
@@ -174,27 +172,31 @@ Speaking of which ...
 This program is a demo of a demo.
 It purpose is to show how easy it is to write applications which look
 at the structure of web pages using L<Marpa::UrHTML>.
+And the purpose of L<Marpa::UrHTML>
+is to demonstrate the power of its parse engine,
+L<Marpa>.
 
 Determining the structure of an HTML document has in the past
 been considered a very difficult programming task,
 requiring lots of special case coding.
 L<Marpa::UrHTML> was written in a few days,
-and the resulting grammar and code is very natural and straight-forward.
+and the resulting grammar and code is natural and straight-forward.
 
-Other parsers may be preferable to L<Marpa::UrHTML> as parsers.
-They had better be perfect,
-because the code in them is excruciatingly difficult.
-The logic in L<Marpa::UrHTML>, as the documentation will
-show, is very straightforward.
-It is much easier to understand,
-and therefore would be much easier to change,
-than previous approaches.
+At this stage of its development,
+other parsers have advantages over L<Marpa::UrHTML>.
+But they need to be perfect.
+Because the code in them is an excruciatingly complex set of ad hoc
+solutions to special cases,
+other parsers are very hard to understand,
+and therefore to modify.
 
-The transparency of L<Marpa::UrHTML>, in turn,
-comes from the flexibility and power of L<Marpa>,
-the underlying parser.
-L<Marpa> is a general BNF parser based on a new algorithm
-derived from Jay Earley's.
+As the documentation will show,
+the HTML parsing logic in L<Marpa::UrHTML>,
+is straightforward
+and an extremely natural way of expressing the
+problem.
+The transparency of L<Marpa::UrHTML> is made possible
+by L<Marpa>.
 
 =head1 AUTHOR
 

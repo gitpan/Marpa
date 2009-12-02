@@ -1143,7 +1143,9 @@ sub Marpa::UrHTML::parse {
                     # as a way of dealing one of these end tags
                     if ($candidate ~~ [qw(S_tr S_td S_tbody)]
                         and $actual_terminal ~~ [
-                            qw(E_th E_td E_tr E_thead E_tfoot E_tbody E_table EOF)
+                            qw(E_th E_td E_tr
+                                E_thead E_tfoot E_tbody E_table
+                                E_body E_html EOF)
                         ]
                         )
                     {
