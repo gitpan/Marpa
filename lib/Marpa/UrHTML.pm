@@ -141,12 +141,23 @@ sub tdesc_list_to_literal {
 # Convert a list of text descriptions to text
 sub default_top_handler {
     my ( $dummy, @tdesc_lists ) = @_;
-
     my $self = $Marpa::UrHTML::Internal::PARSE_INSTANCE;
     my @tdesc_list = map { @{$_} } grep {defined} @tdesc_lists;
     return tdesc_list_to_literal( $self, \@tdesc_list );
 
 } ## end sub default_top_handler
+
+sub wrap_user_top_handler {
+    my ($user_handler) = @_;
+    return sub {
+        my ( $dummy, @tdesc_lists ) = @_;
+        my @tdesc_list = map { @{$_} } grep {defined} @tdesc_lists;
+        local $Marpa::UrHTML::Internal::TDESC_LIST = \@tdesc_list;
+        local $Marpa::UrHTML::Internal::PER_NODE_DATA =
+            { pseudoclass => 'TOP' };
+        return scalar $user_handler->();
+    };
+} ## end sub wrap_user_top_handler
 
 # Convert a list of text descriptions to a
 # single, shortened text description
@@ -463,7 +474,7 @@ sub add_handlers {
         my $element;
         my $id;
         my $class;
-        my $pseudo_class;
+        my $pseudoclass;
         my $action;
         PARSE_HANDLER_SPEC: {
             my $ref_type = ref $handler_spec;
@@ -480,31 +491,31 @@ sub add_handlers {
                        ( $specifier =~ /\A ([^#]*) [#] (.*) \z/xms )
                     or ( $element, $class ) =
                        ( $specifier =~ /\A ([^.]*) [.] (.*) \z/xms )
-                    or ( $element, $pseudo_class ) =
+                    or ( $element, $pseudoclass ) =
                     ( $specifier =~ /\A ([^:]*) [:] (.*) \z/xms )
                     or $element = $specifier;
-                if ( $pseudo_class
-                    and not $pseudo_class ~~
-                    [qw(TOP COMMENT PROLOG TRAILER PCDATA CRUFT)] )
+                if ( $pseudoclass
+                    and not $pseudoclass ~~
+                    [qw(TOP PI COMMENT PROLOG TRAILER PCDATA CRUFT)] )
                 {
                     Marpa::exception(
-                        qq{pseudoclass "$pseudo_class" is not known:\n},
+                        qq{pseudoclass "$pseudoclass" is not known:\n},
                         "Specifier was $specifier\n" );
-                } ## end if ( $pseudo_class and not $pseudo_class ~~ [...])
-                if ( $pseudo_class and $element ) {
+                } ## end if ( $pseudoclass and not $pseudoclass ~~ [...])
+                if ( $pseudoclass and $element ) {
                     Marpa::exception(
-                        qq{pseudoclass "$pseudo_class" may not have an element specified:\n},
+                        qq{pseudoclass "$pseudoclass" may not have an element specified:\n},
                         "Specifier was $specifier\n"
                     );
-                } ## end if ( $pseudo_class and $element )
+                } ## end if ( $pseudoclass and $element )
                 last PARSE_HANDLER_SPEC;
             } ## end if ( $ref_type eq 'ARRAY' )
             if ( $ref_type eq 'HASH' ) {
-                $element      = $handler_spec->{element};
-                $id           = $handler_spec->{id};
-                $class        = $handler_spec->{class};
-                $pseudo_class = $handler_spec->{pseudo_class};
-                $action       = $handler_spec->{action};
+                $element     = $handler_spec->{element};
+                $id          = $handler_spec->{id};
+                $class       = $handler_spec->{class};
+                $pseudoclass = $handler_spec->{pseudoclass};
+                $action      = $handler_spec->{action};
                 last PARSE_HANDLER_SPEC;
             } ## end if ( $ref_type eq 'HASH' )
             Marpa::exception(
@@ -512,9 +523,9 @@ sub add_handlers {
         } ## end PARSE_HANDLER_SPEC:
 
         $element = ( not $element or $element eq q{*} ) ? 'ANY' : lc $element;
-        if ( defined $pseudo_class ) {
-            $self->{user_handlers_by_pseudo_class}->{$element}
-                ->{$pseudo_class} = $action;
+        if ( defined $pseudoclass ) {
+            $self->{user_handlers_by_pseudoclass}->{$element}
+                ->{$pseudoclass} = $action;
             next HANDLER_SPEC;
         }
 
@@ -613,10 +624,11 @@ for my $rank ( 0 .. $#Marpa::UrHTML::Internal::CORE_OPTIONAL_TERMINALS ) {
 my $BNF = <<'END_OF_BNF';
 cruft ::= CRUFT
 comment ::= C
+pi ::= PI
 pcdata ::= PCDATA
 SGML_item ::= D
 SGML_item ::= comment
-SGML_item ::= PI
+SGML_item ::= pi
 SGML_flow_item ::= SGML_item
 SGML_flow_item ::= WHITESPACE
 SGML_flow_item ::= cruft
@@ -625,10 +637,10 @@ document ::= prolog ELE_html trailer EOF
 prolog ::= SGML_flow
 trailer ::= SGML_flow
 ELE_html ::= S_html Contents_html E_html
-Contents_html ::= SGML_flow ELE_head SGML_flow body SGML_flow
+Contents_html ::= SGML_flow ELE_head SGML_flow ELE_body SGML_flow
 ELE_head ::= S_head Contents_head E_head
 Contents_head ::= head_item*
-body ::= S_body flow E_body
+ELE_body ::= S_body flow E_body
 ELE_table ::= S_table table_flow E_table
 ELE_tbody ::= S_tbody table_section_flow E_tbody
 ELE_tr ::= S_tr table_row_flow E_tr
@@ -703,13 +715,15 @@ END_OF_BNF
     inline_element block_element
 );
 
-@Marpa::UrHTML::Internal::INACCESSIBLE_OK = qw( ELE_optgroup ELE_option);
+@Marpa::UrHTML::Internal::INACCESSIBLE_OK =
+    qw( ELE_optgroup ELE_option table_cell_element );
 
 @Marpa::UrHTML::Internal::CORE_RULES = ();
 
 my %handler = (
     cruft    => '!CRUFT_handler',
     comment  => '!COMMENT_handler',
+    pi       => '!PI_handler',
     document => '!TOP_handler',
     pcdata   => '!PCDATA_handler',
     prolog   => '!PROLOG_handler',
@@ -884,8 +898,8 @@ sub Marpa::UrHTML::parse {
     my @rules     = @Marpa::UrHTML::Internal::CORE_RULES;
     my @terminals = keys %terminals;
 
-    my %pseudo_class_element_actions = ();
-    my %element_actions              = ();
+    my %pseudoclass_element_actions = ();
+    my %element_actions             = ();
 
     # Special cases which are dealt with elsewhere.
     # As of now the only special cases are elements with optional
@@ -1261,18 +1275,15 @@ sub Marpa::UrHTML::parse {
         }
     } ## end if ( $ENV{TRACE_SIZE} )
 
-    my %closure = (
-        '!rank_is_zero'   => sub {0},
-        '!rank_is_one'    => sub {1},
-        '!rank_is_two'    => sub {2},
-        '!rank_is_three'  => sub {3},
-        '!rank_is_four'   => sub {4},
-        '!rank_is_length' => sub { Marpa::length() },
-        '!TOP_handler'    => (
-            $self->{user_handlers_by_pseudo_class}->{ANY}->{TOP}
-                // \&Marpa::UrHTML::Internal::default_top_handler
-        ),
-    );
+    my %closure = ();
+    {
+        my $user_top_handler =
+            $self->{user_handlers_by_pseudoclass}->{ANY}->{TOP};
+        $closure{'!TOP_handler'} =
+            defined $user_top_handler
+            ? wrap_user_top_handler($user_top_handler)
+            : \&Marpa::UrHTML::Internal::default_top_handler;
+    } ## end if ( defined( my $user_top_handler = $self->{...}))
 
     if ( defined $self->{user_handlers_by_class}->{ANY}->{ANY} ) {
         $closure{'!DEFAULT_ELE_handler'} =
@@ -1280,19 +1291,19 @@ sub Marpa::UrHTML::parse {
     }
 
     PSEUDO_CLASS:
-    for my $pseudo_class (qw(COMMENT PROLOG TRAILER PCDATA CRUFT)) {
-        my $pseudo_class_action =
-            $self->{user_handlers_by_pseudo_class}->{ANY}->{$pseudo_class};
-        my $pseudo_class_action_name = "!$pseudo_class" . '_handler';
-        if ($pseudo_class_action) {
-            $closure{$pseudo_class_action_name} =
-                wrap_user_tdesc_handler( $pseudo_class_action,
-                { pseudo_class => $pseudo_class } );
+    for my $pseudoclass (qw(PI COMMENT PROLOG TRAILER PCDATA CRUFT)) {
+        my $pseudoclass_action =
+            $self->{user_handlers_by_pseudoclass}->{ANY}->{$pseudoclass};
+        my $pseudoclass_action_name = "!$pseudoclass" . '_handler';
+        if ($pseudoclass_action) {
+            $closure{$pseudoclass_action_name} =
+                wrap_user_tdesc_handler( $pseudoclass_action,
+                { pseudoclass => $pseudoclass } );
             next PSEUDO_CLASS;
-        } ## end if ($pseudo_class_action)
-        $closure{$pseudo_class_action_name} =
+        } ## end if ($pseudoclass_action)
+        $closure{$pseudoclass_action_name} =
             \&Marpa::UrHTML::Internal::default_action;
-    } ## end for my $pseudo_class (qw(COMMENT PROLOG TRAILER PCDATA CRUFT))
+    } ## end for my $pseudoclass (qw(PI COMMENT PROLOG TRAILER PCDATA CRUFT))
 
     while ( my ( $element_action, $element ) = each %element_actions ) {
         $closure{$element_action} = create_tdesc_handler( $self, $element );
@@ -1300,7 +1311,7 @@ sub Marpa::UrHTML::parse {
 
     ELEMENT_ACTION:
     while ( my ( $element_action, $data ) =
-        each %pseudo_class_element_actions )
+        each %pseudoclass_element_actions )
     {
 
         # As of now, there are
@@ -1308,17 +1319,17 @@ sub Marpa::UrHTML::parse {
         # this logic any more, I'm commenting it out.
         Marpa::exception('per-element pseudo-classes not implemented');
 
-        # my ( $pseudo_class, $element ) = @{$data};
-        # my $pseudo_class_action =
-        #    $self->{user_handlers_by_pseudo_class}->{$element}
-        #    ->{$pseudo_class}
-        #    // $self->{user_handlers_by_pseudo_class}->{ANY}->{$pseudo_class};
-        # if ( defined $pseudo_class_action ) {
-        #    $pseudo_class_action =
-        #        wrap_user_tdesc_handler($pseudo_class_action);
+        # my ( $pseudoclass, $element ) = @{$data};
+        # my $pseudoclass_action =
+        #    $self->{user_handlers_by_pseudoclass}->{$element}
+        #    ->{$pseudoclass}
+        #    // $self->{user_handlers_by_pseudoclass}->{ANY}->{$pseudoclass};
+        # if ( defined $pseudoclass_action ) {
+        #    $pseudoclass_action =
+        #        wrap_user_tdesc_handler($pseudoclass_action);
         # }
-        # $pseudo_class_action //= \&Marpa::UrHTML::Internal::default_action;
-        # $closure{$element_action} = $pseudo_class_action;
+        # $pseudoclass_action //= \&Marpa::UrHTML::Internal::default_action;
+        # $closure{$element_action} = $pseudoclass_action;
     } ## end while ( my ( $element_action, $data ) = each ...)
 
     my $value = do {
@@ -1381,7 +1392,7 @@ sub Marpa::UrHTML::parse {
         $evaler->value;
     };
     Marpa::exception('undef returned') if not defined $value;
-    return $value;
+    return ${$value};
 
 } ## end sub Marpa::UrHTML::parse
 

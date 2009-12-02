@@ -34,4 +34,4 @@ my $document;
 my $p     = Marpa::UrHTML->new();
 my $value = $p->parse( \$document );
 
-Test::More::is( ${ ${$value} }, $document, 'Straight copy using defaults' );
+Test::More::is( ${$value}, $document, 'Straight copy using defaults' );

@@ -2,6 +2,29 @@
 
 Marpa::Doc::To_Do - Marpa's To Do List
 
+=head1 HIGH PRIORITY
+
+=over 4
+
+Tests for UrHTML:
+
+=over 4
+
+=item * LinkExtor replacement
+
+=item * Delete comments
+
+=item * Print out the title element
+
+=item * Print out all tables, not duplicating any inside another table.
+
+=item * Formatter which indents, adds missing tags,
+and adds a comment on cruft.
+
+=back
+
+=back
+
 =head1 MEDIUM PRIORITY
 
 =over 4

@@ -16,11 +16,11 @@ use Marpa::Internal;
 sub Marpa::UrHTML::start_tag {
 
     my $parse_instance = $Marpa::UrHTML::Internal::PARSE_INSTANCE;
-    Marpa::exception(q{Attempt to fetch element parts outside of a parse})
+    Marpa::exception(q{Attempt to fetch start tag outside of a parse})
         if not defined $parse_instance;
 
     my $element = $Marpa::UrHTML::Internal::PER_NODE_DATA->{element};
-    Marpa::exception('The element_parts callback was called on a non-element')
+    Marpa::exception('The start_tag callback was called on a non-element')
         if not $element;
 
     #<<< perltidy cycles on this as of 2009-11-28
@@ -30,8 +30,11 @@ sub Marpa::UrHTML::start_tag {
     #
     # Inlining this might be faster, especially since I have to dummy
     # up a tdesc list to make it work.
-    return Marpa::UrHTML::Internal::tdesc_list_to_literal( $parse_instance,
-        [ [ UNVALUED_SPAN => $start_tag_token_id, $start_tag_token_id ] ] );
+    return ${
+        Marpa::UrHTML::Internal::tdesc_list_to_literal( $parse_instance,
+            [ [ UNVALUED_SPAN => $start_tag_token_id, $start_tag_token_id ] ]
+        )
+        };
 } ## end sub Marpa::UrHTML::start_tag
 
 sub Marpa::UrHTML::end_tag {
@@ -51,9 +54,40 @@ sub Marpa::UrHTML::end_tag {
     #
     # Inlining this might be faster, especially since I have to dummy
     # up a tdesc list to make it work.
-    return Marpa::UrHTML::Internal::tdesc_list_to_literal( $parse_instance,
-        [ [ UNVALUED_SPAN => $end_tag_token_id, $end_tag_token_id ] ] );
+    return ${
+        Marpa::UrHTML::Internal::tdesc_list_to_literal( $parse_instance,
+            [ [ UNVALUED_SPAN => $end_tag_token_id, $end_tag_token_id ] ] )
+        };
 } ## end sub Marpa::UrHTML::end_tag
+
+sub Marpa::UrHTML::contents {
+
+    my $parse_instance = $Marpa::UrHTML::Internal::PARSE_INSTANCE;
+    Marpa::exception(
+        q{Attempt to fetch an element contents outside of a parse})
+        if not defined $parse_instance;
+
+    my $element = $Marpa::UrHTML::Internal::PER_NODE_DATA->{element};
+    Marpa::exception('The contents() callback was called on a non-element')
+        if not $element;
+
+    my $contents_start_tdesc_ix =
+        $Marpa::UrHTML::Internal::PER_NODE_DATA->{start_tag_token_id} ? 1 : 0;
+
+    my $contents_end_tdesc_ix =
+        $Marpa::UrHTML::Internal::PER_NODE_DATA->{end_tag_token_id}
+        ? ( $#{$Marpa::UrHTML::Internal::TDESC_LIST} - 1 )
+        : $#{$Marpa::UrHTML::Internal::TDESC_LIST};
+
+    return ${
+        Marpa::UrHTML::Internal::tdesc_list_to_literal(
+            $parse_instance,
+            [   @{$Marpa::UrHTML::Internal::TDESC_LIST}
+                    [ $contents_start_tdesc_ix .. $contents_end_tdesc_ix ]
+            ]
+        )
+        };
+} ## end sub Marpa::UrHTML::contents
 
 sub Marpa::UrHTML::child_values {
 
@@ -113,6 +147,14 @@ sub Marpa::UrHTML::child_data {
                     ? ( $tokens->[$data]->[0] )
                     : undef;
             } ## end when ('token_type')
+            when ('pseudoclass') {
+                push @values,
+                    ( $child_type eq 'valued_span' )
+                    ? $data
+                    ->[Marpa::UrHTML::Internal::TDesc::Element::NODE_DATA]
+                    ->{pseudoclass}
+                    : undef;
+            } ## end when ('pseudoclass')
             when ('element') {
                 push @values,
                     ( $child_type eq 'valued_span' )
@@ -121,7 +163,7 @@ sub Marpa::UrHTML::child_data {
                     ->{element}
                     : undef;
             } ## end when ('element')
-            when ('literal') {
+            when ('literal_ref') {
                 my $tdesc =
                     $child_type eq 'token'
                     ? [ 'UNVALUED_SPAN', $data, $data ]
@@ -129,7 +171,42 @@ sub Marpa::UrHTML::child_data {
                 push @values,
                     Marpa::UrHTML::Internal::tdesc_list_to_literal(
                     $parse_instance, [$tdesc] );
+            } ## end when ('literal_ref')
+            when ('literal') {
+                my $tdesc =
+                    $child_type eq 'token'
+                    ? [ 'UNVALUED_SPAN', $data, $data ]
+                    : $data;
+                push @values,
+                    ${
+                    Marpa::UrHTML::Internal::tdesc_list_to_literal(
+                        $parse_instance, [$tdesc] )
+                    };
             } ## end when ('literal')
+            when ('original') {
+                my ( $first_token_id, $last_token_id ) =
+                    $child_type eq 'token'
+                    ? ( $data, $data )
+                    : @{$data}[
+                    Marpa::UrHTML::Internal::TDesc::START_TOKEN,
+                    Marpa::UrHTML::Internal::TDesc::END_TOKEN
+                    ];
+                my $start_offset =
+                    $tokens->[$first_token_id]
+                    ->[Marpa::UrHTML::Internal::Token::START_OFFSET];
+                my $end_offset =
+                    $tokens->[$last_token_id]
+                    ->[Marpa::UrHTML::Internal::Token::END_OFFSET];
+                my $document = $parse_instance->{document};
+                push @values, substr ${$document}, $start_offset,
+                    ( $end_offset - $start_offset );
+            } ## end when ('original')
+            when ('value') {
+                push @values,
+                    ( $child_type eq 'valued_span' )
+                    ? $data->[Marpa::UrHTML::Internal::TDesc::Element::VALUE]
+                    : undef;
+            } ## end when ('value')
             default {
                 Marpa::exception(qq{Unrecognized argspec: "$_"})
             }
@@ -194,7 +271,7 @@ sub Marpa::UrHTML::tagname {
     return $Marpa::UrHTML::Internal::PER_NODE_DATA->{element};
 }
 
-sub Marpa::UrHTML::literal {
+sub Marpa::UrHTML::literal_ref {
     return q{} if $Marpa::Internal::SETTING_NULL_VALUES;
     my $parse_instance = $Marpa::UrHTML::Internal::PARSE_INSTANCE;
     Marpa::exception('Attempt to get literal value outside of a parse')
@@ -202,6 +279,18 @@ sub Marpa::UrHTML::literal {
     my $tdesc_list = $Marpa::UrHTML::Internal::TDESC_LIST;
     return Marpa::UrHTML::Internal::tdesc_list_to_literal( $parse_instance,
         $tdesc_list );
+} ## end sub Marpa::UrHTML::literal_ref
+
+sub Marpa::UrHTML::literal {
+    return q{} if $Marpa::Internal::SETTING_NULL_VALUES;
+    my $parse_instance = $Marpa::UrHTML::Internal::PARSE_INSTANCE;
+    Marpa::exception('Attempt to get literal value outside of a parse')
+        if not defined $parse_instance;
+    my $tdesc_list = $Marpa::UrHTML::Internal::TDESC_LIST;
+    return ${
+        Marpa::UrHTML::Internal::tdesc_list_to_literal( $parse_instance,
+            $tdesc_list )
+        };
 } ## end sub Marpa::UrHTML::literal
 
 sub Marpa::UrHTML::offset {
@@ -211,5 +300,25 @@ sub Marpa::UrHTML::offset {
     return Marpa::UrHTML::Internal::earleme_to_offset( $parse_instance,
         $Marpa::UrHTML::Internal::PER_NODE_DATA->{first_token_id} );
 } ## end sub Marpa::UrHTML::offset
+
+sub Marpa::UrHTML::original {
+    my $parse_instance = $Marpa::UrHTML::Internal::PARSE_INSTANCE;
+    Marpa::exception('Attempt to read offset outside of a parse instance')
+        if not defined $parse_instance;
+    my $tokens   = $Marpa::UrHTML::Internal::PARSE_INSTANCE->{tokens};
+    my $document = $Marpa::UrHTML::Internal::PARSE_INSTANCE->{document};
+    my $first_token_id =
+        $Marpa::UrHTML::Internal::PER_NODE_DATA->{first_token_id};
+    my $last_token_id =
+        $Marpa::UrHTML::Internal::PER_NODE_DATA->{last_token_id};
+    my $start_offset =
+        $tokens->[$first_token_id]
+        ->[Marpa::UrHTML::Internal::Token::START_OFFSET];
+    my $end_offset =
+        $tokens->[$last_token_id]
+        ->[Marpa::UrHTML::Internal::Token::END_OFFSET];
+    return substr ${$document}, $start_offset,
+        ( $end_offset - $start_offset );
+} ## end sub Marpa::UrHTML::original
 
 1;

@@ -7,6 +7,10 @@ use warnings;
 use lib 'lib';
 use Test::More;
 
+# This test uses the literal_ref() call for historic reasons --
+# that's how it's test file was created.
+# Anyway, it's good that that form is tested somewhere.
+
 BEGIN {
     if ( eval { require HTML::PullParser } ) {
         Test::More::plan tests => 3;
@@ -55,7 +59,7 @@ my @handlers = (
             }
     ],
     [   '.occurrences' => sub {
-            my $literal = Marpa::UrHTML::literal();
+            my $literal = Marpa::UrHTML::literal_ref();
             my ($occurrence_count) =
                 ( ${$literal} =~ / Occurrences \s+ [(] (\d+) [)] [:] /xms );
             return [ 'occurrences', $literal, $occurrence_count ];
@@ -71,16 +75,15 @@ my @text_fields = qw( cedict_definition glyph kfrequency kgradelevel
 for my $text_field (@text_fields) {
     push @handlers,
         [ ".$text_field" =>
-            sub { return [ $text_field, Marpa::UrHTML::literal() ] } ];
+            sub { return [ $text_field, Marpa::UrHTML::literal_ref() ] } ];
 }
 
-my $p              = Marpa::UrHTML->new( { handlers => \@handlers, } );
-my $value          = $p->parse( \$document );
-my $codepoint_hash = ${$value};
+my $p = Marpa::UrHTML->new( { handlers => \@handlers, } );
+my $value = $p->parse( \$document );
 
 my $old = 'lib/Marpa/UrHTML/t/test.storable.old';
 my $new = 'lib/Marpa/UrHTML/t/test.storable.new';
-Storable::nstore $codepoint_hash, $new;
+Storable::nstore $value, $new;
 
 Test::More::ok( ( File::Compare::compare( $old, $new ) == 0 ),
     'conversion to stored form' );

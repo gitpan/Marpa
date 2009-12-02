@@ -59,6 +59,7 @@ lib/Marpa.pm
 lib/Marpa/Recognizer.pm
 lib/Marpa/UrHTML/Callback.pm
 lib/Marpa/UrHTML.pm
+lib/Marpa/UrHTML/eg/urhtml_stats
 lib/Marpa/UrHTML/t/copy.t
 lib/Marpa/UrHTML/t/no_tang.html
 lib/Marpa/UrHTML/t/parse.t
