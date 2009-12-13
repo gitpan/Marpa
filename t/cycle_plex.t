@@ -11,7 +11,7 @@ use English qw( -no_match_vars );
 use Fatal qw(open close chdir);
 
 use Test::More tests => 10;
-use t::lib::Marpa::Test;
+use Marpa::Test;
 
 use constant A_LOT_OF_VALUES => 25;
 
@@ -158,11 +158,9 @@ for my $test_data ( $plex1_test, $plex2_test, $plex3_test ) {
 
         # Let the cycles make the parse absurdly large
         # That's the point of the test
-        cycle_scale       => 200,
         trace_file_handle => $MEMORY,
     );
-    my $grammar =
-        Marpa::Grammar->new( { experimental => 'no warning' }, \%args );
+    my $grammar = Marpa::Grammar->new( \%args );
     $grammar->precompute();
 
     close $MEMORY;
@@ -174,7 +172,12 @@ for my $test_data ( $plex1_test, $plex2_test, $plex3_test ) {
 
     for my $cycle_rewrite ( 0, 1 ) {
         my $evaler = Marpa::Evaluator->new(
-            { recce => $recce, cycle_rewrite => $cycle_rewrite } );
+            { experimental => 'no warning' },
+            {   recce         => $recce,
+                cycle_scale   => 200,
+                cycle_rewrite => $cycle_rewrite,
+            }
+        );
         if ( not defined $evaler ) {
             Marpa::exception('Input not recognized');
         }

@@ -8,7 +8,7 @@ use lib 'lib';
 use English qw( -no_match_vars );
 use Fatal qw(open close chdir);
 use Test::More tests => 6;
-use t::lib::Marpa::Test;
+use Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa::MDLex');
@@ -63,10 +63,8 @@ $Test_Grammar::MDLEX_OPTIONS = [
 my $trace;
 open my $MEMORY, '>', \$trace;
 my $grammar = Marpa::Grammar->new(
-    { experimental      => 'no warning' },
     { trace_file_handle => $MEMORY, cycle_action => 'warn' },
-    @{$Test_Grammar::MARPA_OPTIONS}
-);
+    @{$Test_Grammar::MARPA_OPTIONS} );
 $grammar->precompute();
 close $MEMORY;
 
@@ -89,7 +87,7 @@ if ( $fail_location >= 0 ) {
     Marpa::exception(
         Marpa::show_location( 'Parsing failed', \$text, $fail_location ) );
 }
-$recce->tokens();
+$recce->end_input();
 
 my $evaler = Marpa::Evaluator->new( { recce => $recce, cycle_rewrite => 0 } );
 my $parse_count = 0;

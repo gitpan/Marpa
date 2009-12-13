@@ -12,7 +12,7 @@ BEGIN {
     Test::More::use_ok('Marpa::MDL');
 }
 
-use t::lib::Marpa::Test;
+use Marpa::Test;
 
 my $self_mdl;
 {

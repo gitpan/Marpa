@@ -6,7 +6,7 @@ use warnings;
 use lib 'lib';
 
 use Test::More tests => 2;
-use t::lib::Marpa::Test;
+use Marpa::Test;
 
 BEGIN { Test::More::use_ok('Marpa::MDLex'); }
 
@@ -90,7 +90,7 @@ if ( $fail_offset >= 0 ) {
     Carp::croak("Parse failed at offset $fail_offset");
 }
 
-$recce->tokens();
+$recce->end_input();
 my $evaler = Marpa::Evaluator->new( { recce => $recce } );
 Marpa::exception('No parse found') if not $evaler;
 my $value = $evaler->value();

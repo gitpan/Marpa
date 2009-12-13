@@ -11,7 +11,7 @@ use English qw( -no_match_vars );
 use Test::More tests => 6;
 
 use lib 'lib';
-use t::lib::Marpa::Test;
+use Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');
@@ -40,7 +40,8 @@ sub test_grammar {
 
     my $recce;
     $eval_ok = eval {
-        $recce = Marpa::Recognizer->new( { grammar => $grammar } );
+        $recce = Marpa::Recognizer->new(
+            { grammar => $grammar, mode => 'stream' } );
         1;
     };
     Marpa::exception("Exception while creating Recognizer:\n$EVAL_ERROR")
@@ -49,7 +50,7 @@ sub test_grammar {
 
     my $earleme_result;
     $eval_ok = eval {
-        $earleme_result = $recce->tokens( [ [ 'a', 'a', 1 ] ], 'continue' );
+        $earleme_result = $recce->tokens( [ [ 'a', 'a', 1 ] ] );
         1;
     };
     Marpa::exception("Exception while recognizing earleme:\n$EVAL_ERROR")
@@ -57,21 +58,20 @@ sub test_grammar {
     Marpa::exception("Parsing exhausted\n") if not defined $earleme_result;
 
     $eval_ok = eval {
-        $earleme_result =
-            $recce->tokens( [ [ 'a', 'a', $earleme_length ] ], 'continue' );
+        $earleme_result = $recce->tokens( [ [ 'a', 'a', $earleme_length ] ] );
         1;
     };
     Marpa::exception("Exception while recognizing earleme:\n$EVAL_ERROR")
         if not $eval_ok;
     Marpa::exception("Parsing exhausted\n") if not defined $earleme_result;
 
-    $eval_ok = eval { $recce->tokens(); 1; };
+    $eval_ok = eval { $recce->end_input(); 1; };
     Marpa::exception("Exception while recognizing end of input:\n$EVAL_ERROR")
         if not $eval_ok;
 
     my $evaler;
     $eval_ok = eval {
-        $evaler = Marpa::Evaluator->new( { recce => $recce, clone => 0 } );
+        $evaler = Marpa::Evaluator->new( { recce => $recce, } );
         1;
     };
     Marpa::exception("Exception while creating Evaluator:\n$EVAL_ERROR")
@@ -99,7 +99,6 @@ my $placebo = {
     ],
     default_null_value => q{},
     default_action     => 'main::default_action',
-    parse_order        => 'original',
 };
 
 sub test_rule_priority {
@@ -114,7 +113,6 @@ sub test_rule_priority {
         ],
         default_null_value => q{},
         default_action     => 'main::default_action',
-        parse_order        => 'original',
     };
 } ## end sub test_rule_priority
 
@@ -128,7 +126,6 @@ else { Test::More::is( $value, $result_on_success, 'Placebo grammar' ) }
 
 ## lots of test values in the following, some of them pretty
 ## arbitrary
-## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
 
 $eval_ok =
     eval { $value = test_grammar( test_rule_priority(1_000_000) ); 1; };
@@ -173,7 +170,7 @@ REPORT_RESULT: {
     if ( $EVAL_ERROR
         =~ / \A Exception \s while \s recognizing \s earleme /xms )
     {
-        Test::More::pass('Caught over-high rule priority');
+        Test::More::pass('Caught over-long earleme');
         last REPORT_RESULT;
     } ## end if ( $EVAL_ERROR =~ ...)
     Test::More::is( $EVAL_ERROR, q{}, 'Grammar with earleme too long' );

@@ -11,7 +11,7 @@ use warnings;
 use Test::More tests => 13;
 
 use lib 'lib';
-use t::lib::Marpa::Test;
+use Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');
@@ -74,10 +74,6 @@ my $grammar = Marpa::Grammar->new(
     {   start => 'E',
         strip => 0,
 
-        # Set max_parses to 20 in case there's an infinite loop.
-        # This is for debugging, after all
-        max_parses => 20,
-
         actions => 'main',
         rules   => [
             {   lhs      => 'E',
@@ -107,7 +103,6 @@ my $grammar = Marpa::Grammar->new(
         ],
         terminals      => [qw( Number Minus MinusMinus )],
         default_action => 'default_action',
-        parse_order    => 'original',
     }
 );
 $grammar->precompute();
@@ -198,9 +193,17 @@ for my $string_piece ( '6', '-----', '1' ) {
     }
 } ## end for my $string_piece ( '6', '-----', '1' )
 
-$recce->tokens();
+$recce->end_input();
 
-my $evaler = Marpa::Evaluator->new( { recce => $recce, clone => 0 } );
+my $evaler = Marpa::Evaluator->new(
+    {   recce       => $recce,
+        parse_order => 'original',
+
+        # Set max_parses to 20 in case there's an infinite loop.
+        # This is for debugging, after all
+        max_parses => 20,
+    }
+);
 Marpa::exception('Could not initialize parse') if not $evaler;
 
 for my $i ( 0 .. $#expected_values ) {

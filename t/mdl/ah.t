@@ -38,8 +38,9 @@ my @answer = (
 
 for my $i ( 0 .. 4 ) {
     my $evaler = Marpa::Evaluator->new(
-        {   recce => $recce,
-            end   => $i
+        {   recce       => $recce,
+            parse_order => 'original',
+            end         => $i
         }
     );
     my $result = $evaler->value();

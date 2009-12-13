@@ -621,6 +621,36 @@ for my $rank ( 0 .. $#Marpa::UrHTML::Internal::CORE_OPTIONAL_TERMINALS ) {
         $Marpa::UrHTML::Internal::CORE_OPTIONAL_TERMINALS[$rank] } = $rank;
 }
 
+%Marpa::UrHTML::Internal::VIRTUAL_TOKEN_HIERARCHY = ();
+{
+    my $hierarchy = <<'END_OF_STRING';
+th td
+tr
+col
+caption colgroup tfoot thead tbody
+table
+body head
+html
+END_OF_STRING
+
+    my $iota = 0;
+    my @hierarchy;
+    for my $level ( split /\n/xms, $hierarchy ) {
+        push @hierarchy,
+            map { ( "S_$_" => $iota, "E_$_" => $iota ) }
+            ( split q{ }, $level );
+        $iota++;
+    } ## end for my $level ( split /\n/xms, $hierarchy )
+    %Marpa::UrHTML::Internal::VIRTUAL_TOKEN_HIERARCHY = @hierarchy;
+    $Marpa::UrHTML::Internal::VIRTUAL_TOKEN_HIERARCHY{EOF} =
+        $Marpa::UrHTML::Internal::VIRTUAL_TOKEN_HIERARCHY{E_tbody};
+}
+
+# Marpa::Display
+# name: UrHTML BNF
+# start-after-line: END_OF_BNF
+# end-before-line: '^END_OF_BNF$'
+
 my $BNF = <<'END_OF_BNF';
 cruft ::= CRUFT
 comment ::= C
@@ -707,17 +737,6 @@ table_flow_item ::= SGML_flow_item
 empty ::=
 END_OF_BNF
 
-@Marpa::UrHTML::Internal::UNPRODUCTIVE_OK = qw(
-    ELE_caption ELE_col ELE_colgroup ELE_head ELE_html ELE_optgroup
-    ELE_option ELE_table ELE_tbody ELE_td ELE_tfoot ELE_th ELE_thead
-    ELE_tr
-    header_element list_item_element
-    inline_element block_element
-);
-
-@Marpa::UrHTML::Internal::INACCESSIBLE_OK =
-    qw( ELE_optgroup ELE_option table_cell_element );
-
 @Marpa::UrHTML::Internal::CORE_RULES = ();
 
 my %handler = (
@@ -780,18 +799,6 @@ use strict;
     ( map { $_ => 'empty' } keys %Marpa::UrHTML::Internal::EMPTY_ELEMENT ),
 );
 
-push @Marpa::UrHTML::Internal::INACCESSIBLE_OK, qw(
-    Contents_colgroup Contents_optgroup Contents_select
-    empty inline_flow list_item_flow
-    pcdata_flow table_flow table_section_flow
-    colgroup_flow_item
-    inline_flow_item
-    list_item_flow_item
-    optgroup_flow_item
-    pcdata_flow_item
-    select_flow_item
-);
-
 sub Marpa::UrHTML::parse {
     my ( $self, $document_ref ) = @_;
 
@@ -810,7 +817,8 @@ sub Marpa::UrHTML::parse {
     my $ref_type        = ref $document_ref;
     Marpa::exception('Arg to parse() must be ref to string')
         if not $ref_type
-            or $ref_type ne 'SCALAR';
+            or $ref_type ne 'SCALAR'
+            or not defined ${$document_ref};
 
     my %pull_parser_args;
     my $document = $pull_parser_args{doc} = $self->{document} = $document_ref;
@@ -825,13 +833,22 @@ sub Marpa::UrHTML::parse {
         %Marpa::UrHTML::Internal::CORE_OPTIONAL_TERMINALS;
     my @html_parser_tokens = ();
     my @marpa_tokens       = ();
+    HTML_PARSER_TOKEN:
     while ( my $html_parser_token = $pull_parser->get_token ) {
+        my ( $token_type, $offset, $offset_end ) = @{$html_parser_token};
+
+        # If it's a virtual token from HTML::Parser,
+        # pretend it never existed.
+        # We figure out where the missing tags are,
+        # and HTML::Parser's guesses are not helpful.
+        next HTML_PARSER_TOKEN if $offset_end <= $offset;
+
         my $token_number = scalar @html_parser_tokens;
         push @html_parser_tokens, $html_parser_token;
-        given ( $html_parser_token->[0] ) {
+
+        given ($token_type) {
             when ('T') {
-                my ( $offset, $offset_end, $is_cdata ) =
-                    @{$html_parser_token}[ 1 .. $#{$html_parser_token} ];
+                my $is_cdata = $html_parser_token->[3];
                 push @marpa_tokens,
                     [
                     (   substr(
@@ -845,8 +862,7 @@ sub Marpa::UrHTML::parse {
                     ];
             } ## end when ('T')
             when ('S') {
-                my ( $offset, $offset_end, $tag_name ) =
-                    @{$html_parser_token}[ 1 .. $#{$html_parser_token} ];
+                my $tag_name = $html_parser_token->[3];
                 $start_tags{$tag_name}++;
                 my $terminal = "S_$tag_name";
                 $terminals{$terminal}++;
@@ -857,8 +873,7 @@ sub Marpa::UrHTML::parse {
                     ];
             } ## end when ('S')
             when ('E') {
-                my ( $offset, $offset_end, $tag_name ) =
-                    @{$html_parser_token}[ 1 .. $#{$html_parser_token} ];
+                my $tag_name = $html_parser_token->[3];
                 $end_tags{$tag_name}++;
                 my $terminal = "E_$tag_name";
                 $terminals{$terminal}++;
@@ -869,16 +884,12 @@ sub Marpa::UrHTML::parse {
                     ];
             } ## end when ('E')
             when ( [qw(C D)] ) {
-                my ( $offset, $offset_end ) =
-                    @{$html_parser_token}[ 1 .. $#{$html_parser_token} ];
                 push @marpa_tokens,
                     [
                     $_, [ [ 'UNVALUED_SPAN', $token_number, $token_number ] ],
                     ];
             } ## end when ( [qw(C D)] )
             when ( ['PI'] ) {
-                my ( $offset, $offset_end ) =
-                    @{$html_parser_token}[ 1 .. $#{$html_parser_token} ];
                 push @marpa_tokens,
                     [
                     $_, [ [ 'UNVALUED_SPAN', $token_number, $token_number ] ],
@@ -980,7 +991,6 @@ sub Marpa::UrHTML::parse {
 
         # Assign levels to the end tags of the elements
         # in the above table.
-        # (Start tags will be dealt with below.)
         for my $level ( 0 .. $#elements_by_level ) {
             for my $element ( @{ $elements_by_level[$level] } ) {
                 $level{ 'S_' . lc $element } = $level{ 'E_' . lc $element } =
@@ -1048,8 +1058,8 @@ sub Marpa::UrHTML::parse {
         {   rules           => \@rules,
             start           => 'document',
             terminals       => \@terminals,
-            inaccessible_ok => \@Marpa::UrHTML::Internal::INACCESSIBLE_OK,
-            unproductive_ok => \@Marpa::UrHTML::Internal::UNPRODUCTIVE_OK,
+            inaccessible_ok => 1,
+            unproductive_ok => 1,
             default_action  => 'Marpa::UrHTML::Internal::default_action',
             strip           => 0,
         }
@@ -1067,9 +1077,7 @@ sub Marpa::UrHTML::parse {
         {   grammar           => $grammar,
             trace_terminals   => $self->{trace_terminals},
             trace_earley_sets => $self->{trace_earley_sets},
-            trace_values      => $self->{trace_values},
-            trace_actions     => $self->{trace_actions},
-            clone             => 0,
+            mode              => 'stream',
         }
     );
 
@@ -1080,38 +1088,30 @@ sub Marpa::UrHTML::parse {
     $self->{recce}  = $recce;
     $self->{tokens} = \@html_parser_tokens;
     my ( $current_earleme, $expected_terminals ) = $recce->status();
-    MARPA_TOKEN: for my $marpa_token (@marpa_tokens) {
+    for my $marpa_token (@marpa_tokens) {
         my $is_virtual_token = 1;
         my $actual_terminal  = $marpa_token->[0];
         if ($trace_terminals) {
             say {$trace_fh} 'Literal Token: ', $actual_terminal;
         }
 
-        # This counter prevents bugs in the grammar from becoming
-        # infinite loops.  If and when the grammar is settled,
-        # a proof should be made that all cases are accounted for.
-        my $virtual_counter = 0;
+        # These counter prevents bugs in the grammar from becoming
+        # infinite loops.
+        my %start_virtuals_used = ();
 
-        VIRTUAL_TOKEN: while ($is_virtual_token) {
+        while ($is_virtual_token) {
 
             my $token_to_add;
+            if ( $actual_terminal ~~ $expected_terminals ) {
+                $token_to_add     = $marpa_token;
+                $is_virtual_token = 0;
+            }
+
             FIND_VIRTUAL_TOKEN: {
 
-                if ( $virtual_counter++ > 10 ) {
-                    say {$trace_fh}
-                        "Added 10 virtual tokens without adding the real one\n",
-                        qq{The real token is "$actual_terminal"\n},
-                        'This is probably a bug in the grammar for HTML';
-                    $token_to_add     = $marpa_token;
-                    $is_virtual_token = 0;
-                    last FIND_VIRTUAL_TOKEN;
-                } ## end if ( $virtual_counter++ > 10 )
-
-                if ( $actual_terminal ~~ $expected_terminals ) {
-                    $token_to_add     = $marpa_token;
-                    $is_virtual_token = 0;
-                    last FIND_VIRTUAL_TOKEN;
-                }
+                # Do not need to find a virtual token if the real one
+                # was OK.
+                last FIND_VIRTUAL_TOKEN if defined $token_to_add;
 
                 my $virtual_terminal;
                 my @virtuals_expected = sort {
@@ -1130,44 +1130,73 @@ sub Marpa::UrHTML::parse {
                 LOOKAHEAD_VIRTUAL_TERMINAL:
                 while ( my $candidate = pop @virtuals_expected ) {
 
-                    # Don't start a new table cell as a way of dealing with
-                    # A new row or table section
-                    if (    $candidate eq 'S_td'
-                        and $actual_terminal ~~
-                        [qw(S_tr S_thead S_tfoot S_tbody )] )
-                    {
-                        next LOOKAHEAD_VIRTUAL_TERMINAL;
-                    } ## end if ( $candidate eq 'S_td' and $actual_terminal ~~ [...])
-
-                    # Don't start a new table cell, row or TBODY element
-                    # as a way of dealing one of these end tags
-                    if ($candidate ~~ [qw(S_tr S_td S_tbody)]
-                        and $actual_terminal ~~ [
-                            qw(E_th E_td E_tr
-                                E_thead E_tfoot E_tbody E_table
-                                E_body E_html EOF)
-                        ]
-                        )
-                    {
-                        next LOOKAHEAD_VIRTUAL_TERMINAL;
-                    } ## end if ( $candidate ~~ [qw(S_tr S_td S_tbody)] and ...)
-
                     # Start an implied table only if the next token is one which
                     # can only occur inside a table
-                    if ($candidate eq 'S_table'
-                        and not $actual_terminal ~~ [
-                            qw(
-                                S_caption S_col S_colgroup S_thead S_tfoot
-                                S_tbody S_tr S_th S_td
-                                E_caption E_col E_colgroup E_thead E_tfoot
-                                E_tbody E_tr E_th E_td
-                                E_table
-                                )
-                        ]
-                        )
-                    {
-                        next LOOKAHEAD_VIRTUAL_TERMINAL;
-                    } ## end if ( $candidate eq 'S_table' and not ...)
+                    if ( $candidate eq 'S_table' ) {
+                        if (not $actual_terminal ~~ [
+                                qw(
+                                    S_caption S_col S_colgroup S_thead S_tfoot
+                                    S_tbody S_tr S_th S_td
+                                    E_caption E_col E_colgroup E_thead E_tfoot
+                                    E_tbody E_tr E_th E_td
+                                    E_table
+                                    )
+                            ]
+                            )
+                        {
+                            next LOOKAHEAD_VIRTUAL_TERMINAL;
+                        } ## end if ( not $actual_terminal ~~ [ qw(...)])
+
+                        # The above test implies the others below, so
+                        # this virtual table start terminal is OK.
+                        $virtual_terminal = $candidate;
+                        last LOOKAHEAD_VIRTUAL_TERMINAL;
+                    } ## end if ( $candidate eq 'S_table' )
+
+                    # For other than <table>, we are permissive.
+                    # Unless the lookahead gives us
+                    # a specific reason to
+                    # reject the virtual terminal, we accept it.
+
+                    # No need to check lookahead, unless we are starting
+                    # an element
+                    if ( $candidate !~ /^S_/xms ) {
+                        $virtual_terminal = $candidate;
+                        last LOOKAHEAD_VIRTUAL_TERMINAL;
+                    }
+
+                    my $candidate_level =
+                        $Marpa::UrHTML::Internal::VIRTUAL_TOKEN_HIERARCHY{
+                        $candidate};
+
+                    # If the candidate is not part of the hierarchy, no need to check
+                    # lookahead
+                    if ( not defined $candidate_level ) {
+                        $virtual_terminal = $candidate;
+                        last LOOKAHEAD_VIRTUAL_TERMINAL;
+                    }
+
+                    my $actual_terminal_level =
+                        $Marpa::UrHTML::Internal::VIRTUAL_TOKEN_HIERARCHY{
+                        $actual_terminal};
+
+                    # If the actual terminal is not part of the hierarchy, no need to check
+                    # lookahead, either
+                    if ( not defined $actual_terminal_level ) {
+                        $virtual_terminal = $candidate;
+                        last LOOKAHEAD_VIRTUAL_TERMINAL;
+                    }
+
+                    # Here we are trying to deal with a higher-level element's
+                    # start or end, by starting a new lower level element.
+                    # This won't work, because we'll have to close it
+                    # immediately with another virtual terminal.
+                    # At best this means useless, empty elements.
+                    # At worst, it means an infinite loop where
+                    # empty lower-level elements are repeatedly added.
+                    #
+                    next LOOKAHEAD_VIRTUAL_TERMINAL
+                        if $candidate_level <= $actual_terminal_level;
 
                     $virtual_terminal = $candidate;
                     last LOOKAHEAD_VIRTUAL_TERMINAL;
@@ -1193,20 +1222,33 @@ sub Marpa::UrHTML::parse {
                         join q{ }, keys %{ $ok_as_cruft{$virtual_terminal} };
                 }
 
-                if ( defined $virtual_terminal
-                    and
-                    not $ok_as_cruft{$virtual_terminal}{$actual_terminal} )
+                last FIND_VIRTUAL_TOKEN if not defined $virtual_terminal;
+                last FIND_VIRTUAL_TOKEN
+                    if $ok_as_cruft{$virtual_terminal}{$actual_terminal};
+
+                if (    $virtual_terminal =~ /^S_/xms
+                    and $start_virtuals_used{$virtual_terminal}++ > 1 )
                 {
-                    my $tdesc_list = $marpa_token->[1];
-                    my $first_tdesc_start_token =
-                        $tdesc_list->[0]
-                        ->[Marpa::UrHTML::Internal::TDesc::START_TOKEN];
-                    $token_to_add = [
-                        $virtual_terminal,
-                        [ [ 'POINT', $first_tdesc_start_token ] ]
-                    ];
+                    ( my $tagname = $virtual_terminal ) =~ s/^S_//xms;
+                    say {$trace_fh}
+                        "Warning: attempt to add <$tagname> twice at the same place";
                     last FIND_VIRTUAL_TOKEN;
-                } ## end if ( defined $virtual_terminal and not $ok_as_cruft{...})
+                } ## end if ( $virtual_terminal =~ /^S_/xms and ...)
+
+                my $tdesc_list = $marpa_token->[1];
+                my $first_tdesc_start_token =
+                    $tdesc_list->[0]
+                    ->[Marpa::UrHTML::Internal::TDesc::START_TOKEN];
+                $token_to_add = [
+                    $virtual_terminal,
+                    [ [ 'POINT', $first_tdesc_start_token ] ]
+                ];
+
+            } ## end FIND_VIRTUAL_TOKEN:
+
+            # If we didn't find a token to add, add the
+            # current physical token as CRUFT.
+            if ( not defined $token_to_add ) {
 
                 if ($trace_terminals) {
                     say {$trace_fh} 'Adding actual token as cruft: ',
@@ -1230,14 +1272,14 @@ sub Marpa::UrHTML::parse {
                         },
                         q{"};
                 } ## end if ($trace_cruft)
-            } ## end FIND_VIRTUAL_TOKEN:
+            } ## end if ( not defined $token_to_add )
 
             if ($trace_terminals) {
                 say {$trace_fh} 'Adding Token: ', $token_to_add->[0];
             }
 
             ( $current_earleme, $expected_terminals ) =
-                $recce->tokens( [$token_to_add], 'predict' );
+                $recce->tokens( [$token_to_add] );
             if ( not defined $current_earleme ) {
                 my $last_marpa_token = $recce->furthest();
                 $last_marpa_token =
@@ -1338,9 +1380,15 @@ sub Marpa::UrHTML::parse {
         local $Marpa::UrHTML::Internal::PARSE_INSTANCE = $self;
         local $Marpa::UrHTML::INSTANCE                 = {};
         my $evaler = Marpa::Evaluator->new(
-            { recce => $recce, clone => 0, closures => \%closure, } );
+            {   recce         => $recce,
+                trace_values  => $self->{trace_values},
+                trace_actions => $self->{trace_actions},
+                closures      => \%closure,
+            }
+        );
 
-        Marpa::exception('No parse') if not $evaler;
+        Marpa::exception('No parse: could not create evaluator')
+            if not $evaler;
 
         if ( $ENV{TRACE_SIZE} ) {
             say 'pre-undef recce size: ', total_size($recce);
@@ -1380,11 +1428,8 @@ sub Marpa::UrHTML::parse {
 
             # 100 characters --
             # the amount of context to put in the error message
-            #
-            ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
             say 'last good at ',
                 ( substr ${$document}, $last_good_offset, 100 );
-            ## use critic
 
             say Data::Dumper::Dumper( $recce->find_parse() );
 
@@ -1393,7 +1438,7 @@ sub Marpa::UrHTML::parse {
         } ## end if ( not $evaler )
         $evaler->value;
     };
-    Marpa::exception('undef returned') if not defined $value;
+    Marpa::exception('No parse: evaler returned undef') if not defined $value;
     return ${$value};
 
 } ## end sub Marpa::UrHTML::parse

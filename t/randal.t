@@ -7,7 +7,7 @@ use lib 'lib';
 use English qw( -no_match_vars );
 
 use Test::More tests => 5;
-use t::lib::Marpa::Test;
+use Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa::MDLex');
@@ -182,9 +182,8 @@ my @test_data = (
 );
 
 my $g = Marpa::Grammar->new(
-    {   warnings   => 1,
-        code_lines => -1,
-        actions    => 'main',
+    {   warnings => 1,
+        actions  => 'main',
     },
     @{$Test_Grammar::MARPA_OPTIONS}
 );
@@ -198,7 +197,7 @@ TEST: for my $test_data (@test_data) {
     my $lexer = Marpa::MDLex->new( { recce => $recce },
         @{$Test_Grammar::MDLEX_OPTIONS} );
     $lexer->text( \$test_input );
-    $recce->tokens();
+    $recce->end_input();
 
     my $evaler = Marpa::Evaluator->new( { recce => $recce } );
     Carp::croak('Parse failed') if not $evaler;

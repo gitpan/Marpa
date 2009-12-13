@@ -193,14 +193,17 @@ use Marpa::Offset qw(
 
     :package=Marpa::Internal::Grammar
 
-    ID NAME VERSION
-    RULES SYMBOLS QDFA
+    ID
+    NAME
+    RULES
+    SYMBOLS
+    QDFA
     PHASE
     ACTIONS { Default package in which to find actions }
     DEFAULT_ACTION { Action for rules without one }
-    TRACE_FILE_HANDLE TRACING
+    TRACE_FILE_HANDLE
+    TRACING
     STRIP
-    EXPERIMENTAL
     WARNINGS
 
     =LAST_BASIC_DATA_FIELD
@@ -209,23 +212,8 @@ use Marpa::Offset qw(
 
     SYMBOL_HASH
     RULE_HASH
-
     DEFAULT_NULL_VALUE
-
     CYCLE_ACTION
-    CYCLE_SCALE
-    CYCLE_NODES
-    CYCLE_REWRITE
-    PARSE_ORDER
-
-    TRACE_TASKS
-    TRACE_EVALUATION { General evaluation trace }
-    TRACE_ACTIONS
-    TRACE_VALUES
-    TRACE_TERMINALS
-    TRACE_EARLEY_SETS
-
-    MAX_PARSES
     ACTION_OBJECT
 
     =LAST_EVALUATOR_FIELD
@@ -233,7 +221,6 @@ use Marpa::Offset qw(
     PROBLEMS
     ACADEMIC
     START_STATES
-    TOO_MANY_EARLEY_ITEMS
 
     =LAST_RECOGNIZER_FIELD
 
@@ -243,7 +230,6 @@ use Marpa::Offset qw(
     NULLABLE_SYMBOL
     INACCESSIBLE_OK
     UNPRODUCTIVE_OK
-    SEMANTICS
     TRACE_RULES
     GREED
 
@@ -286,7 +272,6 @@ AMBIGUOUS_LEX      - lex ambiguously?
 PROBLEMS - fatal problems
 WARNINGS - print warnings about grammar?
 VERSION - Marpa version this grammar was stringified from
-SEMANTICS - semantics (currently perl5 only)
 STRIP - Boolean.  If true, strip unused data to save space.
 TRACING - master flag, set if any tracing is being done
     (to control overhead for non-tracing processes)
@@ -300,32 +285,15 @@ CYCLE_ACTION - ref to array of the start states
 
 =cut
 
-# values for grammar interfaces
-use Marpa::Offset qw(
-
-    :package=Marpa::Internal::Interface
-    RAW MDL
-
-);
-
-sub Marpa::Internal::Interface::description {
-    my $interface = shift;
-    return 'raw interface' if $interface == Marpa::Internal::Interface::RAW;
-    return 'Marpa Description Language interface'
-        if $interface == Marpa::Internal::Interface::MDL;
-    return 'unknown interface';
-} ## end sub Marpa::Internal::Interface::description
-
 # values for grammar phases
 use Marpa::Offset qw(
 
     :package=Marpa::Internal::Phase
-    NEW RULES
-    PRECOMPUTED RECOGNIZING SETTLING_SEMANTICS EVALUATING
+    NEW RULES PRECOMPUTED
 
 );
 
-sub Marpa::Internal::Phase::description {
+sub phase_description {
     my $phase = shift;
     return 'grammar without rules'
         if $phase == Marpa::Internal::Phase::NEW;
@@ -333,14 +301,8 @@ sub Marpa::Internal::Phase::description {
         if $phase == Marpa::Internal::Phase::RULES;
     return 'precomputed grammar'
         if $phase == Marpa::Internal::Phase::PRECOMPUTED;
-    return 'grammar being recognized'
-        if $phase == Marpa::Internal::Phase::RECOGNIZING;
-    return 'grammar settling semantics'
-        if $phase == Marpa::Internal::Phase::SETTLING_SEMANTICS;
-    return 'grammar being evaluated'
-        if $phase == Marpa::Internal::Phase::EVALUATING;
     return 'unknown phase';
-} ## end sub Marpa::Internal::Phase::description
+} ## end sub phase_description
 
 package Marpa::Internal::Grammar;
 
@@ -360,8 +322,6 @@ use constant RHS_LENGTH_MASK => ~(0x7ffffff);
 # so we don't have to
 # worry about signedness creeping in.
 use constant PRIORITY_MASK => ~(0x7fffffff);
-
-use constant DEFAULT_TOO_MANY_EARLEY_ITEMS => 100;
 
 sub Marpa::Internal::code_problems {
     my $args = shift;
@@ -461,30 +421,19 @@ sub Marpa::Grammar::new {
 
     $grammar->[Marpa::Internal::Grammar::ACADEMIC]        = 0;
     $grammar->[Marpa::Internal::Grammar::TRACE_RULES]     = 0;
-    $grammar->[Marpa::Internal::Grammar::TRACE_VALUES]    = 0;
-    $grammar->[Marpa::Internal::Grammar::TRACE_TASKS]     = 0;
     $grammar->[Marpa::Internal::Grammar::TRACING]         = 0;
     $grammar->[Marpa::Internal::Grammar::STRIP]           = 1;
-    $grammar->[Marpa::Internal::Grammar::EXPERIMENTAL]    = 0;
-    $grammar->[Marpa::Internal::Grammar::PARSE_ORDER]     = 'numeric';
     $grammar->[Marpa::Internal::Grammar::WARNINGS]        = 1;
     $grammar->[Marpa::Internal::Grammar::INACCESSIBLE_OK] = {};
     $grammar->[Marpa::Internal::Grammar::UNPRODUCTIVE_OK] = {};
     $grammar->[Marpa::Internal::Grammar::CYCLE_ACTION]    = 'fatal';
-    $grammar->[Marpa::Internal::Grammar::CYCLE_SCALE]     = 2;
-    $grammar->[Marpa::Internal::Grammar::CYCLE_REWRITE]   = 1;
 
-    {
-        ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
-        $grammar->[Marpa::Internal::Grammar::CYCLE_NODES] = 1000;
-    }
     $grammar->[Marpa::Internal::Grammar::SYMBOLS]             = [];
     $grammar->[Marpa::Internal::Grammar::SYMBOL_HASH]         = {};
     $grammar->[Marpa::Internal::Grammar::RULE_HASH]           = {};
     $grammar->[Marpa::Internal::Grammar::RULES]               = [];
     $grammar->[Marpa::Internal::Grammar::RULE_SIGNATURE_HASH] = {};
     $grammar->[Marpa::Internal::Grammar::QDFA_BY_NAME]        = {};
-    $grammar->[Marpa::Internal::Grammar::MAX_PARSES]          = -1;
     $grammar->[Marpa::Internal::Grammar::PHASE] = Marpa::Internal::Phase::NEW;
 
     $grammar->set(@arg_hashes);
@@ -547,36 +496,20 @@ use constant GRAMMAR_OPTIONS => [
         academic
         action_object
         actions
-        code_lines
         cycle_action
-        cycle_nodes
-        cycle_rewrite
-        cycle_scale
         default_action
         default_null_value
-        experimental
         inaccessible_ok
         maximal
-        too_many_earley_items
-        max_parses
         minimal
-        parse_order
         rules
-        semantics
         sort_method
         start
         strip
         terminals
-        trace_actions
-        trace_earley_sets
-        trace_evaluation
         trace_file_handle
         trace_rules
-        trace_tasks
-        trace_terminals
-        trace_values
         unproductive_ok
-        version
         warnings
         }
 ];
@@ -612,52 +545,6 @@ sub Marpa::Grammar::set {
             $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE] = $value;
         }
 
-        if ( defined( my $value = $args->{'trace_actions'} ) ) {
-            $grammar->[Marpa::Internal::Grammar::TRACE_ACTIONS] = $value;
-            if ($value) {
-                say {$trace_fh} 'Setting trace_actions option';
-                if ( $phase >= Marpa::Internal::Phase::EVALUATING ) {
-                    say {$trace_fh}
-                        'Warning: setting trace_actions option after semantics were finalized';
-                }
-                $grammar->[Marpa::Internal::Grammar::TRACING] = 1;
-            } ## end if ($value)
-        } ## end if ( defined( my $value = $args->{'trace_actions'} ))
-
-        if ( defined( my $value = $args->{'trace_terminals'} ) ) {
-            $grammar->[Marpa::Internal::Grammar::TRACE_TERMINALS] = $value;
-            if ($value) {
-                say {$trace_fh} 'Setting trace_terminals option';
-                if ( $phase > Marpa::Internal::Phase::RECOGNIZING ) {
-                    say {$trace_fh}
-                        'Warning: setting trace_terminals option after recognition';
-                }
-                $grammar->[Marpa::Internal::Grammar::TRACING] = 1;
-            } ## end if ($value)
-        } ## end if ( defined( my $value = $args->{'trace_terminals'}...))
-
-        if ( defined( my $value = $args->{'trace_earley_sets'} ) ) {
-            $grammar->[Marpa::Internal::Grammar::TRACE_EARLEY_SETS] = $value;
-            if ($value) {
-                say {$trace_fh} 'Setting trace_earley_sets option';
-                if ( $phase > Marpa::Internal::Phase::RECOGNIZING ) {
-                    say {$trace_fh}
-                        'Warning: setting trace_earley_sets option after recognition';
-                }
-                $grammar->[Marpa::Internal::Grammar::TRACING] = 1;
-            } ## end if ($value)
-        } ## end if ( defined( my $value = $args->{'trace_earley_sets'...}))
-
-        if ( defined( my $value = $args->{'trace_values'} ) ) {
-            Marpa::exception('trace_values must be set to a number >= 0')
-                if not $value =~ /\A\d+\z/xms;
-            $grammar->[Marpa::Internal::Grammar::TRACE_VALUES] = $value + 0;
-            if ($value) {
-                say {$trace_fh} "Setting trace_values option to $value";
-                $grammar->[Marpa::Internal::Grammar::TRACING] = 1;
-            }
-        } ## end if ( defined( my $value = $args->{'trace_values'} ) )
-
         if ( defined( my $value = $args->{'trace_rules'} ) ) {
             $grammar->[Marpa::Internal::Grammar::TRACE_RULES] = $value;
             if ($value) {
@@ -671,27 +558,6 @@ sub Marpa::Grammar::set {
                 $grammar->[Marpa::Internal::Grammar::TRACING] = 1;
             } ## end if ($value)
         } ## end if ( defined( my $value = $args->{'trace_rules'} ) )
-
-        if ( defined( my $value = $args->{'trace_tasks'} ) ) {
-            Marpa::exception('trace_tasks must be set to a number >= 0')
-                if $value !~ /\A\d+\z/xms;
-            $grammar->[Marpa::Internal::Grammar::TRACE_TASKS] = $value + 0;
-            if ($value) {
-                say {$trace_fh} "Setting trace_tasks option to $value";
-                $grammar->[Marpa::Internal::Grammar::TRACING] = 1;
-            }
-        } ## end if ( defined( my $value = $args->{'trace_tasks'} ) )
-
-        if ( defined( my $value = $args->{'trace_evaluation'} ) ) {
-            Marpa::exception('trace_evaluation must be set to a number >= 0')
-                if $value !~ /\A\d+\z/xms;
-            $grammar->[Marpa::Internal::Grammar::TRACE_EVALUATION] =
-                $value + 0;
-            if ($value) {
-                say {$trace_fh} "Setting trace_evaluation option to $value";
-                $grammar->[Marpa::Internal::Grammar::TRACING] = 1;
-            }
-        } ## end if ( defined( my $value = $args->{'trace_evaluation'...}))
 
         # First pass options: These affect processing of other
         # options and are expected to take force for the other
@@ -759,42 +625,24 @@ sub Marpa::Grammar::set {
         } ## end if ( defined( my $value = $args->{'academic'} ) )
 
         if ( defined( my $value = $args->{'default_null_value'} ) ) {
-            Marpa::exception(
-                'default_null_value option not allowed in ',
-                Marpa::Internal::Phase::description($phase)
-            ) if $phase >= Marpa::Internal::Phase::RECOGNIZING;
             $grammar->[Marpa::Internal::Grammar::DEFAULT_NULL_VALUE] = $value;
-        } ## end if ( defined( my $value = $args->{'default_null_value'...}))
+        }
 
         if ( defined( my $value = $args->{'actions'} ) ) {
-            Marpa::exception( 'actions option not allowed in ',
-                Marpa::Internal::Phase::description($phase) )
-                if $phase >= Marpa::Internal::Phase::EVALUATING;
             $grammar->[Marpa::Internal::Grammar::ACTIONS] = $value;
-        } ## end if ( defined( my $value = $args->{'actions'} ) )
+        }
 
         if ( defined( my $value = $args->{'action_object'} ) ) {
-            Marpa::exception(
-                'action_object option not allowed in ',
-                Marpa::Internal::Phase::description($phase)
-            ) if $phase >= Marpa::Internal::Phase::EVALUATING;
             $grammar->[Marpa::Internal::Grammar::ACTION_OBJECT] = $value;
-        } ## end if ( defined( my $value = $args->{'action_object'} ))
+        }
 
         if ( defined( my $value = $args->{'default_action'} ) ) {
-            Marpa::exception(
-                'default_action option not allowed in ',
-                Marpa::Internal::Phase::description($phase)
-            ) if $phase >= Marpa::Internal::Phase::RECOGNIZING;
             $grammar->[Marpa::Internal::Grammar::DEFAULT_ACTION] = $value;
-        } ## end if ( defined( my $value = $args->{'default_action'} ...))
+        }
 
         if ( defined( my $value = $args->{'strip'} ) ) {
-            Marpa::exception( 'strip option not allowed in ',
-                Marpa::Internal::Phase::description($phase) )
-                if $phase >= Marpa::Internal::Phase::SETTLING_SEMANTICS;
             $grammar->[Marpa::Internal::Grammar::STRIP] = $value;
-        } ## end if ( defined( my $value = $args->{'strip'} ) )
+        }
 
         if ( defined( my $value = $args->{'cycle_action'} ) ) {
             if ( $value && $phase >= Marpa::Internal::Phase::PRECOMPUTED ) {
@@ -806,31 +654,6 @@ sub Marpa::Grammar::set {
                 if not $value ~~ [qw(warn quiet fatal)];
             $grammar->[Marpa::Internal::Grammar::CYCLE_ACTION] = $value;
         } ## end if ( defined( my $value = $args->{'cycle_action'} ) )
-
-        if ( defined( my $value = $args->{'cycle_scale'} ) ) {
-            Marpa::exception(
-                'cycle_scale option only allowed in experimental mode')
-                if $grammar->[Marpa::Internal::Grammar::EXPERIMENTAL] <= 0;
-            Marpa::exception(q{cycle_scale must be >1})
-                if $value <= 1;
-            no integer;
-            $grammar->[Marpa::Internal::Grammar::CYCLE_SCALE] =
-                POSIX::ceil($value);
-            use integer;
-        } ## end if ( defined( my $value = $args->{'cycle_scale'} ) )
-
-        if ( defined( my $value = $args->{'cycle_nodes'} ) ) {
-            Marpa::exception(
-                'cycle_nodes option only allowed in experimental mode')
-                if $grammar->[Marpa::Internal::Grammar::EXPERIMENTAL] <= 0;
-            Marpa::exception(q{cycle_nodes must be >0})
-                if $value <= 0;
-            $grammar->[Marpa::Internal::Grammar::CYCLE_NODES] = $value;
-        } ## end if ( defined( my $value = $args->{'cycle_nodes'} ) )
-
-        if ( defined( my $value = $args->{'cycle_rewrite'} ) ) {
-            $grammar->[Marpa::Internal::Grammar::CYCLE_REWRITE] = $value;
-        }
 
         if ( defined( my $value = $args->{'warnings'} ) ) {
             if ( $value && $phase >= Marpa::Internal::Phase::PRECOMPUTED ) {
@@ -845,11 +668,23 @@ sub Marpa::Grammar::set {
                 say {$trace_fh}
                     q{"inaccessible_ok" option is useless after grammar is precomputed};
             }
-            Marpa::exception(
-                'value of inaccessible_ok option must be an array ref')
-                if not ref $value eq 'ARRAY';
-            $grammar->[Marpa::Internal::Grammar::INACCESSIBLE_OK] =
-                { map { ( $_, 1 ) } @{$value} };
+            given ( ref $value ) {
+                when (q{}) {
+                    $value //= {
+                    }
+                }
+                when ('ARRAY') {
+                    $value = {
+                        map { ( $_, 1 ) } @{$value}
+                    }
+                }
+                default {
+                    Marpa::exception(
+                        'value of inaccessible_ok option must be boolean or an array ref'
+                        )
+                }
+            } ## end given
+            $grammar->[Marpa::Internal::Grammar::INACCESSIBLE_OK] = $value;
         } ## end if ( defined( my $value = $args->{'inaccessible_ok'}...))
 
         if ( defined( my $value = $args->{'unproductive_ok'} ) ) {
@@ -857,62 +692,24 @@ sub Marpa::Grammar::set {
                 say {$trace_fh}
                     q{"unproductive_ok" option is useless after grammar is precomputed};
             }
-            Marpa::exception(
-                'value of unproductive_ok option must be an array ref')
-                if not ref $value eq 'ARRAY';
-            $grammar->[Marpa::Internal::Grammar::UNPRODUCTIVE_OK] =
-                { map { ( $_, 1 ) } @{$value} };
-        } ## end if ( defined( my $value = $args->{'unproductive_ok'}...))
-
-        if ( defined( my $value = $args->{'max_parses'} ) ) {
-            $grammar->[Marpa::Internal::Grammar::MAX_PARSES] = $value;
-        }
-
-        if ( defined( my $value = $args->{'too_many_earley_items'} ) ) {
-            Marpa::exception(
-                q{"too_many_earley_items" option not allowed in },
-                Marpa::Internal::Phase::description($phase)
-            ) if $phase >= Marpa::Internal::Phase::RECOGNIZING;
-            $grammar->[Marpa::Internal::Grammar::TOO_MANY_EARLEY_ITEMS] =
-                $value;
-        } ## end if ( defined( my $value = $args->{'too_many_earley_items'...}))
-
-        if ( defined( my $value = $args->{'version'} ) ) {
-            Marpa::exception(
-                'version option not allowed after grammar is precomputed')
-                if $phase >= Marpa::Internal::Phase::PRECOMPUTED;
-            $grammar->[Marpa::Internal::Grammar::VERSION] = $value;
-        } ## end if ( defined( my $value = $args->{'version'} ) )
-
-        if ( defined( my $value = $args->{'semantics'} ) ) {
-            Marpa::exception(
-                'semantics option not allowed after grammar is precomputed')
-                if $phase >= Marpa::Internal::Phase::PRECOMPUTED;
-            $grammar->[Marpa::Internal::Grammar::SEMANTICS] = $value;
-        } ## end if ( defined( my $value = $args->{'semantics'} ) )
-
-        if ( defined( my $value = $args->{'experimental'} ) ) {
-            given ($value) {
-                when (undef) { $value = 0 }
-                when ('no warning') {
-                    $value = 1
+            given ( ref $value ) {
+                when (q{}) {
+                    $value //= {
+                    };
+                }
+                when ('ARRAY') {
+                    $value = {
+                        map { ( $_, 1 ) } @{$value}
+                    }
                 }
                 default {
-                    say {
-                        $trace_fh
-                    }
-                    'Experimental (in other words, buggy) features enabled';
-                    $value = 1;
-                } ## end default
+                    Marpa::exception(
+                        'value of unproductive_ok option must be boolean or an array ref'
+                        )
+                }
             } ## end given
-            $grammar->[Marpa::Internal::Grammar::EXPERIMENTAL] = $value;
-        } ## end if ( defined( my $value = $args->{'experimental'} ) )
-
-        if ( defined( my $value = $args->{'parse_order'} ) ) {
-            Marpa::exception(q{parse_order must be 'original' or 'none'})
-                if not $value ~~ [qw(original numeric none)];
-            $grammar->[Marpa::Internal::Grammar::PARSE_ORDER] = $value;
-        }
+            $grammar->[Marpa::Internal::Grammar::UNPRODUCTIVE_OK] = $value;
+        } ## end if ( defined( my $value = $args->{'unproductive_ok'}...))
 
     } ## end for my $args (@arg_hashes)
 
@@ -949,11 +746,8 @@ users will.
 sub Marpa::Grammar::precompute {
     my $grammar = shift;
 
-    my $tracing = $grammar->[Marpa::Internal::Grammar::TRACING];
-    my $trace_fh;
-    if ($tracing) {
-        $trace_fh = $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE];
-    }
+    my $tracing  = $grammar->[Marpa::Internal::Grammar::TRACING];
+    my $trace_fh = $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE];
 
     my $problems = $grammar->[Marpa::Internal::Grammar::PROBLEMS];
     if ($problems) {
@@ -975,7 +769,7 @@ sub Marpa::Grammar::precompute {
     if ( $phase != Marpa::Internal::Phase::RULES ) {
         Marpa::exception(
             "Attempt to precompute grammar in inappropriate state\nAttempt to precompute ",
-            Marpa::Internal::Phase::description($phase)
+            phase_description($phase)
         );
     } ## end if ( $phase != Marpa::Internal::Phase::RULES )
 
@@ -997,27 +791,11 @@ sub Marpa::Grammar::precompute {
     create_NFA($grammar);
     create_QDFA($grammar);
 
-    my $QDFA_size = scalar @{ $grammar->[Marpa::Internal::Grammar::QDFA] };
-    if (not defined(
-            my $too_many_earley_items =
-                $grammar->[Marpa::Internal::Grammar::TOO_MANY_EARLEY_ITEMS]
-        )
-        )
+    if ( $grammar->[Marpa::Internal::Grammar::WARNINGS]
+        and
+        ref( my $ok = $grammar->[Marpa::Internal::Grammar::INACCESSIBLE_OK] )
+        eq 'HASH' )
     {
-        $too_many_earley_items = 2 * $QDFA_size;
-        if ( $too_many_earley_items
-            < Marpa::Internal::Grammar::DEFAULT_TOO_MANY_EARLEY_ITEMS )
-        {
-            $too_many_earley_items =
-                Marpa::Internal::Grammar::DEFAULT_TOO_MANY_EARLEY_ITEMS;
-        } ## end if ( $too_many_earley_items < ...)
-        $grammar->[Marpa::Internal::Grammar::TOO_MANY_EARLEY_ITEMS] =
-            $too_many_earley_items;
-    } ## end if ( not defined( my $too_many_earley_items = $grammar...))
-
-    if ( $grammar->[Marpa::Internal::Grammar::WARNINGS] ) {
-        $trace_fh //= $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE];
-        my $ok = $grammar->[Marpa::Internal::Grammar::INACCESSIBLE_OK];
         SYMBOL:
         for my $symbol ( @{ Marpa::Grammar::inaccessible_symbols($grammar) } )
         {
@@ -1032,7 +810,13 @@ sub Marpa::Grammar::precompute {
             next SYMBOL if $ok->{$symbol};
             say {$trace_fh} "Inaccessible symbol: $symbol";
         } ## end for my $symbol ( @{ Marpa::Grammar::inaccessible_symbols...})
-        $ok = $grammar->[Marpa::Internal::Grammar::UNPRODUCTIVE_OK];
+    } ## end if ( $grammar->[Marpa::Internal::Grammar::WARNINGS] ...)
+
+    if ( $grammar->[Marpa::Internal::Grammar::WARNINGS]
+        and
+        ref( my $ok = $grammar->[Marpa::Internal::Grammar::UNPRODUCTIVE_OK] )
+        eq 'HASH' )
+    {
         SYMBOL:
         for my $symbol ( @{ Marpa::Grammar::unproductive_symbols($grammar) } )
         {
@@ -1047,7 +831,7 @@ sub Marpa::Grammar::precompute {
             next SYMBOL if $ok->{$symbol};
             say {$trace_fh} "Unproductive symbol: $symbol";
         } ## end for my $symbol ( @{ Marpa::Grammar::unproductive_symbols...})
-    } ## end if ( $grammar->[Marpa::Internal::Grammar::WARNINGS] )
+    } ## end if ( $grammar->[Marpa::Internal::Grammar::WARNINGS] ...)
 
     $grammar->[Marpa::Internal::Grammar::PHASE] =
         Marpa::Internal::Phase::PRECOMPUTED;
@@ -1105,7 +889,7 @@ sub Marpa::Grammar::stringify {
     if ( $phase != Marpa::Internal::Phase::PRECOMPUTED ) {
         Marpa::exception(
             "Attempt to stringify grammar in inappropriate state\nAttempt to stringify ",
-            Marpa::Internal::Phase::description($phase)
+            phase_description($phase)
         );
     } ## end if ( $phase != Marpa::Internal::Phase::PRECOMPUTED )
 

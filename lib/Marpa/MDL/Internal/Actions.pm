@@ -7,7 +7,6 @@ use warnings;
 use Marpa::MDL::Symbol;
 
 ## no critic (Subroutines::RequireArgUnpacking)
-## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
 
 sub new {
     my $class = shift;
@@ -45,7 +44,6 @@ sub grammar {
     } ## end for my $terminal ( @{ $self->{lex_options}->[0]->{terminals...}})
     $self->{options}->[0]->{terminals} =
         [ map { $_->{name} } @{ $self->{lex_options}->[0]->{terminals} } ];
-    $self->{options}->[0]->{parse_order} = 'original';
     return {
         marpa_options => $self->{options},
         mdlex_options => $self->{lex_options}
@@ -87,30 +85,26 @@ sub short_action_sentence {
 sub definition_of_predefined { return $_[1] }
 
 # semantics setting:  optional /the/, /semantics/, copula, /perl5/.
+# semantics no longer supported by Marpa
 sub semantics_predicate {
-    my $self = shift;
-    $self->{options}->[0]->{semantics} = $_[3];
     return q{};
 }
 
 # semantics setting: /perl5/, copula, optional /the/, /semantics/.
+# semantics no longer supported by Marpa
 sub semantics_subject {
-    my $self = shift;
-    $self->{options}->[0]->{semantics} = $_[0];
     return q{};
 }
 
 # version setting: optional /the/, /version/, copula, version number.
+# version no longer supported by Marpa
 sub version_predicate {
-    my $self = shift;
-    $self->{options}->[0]->{version} = $_[3];
     return q{};
 }
 
 # version setting: /version number/, copula, optional /the/, /version/.
+# version no longer supported by Marpa
 sub version_subject {
-    my $self = shift;
-    $self->{options}->[0]->{version} = $_[1];
     return q{};
 }
 
@@ -343,9 +337,7 @@ sub gen_symbol_from_regex {
     my $symbol = $regex_hash->{$regex};
     return $symbol if defined $symbol;
 
-    ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
     $symbol = substr $regex, 0, 20;
-    ## use critic
     $symbol =~ s/%/%%/gxms;
     $symbol =~ s/([^[:alnum:]_-])/sprintf("%%%.2x", ord($1))/gexms;
     $symbol .= sprintf ':k%x', ( ${$uniq_number} )++;

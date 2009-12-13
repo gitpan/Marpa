@@ -19,7 +19,6 @@ no strict 'vars';
 $data = {
   'marpa_options' => [
     {
-      'parse_order' => 'original',
       'rules' => [
         {
           'action' => 'grammar',
@@ -617,7 +616,6 @@ $data = {
           'rhs' => []
         }
       ],
-      'semantics' => 'perl5',
       'start' => 'grammar',
       'terminals' => [
         'priority:k0',
@@ -660,7 +658,6 @@ $data = {
         'comment-word',
         'comma'
       ],
-      'version' => '0.001_019'
     }
   ],
   'mdlex_options' => [
@@ -840,9 +837,7 @@ my $source = do { local $RS = undef; <> };
 
 ## no critic (Variables::ProhibitPackageVars)
 my $value = Marpa::MDLex::mdlex(
-    [   {   action_object => 'Marpa::MDL::Internal::Actions',
-            parse_order   => 'original',
-        },
+    [   { action_object => 'Marpa::MDL::Internal::Actions', },
         @{ $Bootstrap_Grammar::data->{marpa_options} }
     ],
     $Bootstrap_Grammar::data->{mdlex_options},

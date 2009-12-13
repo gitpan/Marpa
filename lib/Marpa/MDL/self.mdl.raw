@@ -1,7 +1,6 @@
 $data = {
   'marpa_options' => [
     {
-      'parse_order' => 'original',
       'rules' => [
         {
           'action' => 'grammar',
@@ -599,7 +598,6 @@ $data = {
           'rhs' => []
         }
       ],
-      'semantics' => 'perl5',
       'start' => 'grammar',
       'terminals' => [
         'priority:k0',
@@ -641,8 +639,7 @@ $data = {
         'comment-tag',
         'comment-word',
         'comma'
-      ],
-      'version' => '0.001_019'
+      ]
     }
   ],
   'mdlex_options' => [

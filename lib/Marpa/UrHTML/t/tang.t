@@ -6,14 +6,14 @@ use warnings;
 
 use lib 'lib';
 use Test::More;
-use t::lib::Marpa::Test;
+use Marpa::Test;
 
 BEGIN {
     if ( eval { require HTML::PullParser } ) {
         Test::More::plan tests => 3;
     }
     else {
-        Test::More::plan skip_all => 'Scalar::Util::weaken() not implemented';
+        Test::More::plan skip_all => 'HTML::PullParser not available';
     }
     Test::More::use_ok('Marpa');
     Test::More::use_ok('Marpa::UrHTML');

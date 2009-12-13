@@ -10,7 +10,7 @@ use warnings;
 
 use lib 'lib';
 use Test::More tests => 6;
-use t::lib::Marpa::Test;
+use Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');
@@ -40,7 +40,6 @@ my $grammar = Marpa::Grammar->new(
         ],
         default_null_value => q{},
         default_action     => 'main::default_action',
-        parse_order        => 'original',
     }
 );
 
@@ -48,7 +47,7 @@ $grammar->set( { terminals => ['a'], } );
 
 $grammar->precompute();
 
-my $recce = Marpa::Recognizer->new( { grammar => $grammar, clone => 0 } );
+my $recce = Marpa::Recognizer->new( { grammar => $grammar, } );
 
 my $input_length = 4;
 $recce->tokens( [ ( [ 'a', 'a', 1 ] ) x $input_length ] );
@@ -57,9 +56,9 @@ my @expected = ( q{}, qw[(;;;a) (;;a;a) (;a;a;a) (a;a;a;a)] );
 
 for my $i ( 0 .. $input_length ) {
     my $evaler = Marpa::Evaluator->new(
-        {   recce => $recce,
-            end   => $i,
-            clone => 0,
+        {   recce       => $recce,
+            end         => $i,
+            parse_order => 'original',
         }
     );
     my $result = $evaler->value();

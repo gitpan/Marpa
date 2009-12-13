@@ -8,7 +8,7 @@ use warnings;
 use Test::More tests => 13;
 
 use lib 'lib';
-use t::lib::Marpa::Test;
+use Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');
@@ -89,13 +89,10 @@ sub rule_r2 {
 ## use critic
 
 my $grammar = Marpa::Grammar->new(
-    { experimental => 'no warning' },
-    {   start         => 'S',
-        strip         => 0,
-        maximal       => 1,
-        cycle_rewrite => 0,
-        cycle_action  => 'quiet',
-        parse_order   => 'none',
+    {   start        => 'S',
+        strip        => 0,
+        maximal      => 1,
+        cycle_action => 'quiet',
 
         rules => [
             {   lhs    => 'S',
@@ -163,8 +160,10 @@ for my $input_length ( 1 .. 3 ) {
     defined $recce->tokens( [ ( [ 'a', 'A' ] ) x $input_length ] )
         or Marpa::exception('Parsing exhausted');
     my $evaler = Marpa::Evaluator->new(
-        {   recce => $recce,
-            clone => 0,
+        { experimental => 'no warning' },
+        {   recce         => $recce,
+            cycle_rewrite => 0,
+            parse_order   => 'none',
         }
     );
     my $i = 0;

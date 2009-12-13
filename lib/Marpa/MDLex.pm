@@ -71,12 +71,14 @@ sub Marpa::MDLex::mdlex {
 
     my $grammar = Marpa::Grammar->new( @{$grammar_arg_hashes} );
     $grammar->precompute();
-    my $recce = Marpa::Recognizer->new( { grammar => $grammar, clone => 0 } );
+    my $recce =
+        Marpa::Recognizer->new( { grammar => $grammar, mode => 'stream' } );
     my $lexer =
-        Marpa::MDLex->new( { recce => $recce }, @{$lexer_arg_hashes} );
+        Marpa::MDLex->new( { recce => $recce, }, @{$lexer_arg_hashes} );
     $lexer->text($text);
-    $recce->tokens();    # complete parsing
-    my $evaler = Marpa::Evaluator->new( { recce => $recce, clone => 0 } );
+    $recce->end_input();    # complete parsing
+    my $evaler = Marpa::Evaluator->new(
+        { recce => $recce, parse_order => 'original' } );
     return $evaler->value();
 } ## end sub Marpa::MDLex::mdlex
 
@@ -101,6 +103,7 @@ sub Marpa::MDLex::new {
     my $recce = $lexer->[Marpa::MDLex::Internal::Lexer::RECOGNIZER];
     Carp::croak( 'No Recognizer for ' . __PACKAGE__ . ' constructor' )
         if not $recce;
+    $recce->set( { mode => 'stream' } );
     $lexer->[Marpa::MDLex::Internal::Lexer::INITIALIZED] = 1;
     return $lexer;
 
@@ -382,9 +385,7 @@ sub Marpa::MDLex::text {
         # imposes no such requirement, however.
 
         if ( $trace_tries and scalar @{$lexables} ) {
-            ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
             my $string_to_match = substr ${$input_ref}, $pos, 20;
-            ## use critic
             $string_to_match
                 =~ s/([\x00-\x1F\x7F-\xFF])/sprintf('{%#.2x}', ord($1))/gexms;
             say $trace_fh "Match target at $pos: ", $string_to_match;
@@ -476,8 +477,7 @@ sub Marpa::MDLex::text {
         $pos++;
 
         ( $current_earleme, $lexables ) =
-            Marpa::Recognizer::tokens( $recce, [@alternatives], 'predict',
-            1 );
+            Marpa::Recognizer::tokens( $recce, [@alternatives] );
         return Marpa::MDLex::Internal::PARSING_EXHAUSTED
             if not defined $current_earleme;
 

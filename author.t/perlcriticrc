@@ -93,7 +93,10 @@ severity=5
 [ControlStructures::ProhibitCascadingIfElse]
 severity=5
 
-[ControlStructures::ProhibitDeepNests]
+# Good advice, but it is pretty obvious
+# when it is happening, and Perl::Critic
+# doesn't need to point it out.
+[-ControlStructures::ProhibitDeepNests]
 severity=5
 
 [ControlStructures::ProhibitMutatingListFunctions]
@@ -332,7 +335,15 @@ severity=5
 [ValuesAndExpressions::RequireInterpolationOfMetachars]
 severity=5
 
-[ValuesAndExpressions::ProhibitMagicNumbers]
+# Reluctantly, I've disabled this one.
+# It is basically a good test, but
+# as of 2009-12-10 there is a bug where you either
+# get this warning or a useless "no critic" warning.
+#
+# Rewrites to constants are usually
+# not my preferred solution.
+# They often make the code more obscure.
+[-ValuesAndExpressions::ProhibitMagicNumbers]
 severity=5
 allowed_values = -1 0 1 2 3 4 10
 

@@ -10,7 +10,7 @@ use warnings;
 
 use lib 'lib';
 use Test::More tests => 33;
-use t::lib::Marpa::Test;
+use Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');
@@ -44,10 +44,9 @@ sub start_rule_action {
 ## use critic
 
 my $grammar = Marpa::Grammar->new(
-    {   start       => 'S',
-        strip       => 0,
-        parse_order => 'numeric',
-        rules       => [
+    {   start => 'S',
+        strip => 0,
+        rules => [
             {   lhs    => 'S',
                 rhs    => [qw/digit digit digit digit/],
                 action => 'main::start_rule_action'
@@ -75,7 +74,7 @@ my $grammar = Marpa::Grammar->new(
 
 $grammar->precompute();
 
-my $recce = Marpa::Recognizer->new( { grammar => $grammar, clone => 0 } );
+my $recce = Marpa::Recognizer->new( { grammar => $grammar, } );
 
 my $input_length = 4;
 $recce->tokens( [ ( ['t'] ) x $input_length ] );
@@ -88,11 +87,7 @@ for my $up ( 1, 0 ) {
     local $MyTest::UP = $up;
     my $expected = $up ? ( \@counting_up ) : ( \@counting_down );
     my $direction = $up ? 'up' : 'down';
-    my $evaler = Marpa::Evaluator->new(
-        {   recce => $recce,
-            clone => 0,
-        }
-    );
+    my $evaler = Marpa::Evaluator->new( { recce => $recce, } );
     my $i = 0;
     while ( my $result = $evaler->value() ) {
         say ${$result};

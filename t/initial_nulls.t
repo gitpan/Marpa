@@ -8,7 +8,7 @@ use warnings;
 use Test::More tests => 25;
 
 use lib 'lib';
-use t::lib::Marpa::Test;
+use Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');
@@ -54,13 +54,10 @@ my $grammar = Marpa::Grammar->new(
         terminals      => ['t'],
         maximal        => 1,
         default_action => 'main::default_action',
-        parse_order    => 'original',
     }
 );
 
 $grammar->precompute();
-
-## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
 
 my @results;
 $results[1][0] = '(-;-;-;(-;-;-;-;-;t))';
@@ -91,7 +88,8 @@ $results[9][0] = '(t;t;t;(t;t;t;t;t;t))';
 for my $input_length ( 1 .. 9 ) {
     my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
     $recce->tokens( [ ( [ 't', 't', 1 ] ) x $input_length ] );
-    my $evaler = Marpa::Evaluator->new( { recce => $recce, clone => 0 } );
+    my $evaler = Marpa::Evaluator->new(
+        { recce => $recce, parse_order => 'original', } );
     my $i = 0;
     while ( $i < 3 and my $value = $evaler->value() ) {
         my $expected = $results[$input_length][$i] // q{[unexpected result]};

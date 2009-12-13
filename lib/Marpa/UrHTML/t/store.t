@@ -16,7 +16,7 @@ BEGIN {
         Test::More::plan tests => 3;
     }
     else {
-        Test::More::plan skip_all => 'Scalar::Util::weaken() not implemented';
+        Test::More::plan skip_all => 'HTML::PullParser not available';
     }
     Test::More::use_ok('Marpa');
     Test::More::use_ok('Marpa::UrHTML');

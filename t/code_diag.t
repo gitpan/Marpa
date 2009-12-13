@@ -8,7 +8,7 @@ use warnings;
 use Test::More tests => 11;
 
 use lib 'lib';
-use t::lib::Marpa::Test;
+use Marpa::Test;
 use English qw( -no_match_vars );
 
 # use Smart::Comments;
@@ -206,7 +206,7 @@ sub run_test {
         Marpa::exception("Parse failed at offset $fail_offset");
     }
 
-    $recce->tokens();
+    $recce->end_input();
 
     my $expected = '((2-(0*(3+1)))==2; q{trailer};[default null];[null])';
     my $evaler = Marpa::Evaluator->new( { recce => $recce } );

@@ -10,7 +10,7 @@ use Fatal qw(open close chdir);
 use Carp;
 
 use Test::More tests => 7;
-use t::lib::Marpa::Test;
+use Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa::MDL');
@@ -34,14 +34,9 @@ my $source;
 
 my ( $marpa_options, $mdlex_options ) = Marpa::MDL::to_raw($source);
 
-# Set max_parses to 10 in case there's an infinite loop.
-# This is for debugging, after all
 my $grammar = Marpa::Grammar->new(
-    {   action_object => 'Marpa::MDL::Example::Equation',
-        max_parses    => 10
-    },
-    @{$marpa_options}
-);
+    { action_object => 'Marpa::MDL::Example::Equation', },
+    @{$marpa_options} );
 
 Carp::croak('Failed to create grammar') if not defined $grammar;
 
@@ -55,7 +50,7 @@ if ( $fail_offset >= 0 ) {
     Marpa::exception("Parse failed at offset $fail_offset");
 }
 
-$recce->tokens();
+$recce->end_input();
 
 my %expected_value = (
     '(2-(0*(3+1)))==2' => 1,
@@ -65,8 +60,11 @@ my %expected_value = (
     '(2-((0*3)+1))==1' => 1,
 );
 
+# Set max_parses to 10 in case there's an infinite loop.
+# This is for debugging, after all
 # Note: code below used in display
-my $evaler = Marpa::Evaluator->new( { recognizer => $recce } );
+my $evaler =
+    Marpa::Evaluator->new( { recognizer => $recce, max_parses => 10 } );
 Marpa::exception('Parse failed') if not $evaler;
 
 my $i = 0;

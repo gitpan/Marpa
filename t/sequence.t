@@ -11,7 +11,7 @@ use warnings;
 
 use lib 'lib';
 use Test::More tests => 71;
-use t::lib::Marpa::Test;
+use Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');
@@ -64,9 +64,7 @@ sub run_sequence_test {
     # more or less arbitrary.  You really need to test 0 .. 3.
     # And you ought to test a couple of higher values,
     # say 5 and 10.
-    ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
     SYMBOL_COUNT: for my $symbol_count ( 0, 1, 2, 3, 5, 10 ) {
-        ## use critic
 
         next SYMBOL_COUNT if $symbol_count < $minimum;
         my $test_name =
@@ -74,7 +72,8 @@ sub run_sequence_test {
             . ( $keep ? 'keep;' : q{} )
             . ( $separation ne 'none' ? "$separation;" : q{} )
             . ";count=$symbol_count";
-        my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
+        my $recce = Marpa::Recognizer->new(
+            { grammar => $grammar, mode => 'stream' } );
 
         my @expected       = ();
         my $last_symbol_ix = $symbol_count - 1;
@@ -93,13 +92,9 @@ sub run_sequence_test {
                 or Marpa::exception('Parsing exhausted');
         } ## end for my $symbol_ix ( 0 .. $last_symbol_ix )
 
-        $recce->tokens();
+        $recce->end_input();
 
-        my $evaler = Marpa::Evaluator->new(
-            {   recce => $recce,
-                clone => 0,
-            }
-        );
+        my $evaler = Marpa::Evaluator->new( { recce => $recce } );
         if ( not $evaler ) {
             Test::More::fail("$test_name: Parse failed");
             next SYMBOL_COUNT;

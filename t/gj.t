@@ -18,7 +18,6 @@ BEGIN {
 # The book is available on the web.
 
 my $g = Marpa::Grammar->new(
-    { experimental => 'no warning' },
     {   start => q{S'},
         strip => 0,
         rules => [

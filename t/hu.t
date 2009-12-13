@@ -20,7 +20,6 @@ BEGIN {
 # pp. 248, 250.
 
 my $g = Marpa::Grammar->new(
-    { experimental => 'no warning' },
     {   start => q{S'},
         strip => 0,
         rules => [

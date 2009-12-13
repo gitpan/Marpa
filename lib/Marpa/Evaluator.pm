@@ -138,6 +138,7 @@ use Marpa::Offset qw(
     :package=Marpa::Internal::Evaluator
 
     GRAMMAR
+    SEMANTICS_SETTLED
     PARSE_COUNT :{ number of parses in an ambiguous parse :}
     AND_NODES
     OR_NODES
@@ -149,6 +150,19 @@ use Marpa::Offset qw(
     RANKING_CLOSURES_BY_RULE :{ array, by rule id }
     RANKING_CLOSURES_BY_SYMBOL :{ array, by symbol id }
     EXPLICIT_CLOSURES :{ closures supplied explicitly }
+
+    CYCLE_NODES
+    CYCLE_REWRITE
+    CYCLE_SCALE
+    EXPERIMENTAL
+    MAX_PARSES
+    PARSE_ORDER
+    TRACING
+    TRACE_ACTIONS
+    TRACE_EVALUATION
+    TRACE_FILE_HANDLE
+    TRACE_TASKS
+    TRACE_VALUES
 
 );
 
@@ -212,8 +226,7 @@ sub set_null_values {
     my $null_values;
     $#{$null_values} = $#{$symbols};
 
-    my $trace_fh = $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE];
-    my $trace_actions = $grammar->[Marpa::Internal::Grammar::TRACE_ACTIONS];
+    my $trace_actions = $evaler->[Marpa::Internal::Evaluator::TRACE_ACTIONS];
 
     SYMBOL: for my $symbol ( @{$symbols} ) {
         my $id = $symbol->[Marpa::Internal::Symbol::ID];
@@ -274,7 +287,8 @@ sub set_null_values {
             $null_values->[$nulling_symbol_id] = $null_value;
 
             if ($trace_actions) {
-                print {$trace_fh} 'Setting null value for symbol ',
+                print {$Marpa::Internal::TRACE_FH}
+                    'Setting null value for symbol ',
                     $nulling_symbol->[Marpa::Internal::Symbol::NAME],
                     ' to ',
                     Data::Dumper->new( [ \$null_value ] )->Terse(1)->Dump,
@@ -293,7 +307,7 @@ sub set_null_values {
             my ( $name, $id ) = @{$symbol}[
                 Marpa::Internal::Symbol::NAME, Marpa::Internal::Symbol::ID,
             ];
-            print {$trace_fh}
+            print {$Marpa::Internal::TRACE_FH}
                 'Setting null value for CHAF symbol ',
                 $name, ' to ',
                 Data::Dumper->new( [ $null_values->[$id] ] )->Terse(1)->Dump,
@@ -318,13 +332,11 @@ sub resolve_semantics {
         $evaler->[Marpa::Internal::Evaluator::EXPLICIT_CLOSURES]
         ->{$closure_name} )
     {
-        if ( $grammar->[Marpa::Internal::Grammar::TRACE_ACTIONS] ) {
-            my $trace_fh =
-                $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE];
-            print {$trace_fh}
+        if ( $evaler->[Marpa::Internal::Evaluator::TRACE_ACTIONS] ) {
+            print {$Marpa::Internal::TRACE_FH}
                 qq{Resolved "$closure_name" to explicit closure\n}
                 or Marpa::exception('Could not print to trace file');
-        } ## end if ( $grammar->[Marpa::Internal::Grammar::TRACE_ACTIONS...])
+        }
 
         return $closure;
     } ## end if ( my $closure = $evaler->[...])
@@ -361,14 +373,13 @@ sub resolve_semantics {
     my $closure = *{$fully_qualified_name}{'CODE'};
     use strict 'refs';
 
-    if ( $grammar->[Marpa::Internal::Grammar::TRACE_ACTIONS] ) {
-        my $trace_fh =
-            $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE];
-        print {$trace_fh} ( $closure ? 'Successful' : 'Failed' )
+    if ( $evaler->[Marpa::Internal::Evaluator::TRACE_ACTIONS] ) {
+        print {$Marpa::Internal::TRACE_FH}
+            ( $closure ? 'Successful' : 'Failed' )
             . qq{ resolution of "$closure_name" },
             'to ', $fully_qualified_name, "\n"
             or Marpa::exception('Could not print to trace file');
-    } ## end if ( $grammar->[Marpa::Internal::Grammar::TRACE_ACTIONS...])
+    } ## end if ( $evaler->[Marpa::Internal::Evaluator::TRACE_ACTIONS...])
 
     return $closure;
 
@@ -897,21 +908,20 @@ sub rewrite_cycles {
     my $or_nodes  = $evaler->[Marpa::Internal::Evaluator::OR_NODES];
     my $and_nodes = $evaler->[Marpa::Internal::Evaluator::AND_NODES];
 
-    my $trace_fh;
     my $trace_evaluation;
 
     my $grammar = $evaler->[Marpa::Internal::Evaluator::GRAMMAR];
     my $warn_on_cycle =
         $grammar->[Marpa::Internal::Grammar::CYCLE_ACTION] ne 'quiet';
-    $trace_fh = $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE];
     $trace_evaluation =
-        $grammar->[Marpa::Internal::Grammar::TRACE_EVALUATION];
+        $evaler->[Marpa::Internal::Evaluator::TRACE_EVALUATION];
 
     my $initial_and_nodes = @{$and_nodes};
     my $maximum_and_nodes = List::Util::max(
         $initial_and_nodes
-            + $grammar->[Marpa::Internal::Grammar::CYCLE_NODES],
-        $initial_and_nodes * $grammar->[Marpa::Internal::Grammar::CYCLE_SCALE]
+            + $evaler->[Marpa::Internal::Evaluator::CYCLE_NODES],
+        $initial_and_nodes
+            * $evaler->[Marpa::Internal::Evaluator::CYCLE_SCALE]
     );
 
     my @cycle_rules;
@@ -1010,10 +1020,11 @@ sub rewrite_cycles {
         }
 
         if ($trace_evaluation) {
-            say {$trace_fh} 'Found cycle of length ', ( scalar @cycle );
+            say {$Marpa::Internal::TRACE_FH} 'Found cycle of length ',
+                ( scalar @cycle );
             for my $ix ( 0 .. $#cycle ) {
                 my $or_node = $cycle[$ix];
-                print {$trace_fh} "Node $ix in cycle: ",
+                print {$Marpa::Internal::TRACE_FH} "Node $ix in cycle: ",
                     Marpa::Evaluator::show_or_node( $evaler, $or_node,
                     $trace_evaluation )
                     or Marpa::exception('print to trace handle failed');
@@ -1236,7 +1247,8 @@ sub rewrite_cycles {
         # If so, there will be no parses.
         if ( $or_nodes->[0]->[Marpa::Internal::Or_Node::DELETED] ) {
             if ($warn_on_cycle) {
-                print {$trace_fh} "Cycles found, but no parses\n"
+                print {$Marpa::Internal::TRACE_FH}
+                    "Cycles found, but no parses\n"
                     or Marpa::exception('print to trace handle failed');
             }
             return;
@@ -1293,11 +1305,8 @@ sub delete_duplicate_nodes {
 
     my ($evaler) = @_;
 
-    my $grammar = $evaler->[Marpa::Internal::Evaluator::GRAMMAR];
-
-    my $trace_fh = $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE];
     my $trace_evaluation =
-        $grammar->[Marpa::Internal::Grammar::TRACE_EVALUATION];
+        $evaler->[Marpa::Internal::Evaluator::TRACE_EVALUATION];
 
     my $or_nodes  = $evaler->[Marpa::Internal::Evaluator::OR_NODES];
     my $and_nodes = $evaler->[Marpa::Internal::Evaluator::AND_NODES];
@@ -1461,7 +1470,8 @@ sub delete_duplicate_nodes {
 
                 next AND_NODE if not $trace_evaluation;
 
-                print {$trace_fh} "Deleting duplicate and-node:\n",
+                print {$Marpa::Internal::TRACE_FH}
+                    "Deleting duplicate and-node:\n",
                     $and_nodes->[$and_node_id]
                     ->[Marpa::Internal::And_Node::TAG], "\n"
                     or Marpa::exception('print to trace handle failed');
@@ -1482,60 +1492,53 @@ sub delete_duplicate_nodes {
 
 # Returns false if no parse
 sub Marpa::Evaluator::new {
-    my ( $class, $args ) = @_;
-
-    my $self = bless [], $class;
-
-    local $Marpa::Internal::EVAL_INSTANCE = $self;
+    my ( $class, @arg_hashes ) = @_;
 
     ### Constructing new evaluator
+    my $self = bless [], $class;
+    local $Marpa::Internal::EVAL_INSTANCE = $self;
 
     my $recce;
-    RECCE_ARG_NAME: for my $recce_arg_name (qw(recognizer recce)) {
-        my $arg_value = $args->{$recce_arg_name};
-        delete $args->{$recce_arg_name};
-        next RECCE_ARG_NAME if not defined $arg_value;
-        Marpa::exception('recognizer specified twice') if defined $recce;
-        $recce = $arg_value;
-    } ## end for my $recce_arg_name (qw(recognizer recce))
-    Marpa::exception('No recognizer specified') if not defined $recce;
+    my $parse_set_arg;
 
+    for my $arg_hash (@arg_hashes) {
+
+        my @recce_arg_values =
+            grep {defined} @{$arg_hash}{qw(recognizer recce)};
+        if ( not defined $recce ) {
+            Marpa::exception('recognizer specified more than once')
+                if scalar @recce_arg_values > 1;
+            $recce = shift @recce_arg_values;
+        }
+        else {
+            Marpa::exception('recognizer specified more than once')
+                if scalar @recce_arg_values;
+        }
+        delete @{$arg_hash}{qw(recognizer recce)};
+
+        $parse_set_arg = $arg_hash->{end};
+        delete $arg_hash->{end};
+
+        $self->[Marpa::Internal::Evaluator::EXPLICIT_CLOSURES] =
+            $arg_hash->{closures} // {};
+        delete $arg_hash->{closures};
+
+    } ## end for my $arg_hash (@arg_hashes)
+
+    Marpa::exception('No recognizer specified') if not defined $recce;
     my $recce_class = ref $recce;
     Marpa::exception(
         "${class}::new() recognizer arg has wrong class: $recce_class")
         if $recce_class ne 'Marpa::Recognizer';
 
-    my $parse_set_arg = $args->{end};
-    delete $args->{end};
-
-    my $clone_arg = $args->{clone};
-    delete $args->{clone};
-    my $clone = $clone_arg // 1;
-
     my $grammar = $recce->[Marpa::Internal::Recognizer::GRAMMAR];
-    if ($clone) {
-        $grammar = $grammar->clone();
-    }
     $self->[Marpa::Internal::Evaluator::GRAMMAR] = $grammar;
 
-    $self->[Marpa::Internal::Evaluator::EXPLICIT_CLOSURES] = $args->{closures}
-        // {};
-
-    delete $args->{closures};
+    local $Marpa::Internal::TRACE_FH =
+        $self->[Marpa::Internal::Evaluator::TRACE_FILE_HANDLE] =
+        $recce->[Marpa::Internal::Recognizer::TRACE_FILE_HANDLE];
 
     my $earley_sets = $recce->[Marpa::Internal::Recognizer::EARLEY_SETS];
-
-    my $phase = $grammar->[Marpa::Internal::Grammar::PHASE] =
-        Marpa::Internal::Phase::SETTLING_SEMANTICS;
-
-    my $parse_order = $grammar->[Marpa::Internal::Grammar::PARSE_ORDER];
-    my $rules       = $grammar->[Marpa::Internal::Grammar::RULES];
-    my $symbols     = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
-
-    Marpa::exception(
-        'Attempt to evaluate grammar in wrong phase: ',
-        Marpa::Internal::Phase::description($phase)
-    ) if $phase < Marpa::Internal::Phase::RECOGNIZING;
 
     my $furthest_earleme =
         $recce->[Marpa::Internal::Recognizer::FURTHEST_EARLEME];
@@ -1547,15 +1550,24 @@ sub Marpa::Evaluator::new {
         "  Recognition done only as far as location $last_completed_earleme\n"
     ) if $furthest_earleme > $last_completed_earleme;
 
-    $self->set($args);
+    # default settings
+    $self->[Marpa::Internal::Evaluator::CYCLE_NODES]   = 1000;
+    $self->[Marpa::Internal::Evaluator::CYCLE_SCALE]   = 2;
+    $self->[Marpa::Internal::Evaluator::CYCLE_REWRITE] = 1;
+    $self->[Marpa::Internal::Evaluator::MAX_PARSES]    = -1;
+    $self->[Marpa::Internal::Evaluator::PARSE_ORDER]   = 'numeric';
+    $self->[Marpa::Internal::Evaluator::TRACE_VALUES]  = 0;
 
-    $grammar->[Marpa::Internal::Grammar::PHASE] =
-        Marpa::Internal::Phase::EVALUATING;
+    $self->set(@arg_hashes);
 
-    my $trace_fh    = $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE];
-    my $trace_tasks = $grammar->[Marpa::Internal::Grammar::TRACE_TASKS];
+    my $rules   = $grammar->[Marpa::Internal::Grammar::RULES];
+    my $symbols = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
+
+    my $parse_order = $self->[Marpa::Internal::Evaluator::PARSE_ORDER];
+
+    my $trace_tasks = $self->[Marpa::Internal::Evaluator::TRACE_TASKS];
     my $trace_evaluation =
-        $grammar->[Marpa::Internal::Grammar::TRACE_EVALUATION];
+        $self->[Marpa::Internal::Evaluator::TRACE_EVALUATION];
 
     $self->[Marpa::Internal::Evaluator::PARSE_COUNT] = 0;
     my $or_nodes  = $self->[Marpa::Internal::Evaluator::OR_NODES]  = [];
@@ -1653,6 +1665,8 @@ sub Marpa::Evaluator::new {
         $self->[Marpa::Internal::Evaluator::ACTION_OBJECT_CONSTRUCTOR] =
             $closure;
     } ## end if ( defined( my $action_object = $grammar->[...]))
+
+    $self->[Marpa::Internal::Evaluator::SEMANTICS_SETTLED] = 1;
 
     my @tree_rules;
     $#tree_rules = $#{$rules};
@@ -2109,7 +2123,7 @@ of the rule, where it will end.
 
     ### assert: Marpa'Evaluator'audit($self) or 1
 
-    if ( $grammar->[Marpa::Internal::Grammar::CYCLE_REWRITE] ) {
+    if ( $self->[Marpa::Internal::Evaluator::CYCLE_REWRITE] ) {
         rewrite_cycles( $self, \@cycle_rule_ids );
     }
 
@@ -2136,9 +2150,8 @@ sub Marpa::dump_sort_key {
 } ## end sub Marpa::dump_sort_key
 
 sub Marpa::Evaluator::show_sort_keys {
-    my ($evaler)    = @_;
-    my $grammar     = $evaler->[Marpa::Internal::Evaluator::GRAMMAR];
-    my $parse_order = $grammar->[Marpa::Internal::Grammar::PARSE_ORDER];
+    my ($evaler) = @_;
+    my $parse_order = $evaler->[Marpa::Internal::Evaluator::PARSE_ORDER];
     Marpa::exception(
         "show_sort_keys called when parse order is not original\n",
         "parse order is $parse_order" )
@@ -2362,11 +2375,154 @@ sub Marpa::Evaluator::show_ambiguity {
     return $text;
 } ## end sub Marpa::Evaluator::show_ambiguity
 
+use constant EVALUATOR_OPTIONS => [
+    qw{
+        cycle_nodes
+        cycle_rewrite
+        cycle_scale
+        experimental
+        max_parses
+        parse_order
+        trace_actions
+        trace_evaluation
+        trace_file_handle
+        trace_tasks
+        trace_values
+        }
+];
+
 sub Marpa::Evaluator::set {
-    my $evaler  = shift;
-    my $args    = shift;
-    my $grammar = $evaler->[Marpa::Internal::Evaluator::GRAMMAR];
-    Marpa::Grammar::set( $grammar, $args );
+    my ( $evaler, @arg_hashes ) = @_;
+    local $Marpa::Internal::TRACE_FH =
+        $evaler->[Marpa::Internal::Evaluator::TRACE_FILE_HANDLE];
+
+    for my $args (@arg_hashes) {
+
+        my $ref_type = ref $args;
+        if ( not $ref_type or $ref_type ne 'HASH' ) {
+            Carp::croak(
+                'Marpa expects args as ref to HASH, got ',
+                ( "ref to $ref_type" || 'non-reference' ),
+                ' instead'
+            );
+        } ## end if ( not $ref_type or $ref_type ne 'HASH' )
+        if (my @bad_options =
+            grep { not $_ ~~ Marpa::Internal::Evaluator::EVALUATOR_OPTIONS }
+            keys %{$args}
+            )
+        {
+            Carp::croak( 'Unknown option(s) for Marpa Evaluator: ',
+                join q{ }, @bad_options );
+        } ## end if ( my @bad_options = grep { not $_ ~~ ...})
+
+        if ( defined( my $value = $args->{'trace_file_handle'} ) ) {
+            $evaler->[Marpa::Internal::Evaluator::TRACE_FILE_HANDLE] = $value;
+        }
+
+        if ( defined( my $value = $args->{'trace_actions'} ) ) {
+            $evaler->[Marpa::Internal::Evaluator::TRACE_ACTIONS] = $value;
+            if ($value) {
+                say {$Marpa::Internal::TRACE_FH}
+                    'Setting trace_actions option';
+                if ($evaler->[Marpa::Internal::Evaluator::SEMANTICS_SETTLED] )
+                {
+                    say {$Marpa::Internal::TRACE_FH}
+                        'Warning: setting trace_actions option after semantics were finalized';
+                }
+                $evaler->[Marpa::Internal::Evaluator::TRACING] = 1;
+            } ## end if ($value)
+        } ## end if ( defined( my $value = $args->{'trace_actions'} ))
+
+        # TO HERE
+
+        if ( defined( my $value = $args->{'trace_values'} ) ) {
+            Marpa::exception('trace_values must be set to a number >= 0')
+                if not $value =~ /\A\d+\z/xms;
+            $evaler->[Marpa::Internal::Evaluator::TRACE_VALUES] = $value + 0;
+            if ($value) {
+                say {$Marpa::Internal::TRACE_FH}
+                    "Setting trace_values option to $value";
+                $evaler->[Marpa::Internal::Evaluator::TRACING] = 1;
+            }
+        } ## end if ( defined( my $value = $args->{'trace_values'} ) )
+
+        if ( defined( my $value = $args->{'trace_tasks'} ) ) {
+            Marpa::exception('trace_tasks must be set to a number >= 0')
+                if $value !~ /\A\d+\z/xms;
+            $evaler->[Marpa::Internal::Evaluator::TRACE_TASKS] = $value + 0;
+            if ($value) {
+                say {$Marpa::Internal::TRACE_FH}
+                    "Setting trace_tasks option to $value";
+                $evaler->[Marpa::Internal::Evaluator::TRACING] = 1;
+            }
+        } ## end if ( defined( my $value = $args->{'trace_tasks'} ) )
+
+        if ( defined( my $value = $args->{'trace_evaluation'} ) ) {
+            Marpa::exception('trace_evaluation must be set to a number >= 0')
+                if $value !~ /\A\d+\z/xms;
+            $evaler->[Marpa::Internal::Evaluator::TRACE_EVALUATION] =
+                $value + 0;
+            if ($value) {
+                say {$Marpa::Internal::TRACE_FH}
+                    "Setting trace_evaluation option to $value";
+                $evaler->[Marpa::Internal::Evaluator::TRACING] = 1;
+            }
+        } ## end if ( defined( my $value = $args->{'trace_evaluation'...}))
+
+        if ( defined( my $value = $args->{'cycle_scale'} ) ) {
+            Marpa::exception(
+                'cycle_scale option only allowed in experimental mode')
+                if not $evaler->[Marpa::Internal::Evaluator::EXPERIMENTAL];
+            Marpa::exception(q{cycle_scale must be >1})
+                if $value <= 1;
+            no integer;
+            $evaler->[Marpa::Internal::Evaluator::CYCLE_SCALE] =
+                POSIX::ceil($value);
+            use integer;
+        } ## end if ( defined( my $value = $args->{'cycle_scale'} ) )
+
+        if ( defined( my $value = $args->{'cycle_nodes'} ) ) {
+            Marpa::exception(
+                'cycle_nodes option only allowed in experimental mode')
+                if $evaler->[Marpa::Internal::Evaluator::EXPERIMENTAL] <= 0;
+            Marpa::exception(q{cycle_nodes must be >0})
+                if $value <= 0;
+            $evaler->[Marpa::Internal::Evaluator::CYCLE_NODES] = $value;
+        } ## end if ( defined( my $value = $args->{'cycle_nodes'} ) )
+
+        if ( defined( my $value = $args->{'cycle_rewrite'} ) ) {
+            $evaler->[Marpa::Internal::Evaluator::CYCLE_REWRITE] = $value;
+        }
+
+        if ( defined( my $value = $args->{'max_parses'} ) ) {
+            $evaler->[Marpa::Internal::Evaluator::MAX_PARSES] = $value;
+        }
+
+        if ( defined( my $value = $args->{'experimental'} ) ) {
+            given ($value) {
+                when (undef) { $value = 0 }
+                when ('no warning') {
+                    $value = 1
+                }
+                default {
+                    say {
+                        $Marpa::Internal::TRACE_FH
+                    }
+                    'Experimental (in other words, buggy) features enabled';
+                    $value = 1;
+                } ## end default
+            } ## end given
+            $evaler->[Marpa::Internal::Evaluator::EXPERIMENTAL] = $value;
+        } ## end if ( defined( my $value = $args->{'experimental'} ) )
+
+        if ( defined( my $value = $args->{'parse_order'} ) ) {
+            Marpa::exception(q{parse_order must be 'original' or 'none'})
+                if not $value ~~ [qw(original numeric none)];
+            $evaler->[Marpa::Internal::Evaluator::PARSE_ORDER] = $value;
+        }
+
+    } ## end for my $args (@arg_hashes)
+
     return 1;
 } ## end sub Marpa::Evaluator::set
 
@@ -2401,6 +2557,8 @@ sub Marpa::Evaluator::value {
     ) if $evaler_class ne $right_class;
 
     local $Marpa::Internal::EVAL_INSTANCE = $evaler;
+    local $Marpa::Internal::TRACE_FH =
+        $evaler->[Marpa::Internal::Evaluator::TRACE_FILE_HANDLE];
 
     my $grammar = $evaler->[Marpa::Internal::Evaluator::GRAMMAR];
     my $rules   = $grammar->[Marpa::Internal::Grammar::RULES];
@@ -2409,7 +2567,7 @@ sub Marpa::Evaluator::value {
         $grammar->[Marpa::Internal::Grammar::ACTION_OBJECT];
     my $action_object_constructor =
         $evaler->[Marpa::Internal::Evaluator::ACTION_OBJECT_CONSTRUCTOR];
-    my $parse_order = $grammar->[Marpa::Internal::Grammar::PARSE_ORDER];
+    my $parse_order = $evaler->[Marpa::Internal::Evaluator::PARSE_ORDER];
 
     my $parse_count = $evaler->[Marpa::Internal::Evaluator::PARSE_COUNT]++;
 
@@ -2524,11 +2682,10 @@ sub Marpa::Evaluator::value {
 
     } ## end SET_UP_ITERATIONS:
 
-    my $trace_fh = $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE];
-    my $trace_values = $grammar->[Marpa::Internal::Grammar::TRACE_VALUES];
-    my $trace_tasks  = $grammar->[Marpa::Internal::Grammar::TRACE_TASKS];
+    my $trace_values = $evaler->[Marpa::Internal::Evaluator::TRACE_VALUES];
+    my $trace_tasks  = $evaler->[Marpa::Internal::Evaluator::TRACE_TASKS];
 
-    my $max_parses = $grammar->[Marpa::Internal::Grammar::MAX_PARSES];
+    my $max_parses = $evaler->[Marpa::Internal::Evaluator::MAX_PARSES];
     if ( $max_parses > 0 && $parse_count >= $max_parses ) {
         Marpa::exception("Maximum parse count ($max_parses) exceeded");
     }
@@ -2555,10 +2712,11 @@ sub Marpa::Evaluator::value {
                 my $or_node = $or_nodes->[$or_node_id];
 
                 if ($trace_tasks) {
-                    print {$trace_fh} "Task: RESET_OR_NODE #o$or_node_id; ",
+                    print {$Marpa::Internal::TRACE_FH}
+                        "Task: RESET_OR_NODE #o$or_node_id; ",
                         ( scalar @tasks ), " tasks pending\n"
                         or Marpa::exception('print to trace handle failed');
-                }
+                } ## end if ($trace_tasks)
 
                 # Set up the and-choices from the children
                 my @and_choices = ();
@@ -2645,10 +2803,11 @@ sub Marpa::Evaluator::value {
                 my ($and_node_id) = @{$task_entry};
 
                 if ($trace_tasks) {
-                    print {$trace_fh} "Task: RESET_AND_NODE #a$and_node_id; ",
+                    print {$Marpa::Internal::TRACE_FH}
+                        "Task: RESET_AND_NODE #a$and_node_id; ",
                         ( scalar @tasks ), " tasks pending\n"
                         or Marpa::exception('print to trace handle failed');
-                }
+                } ## end if ($trace_tasks)
 
                 my $and_node = $and_nodes->[$and_node_id];
 
@@ -2675,10 +2834,11 @@ sub Marpa::Evaluator::value {
                 my ($and_node_id) = @{$task_entry};
 
                 if ($trace_tasks) {
-                    print {$trace_fh} "Task: SETUP_AND_NODE #a$and_node_id; ",
+                    print {$Marpa::Internal::TRACE_FH}
+                        "Task: SETUP_AND_NODE #a$and_node_id; ",
                         ( scalar @tasks ), " tasks pending\n"
                         or Marpa::exception('print to trace handle failed');
-                }
+                } ## end if ($trace_tasks)
 
                 my $and_node = $and_nodes->[$and_node_id];
 
@@ -3005,7 +3165,7 @@ node appears more than once on the path back to the root node.
                 my ( $or_node_id, $path, $visited ) = @{$task_entry};
 
                 if ($trace_tasks) {
-                    print {$trace_fh}
+                    print {$Marpa::Internal::TRACE_FH}
                         "Task: RESET_OR_TREE from #o$or_node_id; ",
                         ( scalar @tasks ), " tasks pending\n"
                         or Marpa::exception('print to trace handle failed');
@@ -3032,7 +3192,7 @@ node appears more than once on the path back to the root node.
                 my ( $and_node_id, $path, $visited ) = @{$task_entry};
 
                 if ($trace_tasks) {
-                    print {$trace_fh}
+                    print {$Marpa::Internal::TRACE_FH}
                         "Task: NEXT_AND_TREE from #a$and_node_id; ",
                         ( scalar @tasks ), " tasks pending\n"
                         or Marpa::exception('print to trace handle failed');
@@ -3136,7 +3296,7 @@ node appears more than once on the path back to the root node.
                 my ( $and_node_id, $path, $visited ) = @{$task_entry};
 
                 if ($trace_tasks) {
-                    print {$trace_fh}
+                    print {$Marpa::Internal::TRACE_FH}
                         "Task: RESET_AND_TREE from #a$and_node_id; ",
                         ( scalar @tasks ), " tasks pending\n"
                         or Marpa::exception('print to trace handle failed');
@@ -3162,7 +3322,7 @@ node appears more than once on the path back to the root node.
                 my ( $and_node_id, $path ) = @{$task_entry};
 
                 if ($trace_tasks) {
-                    print {$trace_fh}
+                    print {$Marpa::Internal::TRACE_FH}
                         "Task: ITERATE_AND_TREE from #a$and_node_id; ",
                         ( scalar @tasks ), " tasks pending\n"
                         or Marpa::exception('print to trace handle failed');
@@ -3212,7 +3372,7 @@ node appears more than once on the path back to the root node.
                 my ( $and_node_id, $path ) = @{$task_entry};
 
                 if ($trace_tasks) {
-                    print {$trace_fh}
+                    print {$Marpa::Internal::TRACE_FH}
                         "Task: ITERATE_AND_TREE_2 from #a$and_node_id; ",
                         ( scalar @tasks ), " tasks pending\n"
                         or Marpa::exception('print to trace handle failed');
@@ -3258,7 +3418,7 @@ node appears more than once on the path back to the root node.
                 my ( $and_node_id, $path ) = @{$task_entry};
 
                 if ($trace_tasks) {
-                    print {$trace_fh}
+                    print {$Marpa::Internal::TRACE_FH}
                         "Task: ITERATE_AND_TREE_3 from #a$and_node_id; ",
                         ( scalar @tasks ), " tasks pending\n"
                         or Marpa::exception('print to trace handle failed');
@@ -3295,10 +3455,11 @@ node appears more than once on the path back to the root node.
                 my ($or_node_id) = @{$task_entry};
 
                 if ($trace_tasks) {
-                    print {$trace_fh} "Task: ITERATE_OR_NODE #o$or_node_id; ",
+                    print {$Marpa::Internal::TRACE_FH}
+                        "Task: ITERATE_OR_NODE #o$or_node_id; ",
                         ( scalar @tasks ), " tasks pending\n"
                         or Marpa::exception('print to trace handle failed');
-                }
+                } ## end if ($trace_tasks)
 
                 my $and_choices = $or_iterations->[$or_node_id];
 
@@ -3313,7 +3474,7 @@ node appears more than once on the path back to the root node.
                     pop @{$and_choices};
 
                     if ($trace_tasks) {
-                        print {$trace_fh}
+                        print {$Marpa::Internal::TRACE_FH}
                             "...ITERATE_OR_NODE #a$current_and_node_id exhausted\n",
                             or
                             Marpa::exception('print to trace handle failed');
@@ -3322,7 +3483,7 @@ node appears more than once on the path back to the root node.
                     # If there are no more choices, the or-node is exhausted ...
                     if ( scalar @{$and_choices} == 0 ) {
                         if ($trace_tasks) {
-                            print {$trace_fh}
+                            print {$Marpa::Internal::TRACE_FH}
                                 "...ITERATE_OR_NODE #o$or_node_id exhausted\n",
                                 or Marpa::exception(
                                 'print to trace handle failed');
@@ -3434,7 +3595,7 @@ node appears more than once on the path back to the root node.
                     $former_current_choice;
 
                 if ($trace_tasks) {
-                    printf {$trace_fh} (
+                    printf {$Marpa::Internal::TRACE_FH} (
                         "...ITERATE_OR_NODE Sorting and-choices\n",
                         "...ITERATE_OR_NODE Replacing #a%d with #a%d\n",
                         $former_current_choice
@@ -3456,10 +3617,11 @@ node appears more than once on the path back to the root node.
                 my ( $or_node_id, $path ) = @{$task_entry};
 
                 if ($trace_tasks) {
-                    print {$trace_fh} "Task: ITERATE_OR_TREE #o$or_node_id; ",
+                    print {$Marpa::Internal::TRACE_FH}
+                        "Task: ITERATE_OR_TREE #o$or_node_id; ",
                         ( scalar @tasks ), " tasks pending\n"
                         or Marpa::exception('print to trace handle failed');
-                }
+                } ## end if ($trace_tasks)
 
                 my $or_node = $or_nodes->[$or_node_id];
 
@@ -3481,7 +3643,7 @@ node appears more than once on the path back to the root node.
                     $and_choice->[Marpa::Internal::And_Choice::ID];
 
                 if ($trace_tasks) {
-                    printf {$trace_fh}
+                    printf {$Marpa::Internal::TRACE_FH}
                         "Task: FREEZE_TREE; #a%d; %d tasks pending\n",
                         $and_node_id, ( scalar @tasks )
                         or Marpa::exception('print to trace handle failed');
@@ -3522,7 +3684,7 @@ node appears more than once on the path back to the root node.
                     $and_choice->[Marpa::Internal::And_Choice::ID];
 
                 if ($trace_tasks) {
-                    printf {$trace_fh}
+                    printf {$Marpa::Internal::TRACE_FH}
                         "Task: THAW_TREE; and-node #a%d; %d tasks pending\n",
                         $and_node_id, ( scalar @tasks )
                         or Marpa::exception('print to trace handle failed');
@@ -3558,7 +3720,7 @@ node appears more than once on the path back to the root node.
 
                 if ($trace_tasks) {
                     print {
-                        $trace_fh
+                        $Marpa::Internal::TRACE_FH
                     }
                     'Task: EVALUATE; ', ( scalar @tasks ), " tasks pending\n"
                         or Marpa::exception('print to trace handle failed');
@@ -3632,10 +3794,11 @@ node appears more than once on the path back to the root node.
 
                     if ( $trace_values >= 3 ) {
                         for my $i ( reverse 0 .. $#evaluation_stack ) {
-                            printf {$trace_fh} 'Stack position %3d:', $i
+                            printf {$Marpa::Internal::TRACE_FH}
+                                'Stack position %3d:', $i
                                 or Marpa::exception(
                                 'print to trace handle failed');
-                            print {$trace_fh} q{ },
+                            print {$Marpa::Internal::TRACE_FH} q{ },
                                 Data::Dumper->new( [ $evaluation_stack[$i] ] )
                                 ->Terse(1)->Dump
                                 or Marpa::exception(
@@ -3653,7 +3816,7 @@ node appears more than once on the path back to the root node.
                         if ($trace_values) {
                             my $token =
                                 $and_node->[Marpa::Internal::And_Node::TOKEN];
-                            print {$trace_fh}
+                            print {$Marpa::Internal::TRACE_FH}
                                 'Pushed value from ',
                                 $and_node->[Marpa::Internal::And_Node::TAG],
                                 ': ',
@@ -3691,7 +3854,7 @@ node appears more than once on the path back to the root node.
                                         ->[ Marpa::Internal::And_Node::RULE_ID
                                         ];
                                     my $rule = $rules->[$rule_id];
-                                    say {$trace_fh}
+                                    say {$Marpa::Internal::TRACE_FH}
                                         'Popping ',
                                         $argc,
                                         ' values to evaluate ',
@@ -3720,7 +3883,7 @@ node appears more than once on the path back to the root node.
                                         ->[ Marpa::Internal::And_Node::RULE_ID
                                         ];
                                     my $rule = $rules->[$rule_id];
-                                    say {$trace_fh}
+                                    say {$Marpa::Internal::TRACE_FH}
                                         'Head of Virtual Rule: ',
                                         $and_node
                                         ->[Marpa::Internal::And_Node::TAG],
@@ -3757,7 +3920,7 @@ node appears more than once on the path back to the root node.
                                         ->[ Marpa::Internal::And_Node::RULE_ID
                                         ];
                                     my $rule = $rules->[$rule_id];
-                                    say {$trace_fh}
+                                    say {$Marpa::Internal::TRACE_FH}
                                         'Head of Virtual Rule (discards separation): ',
                                         $and_node
                                         ->[Marpa::Internal::And_Node::TAG],
@@ -3800,7 +3963,7 @@ node appears more than once on the path back to the root node.
                                         ->[ Marpa::Internal::And_Node::RULE_ID
                                         ];
                                     my $rule = $rules->[$rule_id];
-                                    say {$trace_fh}
+                                    say {$Marpa::Internal::TRACE_FH}
                                         'Virtual Rule: ',
                                         $and_node
                                         ->[Marpa::Internal::And_Node::TAG],
@@ -3825,7 +3988,7 @@ node appears more than once on the path back to the root node.
                                         ->[ Marpa::Internal::And_Node::RULE_ID
                                         ];
                                     my $rule = $rules->[$rule_id];
-                                    say {$trace_fh}
+                                    say {$Marpa::Internal::TRACE_FH}
                                         'New Virtual Rule: ',
                                         $and_node
                                         ->[Marpa::Internal::And_Node::TAG],
@@ -3847,7 +4010,7 @@ node appears more than once on the path back to the root node.
                             {
                                 my $result = $ops->[ $op_ix++ ];
                                 if ($trace_values) {
-                                    print {$trace_fh}
+                                    print {$Marpa::Internal::TRACE_FH}
                                         'Constant result: ',
                                         'Pushing 1 value on stack: ',
                                         Data::Dumper->new( [$result] )
@@ -3901,7 +4064,7 @@ node appears more than once on the path back to the root node.
                                 } ## end if ( not $eval_ok or @warnings )
 
                                 if ($trace_values) {
-                                    print {$trace_fh}
+                                    print {$Marpa::Internal::TRACE_FH}
                                         'Calculated and pushed value: ',
                                         Data::Dumper->new( [$result] )
                                         ->Terse(1)->Dump

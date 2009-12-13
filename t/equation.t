@@ -8,7 +8,7 @@ use warnings;
 use Test::More tests => 8;
 
 use lib 'lib';
-use t::lib::Marpa::Test;
+use Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');
@@ -53,22 +53,11 @@ sub default_action {
 
 ## use critic
 
-# The inefficiency (at least some of it) is deliberate.
-# Passing up a duples of [ string, value ] and then
-# assembling a final string at the top would be better
-# than assembling the string then taking it
-# apart at each step.  But I wanted to test having
-# a start symbol that appears repeatedly on the RHS.
-
 my $grammar = Marpa::Grammar->new(
-    {   start => 'E',
-        strip => 0,
-
-        # Set max at 10 just in case there's an infinite loop.
-        # This is for debugging, after all
-        max_parses => 10,
-        actions    => 'main',
-        rules      => [
+    {   start   => 'E',
+        strip   => 0,
+        actions => 'main',
+        rules   => [
             [ 'E', [qw/E Op E/], 'do_op' ],
             [ 'E', [qw/Number/], 'number' ],
         ],
@@ -130,7 +119,14 @@ my %expected_value = (
     '((2-0)*(3+1))==8' => 1,
     '(2-((0*3)+1))==1' => 1,
 );
-my $evaler = Marpa::Evaluator->new( { recce => $recce, clone => 0 } );
+my $evaler = Marpa::Evaluator->new(
+    {   recce => $recce,
+
+        # Set max at 10 just in case there's an infinite loop.
+        # This is for debugging, after all
+        max_parses => 10,
+    }
+);
 Marpa::exception('Parse failed') if not $evaler;
 
 my $i = 0;

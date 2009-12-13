@@ -11,7 +11,7 @@ use lib 'lib';
 use English qw( -no_match_vars );
 
 use Test::More tests => 10;
-use t::lib::Marpa::Test;
+use Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa::MDL');
@@ -24,9 +24,8 @@ my $text = '6-----1';
 my ( $marpa_options, $mdlex_options ) = Marpa::MDL::to_raw($source);
 
 my $g = Marpa::Grammar->new(
-    {   maximal    => 1,
-        max_parses => 30,
-        actions    => 'main',
+    {   maximal => 1,
+        actions => 'main',
     },
     @{$marpa_options}
 );
@@ -36,9 +35,10 @@ $g->precompute();
 my $recce = Marpa::Recognizer->new( { grammar => $g } );
 my $lexer = Marpa::MDLex->new( { recce => $recce }, @{$mdlex_options} );
 $lexer->text( \$text );
-$recce->tokens();
+$recce->end_input();
 
-my $evaler = Marpa::Evaluator->new( { recce => $recce } );
+my $evaler = Marpa::Evaluator->new(
+    { recce => $recce, max_parses => 30, parse_order => 'original' } );
 my @values = ();
 while ( defined( my $value = $evaler->value() ) ) {
     push @values, $value;

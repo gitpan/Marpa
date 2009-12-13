@@ -10,7 +10,7 @@ use warnings;
 use Test::More tests => 7;
 
 use lib 'lib';
-use t::lib::Marpa::Test;
+use Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');
@@ -34,10 +34,6 @@ my $grammar = Marpa::Grammar->new(
         strip   => 0,
         maximal => 1,
 
-        # Set max at 10 just in case there's an infinite loop.
-        # This is for debugging, after all
-        max_parses => 10,
-
         rules => [
             [ 'S', [qw/p p p n/], ],
             [ 'p', ['a'], ],
@@ -46,7 +42,6 @@ my $grammar = Marpa::Grammar->new(
         ],
         terminals      => ['a'],
         default_action => 'main::default_action',
-        parse_order    => 'original',
     }
 );
 
@@ -136,7 +131,16 @@ my @results = qw{NA (-;-;-;a) (a;-;-;a) (a;a;-;a) (a;a;a;a)};
 for my $input_length ( 1 .. 4 ) {
     my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
     $recce->tokens( [ ( [ 'a', 'a', 1 ] ) x $input_length ] );
-    my $evaler = Marpa::Evaluator->new( { recce => $recce, clone => 0 } );
+    my $evaler = Marpa::Evaluator->new(
+        {   recce       => $recce,
+            parse_order => 'original',
+
+            # Set max at 10 just in case there's an infinite loop.
+            # This is for debugging, after all
+            max_parses => 10,
+
+        }
+    );
     my $value = $evaler->value();
     Marpa::Test::is( ${$value}, $results[$input_length],
         "final nonnulling, input length=$input_length" );

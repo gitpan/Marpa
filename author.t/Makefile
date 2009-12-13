@@ -10,8 +10,7 @@ source_files: \
     equation_show_earley_sets.out \
     equation_show_bocage.out \
     equation_trace_values.out \
-    self_show_rules.out \
-    MDL_displays.errs
+    self_show_rules.out
 
 all_tests:
 	-(cd ..; prove author.t/*.t ) 2>&1 | tee all.errs
@@ -77,18 +76,3 @@ equation_trace_values.out:
 	-grammar ../example/equation.marpa \
 	--actions Marpa::Example::Equation \
 	--stdout --trace_values > $@
-
-self_show_rules.out:
-	cat minimal.marpa | \
-	perl -I../lib -MMarpa::MDL::Internal::Actions \
-	../bin/mdl parse \
-	--actions Marpa::MDL::Internal::Actions \
-	--grammar ../bootstrap/self.marpa \
-	-rules > $@
-
-MDL_displays.errs:
-	echo a | \
-	perl -I../lib -I. -MMDL_displays ../bin/mdl parse \
-	    --actions Marpa::Example::MDL_Displays \
-	    --grammar MDL_displays.marpa 2>&1 | tee $@
-

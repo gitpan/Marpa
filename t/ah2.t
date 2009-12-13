@@ -10,7 +10,7 @@ use warnings;
 
 use lib 'lib';
 use Test::More tests => 20;
-use t::lib::Marpa::Test;
+use Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');
@@ -40,7 +40,6 @@ my $grammar = Marpa::Grammar->new(
         ],
         default_null_value => q{},
         default_action     => 'main::default_action',
-        parse_order        => 'original',
     }
 );
 
@@ -267,7 +266,8 @@ A -> . a
  <a> => S7
 EOS
 
-my $recce = Marpa::Recognizer->new( { grammar => $grammar, clone => 0 } );
+my $recce =
+    Marpa::Recognizer->new( { grammar => $grammar, mode => 'stream' } );
 
 my @set = (
     <<'END_OF_SET0', <<'END_OF_SET1', <<'END_OF_SET2', <<'END_OF_SET3', <<'END_OF_SET4', );
@@ -321,17 +321,17 @@ EARLEME: for my $earleme ( 0 .. $input_length + 1 ) {
         List::Util::min( $earleme, $input_length );
     Marpa::Test::is(
         $recce->show_earley_sets(1),
-        "Current Earley Set: $current_earleme; Last Completed: $last_completed; Furthest: $furthest\n"
+        "Last Completed: $last_completed; Furthest: $furthest\n"
             . join( q{}, @set[ 0 .. $furthest ] ),
         "Aycock/Horspool Parse Status at earleme $earleme"
     );
     given ($earleme) {
         when ($input_length) {
-            $recce->tokens();
+            $recce->end_input();
         }
         when ( $input_length + 1 ) {break}
         default {
-            defined $recce->tokens( [ [ 'a', 'a', 1 ] ], 'predict' )
+            defined $recce->tokens( [ [ 'a', 'a', 1 ] ], )
                 or Marpa::exception('Parsing exhausted');
         }
     } ## end given
@@ -341,9 +341,9 @@ my @expected = ( q{}, qw[(a;;;) (a;a;;) (a;a;a;) (a;a;a;a)] );
 
 for my $i ( 0 .. $input_length ) {
     my $evaler = Marpa::Evaluator->new(
-        {   recce => $recce,
-            end   => $i,
-            clone => 0,
+        {   recce       => $recce,
+            end         => $i,
+            parse_order => 'original',
         }
     );
     my $result = $evaler->value();

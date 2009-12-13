@@ -10,7 +10,7 @@ use warnings;
 
 use lib 'lib';
 use Test::More tests => 11;
-use t::lib::Marpa::Test;
+use Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');
@@ -34,9 +34,8 @@ sub default_action {
 ## use critic
 
 my $grammar = Marpa::Grammar->new(
-    {   start       => 'S',
-        parse_order => 'numeric',
-        rules       => [
+    {   start => 'S',
+        rules => [
             [ 'S', [qw/A A A A/] ],
             [ 'A', [qw/a/] ],
             [ 'A', [qw/E/] ],
@@ -52,7 +51,7 @@ $grammar->set( { terminals => ['a'], } );
 
 $grammar->precompute();
 
-my $recce = Marpa::Recognizer->new( { grammar => $grammar, clone => 0 } );
+my $recce = Marpa::Recognizer->new( { grammar => $grammar, } );
 
 my $input_length = 4;
 $recce->tokens( [ ( [ 'a', 'a', 1 ] ) x $input_length ] );

@@ -27,7 +27,7 @@ use lib 'lib';
 use English qw( -no_match_vars );
 
 use Test::More tests => 3;
-use t::lib::Marpa::Test;
+use Marpa::Test;
 
 BEGIN {
     Test::More::use_ok('Marpa');
@@ -103,10 +103,9 @@ for my $data ( 'time flies like an arrow.', 'fruit flies like a banana.' ) {
     if ( $fail_offset >= 0 ) {
         Carp::croak("Parse failed at offset $fail_offset");
     }
-    $recce->tokens();
+    $recce->end_input();
 
-    my $evaler =
-        Marpa::Evaluator->new( { recognizer => $recce, clone => 0 } );
+    my $evaler = Marpa::Evaluator->new( { recognizer => $recce, } );
     Carp::croak('Parse failed') if not $evaler;
 
     while ( defined( my $value = $evaler->value() ) ) {

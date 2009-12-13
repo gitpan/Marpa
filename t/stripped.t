@@ -4,7 +4,6 @@ use 5.010;
 use strict;
 use warnings;
 use lib 'lib';
-use lib 't/lib';
 use Test::More tests => 8;
 use Marpa::Test;
 
@@ -17,7 +16,6 @@ BEGIN {
 # This time testing the stripped output
 
 my $g = Marpa::Grammar->new(
-    { experimental => 'no warning' },
     {   start => q{S'},
         rules => [
             [ q{S'}, [qw/S/] ],
