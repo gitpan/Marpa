@@ -6,7 +6,7 @@ use warnings;
 
 use Module::Build;
 
-my $marpa_version = '0.001_030';
+my $marpa_version = '0.001_031';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -53,9 +53,9 @@ my $build = $class->new(
             directory =>
                 [qw( inc t author.t save lib/Marpa/Doc/Not_Updated )],
             namespace => [
-                'Marpa::Internal',        'Marpa::MDL::Internal',
-                'Marpa::MDLex::Internal', 'Marpa::UrHTML::Internal',
-                'Marpa::Display::Internal',
+                'Marpa::Internal',          'Marpa::MDL::Internal',
+                'Marpa::MDLex::Internal',   'Marpa::UrHTML::Internal',
+                'Marpa::Display::Internal', 'Marpa::Test',
             ],
             package => [
 
@@ -66,8 +66,12 @@ my $build = $class->new(
                 # and will not be documented
                 qw( Marpa::MDL Marpa::MDLex ),
 
-                # never at any point intended to see the light of day
-                qw(Marpa::Offset Marpa::Display Marpa::Internal),
+                # not, at least at the moment, public
+                qw(Marpa::Offset Marpa::Test Marpa::Display ),
+
+                # never intended to see the light of day
+                qw(Marpa::Internal),
+
             ],
         },
     },

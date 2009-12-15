@@ -11,7 +11,6 @@ author.t/pod.t
 author.t/spelling_exceptions.list
 author.t/test_pod
 author.t/tidy1
-bin/mdl
 Build.PL
 Changes
 etc/change_version.pl
@@ -70,8 +69,11 @@ lib/Marpa/UrHTML/t/fmt_t_data/expected1.html
 lib/Marpa/UrHTML/t/fmt_t_data/expected2.html
 lib/Marpa/UrHTML/t/fmt_t_data/input1.html
 lib/Marpa/UrHTML/t/fmt_t_data/input2.html
+lib/Marpa/UrHTML/t/fmt_t_data/score_expected1.html
+lib/Marpa/UrHTML/t/fmt_t_data/score_expected2.html
 lib/Marpa/UrHTML/t/no_tang.html
 lib/Marpa/UrHTML/t/parse.t
+lib/Marpa/UrHTML/t/score.t
 lib/Marpa/UrHTML/t/store.t
 lib/Marpa/UrHTML/t/tang.t
 lib/Marpa/UrHTML/t/test.html

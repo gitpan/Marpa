@@ -746,6 +746,7 @@ my %handler = (
     document => '!TOP_handler',
     pcdata   => '!PCDATA_handler',
     prolog   => '!PROLOG_handler',
+    trailer  => '!TRAILER_handler',
 );
 
 for my $bnf_production ( split /\n/xms, $BNF ) {
@@ -1087,237 +1088,213 @@ sub Marpa::UrHTML::parse {
 
     $self->{recce}  = $recce;
     $self->{tokens} = \@html_parser_tokens;
-    my ( $current_earleme, $expected_terminals ) = $recce->status();
-    for my $marpa_token (@marpa_tokens) {
-        my $is_virtual_token = 1;
-        my $actual_terminal  = $marpa_token->[0];
+ 
+    # These variables track virtual start tokens as
+    # a protection against infinite loops.
+    my %start_virtuals_used = ();
+    my $earleme_of_last_start_virtual = -1;
+
+    RECCE_RESPONSE: for ( my $token_ix = 0;; ) {
+
+        my ( $current_earleme, $expected_terminals ) =
+            $recce->tokens( \@marpa_tokens, \$token_ix );
+
+        last RECCE_RESPONSE if $token_ix > $#marpa_tokens;
+
+        my $marpa_token = $marpa_tokens[$token_ix];
+        my $actual_terminal = $marpa_token->[0];
         if ($trace_terminals) {
-            say {$trace_fh} 'Literal Token: ', $actual_terminal;
+            say {$trace_fh} 'Literal Token not accepted: ', $actual_terminal;
         }
 
-        # These counter prevents bugs in the grammar from becoming
-        # infinite loops.
-        my %start_virtuals_used = ();
+        my $virtual_token_to_add;
 
-        while ($is_virtual_token) {
+        FIND_VIRTUAL_TOKEN: {
+            my $virtual_terminal;
+            my @virtuals_expected =
+                sort { $optional_terminals{$a} <=> $optional_terminals{$b} }
+                grep { defined $optional_terminals{$_} }
+                @{$expected_terminals};
+            if ($trace_conflicts) {
+                say {$trace_fh} 'Conflict of virtual choices';
+                say {$trace_fh} "Actual Token is $actual_terminal";
+                say {$trace_fh} +( scalar @virtuals_expected ),
+                    ' virtual terminals expected: ', join q{ },
+                    @virtuals_expected;
+            } ## end if ($trace_conflicts)
 
-            my $token_to_add;
-            if ( $actual_terminal ~~ $expected_terminals ) {
-                $token_to_add     = $marpa_token;
-                $is_virtual_token = 0;
-            }
+            LOOKAHEAD_VIRTUAL_TERMINAL:
+            while ( my $candidate = pop @virtuals_expected ) {
 
-            FIND_VIRTUAL_TOKEN: {
+                # Start an implied table only if the next token is one which
+                # can only occur inside a table
+                if ( $candidate eq 'S_table' ) {
+                    if (not $actual_terminal ~~ [
+                            qw(
+                                S_caption S_col S_colgroup S_thead S_tfoot
+                                S_tbody S_tr S_th S_td
+                                E_caption E_col E_colgroup E_thead E_tfoot
+                                E_tbody E_tr E_th E_td
+                                E_table
+                                )
+                        ]
+                        )
+                    {
+                        next LOOKAHEAD_VIRTUAL_TERMINAL;
+                    } ## end if ( not $actual_terminal ~~ [ qw(...)])
 
-                # Do not need to find a virtual token if the real one
-                # was OK.
-                last FIND_VIRTUAL_TOKEN if defined $token_to_add;
-
-                my $virtual_terminal;
-                my @virtuals_expected = sort {
-                    $optional_terminals{$a} <=> $optional_terminals{$b}
-                    }
-                    grep { defined $optional_terminals{$_} }
-                    @{$expected_terminals};
-                if ($trace_conflicts) {
-                    say {$trace_fh} 'Conflict of virtual choices';
-                    say {$trace_fh} "Actual Token is $actual_terminal";
-                    say {$trace_fh} +( scalar @virtuals_expected ),
-                        ' virtual terminals expected: ', join q{ },
-                        @virtuals_expected;
-                } ## end if ($trace_conflicts)
-
-                LOOKAHEAD_VIRTUAL_TERMINAL:
-                while ( my $candidate = pop @virtuals_expected ) {
-
-                    # Start an implied table only if the next token is one which
-                    # can only occur inside a table
-                    if ( $candidate eq 'S_table' ) {
-                        if (not $actual_terminal ~~ [
-                                qw(
-                                    S_caption S_col S_colgroup S_thead S_tfoot
-                                    S_tbody S_tr S_th S_td
-                                    E_caption E_col E_colgroup E_thead E_tfoot
-                                    E_tbody E_tr E_th E_td
-                                    E_table
-                                    )
-                            ]
-                            )
-                        {
-                            next LOOKAHEAD_VIRTUAL_TERMINAL;
-                        } ## end if ( not $actual_terminal ~~ [ qw(...)])
-
-                        # The above test implies the others below, so
-                        # this virtual table start terminal is OK.
-                        $virtual_terminal = $candidate;
-                        last LOOKAHEAD_VIRTUAL_TERMINAL;
-                    } ## end if ( $candidate eq 'S_table' )
-
-                    # For other than <table>, we are permissive.
-                    # Unless the lookahead gives us
-                    # a specific reason to
-                    # reject the virtual terminal, we accept it.
-
-                    # No need to check lookahead, unless we are starting
-                    # an element
-                    if ( $candidate !~ /^S_/xms ) {
-                        $virtual_terminal = $candidate;
-                        last LOOKAHEAD_VIRTUAL_TERMINAL;
-                    }
-
-                    my $candidate_level =
-                        $Marpa::UrHTML::Internal::VIRTUAL_TOKEN_HIERARCHY{
-                        $candidate};
-
-                    # If the candidate is not part of the hierarchy, no need to check
-                    # lookahead
-                    if ( not defined $candidate_level ) {
-                        $virtual_terminal = $candidate;
-                        last LOOKAHEAD_VIRTUAL_TERMINAL;
-                    }
-
-                    my $actual_terminal_level =
-                        $Marpa::UrHTML::Internal::VIRTUAL_TOKEN_HIERARCHY{
-                        $actual_terminal};
-
-                    # If the actual terminal is not part of the hierarchy, no need to check
-                    # lookahead, either
-                    if ( not defined $actual_terminal_level ) {
-                        $virtual_terminal = $candidate;
-                        last LOOKAHEAD_VIRTUAL_TERMINAL;
-                    }
-
-                    # Here we are trying to deal with a higher-level element's
-                    # start or end, by starting a new lower level element.
-                    # This won't work, because we'll have to close it
-                    # immediately with another virtual terminal.
-                    # At best this means useless, empty elements.
-                    # At worst, it means an infinite loop where
-                    # empty lower-level elements are repeatedly added.
-                    #
-                    next LOOKAHEAD_VIRTUAL_TERMINAL
-                        if $candidate_level <= $actual_terminal_level;
-
+                    # The above test implies the others below, so
+                    # this virtual table start terminal is OK.
                     $virtual_terminal = $candidate;
                     last LOOKAHEAD_VIRTUAL_TERMINAL;
+                } ## end if ( $candidate eq 'S_table' )
 
-                } ## end while ( my $candidate = pop @virtuals_expected )
+                # For other than <table>, we are permissive.
+                # Unless the lookahead gives us
+                # a specific reason to
+                # reject the virtual terminal, we accept it.
 
-                if ($trace_terminals) {
-                    say {$trace_fh} 'Converting Token: ', $actual_terminal;
-                    if ( defined $virtual_terminal ) {
-                        say {$trace_fh} 'Candidate as Virtual Token: ',
-                            $virtual_terminal;
-                    }
-                } ## end if ($trace_terminals)
-
-                # Depending on the expected (optional or virtual)
-                # terminal and the actual
-                # terminal, we either want to add the actual one as cruft, or add
-                # the virtual one to move on in the parse.
-
-                if ( $trace_terminals > 1 and defined $virtual_terminal ) {
-                    say {$trace_fh}
-                        "OK as cruft when expecting $virtual_terminal: ",
-                        join q{ }, keys %{ $ok_as_cruft{$virtual_terminal} };
+                # No need to check lookahead, unless we are starting
+                # an element
+                if ( $candidate !~ /^S_/xms ) {
+                    $virtual_terminal = $candidate;
+                    last LOOKAHEAD_VIRTUAL_TERMINAL;
                 }
 
-                last FIND_VIRTUAL_TOKEN if not defined $virtual_terminal;
-                last FIND_VIRTUAL_TOKEN
-                    if $ok_as_cruft{$virtual_terminal}{$actual_terminal};
+                my $candidate_level =
+                    $Marpa::UrHTML::Internal::VIRTUAL_TOKEN_HIERARCHY{
+                    $candidate};
 
-                if (    $virtual_terminal =~ /^S_/xms
-                    and $start_virtuals_used{$virtual_terminal}++ > 1 )
-                {
-                    ( my $tagname = $virtual_terminal ) =~ s/^S_//xms;
-                    say {$trace_fh}
-                        "Warning: attempt to add <$tagname> twice at the same place";
-                    last FIND_VIRTUAL_TOKEN;
-                } ## end if ( $virtual_terminal =~ /^S_/xms and ...)
-
-                my $tdesc_list = $marpa_token->[1];
-                my $first_tdesc_start_token =
-                    $tdesc_list->[0]
-                    ->[Marpa::UrHTML::Internal::TDesc::START_TOKEN];
-                $token_to_add = [
-                    $virtual_terminal,
-                    [ [ 'POINT', $first_tdesc_start_token ] ]
-                ];
-
-            } ## end FIND_VIRTUAL_TOKEN:
-
-            # If we didn't find a token to add, add the
-            # current physical token as CRUFT.
-            if ( not defined $token_to_add ) {
-
-                if ($trace_terminals) {
-                    say {$trace_fh} 'Adding actual token as cruft: ',
-                        $actual_terminal;
+                # If the candidate is not part of the hierarchy, no need to check
+                # lookahead
+                if ( not defined $candidate_level ) {
+                    $virtual_terminal = $candidate;
+                    last LOOKAHEAD_VIRTUAL_TERMINAL;
                 }
 
-                # Cruft tokens are not virtual.
-                # They are the real things, hacked up.
-                $marpa_token->[0] = 'CRUFT';
-                $token_to_add     = $marpa_token;
-                $is_virtual_token = 0;
-                if ($trace_cruft) {
-                    my $cruft_earleme = $current_earleme - 1;
-                    if ( $cruft_earleme < 0 ) { $cruft_earleme = 0 }
-                    my ( $offset, $line ) =
-                        earleme_to_offset( $self, $cruft_earleme );
-                    $line++
-                        ;  # The convention is that line numbering starts at 1
-                    say {$trace_fh} qq{Cruft at line $line: "},
-                        ${ tdesc_list_to_literal( $self, $marpa_token->[1] )
-                        },
-                        q{"};
-                } ## end if ($trace_cruft)
-            } ## end if ( not defined $token_to_add )
+                my $actual_terminal_level =
+                    $Marpa::UrHTML::Internal::VIRTUAL_TOKEN_HIERARCHY{
+                    $actual_terminal};
+
+                # If the actual terminal is not part of the hierarchy, no need to check
+                # lookahead, either
+                if ( not defined $actual_terminal_level ) {
+                    $virtual_terminal = $candidate;
+                    last LOOKAHEAD_VIRTUAL_TERMINAL;
+                }
+
+                # Here we are trying to deal with a higher-level element's
+                # start or end, by starting a new lower level element.
+                # This won't work, because we'll have to close it
+                # immediately with another virtual terminal.
+                # At best this means useless, empty elements.
+                # At worst, it means an infinite loop where
+                # empty lower-level elements are repeatedly added.
+                #
+                next LOOKAHEAD_VIRTUAL_TERMINAL
+                    if $candidate_level <= $actual_terminal_level;
+
+                $virtual_terminal = $candidate;
+                last LOOKAHEAD_VIRTUAL_TERMINAL;
+
+            } ## end while ( my $candidate = pop @virtuals_expected )
 
             if ($trace_terminals) {
-                say {$trace_fh} 'Adding Token: ', $token_to_add->[0];
+                say {$trace_fh} 'Converting Token: ', $actual_terminal;
+                if ( defined $virtual_terminal ) {
+                    say {$trace_fh} 'Candidate as Virtual Token: ',
+                        $virtual_terminal;
+                }
+            } ## end if ($trace_terminals)
+
+            # Depending on the expected (optional or virtual)
+            # terminal and the actual
+            # terminal, we either want to add the actual one as cruft, or add
+            # the virtual one to move on in the parse.
+
+            if ( $trace_terminals > 1 and defined $virtual_terminal ) {
+                say {$trace_fh}
+                    "OK as cruft when expecting $virtual_terminal: ",
+                    join q{ }, keys %{ $ok_as_cruft{$virtual_terminal} };
             }
 
-            ( $current_earleme, $expected_terminals ) =
-                $recce->tokens( [$token_to_add] );
-            if ( not defined $current_earleme ) {
-                my $last_marpa_token = $recce->furthest();
-                $last_marpa_token =
-                      $last_marpa_token > $#marpa_tokens
-                    ? $#marpa_tokens
-                    : $last_marpa_token;
-                my ( $furthest_offset, $furthest_offset_line ) =
-                    Marpa::UrHTML::Internal::earleme_to_offset( $self,
-                    $last_marpa_token );
-                say Data::Dumper::Dumper( $recce->find_parse() );
-                Marpa::exception(
-                    "HTML parse exhausted at location $furthest_offset, line $furthest_offset_line"
-                );
-            } ## end if ( not defined $current_earleme )
-        } ## end while ($is_virtual_token)
-    } ## end for my $marpa_token (@marpa_tokens)
+            last FIND_VIRTUAL_TOKEN if not defined $virtual_terminal;
+            last FIND_VIRTUAL_TOKEN
+                if $ok_as_cruft{$virtual_terminal}{$actual_terminal};
+
+            CHECK_FOR_INFINITE_LOOP: {
+                # It is sufficient to check for start tags.
+                # Just ending things will never cause an infinite loop.
+                last CHECK_FOR_INFINITE_LOOP if  $virtual_terminal !~ /^S_/xms;
+
+                # Are we at the same earleme as we were when the last
+                # virtual start was added?  If not, no problem.
+                # But we need to reinitialize.
+                if ( $current_earleme != $earleme_of_last_start_virtual ) {
+                    $earleme_of_last_start_virtual = $current_earleme;
+                    %start_virtuals_used = ();
+                    last CHECK_FOR_INFINITE_LOOP;
+                }
+
+                # Is this the first time we've added this start
+                # terminal?  If so, we're OK.
+                last CHECK_FOR_INFINITE_LOOP
+                    if $start_virtuals_used{$virtual_terminal}++ <= 1;
+
+                # Attempt to add duplicate.
+                # Give up on adding virtual at this location,
+                # and warn the user.
+                ( my $tagname = $virtual_terminal ) =~ s/^S_//xms;
+                say {$trace_fh}
+                    "Warning: attempt to add <$tagname> twice at the same place";
+                last FIND_VIRTUAL_TOKEN;
+
+            } ## end if ( $virtual_terminal =~ /^S_/xms and ...)
+
+            my $tdesc_list = $marpa_token->[1];
+            my $first_tdesc_start_token =
+                $tdesc_list->[0]
+                ->[Marpa::UrHTML::Internal::TDesc::START_TOKEN];
+            $virtual_token_to_add = [
+                $virtual_terminal, [ [ 'POINT', $first_tdesc_start_token ] ]
+            ];
+
+        } ## end FIND_VIRTUAL_TOKEN:
+
+        if ( defined $virtual_token_to_add ) {
+            $recce->tokens( [$virtual_token_to_add] );
+            next RECCE_RESPONSE;
+        }
+
+        # If we didn't find a token to add, add the
+        # current physical token as CRUFT.
+
+        if ($trace_terminals) {
+            say {$trace_fh} 'Adding actual token as cruft: ',
+                $actual_terminal;
+        }
+
+        # Cruft tokens are not virtual.
+        # They are the real things, hacked up.
+        $marpa_token->[0] = 'CRUFT';
+        if ($trace_cruft) {
+            my $cruft_earleme = $current_earleme - 1;
+            if ( $cruft_earleme < 0 ) { $cruft_earleme = 0 }
+            my ( $offset, $line ) =
+                earleme_to_offset( $self, $cruft_earleme );
+            $line++;    # The convention is that line numbering starts at 1
+            say {$trace_fh} qq{Cruft at line $line: "},
+                ${ tdesc_list_to_literal( $self, $marpa_token->[1] ) },
+                q{"};
+        } ## end if ($trace_cruft)
+
+    } ## end for ( my $token_ix = 0; my $token_ix < scalar @marpa_tokens...)
 
     if ($trace_terminals) {
-        say {$trace_fh} 'at end of tokens, expecting: ', join q{ },
-            @{$expected_terminals};
+        say {$trace_fh} 'at end of tokens';
     }
 
-    if ( $ENV{TRACE_SIZE} ) {
-        say 'pre-strip recce size: ', total_size($recce);
-        for my $ix ( 0 .. $#{$recce} ) {
-            say "pre-strip recce size, element $ix: ",
-                total_size( $recce->[$ix] );
-        }
-    } ## end if ( $ENV{TRACE_SIZE} )
     $recce->strip();    # Saves lots of memory
-
-    if ( $ENV{TRACE_SIZE} ) {
-        say 'post-strip recce size: ', total_size($recce);
-        for my $ix ( 0 .. $#{$recce} ) {
-            say "pre-strip recce size, element $ix: ",
-                total_size( $recce->[$ix] );
-        }
-    } ## end if ( $ENV{TRACE_SIZE} )
 
     my %closure = ();
     {
@@ -1390,19 +1367,7 @@ sub Marpa::UrHTML::parse {
         Marpa::exception('No parse: could not create evaluator')
             if not $evaler;
 
-        if ( $ENV{TRACE_SIZE} ) {
-            say 'pre-undef recce size: ', total_size($recce);
-            for my $ix ( 0 .. $#{$recce} ) {
-                say "pre-undef recce size, element $ix: ",
-                    total_size( $recce->[$ix] );
-            }
-        } ## end if ( $ENV{TRACE_SIZE} )
-
         $recce = undef;    # conserve memory
-
-        if ( $ENV{TRACE_SIZE} ) {
-            say 'post-undef recce size: ', total_size($recce);
-        }
 
         if ( my $verbose = $self->{trace_ambiguity} ) {
             say $evaler->show_ambiguity($verbose);

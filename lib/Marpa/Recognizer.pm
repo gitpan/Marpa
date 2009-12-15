@@ -492,7 +492,7 @@ sub Marpa::Recognizer::show_earley_sets {
 
 sub Marpa::Recognizer::tokens {
 
-    my ( $recce, $tokens ) = @_;
+    my ( $recce, $tokens, $token_ix_ref ) = @_;
 
     # say STDERR "Calling tokens(): ", Data::Dumper::Dumper($tokens);
 
@@ -503,13 +503,22 @@ sub Marpa::Recognizer::tokens {
     Marpa::exception('No tokens arg for Marpa::Recognizer::tokens')
         if not defined $tokens;
 
+    my $mode     = $recce->[Marpa::Internal::Recognizer::MODE];
+    my $interactive;
+
+    if ( defined $token_ix_ref ) {
+        Marpa::exception(
+            q{'Tokens index ref for Marpa::Recognizer::tokens allowed only in 'stream' mode}
+        ) if $mode ne 'stream';
+        $interactive = 1;
+    } ## end if ( defined $token_ix_ref )
+
     my $grammar = $recce->[Marpa::Internal::Recognizer::GRAMMAR];
     local $Marpa::Internal::TRACE_FH = my $trace_fh =
         $recce->[Marpa::Internal::Recognizer::TRACE_FILE_HANDLE];
     my $trace_terminals =
         $recce->[Marpa::Internal::Recognizer::TRACE_TERMINALS];
     my $warnings = $recce->[Marpa::Internal::Recognizer::WARNINGS];
-    my $mode     = $recce->[Marpa::Internal::Recognizer::MODE];
 
     my $earley_hash = $recce->[Marpa::Internal::Recognizer::EARLEY_HASH];
     my $wanted      = $recce->[Marpa::Internal::Recognizer::WANTED];
@@ -534,15 +543,15 @@ sub Marpa::Recognizer::tokens {
     my $earley_set_list = $recce->[Marpa::Internal::Recognizer::EARLEY_SETS];
     my $QDFA            = $grammar->[Marpa::Internal::Grammar::QDFA];
 
-    my $token_ix = 0;
+    $token_ix_ref //= \(my $token_ix = 0);
 
     # say STDERR __LINE__, " last_completed_earleme: $last_completed_earleme";
 
-    my $token_args = $tokens->[$token_ix];
+    my $token_args = $tokens->[${$token_ix_ref}];
 
     if ( not scalar @{$tokens} ) { $next_token_earleme++ }
 
-    EARLEME: while ( $token_ix < scalar @{$tokens} ) {
+    EARLEME: while ( ${$token_ix_ref} < scalar @{$tokens} ) {
 
         my $tokens_here;
         my $token_hash_here;
@@ -552,10 +561,12 @@ sub Marpa::Recognizer::tokens {
         my $current_terminals =
             $recce->[Marpa::Internal::Recognizer::CURRENT_TERMINALS];
 
+        my $first_ix_of_this_earleme = ${$token_ix_ref};
+
         TOKEN: while ( $current_token_earleme == $next_token_earleme ) {
 
-            last TOKEN if not my $token_args = $tokens->[$token_ix];
-            $token_ix++;
+            last TOKEN if not my $token_args = $tokens->[ ${$token_ix_ref} ];
+            ${$token_ix_ref}++;
             my ( $symbol_name, $value, $length, $offset ) = @{$token_args};
 
             Marpa::exception(
@@ -581,9 +592,25 @@ sub Marpa::Recognizer::tokens {
             }
 
             my $earley_items = $current_terminals->{$symbol_name};
-            Marpa::exception(
-                qq{Terminal "$symbol_name" received when not expected})
-                if not $earley_items;
+            if ( not $earley_items ) {
+                if ( not $interactive ) {
+                    Marpa::exception(
+                        qq{Terminal "$symbol_name" received when not expected}
+                    );
+                }
+                ${$token_ix_ref} = $first_ix_of_this_earleme;
+                return (
+                    $last_completed_earleme,
+                    [   keys %{
+                            $recce->[
+                                Marpa::Internal::Recognizer::CURRENT_TERMINALS
+                            ]
+                            }
+                    ]
+                ) if wantarray;
+                return $last_completed_earleme;
+
+            } ## end if ( not $earley_items )
 
             my $value_ref = \($value);
 
@@ -768,7 +795,7 @@ sub Marpa::Recognizer::tokens {
         $last_completed_earleme =
             Marpa::Internal::Recognizer::complete($recce);
 
-    } ## end while ( $token_ix < scalar @{$tokens} )
+    } ## end while ( ${$token_ix_ref} < scalar @{$tokens} )
 
     $recce->[Marpa::Internal::Recognizer::FURTHEST_EARLEME] =
         $furthest_earleme;

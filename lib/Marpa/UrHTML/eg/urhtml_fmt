@@ -185,7 +185,7 @@ my $urhtml_args = {
                                 given ($location) {
                                     when ('following') {
                                         $result
-                                            .= "$line_prefix<-- Next line is cruft -->\n";
+                                            .= "$line_prefix<!-- Next line is cruft -->\n";
                                     }
                                     when ('following pre') {
 
@@ -322,7 +322,7 @@ L<urhtml_fmt> returns
               <!-- Following start tag is replacement for a missing one -->
               <td>
                 x
-                <-- Next line is cruft -->
+                <!-- Next line is cruft -->
                 <head attr="I am cruft">
                 <p>
                   Final graf

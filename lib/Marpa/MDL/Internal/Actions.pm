@@ -6,6 +6,11 @@ use warnings;
 
 use Marpa::MDL::Symbol;
 
+# In the MDL grammar, concatenate_lines is called uselessly in a number
+# of places.  Eliminate this, for efficiency's sake?
+#
+# MDL is EOL'd so its minor efficiency issues are not exactly a priority.
+
 ## no critic (Subroutines::RequireArgUnpacking)
 
 sub new {
