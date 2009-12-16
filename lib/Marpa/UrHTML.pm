@@ -496,7 +496,7 @@ sub add_handlers {
                     or $element = $specifier;
                 if ( $pseudoclass
                     and not $pseudoclass ~~
-                    [qw(TOP PI COMMENT PROLOG TRAILER PCDATA CRUFT)] )
+                    [qw(TOP PI DECL COMMENT PROLOG TRAILER WHITESPACE CDATA PCDATA CRUFT)] )
                 {
                     Marpa::exception(
                         qq{pseudoclass "$pseudoclass" is not known:\n},
@@ -655,12 +655,15 @@ my $BNF = <<'END_OF_BNF';
 cruft ::= CRUFT
 comment ::= C
 pi ::= PI
+decl ::= D
 pcdata ::= PCDATA
-SGML_item ::= D
+cdata ::= CDATA
+whitespace ::= WHITESPACE
 SGML_item ::= comment
 SGML_item ::= pi
+SGML_item ::= decl
 SGML_flow_item ::= SGML_item
-SGML_flow_item ::= WHITESPACE
+SGML_flow_item ::= whitespace
 SGML_flow_item ::= cruft
 SGML_flow ::= SGML_flow_item*
 document ::= prolog ELE_html trailer EOF
@@ -683,21 +686,21 @@ flow_item ::= list_item_element
 flow_item ::= header_element
 flow_item ::= block_element
 flow_item ::= inline_element
-flow_item ::= WHITESPACE
-flow_item ::= CDATA
+flow_item ::= whitespace
+flow_item ::= cdata
 flow_item ::= pcdata
 head_item ::= header_element
 head_item ::= cruft
-head_item ::= WHITESPACE
+head_item ::= whitespace
 head_item ::= SGML_item
 inline_flow ::= inline_flow_item*
 inline_flow_item ::= pcdata_flow_item
 inline_flow_item ::= inline_element
 pcdata_flow ::= pcdata_flow_item*
-pcdata_flow_item ::= CDATA
+pcdata_flow_item ::= cdata
 pcdata_flow_item ::= pcdata
 pcdata_flow_item ::= cruft
-pcdata_flow_item ::= WHITESPACE
+pcdata_flow_item ::= whitespace
 pcdata_flow_item ::= SGML_item
 Contents_select ::= select_flow_item*
 select_flow_item ::= ELE_optgroup
@@ -712,8 +715,8 @@ list_item_flow_item ::= SGML_item
 list_item_flow_item ::= header_element
 list_item_flow_item ::= block_element
 list_item_flow_item ::= inline_element
-list_item_flow_item ::= WHITESPACE
-list_item_flow_item ::= CDATA
+list_item_flow_item ::= whitespace
+list_item_flow_item ::= cdata
 list_item_flow_item ::= pcdata
 Contents_colgroup ::= colgroup_flow_item*
 colgroup_flow_item ::= ELE_col
@@ -740,13 +743,16 @@ END_OF_BNF
 @Marpa::UrHTML::Internal::CORE_RULES = ();
 
 my %handler = (
-    cruft    => '!CRUFT_handler',
-    comment  => '!COMMENT_handler',
-    pi       => '!PI_handler',
-    document => '!TOP_handler',
-    pcdata   => '!PCDATA_handler',
-    prolog   => '!PROLOG_handler',
-    trailer  => '!TRAILER_handler',
+    cruft      => '!CRUFT_handler',
+    comment    => '!COMMENT_handler',
+    pi         => '!PI_handler',
+    decl       => '!DECL_handler',
+    document   => '!TOP_handler',
+    whitespace => '!WHITESPACE_handler',
+    pcdata     => '!PCDATA_handler',
+    cdata      => '!CDATA_handler',
+    prolog     => '!PROLOG_handler',
+    trailer    => '!TRAILER_handler',
 );
 
 for my $bnf_production ( split /\n/xms, $BNF ) {
@@ -1088,10 +1094,10 @@ sub Marpa::UrHTML::parse {
 
     $self->{recce}  = $recce;
     $self->{tokens} = \@html_parser_tokens;
- 
+
     # These variables track virtual start tokens as
     # a protection against infinite loops.
-    my %start_virtuals_used = ();
+    my %start_virtuals_used           = ();
     my $earleme_of_last_start_virtual = -1;
 
     RECCE_RESPONSE: for ( my $token_ix = 0;; ) {
@@ -1101,7 +1107,7 @@ sub Marpa::UrHTML::parse {
 
         last RECCE_RESPONSE if $token_ix > $#marpa_tokens;
 
-        my $marpa_token = $marpa_tokens[$token_ix];
+        my $marpa_token     = $marpa_tokens[$token_ix];
         my $actual_terminal = $marpa_token->[0];
         if ($trace_terminals) {
             say {$trace_fh} 'Literal Token not accepted: ', $actual_terminal;
@@ -1223,16 +1229,17 @@ sub Marpa::UrHTML::parse {
                 if $ok_as_cruft{$virtual_terminal}{$actual_terminal};
 
             CHECK_FOR_INFINITE_LOOP: {
+
                 # It is sufficient to check for start tags.
                 # Just ending things will never cause an infinite loop.
-                last CHECK_FOR_INFINITE_LOOP if  $virtual_terminal !~ /^S_/xms;
+                last CHECK_FOR_INFINITE_LOOP if $virtual_terminal !~ /^S_/xms;
 
                 # Are we at the same earleme as we were when the last
                 # virtual start was added?  If not, no problem.
                 # But we need to reinitialize.
                 if ( $current_earleme != $earleme_of_last_start_virtual ) {
                     $earleme_of_last_start_virtual = $current_earleme;
-                    %start_virtuals_used = ();
+                    %start_virtuals_used           = ();
                     last CHECK_FOR_INFINITE_LOOP;
                 }
 
@@ -1249,7 +1256,7 @@ sub Marpa::UrHTML::parse {
                     "Warning: attempt to add <$tagname> twice at the same place";
                 last FIND_VIRTUAL_TOKEN;
 
-            } ## end if ( $virtual_terminal =~ /^S_/xms and ...)
+            } ## end CHECK_FOR_INFINITE_LOOP:
 
             my $tdesc_list = $marpa_token->[1];
             my $first_tdesc_start_token =
@@ -1288,7 +1295,7 @@ sub Marpa::UrHTML::parse {
                 q{"};
         } ## end if ($trace_cruft)
 
-    } ## end for ( my $token_ix = 0; my $token_ix < scalar @marpa_tokens...)
+    } ## end for ( my $token_ix = 0;; )
 
     if ($trace_terminals) {
         say {$trace_fh} 'at end of tokens';
@@ -1312,7 +1319,9 @@ sub Marpa::UrHTML::parse {
     }
 
     PSEUDO_CLASS:
-    for my $pseudoclass (qw(PI COMMENT PROLOG TRAILER PCDATA CRUFT)) {
+    for my $pseudoclass (
+        qw(PI DECL COMMENT PROLOG TRAILER WHITESPACE CDATA PCDATA CRUFT))
+    {
         my $pseudoclass_action =
             $self->{user_handlers_by_pseudoclass}->{ANY}->{$pseudoclass};
         my $pseudoclass_action_name = "!$pseudoclass" . '_handler';
@@ -1324,7 +1333,7 @@ sub Marpa::UrHTML::parse {
         } ## end if ($pseudoclass_action)
         $closure{$pseudoclass_action_name} =
             \&Marpa::UrHTML::Internal::default_action;
-    } ## end for my $pseudoclass (qw(PI COMMENT PROLOG TRAILER PCDATA CRUFT))
+    } ## end for my $pseudoclass (...)
 
     while ( my ( $element_action, $element ) = each %element_actions ) {
         $closure{$element_action} = create_tdesc_handler( $self, $element );

@@ -9,83 +9,58 @@ use URI::URL;
 use HTML::LinkExtor;
 use English qw( -no_match_vars );
 use Fatal qw(open close);
+use CPAN;
+use Getopt::Long;
+
+my $verbose = 0;
+Carp::croak("usage: $0 [--verbose=[0|1|2]")
+    unless GetOptions( "verbose=i" => \$verbose );
 
 use constant OK => 200;
 
-my $fh;
-open $fh, q{<}, 'lib/Marpa.pm';
-LINE: while ( my $line = <$fh> ) {
-    if ($line =~ m{
-            ([\$*])
-            (
-                ([\w\:\']*)
-                \b
-                VERSION
-            ) \b .* \=
-            }xms
-        )
-    {
-        {
-
-            package Marpa;
-            ## no critic (BuiltinFunctions::ProhibitStringyEval)
-            my $retval = eval $line;
-            ## use critic
-            if ( not defined $retval ) {
-                Carp::croak("eval of $line failed");
-            }
-            last LINE;
-        }
-    } ## end if ( $line =~ m{ ) (})
-} ## end while ( my $line = <$fh> )
-close $fh;
+my @distributions =
+    sort map { $_->[2] }
+    CPAN::Shell->expand( "Author", "JKEGL" )->ls( "Marpa-*", 2 );
+my $most_recent_distribution = pop @distributions;
+$most_recent_distribution =~ s/\.tar\.gz$//xms;
 
 my $cpan_base = 'http://search.cpan.org';
-my $marpa_doc_base =
-    $cpan_base . '/~jkegl/Marpa-' . $Marpa::VERSION . '/lib/Test/';
+my $marpa_doc_base = $cpan_base . '/~jkegl/' . "$most_recent_distribution/";
 
-print "Starting at $marpa_doc_base\n"
-    or Carp::croak("Cannot print: $ERRNO");
-
-my @url = qw(
-    Marpa.pm
-    Marpa/Doc/Algorithm.pod
-    Marpa/Doc/Bibliography.pod
-    Marpa/Doc/Debugging.pod
-    Marpa/Doc/Internals.pod
-    Marpa/Doc/MDL.pod
-    Marpa/Doc/Options.pod
-    Marpa/Doc/Parse_Terms.pod
-    Marpa/Doc/Plumbing.pod
-    Marpa/Doc/To_Do.pod
-    Marpa/Evaluator.pm
-    Marpa/Grammar.pm
-    Marpa/Lex.pm
-    Marpa/MDL.pm
-    Marpa/Recognizer.pm
-);
-
-my %link;
-
-sub cb {
-    my ( $tag, %links ) = @_;
-    return if $tag ne 'a';
-    my $href = $links{href};
-    return if $href =~ /\A#/xms;
-    return $link{$href} = 1;
-} ## end sub cb
-
-my %link_ok;
+if ($verbose) {
+    print "Starting at $marpa_doc_base\n"
+        or Carp::croak("Cannot print: $ERRNO");
+}
 
 $OUTPUT_AUTOFLUSH = 1;
 
-PAGE: for my $url (@url) {
-    $url = $marpa_doc_base . $url;
+my @doc_urls = ();
 
-    my $p  = HTML::LinkExtor->new( \&cb );
+{ 
+    my $p  = HTML::LinkExtor->new( );
     my $ua = LWP::UserAgent->new;
+    # Request document and parse it as it arrives
+    my $response = $ua->request( HTTP::Request->new( GET => $marpa_doc_base ),
+        sub { $p->parse( $_[0] ) } );
 
-    %link = ();
+    my $page_response_status_line = $response->status_line;
+    if ( $response->code != OK ) {
+        say 'PAGE: ', $page_response_status_line, q{ }, $marpa_doc_base;
+        next PAGE;
+    }
+
+    my @links = map { $_->[2] } grep { $_->[0] eq 'a' and $_->[1] eq 'href' and $_->[2] !~ /^[#]/xms } $p->links();
+    @doc_urls = grep { /^lib\//xms } @links;
+}
+
+my %url_seen = ();
+
+PAGE: for my $url (@doc_urls) {
+    $url = $marpa_doc_base . $url;
+    say "Examining document $url";
+
+    my $p  = HTML::LinkExtor->new( );
+    my $ua = LWP::UserAgent->new;
 
     # Request document and parse it as it arrives
     my $response = $ua->request( HTTP::Request->new( GET => $url ),
@@ -97,20 +72,36 @@ PAGE: for my $url (@url) {
         next PAGE;
     }
 
-    LINK: for my $link ( keys %link ) {
+    my @links = map { $_->[2] } grep { $_->[0] eq 'a' and $_->[1] eq 'href' } $p->links();
 
-        if ( $link =~ m{\A/}xms ) {
-            $link = 'http://search.cpan.org' . $link;
-        }
-        next LINK if $link_ok{$link};
+    LINK: for my $link ( @links ) {
+
+        given ($link) {
+            when (/\A\//xms) {
+                $link = 'http://search.cpan.org' . $link;
+            }
+            when (/\A[#]/xms) {
+                $link = $url . $link;
+            }
+        } ## end given
+
+        if ( $url_seen{$link}++ ) {
+            $verbose < 2
+                or say STDERR "Already tried $link"
+                or Carp::croak('Cannot print to STDERR: $ERRNO');
+            next LINK;
+        } ## end if ( $url_seen{$link}++ )
+        $verbose < 1
+            or say STDERR "Trying $link"
+            or Carp::croak('Cannot print to STDERR: $ERRNO');
 
         my $link_response =
             $ua->request( HTTP::Request->new( GET => $link ) );
 
         if ( $link_response->code == OK ) {
-            $link_ok{$link} = 1;
-            print q{.}
-                or Carp::croak('Cannot print to STDOUT');
+            $verbose
+                or print STDERR q{.}
+                or Carp::croak('Cannot print to STDERR: $ERRNO');
             next LINK;
         } ## end if ( $link_response->code == OK )
 

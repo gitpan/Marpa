@@ -503,7 +503,7 @@ sub Marpa::Recognizer::tokens {
     Marpa::exception('No tokens arg for Marpa::Recognizer::tokens')
         if not defined $tokens;
 
-    my $mode     = $recce->[Marpa::Internal::Recognizer::MODE];
+    my $mode = $recce->[Marpa::Internal::Recognizer::MODE];
     my $interactive;
 
     if ( defined $token_ix_ref ) {
@@ -543,11 +543,11 @@ sub Marpa::Recognizer::tokens {
     my $earley_set_list = $recce->[Marpa::Internal::Recognizer::EARLEY_SETS];
     my $QDFA            = $grammar->[Marpa::Internal::Grammar::QDFA];
 
-    $token_ix_ref //= \(my $token_ix = 0);
+    $token_ix_ref //= \( my $token_ix = 0 );
 
     # say STDERR __LINE__, " last_completed_earleme: $last_completed_earleme";
 
-    my $token_args = $tokens->[${$token_ix_ref}];
+    my $token_args = $tokens->[ ${$token_ix_ref} ];
 
     if ( not scalar @{$tokens} ) { $next_token_earleme++ }
 
