@@ -22,13 +22,13 @@ BEGIN {
     Test::More::use_ok('Marpa::Test::Util');
 } ## end BEGIN
 
-my @eg_dir   = qw( lib Marpa UrHTML eg );
+my @script_dir   = qw( lib Marpa UrHTML script );
 my @data_dir = qw( lib Marpa UrHTML t fmt_t_data );
 
 for my $test (qw(1 2)) {
     my $expected;
     my $output = Marpa::Test::Util::run_command(
-        File::Spec->catfile( @eg_dir, 'urhtml_score' ),
+        File::Spec->catfile( @script_dir, 'urhtml_score' ),
         File::Spec->catfile( @data_dir, ( 'input' . $test . '.html' ) ) );
     local $RS = undef;
     open my $fh, q{<},

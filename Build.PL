@@ -6,7 +6,7 @@ use warnings;
 
 use Module::Build;
 
-my $marpa_version = '0.001_032';
+my $marpa_version = '0.001_033';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -48,16 +48,18 @@ my $build = $class->new(
         # Scalar::Util::weaken no longer required
         'Test::More' => 0,
     },
+    script_files => [
+        'lib/Marpa/UrHTML/script/urhtml_fmt',
+        'lib/Marpa/UrHTML/script/urhtml_score',
+    ],
     pod_files => {
         'lib/Marpa/Doc/Bibliography.pod' => 'lib/Marpa/Bibliography.pod',
         'lib/Marpa/Doc/Marpa.pod'        => 'lib/Marpa.pod',
         'lib/Marpa/Doc/Parse_Terms.pod'  => 'lib/Marpa/Parse_Terms.pod',
-        'lib/Marpa/Doc/TODO.pod'         => 'lib/Marpa/TODO.pod',
+        # 'lib/Marpa/Doc/TODO.pod'         => 'lib/Marpa/TODO.pod',
         # 'lib/Marpa/UrHTML/Doc/Parsing_HTML.pod' => 'lib/Marpa/Parsing_HTML.pod',
         # 'lib/Marpa/UrHTML/Doc/UrHTML.pod' => 'lib/Marpa/UrHTML.pod',
-        'script/UrHTML/Pod/urhtml_fmt' => 'script/urhtml_fmt',
-        'script/UrHTML/Pod/urhtml_score' => 'script/urhtml_score',
-        },
+    },
     meta_merge => {
         no_index => {
             directory =>

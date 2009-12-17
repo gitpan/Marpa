@@ -232,3 +232,178 @@ print Marpa::UrHTML->new($urhtml_args)->parse( \$document );
 exit 0;
 
 __END__
+
+=head1 NAME
+
+C<urhtml_fmt> - Reformat HTML, indented according to structure
+
+=head1 SYNOPSIS
+
+    urhtml_fmt [uri|file]
+
+=head1 EXAMPLE
+
+    urhtml_fmt http://perl.org
+
+=head1 DESCRIPTION
+
+Given the URI or the name of a file,
+writes it to C<STDOUT>
+reformatted and
+indented according to the HTML structure.
+Missing start and end tags are supplied and
+comments added to indicate this.
+Text inside
+C<< <pre> >> elements 
+is not altered.
+
+L<urhtml_fmt> tries to parse everything that is actually out there on the Web.
+In fact,
+L<urhtml_fmt> will assume any file fed to it was intended as HTML,
+and will produce its best guess of the author's intent.
+
+L<urhtml_fmt> supplies missing start and end tags.
+L<urhtml_fmt>'s parser is extremely liberal in what it accepts.
+When its liberalization of the standards is not sufficient to make
+a document into valid HTML,
+L<urhtml_fmt>
+will pick characters to treat as noise or "cruft".
+The parser ignores cruft in determining
+the structure of the document.
+
+When
+L<urhtml_fmt> adds
+a missing start tag,
+it precedes the new start tag with a comment.
+When
+L<urhtml_fmt> adds
+a missing end tag,
+it follows the new end tag with a comment.
+When L<urhtml_fmt> classifies characters
+as "cruft",
+it adds a comment to that effect before the "cruft".
+
+C<pre> elements receive special treatment.
+The contents of 
+C<pre> elements are not reformatted.
+When missing tags or cruft occur inside a C<pre> element,
+the comments to that effect are placed 
+before the C<< <pre> >> start tag.
+
+The argument to L<urhtml_score> can be either as a URI or a file
+name.  If it starts with alphanumerics followed by a colon, it is treated
+as a URI.  Otherwise it is treated as file name.
+
+=head1 SAMPLE OUTPUT
+
+Given this input:
+
+    <title>Test page<tr>x<head attr="I am cruft"><p>Final graf
+
+L<urhtml_fmt> returns
+
+    <!-- Following start tag is replacement for a missing one -->
+    <html>
+      <!-- Following start tag is replacement for a missing one -->
+      <head>
+        <title>
+          Test page
+        </title>
+        <!-- Preceding end tag is replacement for a missing one -->
+      </head>
+      <!-- Preceding end tag is replacement for a missing one -->
+      <!-- Following start tag is replacement for a missing one -->
+      <body>
+        <!-- Following start tag is replacement for a missing one -->
+        <table>
+          <!-- Following start tag is replacement for a missing one -->
+          <tbody>
+            <tr>
+              <!-- Following start tag is replacement for a missing one -->
+              <td>
+                x
+                <!-- Next line is cruft -->
+                <head attr="I am cruft">
+                <p>
+                  Final graf
+                </p>
+                <!-- Preceding end tag is replacement for a missing one -->
+              </td>
+              <!-- Preceding end tag is replacement for a missing one -->
+            </tr>
+            <!-- Preceding end tag is replacement for a missing one -->
+          </tbody>
+          <!-- Preceding end tag is replacement for a missing one -->
+        </table>
+        <!-- Preceding end tag is replacement for a missing one -->
+      </body>
+      <!-- Preceding end tag is replacement for a missing one -->
+    </html>
+    <!-- Preceding end tag is replacement for a missing one -->
+
+=head1 PURPOSE
+
+This program is a demo of a demo.
+It purpose is to show how easy it is to write applications which look
+at the structure of web pages using L<Marpa::UrHTML>.
+And the purpose of L<Marpa::UrHTML>
+is to demonstrate the power of its parse engine,
+L<Marpa>.
+L<Marpa::UrHTML> was written in a few days,
+and its logic 
+is a straightforward,
+natural expression of the structure of HTML.
+
+=head1 AUTHOR
+
+Jeffrey Kegler
+
+=head1 BUGS
+
+Please report any bugs or feature requests to
+C<bug-parse-marpa at rt.cpan.org>, or through the web interface at
+L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Marpa>.
+I will be notified, and then you'll automatically be notified of progress on
+your bug as I make changes.
+
+=head1 SUPPORT
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc Marpa
+    
+You can also look for information at:
+
+=over 4
+
+=item * AnnoCPAN: Annotated CPAN documentation
+
+L<http://annocpan.org/dist/Marpa>
+
+=item * CPAN Ratings
+
+L<http://cpanratings.perl.org/d/Marpa>
+
+=item * RT: CPAN's request tracker
+
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Marpa>
+
+=item * Search CPAN
+
+L<http://search.cpan.org/dist/Marpa>
+
+=back
+
+=head1 ACKNOWLEDGMENTS
+
+The starting template for this code was
+HTML::TokeParser, by Gisle Aas.
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright 2007-2009 Jeffrey Kegler, all rights reserved.
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl 5.10.0.
+
+=cut

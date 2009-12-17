@@ -1,6 +1,6 @@
 =head1 NAME
 
-Marpa::Doc::Parse_Terms - Standard Parsing Terms used in the Marpa Documents
+Parse_Terms - Standard Parsing Terms used in the Marpa Documents
 
 =head1 DESCRIPTION
 

@@ -49,8 +49,8 @@ lib/Marpa/Test/capture-stderr
 lib/Marpa/Test.pm
 lib/Marpa/Test/Util.pm
 lib/Marpa/UrHTML/Callback.pm
-lib/Marpa/UrHTML/eg/urhtml_fmt
-lib/Marpa/UrHTML/eg/urhtml_score
+lib/Marpa/UrHTML/script/urhtml_fmt
+lib/Marpa/UrHTML/script/urhtml_score
 lib/Marpa/UrHTML.pm
 lib/Marpa/UrHTML/t/copy.t
 lib/Marpa/UrHTML/t/fmt.t
@@ -71,8 +71,6 @@ Makefile.PL
 MANIFEST
 META.yml
 README
-script/UrHTML/Pod/urhtml_fmt
-script/UrHTML/Pod/urhtml_score
 t/00-load.t
 t/ah2.t
 t/ah_minimal.t

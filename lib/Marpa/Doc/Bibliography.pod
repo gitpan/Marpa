@@ -1,6 +1,6 @@
 =head1 NAME
 
-Marpa::Doc::Bibliography - A Marpa Bibliography
+Bibliography - A Marpa Bibliography
 
 =head1 BIBLIOGRAPHY
 

@@ -1,6 +1,6 @@
 =head1 NAME
 
-Marpa::Doc::To_Do - Marpa's To Do List
+ToDo - Marpa's To Do List
 
 =head1 MEDIUM PRIORITY
 
