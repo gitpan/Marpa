@@ -10,7 +10,9 @@ use warnings;
 
 use lib 'lib';
 use Test::More tests => 33;
+use English qw( -no_match_vars );
 use Marpa::Test;
+use Carp;
 
 BEGIN {
     Test::More::use_ok('Marpa');
@@ -90,7 +92,7 @@ for my $up ( 1, 0 ) {
     my $evaler = Marpa::Evaluator->new( { recce => $recce, } );
     my $i = 0;
     while ( my $result = $evaler->value() ) {
-        say ${$result};
+        say ${$result} or Carp::croak("Could not print to STDOUT: $ERRNO");
         Test::More::is( ${$result}, $expected->[$i],
             "counting $direction $i" );
         $i++;

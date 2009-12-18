@@ -9,12 +9,12 @@ use Carp;
 
 our $FH;
 
-Carp::croak("usage: $0: old_version new_version")
+Carp::croak("usage: $PROGRAM_NAME: old_version new_version")
     if scalar @ARGV != 2;
 
 my ( $old, $new ) = @ARGV;
 
-say STDERR "$old $new";
+say STDERR "$old $new" or Carp::croak("Cannot print: $ERRNO");
 
 sub check_version {
     my $version = shift;

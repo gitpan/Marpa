@@ -8,7 +8,7 @@ use English qw( -no_match_vars );
 use Fatal qw(open close);
 use Text::Diff;
 use Getopt::Long qw(GetOptions);
-use Test::More;
+use Test::More tests => 1;
 use Carp;
 
 use lib 'lib';
@@ -105,7 +105,8 @@ sub compare {
     my $formatted_copy     = format_display( \$copy->{content},     $copy );
     return 1 if ${$formatted_original} eq ${$formatted_copy};
     say STDERR Text::Diff::diff $formatted_original, $formatted_copy,
-        { STYLE => 'Table' };
+        { STYLE => 'Table' }
+        or Carp::croak("Cannot print: $ERRNO");
     return 0;
 } ## end sub compare
 
@@ -138,7 +139,5 @@ DISPLAY_NAME: for my $display_name ( keys %{$displays_by_name} ) {
     }
 
 } ## end for my $display_name ( keys %{$displays_by_name} )
-
-Test::More::done_testing();
 
 __END__

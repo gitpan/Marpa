@@ -20,8 +20,7 @@ sub Marpa::UrHTML::start_tag {
         if not defined $parse_instance;
 
     my $element = $Marpa::UrHTML::Internal::PER_NODE_DATA->{element};
-    Marpa::exception('The start_tag callback was called on a non-element')
-        if not $element;
+    return if not $element;
 
     #<<< perltidy cycles on this as of 2009-11-28
     return if not defined (my $start_tag_token_id =
@@ -44,8 +43,7 @@ sub Marpa::UrHTML::end_tag {
         if not defined $parse_instance;
 
     my $element = $Marpa::UrHTML::Internal::PER_NODE_DATA->{element};
-    Marpa::exception('The end_tag() callback was called on a non-element')
-        if not $element;
+    return if not $element;
 
     #<<< perltidy cycles on this as of 2009-11-28
     return if not defined (my $end_tag_token_id =
@@ -68,8 +66,7 @@ sub Marpa::UrHTML::contents {
         if not defined $parse_instance;
 
     my $element = $Marpa::UrHTML::Internal::PER_NODE_DATA->{element};
-    Marpa::exception('The contents() callback was called on a non-element')
-        if not $element;
+    return if not $element;
 
     my $contents_start_tdesc_ix =
         $Marpa::UrHTML::Internal::PER_NODE_DATA->{start_tag_token_id} ? 1 : 0;
@@ -272,7 +269,13 @@ sub Marpa::UrHTML::tagname {
 }
 
 sub Marpa::UrHTML::literal_ref {
-    return q{} if $Marpa::Internal::SETTING_NULL_VALUES;
+
+    # The next line
+    # ties Marpa::UrHTML inappropriately to Marpa's
+    # internals
+    # I've commented it out and all regression tests pass.
+    # return q{} if $Marpa::Internal::SETTING_NULL_VALUES;
+
     my $parse_instance = $Marpa::UrHTML::Internal::PARSE_INSTANCE;
     Marpa::exception('Attempt to get literal value outside of a parse')
         if not defined $parse_instance;
@@ -282,7 +285,13 @@ sub Marpa::UrHTML::literal_ref {
 } ## end sub Marpa::UrHTML::literal_ref
 
 sub Marpa::UrHTML::literal {
-    return q{} if $Marpa::Internal::SETTING_NULL_VALUES;
+
+    # The next line
+    # ties Marpa::UrHTML inappropriately to Marpa's
+    # internals.
+    # I've commented it out and all regression tests pass.
+    # return q{} if $Marpa::Internal::SETTING_NULL_VALUES;
+
     my $parse_instance = $Marpa::UrHTML::Internal::PARSE_INSTANCE;
     Marpa::exception('Attempt to get literal value outside of a parse')
         if not defined $parse_instance;

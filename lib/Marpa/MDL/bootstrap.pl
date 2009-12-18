@@ -7,6 +7,7 @@ use Marpa::MDL;
 use Marpa::MDL::Internal::Actions;
 use Fatal qw(open);
 use English qw( -no_match_vars );
+use Carp;
 
 package Bootstrap_Grammar;
 
@@ -850,5 +851,5 @@ $d->Sortkeys(1);
 $d->Purity(1);
 $d->Deepcopy(1);
 $d->Indent(1);
-say $d->Dump();
+say $d->Dump() or Carp::croak("Cannot print: $ERRNO");
 

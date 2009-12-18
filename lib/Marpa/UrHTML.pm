@@ -5,7 +5,6 @@ use strict;
 use warnings;
 
 use Carp ();
-use English qw( -no_match_vars );
 
 use HTML::PullParser;
 use HTML::Entities qw(decode_entities);
@@ -19,20 +18,9 @@ use Marpa::Internal;
 
 package Marpa::UrHTML::Internal;
 
+use English qw( -no_match_vars );
+
 use Marpa::Internal;
-
-BEGIN {
-    ## no critic (BuiltinFunctions::ProhibitStringyEval)
-    ## no critic (ErrorHandling::RequireCheckingReturnValueOfEval)
-    eval 'use Devel::Size';
-    ## use critic
-} ## end BEGIN
-
-sub total_size {
-    Marpa::exception('Devel::Size not loaded')
-        if not defined &Devel::Size::total_size;
-    goto &Devel::Size::total_size;
-}
 
 use Marpa::Offset qw(
     :package=Marpa::UrHTML::Internal::TDesc
@@ -217,7 +205,8 @@ sub create_tdesc_handler {
                 if ( $user_handler = $handlers_by_id->{$id} ) {
                     if ($trace_handlers) {
                         say {$trace_fh}
-                            "Resolved to user handler by element ($element) and id ($id)";
+                            "Resolved to user handler by element ($element) and id ($id)"
+                            or Carp::croak("Cannot print: $ERRNO");
                     }
                     last GET_USER_HANDLER;
                 } ## end if ( $user_handler = $handlers_by_id->{$id} )
@@ -226,7 +215,8 @@ sub create_tdesc_handler {
                 if ( $user_handler = $handlers_by_class->{$class} ) {
                     if ($trace_handlers) {
                         say {$trace_fh}
-                            "Resolved to user handler by element ($element) and class ($class)";
+                            "Resolved to user handler by element ($element) and class ($class)"
+                            or Carp::croak("Cannot print: $ERRNO");
                     }
                     last GET_USER_HANDLER;
                 } ## end if ( $user_handler = $handlers_by_class->{$class} )
@@ -237,7 +227,7 @@ sub create_tdesc_handler {
                     defined $element
                     ? "Resolved to user handler by element ($element)"
                     : 'Resolved to default user handler'
-                );
+                ) or Carp::croak("Cannot print: $ERRNO");
             } ## end if ( $trace_handlers and $user_handler )
         } ## end GET_USER_HANDLER:
 
@@ -494,14 +484,16 @@ sub add_handlers {
                     or ( $element, $pseudoclass ) =
                     ( $specifier =~ /\A ([^:]*) [:] (.*) \z/xms )
                     or $element = $specifier;
-                if ( $pseudoclass
-                    and not $pseudoclass ~~
-                    [qw(TOP PI DECL COMMENT PROLOG TRAILER WHITESPACE CDATA PCDATA CRUFT)] )
+                if ($pseudoclass
+                    and not $pseudoclass ~~ [
+                        qw(TOP PI DECL COMMENT PROLOG TRAILER WHITESPACE CDATA PCDATA CRUFT)
+                    ]
+                    )
                 {
                     Marpa::exception(
                         qq{pseudoclass "$pseudoclass" is not known:\n},
                         "Specifier was $specifier\n" );
-                } ## end if ( $pseudoclass and not $pseudoclass ~~ [...])
+                } ## end if ( $pseudoclass and not $pseudoclass ~~ [ ...])
                 if ( $pseudoclass and $element ) {
                     Marpa::exception(
                         qq{pseudoclass "$pseudoclass" may not have an element specified:\n},
@@ -1074,10 +1066,12 @@ sub Marpa::UrHTML::parse {
     $grammar->precompute();
 
     if ( $self->{trace_rules} ) {
-        say {$trace_fh} $grammar->show_rules();
+        say {$trace_fh} $grammar->show_rules()
+            or Carp::croak("Cannot print: $ERRNO");
     }
     if ( $self->{trace_QDFA} ) {
-        say {$trace_fh} $grammar->show_QDFA();
+        say {$trace_fh} $grammar->show_QDFA()
+            or Carp::croak("Cannot print: $ERRNO");
     }
 
     my $recce = Marpa::Recognizer->new(
@@ -1087,10 +1081,6 @@ sub Marpa::UrHTML::parse {
             mode              => 'stream',
         }
     );
-
-    if ( $ENV{TRACE_SIZE} ) {
-        say 'newly created recce size: ', total_size($recce);
-    }
 
     $self->{recce}  = $recce;
     $self->{tokens} = \@html_parser_tokens;
@@ -1110,7 +1100,8 @@ sub Marpa::UrHTML::parse {
         my $marpa_token     = $marpa_tokens[$token_ix];
         my $actual_terminal = $marpa_token->[0];
         if ($trace_terminals) {
-            say {$trace_fh} 'Literal Token not accepted: ', $actual_terminal;
+            say {$trace_fh} 'Literal Token not accepted: ', $actual_terminal
+                or Carp::croak("Cannot print: $ERRNO");
         }
 
         my $virtual_token_to_add;
@@ -1122,11 +1113,14 @@ sub Marpa::UrHTML::parse {
                 grep { defined $optional_terminals{$_} }
                 @{$expected_terminals};
             if ($trace_conflicts) {
-                say {$trace_fh} 'Conflict of virtual choices';
-                say {$trace_fh} "Actual Token is $actual_terminal";
+                say {$trace_fh} 'Conflict of virtual choices'
+                    or Carp::croak("Cannot print: $ERRNO");
+                say {$trace_fh} "Actual Token is $actual_terminal"
+                    or Carp::croak("Cannot print: $ERRNO");
                 say {$trace_fh} +( scalar @virtuals_expected ),
                     ' virtual terminals expected: ', join q{ },
-                    @virtuals_expected;
+                    @virtuals_expected
+                    or Carp::croak("Cannot print: $ERRNO");
             } ## end if ($trace_conflicts)
 
             LOOKAHEAD_VIRTUAL_TERMINAL:
@@ -1206,10 +1200,12 @@ sub Marpa::UrHTML::parse {
             } ## end while ( my $candidate = pop @virtuals_expected )
 
             if ($trace_terminals) {
-                say {$trace_fh} 'Converting Token: ', $actual_terminal;
+                say {$trace_fh} 'Converting Token: ', $actual_terminal
+                    or Carp::croak("Cannot print: $ERRNO");
                 if ( defined $virtual_terminal ) {
                     say {$trace_fh} 'Candidate as Virtual Token: ',
-                        $virtual_terminal;
+                        $virtual_terminal
+                        or Carp::croak("Cannot print: $ERRNO");
                 }
             } ## end if ($trace_terminals)
 
@@ -1221,8 +1217,9 @@ sub Marpa::UrHTML::parse {
             if ( $trace_terminals > 1 and defined $virtual_terminal ) {
                 say {$trace_fh}
                     "OK as cruft when expecting $virtual_terminal: ",
-                    join q{ }, keys %{ $ok_as_cruft{$virtual_terminal} };
-            }
+                    join q{ }, keys %{ $ok_as_cruft{$virtual_terminal} }
+                    or Carp::croak("Cannot print: $ERRNO");
+            } ## end if ( $trace_terminals > 1 and defined $virtual_terminal)
 
             last FIND_VIRTUAL_TOKEN if not defined $virtual_terminal;
             last FIND_VIRTUAL_TOKEN
@@ -1253,7 +1250,8 @@ sub Marpa::UrHTML::parse {
                 # and warn the user.
                 ( my $tagname = $virtual_terminal ) =~ s/^S_//xms;
                 say {$trace_fh}
-                    "Warning: attempt to add <$tagname> twice at the same place";
+                    "Warning: attempt to add <$tagname> twice at the same place"
+                    or Carp::croak("Cannot print: $ERRNO");
                 last FIND_VIRTUAL_TOKEN;
 
             } ## end CHECK_FOR_INFINITE_LOOP:
@@ -1277,8 +1275,8 @@ sub Marpa::UrHTML::parse {
         # current physical token as CRUFT.
 
         if ($trace_terminals) {
-            say {$trace_fh} 'Adding actual token as cruft: ',
-                $actual_terminal;
+            say {$trace_fh} 'Adding actual token as cruft: ', $actual_terminal
+                or Carp::croak("Cannot print: $ERRNO");
         }
 
         # Cruft tokens are not virtual.
@@ -1291,14 +1289,15 @@ sub Marpa::UrHTML::parse {
                 earleme_to_offset( $self, $cruft_earleme );
             $line++;    # The convention is that line numbering starts at 1
             say {$trace_fh} qq{Cruft at line $line: "},
-                ${ tdesc_list_to_literal( $self, $marpa_token->[1] ) },
-                q{"};
+                ${ tdesc_list_to_literal( $self, $marpa_token->[1] ) }, q{"}
+                or Carp::croak("Cannot print: $ERRNO");
         } ## end if ($trace_cruft)
 
     } ## end for ( my $token_ix = 0;; )
 
     if ($trace_terminals) {
-        say {$trace_fh} 'at end of tokens';
+        say {$trace_fh} 'at end of tokens'
+            or Carp::croak("Cannot print: $ERRNO");
     }
 
     $recce->strip();    # Saves lots of memory
@@ -1379,7 +1378,8 @@ sub Marpa::UrHTML::parse {
         $recce = undef;    # conserve memory
 
         if ( my $verbose = $self->{trace_ambiguity} ) {
-            say $evaler->show_ambiguity($verbose);
+            say $evaler->show_ambiguity($verbose)
+                or Carp::croak("Cannot print: $ERRNO");
         }
 
         if ( not $evaler ) {
@@ -1393,19 +1393,22 @@ sub Marpa::UrHTML::parse {
                 $last_marpa_token );
 
             my $last_good_earleme = $recce->find_parse();
-            say 'last_good_earleme=',
-                Data::Dumper::Dumper($last_good_earleme);
+            say 'last_good_earleme=', Data::Dumper::Dumper($last_good_earleme)
+                or Carp::croak("Cannot print: $ERRNO");
             my $last_good_offset =
                 Marpa::UrHTML::Internal::earleme_to_offset( $self,
                 $last_good_earleme );
-            say 'last_good_offset=', Data::Dumper::Dumper($last_good_offset);
+            say 'last_good_offset=', Data::Dumper::Dumper($last_good_offset)
+                or Carp::croak("Cannot print: $ERRNO");
 
             # 100 characters --
             # the amount of context to put in the error message
             say 'last good at ',
-                ( substr ${$document}, $last_good_offset, 100 );
+                ( substr ${$document}, $last_good_offset, 100 )
+                or Carp::croak("Cannot print: $ERRNO");
 
-            say Data::Dumper::Dumper( $recce->find_parse() );
+            say Data::Dumper::Dumper( $recce->find_parse() )
+                or Carp::croak("Cannot print: $ERRNO");
 
             Marpa::exception( 'HTML parse exhausted at location ',
                 $furthest_offset );
@@ -1418,77 +1421,3 @@ sub Marpa::UrHTML::parse {
 } ## end sub Marpa::UrHTML::parse
 
 1;
-
-__END__
-
-=head1 NAME
-
-Marpa::UrHTML - Element-level HTML Parser
-
-=head1 SYNOPSIS
-
-Coming Soon!
-
-=head1 DESCRIPTION
-
-Coming Soon!
-
-=head1 AUTHOR
-
-Jeffrey Kegler
-
-=head1 BUGS
-
-Please report any bugs or feature requests to
-C<bug-parse-marpa at rt.cpan.org>, or through the web interface at
-L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Marpa>.
-I will be notified, and then you'll automatically be notified of progress on
-your bug as I make changes.
-
-=head1 SUPPORT
-
-You can find documentation for this module with the perldoc command.
-
-=begin Marpa::Test::Display:
-
-## skip display
-
-=end Marpa::Test::Display:
-
-    perldoc Marpa
-    
-You can also look for information at:
-
-=over 4
-
-=item * AnnoCPAN: Annotated CPAN documentation
-
-L<http://annocpan.org/dist/Marpa>
-
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/Marpa>
-
-=item * RT: CPAN's request tracker
-
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Marpa>
-
-=item * Search CPAN
-
-L<http://search.cpan.org/dist/Marpa>
-
-=back
-
-=head1 ACKNOWLEDGMENTS
-
-The starting template for this code was
-HTML::TokeParser, by Gisle Aas.
-
-=head1 LICENSE AND COPYRIGHT
-
-Copyright 2007-2009 Jeffrey Kegler, all rights reserved.
-
-This program is free software; you can redistribute
-it and/or modify it under the same terms as Perl 5.10.0.
-
-=cut

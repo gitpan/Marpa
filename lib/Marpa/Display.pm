@@ -6,10 +6,12 @@ use warnings;
 use integer;
 use Fatal qw(open close);
 use YAML::XS;
-use English qw( -no_match_vars );
 use Data::Dumper;    # for debugging
+use Carp;
 
 package Marpa::Display::Internal;
+
+use English qw( -no_match_vars );
 
 sub Marpa::Display::new {
     my ($class) = @_;
@@ -55,10 +57,12 @@ sub Marpa::Display::read {
                 my $eval_ok =
                     eval { $display_spec = YAML::XS::Load($yaml); 1 };
                 if ( not $eval_ok ) {
-                    say STDERR $main::EVAL_ERROR;
+                    say STDERR $main::EVAL_ERROR
+                        or Carp::croak("Cannot print: $ERRNO");
                     say STDERR
                         "Fatal error in YAML Display spec at $name, line "
-                        . ( $display_spec_line_number + 1 );
+                        . ( $display_spec_line_number + 1 )
+                        or Carp::croak("Cannot print: $ERRNO");
                 } ## end if ( not $eval_ok )
             } ## end if ( $yaml =~ / \S /xms )
         } ## end if ( $line =~ /^[#] \s+ Marpa[:][:]Display/xms )
@@ -77,10 +81,12 @@ sub Marpa::Display::read {
                 my $eval_ok =
                     eval { $display_spec = YAML::XS::Load($yaml); 1 };
                 if ( not $eval_ok ) {
-                    say STDERR $main::EVAL_ERROR;
+                    say STDERR $main::EVAL_ERROR
+                        or Carp::croak("Cannot print: $ERRNO");
                     say STDERR
                         "Fatal error in YAML Display spec at $name, line "
-                        . ( $display_spec_line_number + 1 );
+                        . ( $display_spec_line_number + 1 )
+                        or Carp::croak("Cannot print: $ERRNO");
                 } ## end if ( not $eval_ok )
             } ## end if ( $yaml =~ / \S /xms )
         } ## end if ( $line =~ /^[=]for \s+ Marpa[:][:]Display/xms )
@@ -90,8 +96,9 @@ sub Marpa::Display::read {
         SPEC: for my $spec ( keys %{$display_spec} ) {
             next SPEC if $spec ~~ \@Marpa::Display::Internal::DISPLAY_SPECS;
             say STDERR
-                qq{Warning: Unknown display spec "$spec" in $name, line $display_spec_line_number};
-        }
+                qq{Warning: Unknown display spec "$spec" in $name, line $display_spec_line_number}
+                or Carp::croak("Cannot print: $ERRNO");
+        } ## end for my $spec ( keys %{$display_spec} )
 
         my $content;
         my $content_start_line;
@@ -111,8 +118,9 @@ sub Marpa::Display::read {
                     if ( not defined $pre_content_line ) {
                         say STDERR
                             qq{Warning: Pattern "$start_pattern" never found, },
-                            qq{start looking at $name, line $display_spec_line_number};
-                    }
+                            qq{start looking at $name, line $display_spec_line_number}
+                            or Carp::croak("Cannot print: $ERRNO");
+                    } ## end if ( not defined $pre_content_line )
                 } ## end while (1)
             } ## end if ( defined( my $start_pattern = $display_spec->{...}))
 
@@ -120,13 +128,13 @@ sub Marpa::Display::read {
                 my $content_line = $lines[ ++$zero_based_line ];
                 if ( not defined $content_line ) {
                     say STDERR
-                        qq{Warning: Pattern "$end_pattern" never found, start looking at $name, line $display_spec_line_number};
+                        qq{Warning: Pattern "$end_pattern" never found, start looking at $name, line $display_spec_line_number}
+                        or Carp::croak("Cannot print: $ERRNO");
                 }
                 last CONTENT_LINE if $content_line =~ /$end_pat/xms;
                 $content .= "$content_line\n";
                 $content_start_line //= $zero_based_line + 1;
             } ## end while (1)
-
         } ## end if ( defined( my $end_pattern = $display_spec->{...}))
 
         if ( not defined $content ) {
@@ -135,7 +143,8 @@ sub Marpa::Display::read {
                 if ( not defined $content_line ) {
                     say STDERR
                         q{Warning: Pattern "Marpa::Display::End" never found,}
-                        . qq{started looking at $name, line $display_spec_line_number};
+                        . qq{started looking at $name, line $display_spec_line_number}
+                        or Carp::croak("Cannot print: $ERRNO");
                     last CONTENT_LINE;
                 } ## end if ( not defined $content_line )
                 last CONTENT_LINE
@@ -154,9 +163,10 @@ sub Marpa::Display::read {
         my $display_spec_name = $display_spec->{name};
         if ( not $display_spec_name ) {
             say STDERR q{Warning: Unnamed display }
-                . qq{at $name, line $display_spec_line_number};
+                . qq{at $name, line $display_spec_line_number}
+                or Carp::croak("Cannot print: $ERRNO");
             next LINE;
-        }
+        } ## end if ( not $display_spec_name )
 
         $display_spec->{filename}           = $name;
         $display_spec->{display_spec_line}  = $display_spec_line_number;

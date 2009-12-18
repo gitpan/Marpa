@@ -354,56 +354,17 @@ and its logic
 is a straightforward,
 natural expression of the structure of HTML.
 
-=head1 AUTHOR
-
-Jeffrey Kegler
-
-=head1 BUGS
-
-Please report any bugs or feature requests to
-C<bug-parse-marpa at rt.cpan.org>, or through the web interface at
-L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Marpa>.
-I will be notified, and then you'll automatically be notified of progress on
-your bug as I make changes.
-
-=head1 SUPPORT
-
-You can find documentation for this module with the perldoc command.
-
-    perldoc Marpa
-    
-You can also look for information at:
-
-=over 4
-
-=item * AnnoCPAN: Annotated CPAN documentation
-
-L<http://annocpan.org/dist/Marpa>
-
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/Marpa>
-
-=item * RT: CPAN's request tracker
-
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Marpa>
-
-=item * Search CPAN
-
-L<http://search.cpan.org/dist/Marpa>
-
-=back
-
 =head1 ACKNOWLEDGMENTS
 
 The starting template for this code was
-HTML::TokeParser, by Gisle Aas.
+L<HTML::TokeParser>, by Gisle Aas.
+See also the
+L<acknowledgments for Marpa as a whole|Marpa/"ACKNOWLEDGMENTS">.
 
 =head1 LICENSE AND COPYRIGHT
 
 Copyright 2007-2009 Jeffrey Kegler, all rights reserved.
-
-This program is free software; you can redistribute
-it and/or modify it under the same terms as Perl 5.10.0.
+Marpa is free software under the Perl license.
+For details see the LICENSE file in the Marpa distribution.
 
 =cut

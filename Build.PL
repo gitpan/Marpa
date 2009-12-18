@@ -6,7 +6,7 @@ use warnings;
 
 use Module::Build;
 
-my $marpa_version = '0.001_033';
+my $marpa_version = '0.001_034';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -56,6 +56,8 @@ my $build = $class->new(
         'lib/Marpa/Doc/Bibliography.pod' => 'lib/Marpa/Bibliography.pod',
         'lib/Marpa/Doc/Marpa.pod'        => 'lib/Marpa.pod',
         'lib/Marpa/Doc/Parse_Terms.pod'  => 'lib/Marpa/Parse_Terms.pod',
+        'lib/Marpa/Doc/Support.pod'      => 'lib/Marpa/Support.pod',
+
         # 'lib/Marpa/Doc/TODO.pod'         => 'lib/Marpa/TODO.pod',
         # 'lib/Marpa/UrHTML/Doc/Parsing_HTML.pod' => 'lib/Marpa/Parsing_HTML.pod',
         # 'lib/Marpa/UrHTML/Doc/UrHTML.pod' => 'lib/Marpa/UrHTML.pod',
@@ -97,6 +99,7 @@ my $build = $class->new(
         },
     },
     license            => 'perl',
+    create_license     => 1,
     create_readme      => 0,
     create_makefile_pl => 'small',
     test_files =>

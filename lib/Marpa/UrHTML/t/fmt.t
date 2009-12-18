@@ -22,8 +22,8 @@ BEGIN {
     Test::More::use_ok('Marpa::Test::Util');
 } ## end BEGIN
 
-my @script_dir   = qw( lib Marpa UrHTML script );
-my @data_dir = qw( lib Marpa UrHTML t fmt_t_data );
+my @script_dir = qw( lib Marpa UrHTML script );
+my @data_dir   = qw( lib Marpa UrHTML t fmt_t_data );
 
 for my $test (qw(1 2)) {
     my $expected;

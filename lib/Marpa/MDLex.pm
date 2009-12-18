@@ -151,21 +151,24 @@ sub set {
         $lexer->[Marpa::MDLex::Internal::Lexer::TRACE_TRIES] =
             $lexer->[Marpa::MDLex::Internal::Lexer::TRACE_MATCHES] = $value;
         if ($value) {
-            say {$trace_fh} 'Setting trace option';
+            say {$trace_fh} 'Setting trace option'
+                or Marpa::exception("Cannot print: $ERRNO");
             $lexer->[Marpa::MDLex::Internal::Lexer::TRACING] = 1;
         }
     } ## end if ( my $value = $args->{trace} )
     if ( my $value = $args->{trace_tries} ) {
         $lexer->[Marpa::MDLex::Internal::Lexer::TRACE_TRIES] = $value;
         if ($value) {
-            say {$trace_fh} 'Setting trace_tries option';
+            say {$trace_fh} 'Setting trace_tries option'
+                or Marpa::exception("Cannot print: $ERRNO");
             $lexer->[Marpa::MDLex::Internal::Lexer::TRACING] = 1;
         }
     } ## end if ( my $value = $args->{trace_tries} )
     if ( my $value = $args->{trace_matches} ) {
         $lexer->[Marpa::MDLex::Internal::Lexer::TRACE_MATCHES] = $value;
         if ($value) {
-            say {$trace_fh} 'Setting trace_matches option';
+            say {$trace_fh} 'Setting trace_matches option'
+                or Marpa::exception("Cannot print: $ERRNO");
             $lexer->[Marpa::MDLex::Internal::Lexer::TRACING] = 1;
         }
     } ## end if ( my $value = $args->{trace_matches} )
@@ -388,7 +391,8 @@ sub Marpa::MDLex::text {
             my $string_to_match = substr ${$input_ref}, $pos, 20;
             $string_to_match
                 =~ s/([\x00-\x1F\x7F-\xFF])/sprintf('{%#.2x}', ord($1))/gexms;
-            say $trace_fh "Match target at $pos: ", $string_to_match;
+            say $trace_fh "Match target at $pos: ", $string_to_match
+                or Marpa::exception("Cannot print: $ERRNO");
         } ## end if ( $trace_tries and scalar @{$lexables} )
 
         LEXABLE: for my $lexable ( @{$lexables} ) {

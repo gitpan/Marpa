@@ -6,9 +6,13 @@ Marpa - Overview of the Marpa Modules
 
 This is a branch from L<Parse::Marpa>.
 This branch started out experimental,
-but is gradually being released in alpha.
-The first alpha release will be an HTML parser,
-L<Marpa::UrHTML>.
+but much of the functionality
+is now stable.
+The first alpha releases will be two utilities:
+L<an HTML formatter|urhtml_fmt>
+and
+L<a script for computing a "complexity" score
+and other statistics for HTML scripts|urhtml_score>.
 
 =head1 AUTHOR
 
@@ -61,48 +65,6 @@ as a free download (L<http://www.lulu.com/content/933192>)
 and in print form at Amazon.com:
 L<http://www.amazon.com/God-Proof-Jeffrey-Kegler/dp/1434807355>.
 
-=head1 BUGS
-
-Please report any bugs or feature requests to
-C<bug-parse-marpa at rt.cpan.org>, or through the web interface at
-L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Marpa>.
-I will be notified, and then you'll automatically be notified of progress on
-your bug as I make changes.
-
-=head1 SUPPORT
-
-You can find documentation for this module with the perldoc command.
-
-=begin Marpa::Test::Display:
-
-## skip display
-
-=end Marpa::Test::Display:
-
-    perldoc Marpa
-    
-You can also look for information at:
-
-=over 4
-
-=item * AnnoCPAN: Annotated CPAN documentation
-
-L<http://annocpan.org/dist/Marpa>
-
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/Marpa>
-
-=item * RT: CPAN's request tracker
-
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Marpa>
-
-=item * Search CPAN
-
-L<http://search.cpan.org/dist/Marpa>
-
-=back
-
 =head1 ACKNOWLEDGMENTS
 
 Marpa is
@@ -114,16 +76,15 @@ Aycock and Horspool, for their part,
 built on the
 L<algorithm discovered by Jay Earley|Marpa::Doc::Bibliography/"Earley 1970">.
 
-I'm grateful to Randal Schwartz for his encouragement over the years that
-I've been working on Marpa.  My one conversation
-with Larry Wall
-about Marpa
-was brief and long ago, but his openness to the idea was a major
-encouragement,
-and his insights into how humans do programming,
-how they do languages,
-and how those two endeavors interconnect,
-a major influence.
+I'm grateful to Randal Schwartz for his support over the years that
+I've been working on Marpa.
+My contacts with
+Larry Wall have been few and brief,
+but his openness to new ideas has been
+a major encouragement
+and his insight into the relationship between
+"natural language" and computer language
+has been a major influence.
 More recently,
 Allison Randal and Patrick Michaud have been generous with their
 very valuable time.
@@ -154,6 +115,5 @@ on issues about which I really should have know better.
 =head1 LICENSE AND COPYRIGHT
 
 Copyright 2007-2009 Jeffrey Kegler, all rights reserved.
-
-This program is free software; you can redistribute
-it and/or modify it under the same terms as Perl 5.10.0.
+Marpa is free software under the Perl license.
+For details see the LICENSE file in the Marpa distribution.

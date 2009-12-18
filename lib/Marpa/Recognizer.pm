@@ -287,7 +287,8 @@ sub Marpa::Recognizer::set {
         if ( defined( my $value = $args->{'trace_terminals'} ) ) {
             $recce->[Marpa::Internal::Recognizer::TRACE_TERMINALS] = $value;
             if ($value) {
-                say {$trace_fh} 'Setting trace_terminals option';
+                say {$trace_fh} 'Setting trace_terminals option'
+                    or Marpa::exception("Cannot print: $ERRNO");
                 $recce->[Marpa::Internal::Recognizer::TRACING] = 1;
             }
         } ## end if ( defined( my $value = $args->{'trace_terminals'}...))
@@ -295,7 +296,8 @@ sub Marpa::Recognizer::set {
         if ( defined( my $value = $args->{'trace_earley_sets'} ) ) {
             $recce->[Marpa::Internal::Recognizer::TRACE_EARLEY_SETS] = $value;
             if ($value) {
-                say {$trace_fh} 'Setting trace_earley_sets option';
+                say {$trace_fh} 'Setting trace_earley_sets option'
+                    or Marpa::exception("Cannot print: $ERRNO");
                 $recce->[Marpa::Internal::Recognizer::TRACING] = 1;
             }
         } ## end if ( defined( my $value = $args->{'trace_earley_sets'...}))
@@ -779,7 +781,8 @@ sub Marpa::Recognizer::tokens {
         if ($trace_terminals) {
             while ( my ( $token_name, $accepted ) = each %accepted ) {
                 say {$trace_fh} +( $accepted ? 'Accepted' : 'Rejected' ),
-                    qq{ "$token_name" at $last_completed_earleme};
+                    qq{ "$token_name" at $last_completed_earleme}
+                    or Marpa::exception("Cannot print: $ERRNO");
             }
         } ## end if ($trace_terminals)
 
@@ -967,7 +970,8 @@ sub complete {
     {
         if ( $recce->[Marpa::Internal::Recognizer::WARNINGS] ) {
             say {$Marpa::Internal::TRACE_FH}
-                "Very large earley set: $item_count items at location $earleme_to_complete";
+                "Very large earley set: $item_count items at location $earleme_to_complete"
+                or Marpa::exception("Cannot print: $ERRNO");
         }
     } ## end if ( $too_many_earley_items >= 0 and ( my $item_count...))
 
@@ -980,9 +984,9 @@ sub complete {
     if ($trace_earley_sets) {
         print {$Marpa::Internal::TRACE_FH}
             "=== Earley set $earleme_to_complete\n"
-            or Marpa::exception("print failed: $!");
+            or Marpa::exception("Cannot print: $ERRNO");
         print {$Marpa::Internal::TRACE_FH} Marpa::show_earley_set($earley_set)
-            or Marpa::exception("print failed: $!");
+            or Marpa::exception("Cannot print: $ERRNO");
     } ## end if ($trace_earley_sets)
 
     $recce->[Marpa::Internal::Recognizer::CURRENT_TERMINALS] = \%lexable_seen;
@@ -993,7 +997,8 @@ sub complete {
             )
         {
             say {$Marpa::Internal::TRACE_FH}
-                qq{Expecting "$terminal" at $earleme_to_complete};
+                qq{Expecting "$terminal" at $earleme_to_complete}
+                or Marpa::exception("Cannot print: $ERRNO");
         } ## end for my $terminal ( keys %{ $recce->[...]})
     } ## end if ($trace_terminals)
 

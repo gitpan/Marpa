@@ -1,0 +1,58 @@
+=head1 NAME
+
+Support - Marpa Support, and How to Report Bugs
+
+=head1 DESCRIPTION
+
+Marpa is free software.
+As such there is no warranty and or guarantee of support.
+Nonetheless, through the generosity of volunteers,
+there is a mechanism for bug reporting and
+limited support.
+
+=head1 BUGS
+
+Please report any bugs or feature requests to
+C<bug-parse-marpa at rt.cpan.org>, or through the web interface at
+L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Marpa>.
+I will be notified, and then you'll automatically be notified of progress on
+your bug as I make changes.
+
+=head1 SUPPORT
+
+You can find documentation for this module with the perldoc command.
+
+=begin Marpa::Test::Display:
+
+## skip display
+
+=end Marpa::Test::Display:
+
+    perldoc Marpa
+    
+You can also look for information at:
+
+=over 4
+
+=item * AnnoCPAN: Annotated CPAN documentation
+
+L<http://annocpan.org/dist/Marpa>
+
+=item * CPAN Ratings
+
+L<http://cpanratings.perl.org/d/Marpa>
+
+=item * RT: CPAN's request tracker
+
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Marpa>
+
+=item * Search CPAN
+
+L<http://search.cpan.org/dist/Marpa>
+
+=back
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright 2007-2009 Jeffrey Kegler, all rights reserved.
+Marpa is free software under the Perl license.

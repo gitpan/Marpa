@@ -281,20 +281,11 @@ from the values of zero or more of the nodes which represent the rhs symbols
 Values are computed recursively, bottom-up.
 The value of a parse is the value of its start symbol.
 
-=head1 SUPPORT
-
-See the L<support section|Marpa/SUPPORT> in the main module.
-
-=head1 AUTHOR
-
-Jeffrey Kegler
-
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2007 - 2009 Jeffrey Kegler
-
-This program is free software; you can redistribute
-it and/or modify it under the same terms as Perl 5.10.0.
+Copyright 2007-2009 Jeffrey Kegler, all rights reserved.
+Marpa is free software under the Perl license.
+For details see the LICENSE file in the Marpa distribution.
 
 =cut
 

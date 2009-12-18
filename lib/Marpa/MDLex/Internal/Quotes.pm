@@ -37,6 +37,9 @@ my %regex_data = (
 # and the right side bracketing symbols.
 # hex 27 is single quote, hex 5b is the left square bracket.
 ## no critic (RegularExpressions::ProhibitUnusualDelimiters)
+# Workaround a perlcritic bug -- it thinks it found a punctuation var
+# in the following
+## no critic (Variables::ProhibitPunctuationVars)
 my $punct = qr'[!"#$%&\x{27}(*+,-./:;<=?\x{5b}^_`{|~@]'xms;
 ## use critic
 

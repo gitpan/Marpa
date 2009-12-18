@@ -22,6 +22,7 @@ lib/Marpa/Callback.pm
 lib/Marpa/Display.pm
 lib/Marpa/Doc/Bibliography.pod
 lib/Marpa/Doc/Marpa.pod
+lib/Marpa/Doc/Support.pod
 lib/Marpa/Doc/Parse_Terms.pod
 lib/Marpa/Doc/TODO.pod
 lib/Marpa/Evaluator.pm
@@ -107,3 +108,4 @@ t/stripped.t
 t/timeflies.t
 t/wall.t
 t/weaken.t
+LICENSE

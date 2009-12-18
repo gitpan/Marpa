@@ -550,10 +550,12 @@ sub Marpa::Grammar::set {
             if ($value) {
                 my $rules      = $grammar->[Marpa::Internal::Grammar::RULES];
                 my $rule_count = @{$rules};
-                say {$trace_fh} 'Setting trace_rules';
+                say {$trace_fh} 'Setting trace_rules'
+                    or Marpa::exception("Could not print: $ERRNO");
                 if ($rule_count) {
                     say {$trace_fh}
-                        "Warning: Setting trace_rules after $rule_count rules have been defined";
+                        "Warning: Setting trace_rules after $rule_count rules have been defined"
+                        or Marpa::exception("Could not print: $ERRNO");
                 }
                 $grammar->[Marpa::Internal::Grammar::TRACING] = 1;
             } ## end if ($value)
@@ -647,7 +649,8 @@ sub Marpa::Grammar::set {
         if ( defined( my $value = $args->{'cycle_action'} ) ) {
             if ( $value && $phase >= Marpa::Internal::Phase::PRECOMPUTED ) {
                 say {$trace_fh}
-                    '"cycle_action" option is useless after grammar is precomputed';
+                    '"cycle_action" option is useless after grammar is precomputed'
+                    or Marpa::exception("Could not print: $ERRNO");
             }
             Marpa::exception(
                 q{cycle_action must be 'warn', 'quiet' or 'fatal'})
@@ -658,7 +661,8 @@ sub Marpa::Grammar::set {
         if ( defined( my $value = $args->{'warnings'} ) ) {
             if ( $value && $phase >= Marpa::Internal::Phase::PRECOMPUTED ) {
                 say {$trace_fh}
-                    q{"warnings" option is useless after grammar is precomputed};
+                    q{"warnings" option is useless after grammar is precomputed}
+                    or Marpa::exception("Could not print: $ERRNO");
             }
             $grammar->[Marpa::Internal::Grammar::WARNINGS] = $value;
         } ## end if ( defined( my $value = $args->{'warnings'} ) )
@@ -666,8 +670,10 @@ sub Marpa::Grammar::set {
         if ( defined( my $value = $args->{'inaccessible_ok'} ) ) {
             if ( $value && $phase >= Marpa::Internal::Phase::PRECOMPUTED ) {
                 say {$trace_fh}
-                    q{"inaccessible_ok" option is useless after grammar is precomputed};
-            }
+                    q{"inaccessible_ok" option is useless after grammar is precomputed}
+                    or Marpa::exception("Could not print: $ERRNO");
+
+            } ## end if ( $value && $phase >= ...)
             given ( ref $value ) {
                 when (q{}) {
                     $value //= {
@@ -690,7 +696,8 @@ sub Marpa::Grammar::set {
         if ( defined( my $value = $args->{'unproductive_ok'} ) ) {
             if ( $value && $phase >= Marpa::Internal::Phase::PRECOMPUTED ) {
                 say {$trace_fh}
-                    q{"unproductive_ok" option is useless after grammar is precomputed};
+                    q{"unproductive_ok" option is useless after grammar is precomputed}
+                    or Marpa::exception("Could not print: $ERRNO");
             }
             given ( ref $value ) {
                 when (q{}) {
@@ -808,7 +815,8 @@ sub Marpa::Grammar::precompute {
             # accessible ones.
             next SYMBOL if $symbol =~ /\]/xms;
             next SYMBOL if $ok->{$symbol};
-            say {$trace_fh} "Inaccessible symbol: $symbol";
+            say {$trace_fh} "Inaccessible symbol: $symbol"
+                or Marpa::exception("Could not print: $ERRNO");
         } ## end for my $symbol ( @{ Marpa::Grammar::inaccessible_symbols...})
     } ## end if ( $grammar->[Marpa::Internal::Grammar::WARNINGS] ...)
 
@@ -829,7 +837,8 @@ sub Marpa::Grammar::precompute {
             # productive ones.
             next SYMBOL if $symbol =~ /\]/xms;
             next SYMBOL if $ok->{$symbol};
-            say {$trace_fh} "Unproductive symbol: $symbol";
+            say {$trace_fh} "Unproductive symbol: $symbol"
+                or Marpa::exception("Could not print: $ERRNO");
         } ## end for my $symbol ( @{ Marpa::Grammar::unproductive_symbols...})
     } ## end if ( $grammar->[Marpa::Internal::Grammar::WARNINGS] ...)
 
@@ -1646,7 +1655,7 @@ sub add_rule {
             $lhs->[Marpa::Internal::Symbol::NAME], ' -> ',
             join( q{ }, map { $_->[Marpa::Internal::Symbol::NAME] } @{$rhs} ),
             "\n"
-            or Marpa::exception('Could not print to trace file');
+            or Marpa::exception("Could not print: $ERRNO");
     } ## end if ($trace_rules)
     return $new_rule;
 } ## end sub add_rule

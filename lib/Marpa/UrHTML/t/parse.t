@@ -3,6 +3,7 @@
 use 5.010;
 use strict;
 use warnings;
+use English qw( -no_match_vars );
 
 # These tests are based closely on those in the HTML-Tree module,
 # the authors of which I gratefully acknowledge.
@@ -33,7 +34,8 @@ my $urhtml_args = {
     handlers => [
         [   ':CRUFT' => sub {
                 my $literal = Marpa::UrHTML::literal();
-                say STDERR 'Cruft: ', $literal;
+                say STDERR 'Cruft: ', $literal
+                    or Carp::croak("Cannot print: $ERRNO");
                 return qq{<CRUFT literal="$literal">};
                 }
         ],
@@ -207,14 +209,14 @@ sub same {
     my $value1;
     if ( not eval { $value1 = $p1->parse( \$code1 ); 1 } ) {
         say "No parse for $code1"
-            or Carp::croak("Cannot print: $!");
+            or Carp::croak("Cannot print: $ERRNO");
         return $flip;
     }
 
     my $value2;
     if ( not eval { $value2 = $p2->parse( \$code2 ); 1 } ) {
         say "No parse for $code2"
-            or Carp::croak("Cannot print: $!");
+            or Carp::croak("Cannot print: $ERRNO");
         return $flip;
     }
 
@@ -231,7 +233,7 @@ sub same {
             print
                 "In1 $code1\n",
                 "In2 $code2\n", "Out1 $out1\n", "Out2 $out2\n", "\n\n"
-                or Carp::croak("Cannot print: $!");
+                or Carp::croak("Cannot print: $ERRNO");
         } ## end if ( $DEBUG > 2 )
     } ## end if ( $flip ? ( !$rv ) : $rv )
     else {
@@ -243,7 +245,7 @@ sub same {
             '# Input code 2:',           $code2, "\n",
             '# Output tree (as XML) 1:', $out1,  "\n",
             '# Output tree (as XML) 2:', $out2,  "\n",
-            or Carp::croak("Cannot print: $!");
+            or Carp::croak("Cannot print: $ERRNO");
     } ## end else [ if ( $flip ? ( !$rv ) : $rv ) ]
 
     return $rv;

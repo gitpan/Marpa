@@ -1,24 +1,26 @@
 ---
 name: Marpa
-version: 0.001_033
+version: 0.001_034
 author:
   - Jeffrey Kegler
 abstract: Generate Parsers from any BNF grammar
 license: perl
 resources:
   license: http://dev.perl.org/licenses/
-requires:
-  Scalar::Util: 0
 build_requires:
   Test::More: 0
+requires:
+  Scalar::Util: 0
+configure_requires:
+  Module::Build: 0.35
 provides:
   Marpa::UrHTML:
     file: lib/Marpa/UrHTML.pm
-    version: 0.001_033
-generated_by: Module::Build version 0.280801
+    version: 0.001_034
+generated_by: Module::Build version 0.35
 meta-spec:
-  url: http://module-build.sourceforge.net/META-spec-v1.2.html
-  version: 1.2
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
 distribution_type: module
 no_index:
   directory:
