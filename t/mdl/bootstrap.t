@@ -5,10 +5,11 @@ use warnings;
 use strict;
 use English qw( -no_match_vars );
 use Fatal qw( open close );
-use Test::More tests => 4;
+use Test::More tests => 5;
 use lib 'lib';
 
 BEGIN {
+    Test::More::use_ok('Marpa', 'alpha');
     Test::More::use_ok('Marpa::MDL');
 }
 

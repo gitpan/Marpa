@@ -6,10 +6,11 @@ use warnings;
 use lib 'lib';
 use English qw( -no_match_vars );
 
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Marpa::Test;
 
 BEGIN {
+    Test::More::use_ok('Marpa', 'alpha');
     Test::More::use_ok('Marpa::MDL');
 }
 

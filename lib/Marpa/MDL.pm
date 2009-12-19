@@ -3,7 +3,10 @@ package Marpa::MDL;
 use 5.010;
 use strict;
 use warnings;
-use Marpa;
+
+Carp::croak( "Marpa not loaded\n", "Marpa::MDL requires it\n" )
+    if not defined $Marpa::VERSION;
+
 use Marpa::MDLex;
 use Marpa::MDL::Symbol;
 

@@ -5,7 +5,7 @@ use 5.010;
 use strict;
 use warnings;
 
-use Test::More tests => 11;
+use Test::More tests => 12;
 
 use lib 'lib';
 use Marpa::Test;
@@ -14,6 +14,7 @@ use English qw( -no_match_vars );
 # use Smart::Comments;
 
 BEGIN {
+    Test::More::use_ok('Marpa', 'alpha');
     Test::More::use_ok('Marpa::MDLex');
 }
 

@@ -8,5 +8,5 @@ use Test::More tests => 1;
 use lib 'lib';
 
 BEGIN {
-    Test::More::use_ok('Marpa');
+    Test::More::use_ok('Marpa', 'alpha');
 }

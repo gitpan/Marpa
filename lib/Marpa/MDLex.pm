@@ -7,7 +7,7 @@ use strict;
 # It's all integers, except for the version number
 use integer;
 
-use Marpa;
+Carp::croak('Marpa not loaded') if not defined $Marpa::VERSION;
 
 use Marpa::Offset qw(
 

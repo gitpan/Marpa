@@ -1,5 +1,6 @@
 Revision history for Marpa
 
+0.001_035 Thu Dec 17 18:46:35 2009
 0.001_034 Wed Dec 16 18:40:04 2009
 0.001_033 Wed Dec 16 18:25:40 2009
 0.001_032 Wed Dec 16 09:35:31 2009
@@ -18,5 +19,5 @@ Revision history for Marpa
 0.001_019 Thu Oct  1 18:40:32 2009
 
 A series of developer's releases.  Marpa is a fork from Parse::Marpa.
-It is experimental and alpha.  Currently the documentation is far behind
-the changes.
+It is experimental and gradually being moved into alpha.  Currently the
+documentation is far behind the changes.

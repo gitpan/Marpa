@@ -5,10 +5,13 @@ use strict;
 use warnings;
 use lib 'lib';
 
-use Test::More tests => 2;
+use Test::More tests => 3;
 use Marpa::Test;
 
-BEGIN { Test::More::use_ok('Marpa::MDLex'); }
+BEGIN {
+    Test::More::use_ok('Marpa', 'alpha');
+    Test::More::use_ok('Marpa::MDLex');
+}
 
 package Test;
 

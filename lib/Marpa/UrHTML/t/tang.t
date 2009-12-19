@@ -15,8 +15,8 @@ BEGIN {
     else {
         Test::More::plan skip_all => 'HTML::PullParser not available';
     }
-    Test::More::use_ok('Marpa');
-    Test::More::use_ok('Marpa::UrHTML');
+    Test::More::use_ok('Marpa', 'alpha');
+    Test::More::use_ok('Marpa::UrHTML', 'alpha');
 } ## end BEGIN
 
 use Carp;

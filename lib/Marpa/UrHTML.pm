@@ -4,23 +4,73 @@ use 5.010;
 use strict;
 use warnings;
 
-use Carp ();
+use Marpa 'alpha';
 
+BEGIN {
+    $Marpa::UrHTML::VERSION = $Marpa::VERSION;
+}
+
+sub import {
+   goto &Marpa::UrHTML::VERSION;
+}
+
+package Marpa::UrHTML::Internal;
+
+sub version_error {
+    my $message = <<'END_OF_MESSAGE';
+====================================
+Marpa::UrHTML's "use" statement semantics is non-standard,
+  at least while it remains alpha.
+The "use Marpa::UrHTML" statement must have an argument.
+You have two choices:
+
+  use Marpa::UrHTML <<VERSION>>;
+
+means match this version and THIS VERSION ONLY.
+
+  use Marpa::UrHTML 'alpha';
+
+means you are WILLING TO DEAL WITH INTERFACE CHANGES
+  and will accept whatever version is installed.
+I apologize for the non-standard behavior,
+but I hope it follows the principle of least surprise,
+because while Marpa::UrHTML remains alpha,
+THE INTERFACE CAN CHANGE even between minor versions.
+====================================
+END_OF_MESSAGE
+    $message =~ s/<<VERSION>>/$Marpa::UrHTML::VERSION/;
+    Marpa::exception($message);
+} ## end sub version_error
+
+sub Marpa::UrHTML::VERSION {
+    my ( $class, $require ) = @_;
+    given ($require) {
+        when (undef) { version_error() }
+        when ( lc $_ eq 'alpha' ) { return $Marpa::UrHTML::VERSION }
+        when (/^[0-9]/) {
+            return $Marpa::UrHTML::VERSION if $Marpa::UrHTML::VERSION eq $_;
+            Marpa::exception(
+                "Marpa is still alpha\n",
+                "  Versions must match *EXACTLY*\n",
+                "  You asked for $_\n",
+                "  Actual version is $Marpa::UrHTML::VERSION\n"
+                )
+        } ## end when (/^[0-9]/)
+        default { version_error() }
+    } ## end given
+} ## end sub Marpa::UrHTML::VERSION
+
+use Carp ();
 use HTML::PullParser;
 use HTML::Entities qw(decode_entities);
 use HTML::Tagset ();
-use Marpa;
 use Marpa::Internal;
 
 # use Smart::Comments '-ENV';
 
 ### <where> Using smart comments ...
 
-package Marpa::UrHTML::Internal;
-
 use English qw( -no_match_vars );
-
-use Marpa::Internal;
 
 use Marpa::Offset qw(
     :package=Marpa::UrHTML::Internal::TDesc

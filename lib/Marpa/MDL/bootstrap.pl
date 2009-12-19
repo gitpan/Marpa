@@ -3,6 +3,7 @@
 use 5.010;
 use strict;
 use warnings;
+use Marpa 'alpha';
 use Marpa::MDL;
 use Marpa::MDL::Internal::Actions;
 use Fatal qw(open);

@@ -4,7 +4,7 @@ use 5.010;
 use strict;
 use warnings;
 use English qw( -no_match_vars );
-use Marpa::UrHTML;
+use Marpa::UrHTML 'alpha';
 use HTML::Tagset;
 use Fatal qw(open close);
 

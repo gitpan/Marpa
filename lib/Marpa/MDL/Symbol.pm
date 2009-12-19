@@ -8,7 +8,6 @@ package Marpa::MDL::Internal::Symbol;
 use 5.010;
 use strict;
 use warnings;
-use Marpa;
 
 sub Marpa::MDL::canonical_symbol_name {
     my $symbol = lc shift;

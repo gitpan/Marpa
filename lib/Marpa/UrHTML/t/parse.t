@@ -24,11 +24,11 @@ BEGIN {
     if ( not $skipping ) {
         Test::More::plan tests => 42;
     }
-    Test::More::use_ok('Marpa');
-    Test::More::use_ok('Marpa::UrHTML');
+    Test::More::use_ok('Marpa', 'alpha');
+    Test::More::use_ok('Marpa::UrHTML', 'alpha');
 } ## end BEGIN
 
-use Marpa::UrHTML;
+use Marpa::UrHTML 'alpha';
 
 my $urhtml_args = {
     handlers => [

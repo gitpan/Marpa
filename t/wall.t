@@ -18,7 +18,7 @@ use Test::More tests => 13;
 use Marpa::Test;
 
 BEGIN {
-    Test::More::use_ok('Marpa');
+    Test::More::use_ok('Marpa', 'alpha');
 }
 
 # The inefficiency (at least some of it) is deliberate.

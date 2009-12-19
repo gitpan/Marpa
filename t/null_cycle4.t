@@ -11,7 +11,7 @@ use lib 'lib';
 use Marpa::Test;
 
 BEGIN {
-    Test::More::use_ok('Marpa');
+    Test::More::use_ok('Marpa', 'alpha');
 }
 
 ## no critic (Subroutines::RequireArgUnpacking)

@@ -8,7 +8,7 @@ use Test::More tests => 8;
 use Marpa::Test;
 
 BEGIN {
-    Test::More::use_ok('Marpa');
+    Test::More::use_ok('Marpa', 'alpha');
 }
 
 # The example grammar in Aycock/Horspool "Practical Earley Parsing",
