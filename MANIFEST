@@ -20,6 +20,7 @@ etc/Makefile
 inc/Test/Weaken.pm
 lib/Marpa/Callback.pm
 lib/Marpa/Display.pm
+lib/Marpa/Doc/Algorithm.pod
 lib/Marpa/Doc/Bibliography.pod
 lib/Marpa/Doc/Marpa.pod
 lib/Marpa/Doc/Parse_Terms.pod

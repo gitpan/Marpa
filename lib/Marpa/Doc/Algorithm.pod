@@ -1,0 +1,272 @@
+=head1 NAME
+
+Algorithm - The Marpa Algorithm
+
+=head1 DESCRIPTION
+
+Marpa is derived from
+the parser
+L<described by John Aycock and R.  Nigel Horspool|Marpa::Doc::Bibliography/"Aycock and Horspool 2002">.
+Aycock and Horspool combined LR(0)
+precomputation
+with the general parsing algorithm
+L<described by Jay
+Earley in 1970|Marpa::Doc::Bibliography/"Earley 1970">.
+
+Marpa combines several parsing techniques,
+and a full description would be most of a textbook
+on parsing.
+That might be fun to write someday,
+but for now I have to content myself
+with briefly describing the significant ideas
+that are new with Marpa.
+I have to assume that my reader is familiar with parsing in general,
+so that he understands terms like Earley set and Earley item.
+
+=head2 A New Recognition Engine
+
+Marpa takes the recognition engine as
+described by Horspool and Aycock
+and turns it inside out and upside down.
+In the Horspool and Aycock version of Earley's,
+the main loop iterated over each item of an Earley set,
+first scanning for tokens,
+then completing items in the set.
+Marpa turns this into two separate loops over the
+Earley items,
+the first of which completes the current earley set,
+and the second of which scans for tokens.
+
+=head3 Prediction-driven Lexing and Earley Parsing
+
+The advantage of this double inversion is that the lexical analysis
+can be put between the two loops
+-- after completion,
+but before scanning.
+This makes prediction-driven lexing possible.
+Prediction-driven lexing, when combined with Earley power,
+turns out to be very useful.
+
+=head2 Earlemes
+
+Marpa allows ambiguous lexing,
+including recognition of lexemes of different lengths starting at the
+same lexical position,
+and recognition of overlapping lexemes.
+To facilitate this,
+Marpa introduces the B<earleme> (named after Jay Earley).
+Previous Earley 
+implementations required the input to be broken
+up into tokens, usually by lexical analysis of the input using
+DFA's.
+(DFA's -- deterministic finite automata -- are the equivalent of
+regular expressions when that term is used in the strictest sense).
+Requiring that the first level of analysis
+be performed by a DFA hobbles a general parser like Earley's.
+
+Marpa allows the scanning phase of
+Earley's algorithm to add items not just to the
+next Earley set, but to any later one.
+Alternative scans of the input can be put into the Earley sets, and
+the power of Earley's algorithm harnessed to deal with the
+indeterminism.
+
+Marpa does this by allowing
+each scanned token to have a length in earlemes.
+The B<earleme> is a unit of distance
+measured in Earley sets.
+If the length of a scanned token is I<L>,
+and the current Earley set is I<C>,
+a newly scanned Earley item is added to Earley set I<C+L>.
+For example, if a token is 7 earlemes long,
+and it is to start at Earley set 35,
+then it is added to Earley set 42.
+
+Lexing in earlemes is flexible.
+If an implementation defines an earleme so that the
+distances in earlemes are the same as 
+distance in a token stream,
+then lexing in earlemes is exactly equivalent
+to traditional lexing.
+But distance in earlemes could also be defined as equivalent to string length,
+measured either in bytes or Unicode graphemes.
+
+=head2 Chomsky-Horspool-Aycock Form
+
+Another significant change
+to the Aycock and Horspool algorithm
+in Marpa
+is its internal rewriting
+of the grammar.
+Aycock and Horspool rewrote their grammars internally into what they
+called NNF (Nihilist Normal Form).
+Earley's original
+algorithm had serious issues with nullable symbols and productions,
+and the NNF rewrite fixes almost all of them.
+(As a reminder,
+a nullable symbol or production is
+one which derives the empty sentence.)
+Importantly,
+NNF also allows complete and easy mapping of the semantics of the
+original grammar to its NNF rewrite, so that NNF and the whole
+rewrite process can be made invisible to the user.
+
+A problem with NNF is that the rewritten grammar is
+exponentially larger than the original in the theoretical worst
+case.
+I think
+cases would arise in practice
+where the NNF size explosion is a real problem.
+For example,
+any language in which whitespace is significant but optional
+could cause an NNF size explosion.
+
+Marpa's solution is Chomsky-Horspool-Aycock Form (CHAF).
+This is
+Horspool and Aycock's NNF, but with the further restriction that
+no more than two nullable symbols may appear in any production.
+(The idea that any context-free grammar can
+be rewritten into productions of at most a small fixed size appears to
+originate, like so much else, with Noam Chomsky.)
+The shortened CHAF production maps back
+to the original grammar, so that like NNF, the CHAF rewrite can be
+made invisible to the user.
+With CHAF, the theoretical worst
+behavior is linear, and in those difficult cases likely to arise
+in practice the multiplier is much smaller.
+
+=head2 Iterating Aycock-Horspool Parses
+
+Aycock and Horspool give an algorithm for constructing a rightmost derivation
+from their version of the Earley sets.
+They suggest that in the case of multiple parses,
+their Earley sets could be iterated through,
+and they point out where the decision points occur
+in their algorithm.
+
+But they give no algorithm to do that iteration.
+Marpa, of course, required an algorithm to actually produce
+and evaluate the parses it recognizes.
+Inventing that algorithm was the most difficult part
+of writing Marpa -- far more difficult than the modifications
+to the core Earley-Aycock-Horspool algorithm.
+Marpa sets itself up to iterate
+and evaluate parses by creating a B<parse bocage>
+from the Earley sets.
+
+=head3 Parse Bocages
+
+A ambiguous parse is a set of parse trees, and in the parsing literature
+there is
+an efficient and compact means of storing a set of closely related
+parse trees.  It is called, aptly, a parse forest.
+
+Nodes in
+a parse forest are divided into and-nodes and or-nodes.
+And-nodes are individual pieces of parse trees.
+In conventional parse forests,
+each and-node represents a production.
+And-nodes in a parse forest
+are just like all the nodes
+in a parse tree
+-- they have
+the lhs as the parent node and the rhs symbols as child nodes.
+
+Or-nodes represent choices among and-nodes.
+Each child of an or-node is one choice.
+A parse tree is generated from a parse forest
+by traversing the forest and selecting one child node
+at every or-node.
+
+Marpa uses a modified form of parse forest,
+which I call a B<parse bocage>.
+Marpa could not use standard parse forests for two reasons.
+First, parse forests not only contain trees,
+but a parse forest itself must take the form of a tree.
+However, the data produced by Marpa's recognizer may contain cycles.
+Therefore, the data structure Marpa needs is not a tree,
+strictly speaking, but a graph.
+
+Second, the productions of the grammar are not repesented intact
+when the Marpa evaluator finds them in the Earley items.
+Instead,
+each production is broken up,
+and represented as links between Earley items.
+
+This system of links comes from
+Aycock and Horspool.
+In Marpa's elaboration of the Aycock-Horspool scheme,
+each Earley item has a list of sources.
+Each source can have two elements: a predecessor and a cause.
+
+The predecessor is optional.
+If present, it is a link to an Earley item.
+It's called a "predecessor link" because both the linking and the
+linked Earley item are pieces of the same production,
+and the linked Earley item is the "predecessor" or earlier part.
+
+The cause element of the source is always present.
+It can be a token or a link to a child Earley item.
+The Earley item linked-to by the cause element is a child in the sense
+that if the productions
+from the two Earley items were represented in a parse tree,
+the production from the linking Earley item would be the parent,
+and the production from the linked-to Earley item would be the child.
+
+In effect, the sources in the Earley items
+contain the original grammar rewritten
+into productions with at most two symbols on the
+right hand side.
+This is basically Chomsky Normal Form (CNF).
+
+A CNF grammar can be represented
+conveniently as a binary tree.
+Marpa does not recreate and-nodes with the original,
+non-binary, structure of the grammar when
+it creates the parse bocage from the Earley items.
+Marpa could do so, but
+for two reasons, that doesn't make sense.
+
+First,
+CNF, combined with Aycock and Horspool's split DFA states,
+produces a representation even more compact than a conventional
+parse forest.
+Secondly,
+code to traverse, iterate and evaluate binary nodes
+is considerably simpler than code which needs to deal
+with nodes which have an arbitrary number of children.
+Rather than rewrite the grammar into a form that's harder
+to process,
+it makes sense to leave the grammar the way it is found
+in the Earley items.
+
+For these reasons,
+the and-nodes in parse bocages do not directly represent productions
+of the grammar. 
+Instead productions are broken up,
+so that every and-node has at most two children.
+
+The bocage forests of Normandy and Brittany are
+networks of dense hedgerows cultivated over centuries
+as a fence for livestock, but also for military defense.
+These hedges remained impressive obstacles
+even after the development of tanks.
+The Norman bocage played a major role in World War II.
+The term "parse bocage" seemed appropriate for
+the tactically-effective thicket that
+Marpa uses to store parses.
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright 2007-2009 Jeffrey Kegler, all rights reserved.
+Marpa is free software under the Perl license.
+For details see the LICENSE file in the Marpa distribution.
+
+=cut
+
+# Local Variables:
+#   mode: cperl
+#   cperl-indent-level: 4
+#   fill-column: 100
+# End:
+# vim: expandtab shiftwidth=4:
