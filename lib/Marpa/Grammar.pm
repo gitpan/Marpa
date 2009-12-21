@@ -213,8 +213,9 @@ use Marpa::Offset qw(
     SYMBOL_HASH
     RULE_HASH
     DEFAULT_NULL_VALUE
-    CYCLE_ACTION
     ACTION_OBJECT
+    CYCLE_ACTION
+    HAS_CYCLE
 
     =LAST_EVALUATOR_FIELD
 
@@ -2456,12 +2457,15 @@ sub detect_cycle {
             print {$trace_fh}
                 'Cycle found involving rule: ',
                 Marpa::brief_rule($warning_rule), "\n"
-                or Marpa::exception('Could not print to trace file');
+                or Marpa::exception("Could not print: $ERRNO");
         } ## end if ( $warn_on_cycle and defined $warning_rule )
     } ## end for my $rule ( @{$cycle_rules} )
 
-    Marpa::exception('Cycle in grammar, fatal error')
-        if scalar @{$cycle_rules} and $cycle_is_fatal;
+    if ( scalar @{$cycle_rules} ) {
+        Marpa::exception('Cycle in grammar, fatal error')
+            if $cycle_is_fatal;
+        $grammar->[Marpa::Internal::Grammar::HAS_CYCLE] = 1;
+    }
 
     return 1;
 

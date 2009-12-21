@@ -11,7 +11,7 @@ use lib 't/lib';
 use Marpa::Test;
 
 BEGIN {
-    Test::More::use_ok('Marpa', 'alpha');
+    Test::More::use_ok( 'Marpa', 'alpha' );
 }
 
 # A grammar from Hopcroft & Ullman,

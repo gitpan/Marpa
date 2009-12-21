@@ -8,7 +8,7 @@ use Test::More tests => 3;
 use lib 'lib';
 
 BEGIN {
-    Test::More::use_ok('Marpa', 'alpha');
+    Test::More::use_ok( 'Marpa', 'alpha' );
     Test::More::use_ok('Marpa::MDL');
 }
 

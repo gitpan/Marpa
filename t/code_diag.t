@@ -14,7 +14,7 @@ use English qw( -no_match_vars );
 # use Smart::Comments;
 
 BEGIN {
-    Test::More::use_ok('Marpa', 'alpha');
+    Test::More::use_ok( 'Marpa', 'alpha' );
     Test::More::use_ok('Marpa::MDLex');
 }
 

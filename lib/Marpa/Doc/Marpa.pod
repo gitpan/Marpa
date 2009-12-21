@@ -1,18 +1,76 @@
 =head1 NAME
 
-Marpa - Overview of the Marpa Modules
+Marpa - Generate Parsers for any BNF Grammar
 
 =head1 DESCRIPTION
 
+Marpa generates parses from any BNF grammar.  That includes recursive
+grammars, ambiguous grammars, infinitely ambiguous grammars and
+grammars with useless or empty productions.  If you can write it in
+BNF, Marpa parses it.
+
 This is a branch from L<Parse::Marpa>.
-This branch started out experimental,
-but much of the functionality
-is now stable.
-The first alpha releases will be two utilities:
-L<an HTML formatter|urhtml_fmt>
-and
-L<a script for computing a "complexity" score
-and other statistics for HTML scripts|urhtml_score>.
+This branch started out experimental.
+It is still alpha,
+but in the near future it will replace
+L<Parse::Marpa> as the main branch.
+
+=head1 DO YOU HAVE ANYTHING ACTUALLY USEFUL?
+
+=over
+
+=item L<urhtml_fmt>
+formats HTML documents, indenting them according to their
+structure.
+It supplies missing start and end tags.
+I find L<urhtml_fmt>
+quite handy.
+It allows me to get a quick look at
+the structure of an HTML document.
+And the formatted version is easier and safer to
+transform using regular expressions.
+
+=item L<urhtml_score> computes a
+"complexity" score
+and other statistics for HTML scripts.
+The complexity score is the average depth in the element structure
+of the
+characters, divided by the log of the document's length.
+It's an interesting number.
+
+=back
+
+These scripts are demos of Marpa::UrHTML,
+which is a high level HTML parser.
+"High level" means that it
+finds the structure of an HTML document,
+as opposed to L<HTML::Parser> which does tokenization
+or "low level parsing".
+(Marpa::UrHTML uses L<HTML::Parser>
+as its low-level parser.)
+
+=head1 GUIDE TO THE MARPA DOCUMENTATION
+
+Marpa's documentation is being brought up to date.
+What is ready at the moment is only helpful
+for readers who are familiar
+with other parsing algorithms,
+and who are
+interested in learning more about the approach
+I used to write the Marpa parse engine.
+L<Marpa::Algorithm> describes the Marpa algorithm itself.
+My sources, and other useful references are described in
+L<Marpa::Bibliography>.
+
+L<Marpa::Parse_Terms> is intended as a quick refresher
+of parsing terminology.
+It's all standard, but the emphasis is on the meanings
+of the terms as they will be used
+in the (not yet released) documents.
+
+Support, on a volunteer basis,
+is provided via the standard mechanisms for CPAN modules.
+L<The Support document|Marpa::Support> has details.
 
 =head1 AUTHOR
 

@@ -12,7 +12,7 @@ use lib 'lib';
 use Marpa::Test;
 
 BEGIN {
-    Test::More::use_ok('Marpa', 'alpha');
+    Test::More::use_ok( 'Marpa', 'alpha' );
 }
 
 ## no critic (Subroutines::RequireArgUnpacking)
@@ -145,82 +145,82 @@ my $bocage = $evaler->show_bocage(3);
 Marpa::Test::is( $bocage, <<'END_OF_STRING', 'Bocage' );
 parse count: 0
 S2@0-3L6o0 -> S2@0-3L6o0a0
-S2@0-3L6o0a0 -> S13@0-3L1o1
+S2@0-3L6o0a0 -> S13@0-3L1o12
     rule 10: S['] -> . S
     value_ops
 S2@0-3L6o0 -> S2@0-3L6o0a1
-S2@0-3L6o0a1 -> S8@0-3L1o2
+S2@0-3L6o0a1 -> S8@0-3L1o1
     rule 10: S['] -> . S
     value_ops
-S13@0-3L1o1 -> S13@0-3L1o1a2
-S13@0-3L1o1a2 -> S10@0-2R4:2o3 S5@2-3L5o4
-    rule 4: S -> p p . S[R0:2][x5]
-    (part of 0) S -> < p > < p > . < p n >
-    value_ops
-S8@0-3L1o2 -> S8@0-3L1o2a3
-S8@0-3L1o2a3 -> S6@0-1R5:2o5 S9@1-3L5o6
+S8@0-3L1o1 -> S8@0-3L1o1a2
+S8@0-3L1o1a2 -> S6@0-1R5:2o10 S9@1-3L5o5
     rule 5: S -> p p[] . S[R0:2][x5]
     (part of 0) S -> < p > < p > . < p n >
     value_ops
-S8@0-3L1o2 -> S8@0-3L1o2a4
-S8@0-3L1o2a4 -> S6@0-1R6:2o7 S9@1-3L5o6
+S8@0-3L1o1 -> S8@0-3L1o1a3
+S8@0-3L1o1a3 -> S6@0-1R6:2o2 S9@1-3L5o5
     rule 6: S -> p[] p . S[R0:2][x5]
     (part of 0) S -> < p > < p > . < p n >
     value_ops
-S10@0-2R4:2o3 -> S10@0-2R4:2o3a5
-S10@0-2R4:2o3a5 -> S6@0-1R4:1o8 S4@1-2L2o9
-    rule 4: S -> p . p S[R0:2][x5]
+S6@0-1R6:2o2 -> S6@0-1R6:2o2a4
+S6@0-1R6:2o2a4 -> S1@0-0R6:1o4 S4@0-1L2o3
+    rule 6: S -> p[] . p S[R0:2][x5]
     (part of 0) S -> < p > . < p > < p n >
-S5@2-3L5o4 -> S5@2-3L5o4a6
-S5@2-3L5o4a6 -> S7@2-2R9:1o10 S4@2-3L3o11
-    rule 9: S[R0:2][x5] -> p[] . n
-    (part of 0) S -> p p < p > . < n >
+S4@0-1L2o3 -> S4@0-1L2o3a5
+S4@0-1L2o3a5 -> 'a'
+    rule 1: p -> . a
     value_ops
-S6@0-1R5:2o5 -> S6@0-1R5:2o5a8
-S6@0-1R5:2o5a8 -> S6@0-1R5:1o13 undef
-    rule 5: S -> p . p[] S[R0:2][x5]
-    (part of 0) S -> < p > . < p > < p n >
-S9@1-3L5o6 -> S9@1-3L5o6a9
-S9@1-3L5o6a9 -> S11@1-2R8:1o14 S4@2-3L3o11
+S1@0-0R6:1o4 -> S1@0-0R6:1o4a6
+S1@0-0R6:1o4a6 -> undef
+    rule 6: S -> . p[] p S[R0:2][x5]
+    (part of 0) S -> . < p > < p > < p n >
+S9@1-3L5o5 -> S9@1-3L5o5a7
+S9@1-3L5o5a7 -> S11@1-2R8:1o8 S4@2-3L3o7
     rule 8: S[R0:2][x5] -> p . n
     (part of 0) S -> p p < p > . < n >
     value_ops
-S6@0-1R6:2o7 -> S6@0-1R6:2o7a11
-S6@0-1R6:2o7a11 -> S1@0-0R6:1o15 S4@0-1L2o16
-    rule 6: S -> p[] . p S[R0:2][x5]
-    (part of 0) S -> < p > . < p > < p n >
-S6@0-1R4:1o8 -> S6@0-1R4:1o8a12
-S6@0-1R4:1o8a12 -> S4@0-1L2o16
-    rule 4: S -> . p p S[R0:2][x5]
-    (part of 0) S -> . < p > < p > < p n >
-S4@1-2L2o9 -> S4@1-2L2o9a13
-S4@1-2L2o9a13 -> 'b'
-    rule 1: p -> . a
-    value_ops
-S7@2-2R9:1o10 -> S7@2-2R9:1o10a14
-S7@2-2R9:1o10a14 -> undef
-    rule 9: S[R0:2][x5] -> . p[] n
-    (part of 0) S -> p p . < p > < n >
-S4@2-3L3o11 -> S4@2-3L3o11a15
-S4@2-3L3o11a15 -> 'c'
+S4@2-3L3o7 -> S4@2-3L3o7a10
+S4@2-3L3o7a10 -> 'c'
     rule 3: n -> . a
     value_ops
-S6@0-1R5:1o13 -> S6@0-1R5:1o13a17
-S6@0-1R5:1o13a17 -> S4@0-1L2o16
-    rule 5: S -> . p p[] S[R0:2][x5]
-    (part of 0) S -> . < p > < p > < p n >
-S11@1-2R8:1o14 -> S11@1-2R8:1o14a18
-S11@1-2R8:1o14a18 -> S4@1-2L2o9
+S11@1-2R8:1o8 -> S11@1-2R8:1o8a11
+S11@1-2R8:1o8a11 -> S4@1-2L2o9
     rule 8: S[R0:2][x5] -> . p n
     (part of 0) S -> p p . < p > < n >
-S1@0-0R6:1o15 -> S1@0-0R6:1o15a19
-S1@0-0R6:1o15a19 -> undef
-    rule 6: S -> . p[] p S[R0:2][x5]
-    (part of 0) S -> . < p > < p > < p n >
-S4@0-1L2o16 -> S4@0-1L2o16a20
-S4@0-1L2o16a20 -> 'a'
+S4@1-2L2o9 -> S4@1-2L2o9a12
+S4@1-2L2o9a12 -> 'b'
     rule 1: p -> . a
     value_ops
+S6@0-1R5:2o10 -> S6@0-1R5:2o10a13
+S6@0-1R5:2o10a13 -> S6@0-1R5:1o11 undef
+    rule 5: S -> p . p[] S[R0:2][x5]
+    (part of 0) S -> < p > . < p > < p n >
+S6@0-1R5:1o11 -> S6@0-1R5:1o11a14
+S6@0-1R5:1o11a14 -> S4@0-1L2o3
+    rule 5: S -> . p p[] S[R0:2][x5]
+    (part of 0) S -> . < p > < p > < p n >
+S13@0-3L1o12 -> S13@0-3L1o12a15
+S13@0-3L1o12a15 -> S10@0-2R4:2o15 S5@2-3L5o13
+    rule 4: S -> p p . S[R0:2][x5]
+    (part of 0) S -> < p > < p > . < p n >
+    value_ops
+S5@2-3L5o13 -> S5@2-3L5o13a16
+S5@2-3L5o13a16 -> S7@2-2R9:1o14 S4@2-3L3o7
+    rule 9: S[R0:2][x5] -> p[] . n
+    (part of 0) S -> p p < p > . < n >
+    value_ops
+S7@2-2R9:1o14 -> S7@2-2R9:1o14a18
+S7@2-2R9:1o14a18 -> undef
+    rule 9: S[R0:2][x5] -> . p[] n
+    (part of 0) S -> p p . < p > < n >
+S10@0-2R4:2o15 -> S10@0-2R4:2o15a19
+S10@0-2R4:2o15a19 -> S6@0-1R4:1o16 S4@1-2L2o9
+    rule 4: S -> p . p S[R0:2][x5]
+    (part of 0) S -> < p > . < p > < p n >
+S6@0-1R4:1o16 -> S6@0-1R4:1o16a20
+S6@0-1R4:1o16a20 -> S4@0-1L2o3
+    rule 4: S -> . p p S[R0:2][x5]
+    (part of 0) S -> . < p > < p > < p n >
 END_OF_STRING
 
 # Local Variables:

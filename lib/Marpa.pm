@@ -5,16 +5,17 @@ use warnings;
 use strict;
 
 BEGIN {
-    our $VERSION = '0.001_036';
+    our $VERSION = '0.001_037';
 }
 
 use Marpa::Internal;
 use Marpa::Grammar;
 use Marpa::Recognizer;
 use Marpa::Evaluator;
+use Marpa::Recce_Value;
 
 sub import {
-   goto &Marpa::VERSION;
+    goto &Marpa::VERSION;
 }
 
 package Marpa::Internal;
@@ -41,16 +42,16 @@ because while Marpa remains alpha,
 THE INTERFACE CAN CHANGE even between minor versions.
 ====================================
 END_OF_MESSAGE
-    $message =~ s/<<VERSION>>/$Marpa::VERSION/;
+    $message =~ s/<<VERSION>>/$Marpa::VERSION/xms;
     Marpa::exception($message);
 } ## end sub version_error
 
 sub Marpa::VERSION {
-    my ($class, $require) = @_;
+    my ( $class, $require ) = @_;
     given ($require) {
-        when ( undef ) { version_error() }
+        when (undef) { version_error() }
         when ( lc $_ eq 'alpha' ) { return $Marpa::VERSION }
-        when (/^[0-9]/) {
+        when (/^[0-9]/xms) {
             return $Marpa::VERSION if $Marpa::VERSION eq $_;
             Marpa::exception(
                 "Marpa is still alpha\n",
@@ -58,9 +59,9 @@ sub Marpa::VERSION {
                 "  You asked for $_\n",
                 "  Actual version is $Marpa::VERSION\n"
                 )
-        } ## end when (/^[0-9]/)
-        default { version_error() }
+        } ## end when (/^[0-9]/xms)
     } ## end given
+    return version_error();    # return is to fool perlcritic
 } ## end sub Marpa::VERSION
 
-1;    # End of Marpa
+1;

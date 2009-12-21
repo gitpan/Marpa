@@ -30,7 +30,7 @@ use Test::More tests => 3;
 use Marpa::Test;
 
 BEGIN {
-    Test::More::use_ok('Marpa', 'alpha');
+    Test::More::use_ok( 'Marpa', 'alpha' );
     Test::More::use_ok('Marpa::MDLex');
 }
 

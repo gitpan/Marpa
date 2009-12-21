@@ -11,7 +11,7 @@ BEGIN {
 }
 
 sub import {
-   goto &Marpa::UrHTML::VERSION;
+    goto &Marpa::UrHTML::VERSION;
 }
 
 package Marpa::UrHTML::Internal;
@@ -38,7 +38,7 @@ because while Marpa::UrHTML remains alpha,
 THE INTERFACE CAN CHANGE even between minor versions.
 ====================================
 END_OF_MESSAGE
-    $message =~ s/<<VERSION>>/$Marpa::UrHTML::VERSION/;
+    $message =~ s/<<VERSION>>/$Marpa::UrHTML::VERSION/xms;
     Marpa::exception($message);
 } ## end sub version_error
 
@@ -47,7 +47,7 @@ sub Marpa::UrHTML::VERSION {
     given ($require) {
         when (undef) { version_error() }
         when ( lc $_ eq 'alpha' ) { return $Marpa::UrHTML::VERSION }
-        when (/^[0-9]/) {
+        when (/^[0-9]/xms) {
             return $Marpa::UrHTML::VERSION if $Marpa::UrHTML::VERSION eq $_;
             Marpa::exception(
                 "Marpa is still alpha\n",
@@ -55,9 +55,9 @@ sub Marpa::UrHTML::VERSION {
                 "  You asked for $_\n",
                 "  Actual version is $Marpa::UrHTML::VERSION\n"
                 )
-        } ## end when (/^[0-9]/)
-        default { version_error() }
+        } ## end when (/^[0-9]/xms)
     } ## end given
+    return version_error();    # return is to fool perlcritic
 } ## end sub Marpa::UrHTML::VERSION
 
 use Carp ();
@@ -1414,56 +1414,12 @@ sub Marpa::UrHTML::parse {
     my $value = do {
         local $Marpa::UrHTML::Internal::PARSE_INSTANCE = $self;
         local $Marpa::UrHTML::INSTANCE                 = {};
-        my $evaler = Marpa::Evaluator->new(
-            {   recce         => $recce,
-                trace_values  => $self->{trace_values},
+        $recce->value(
+            {   trace_values  => $self->{trace_values},
                 trace_actions => $self->{trace_actions},
                 closures      => \%closure,
             }
         );
-
-        Marpa::exception('No parse: could not create evaluator')
-            if not $evaler;
-
-        $recce = undef;    # conserve memory
-
-        if ( my $verbose = $self->{trace_ambiguity} ) {
-            say $evaler->show_ambiguity($verbose)
-                or Carp::croak("Cannot print: $ERRNO");
-        }
-
-        if ( not $evaler ) {
-            my $last_marpa_token = $recce->furthest();
-            $last_marpa_token =
-                  $last_marpa_token > $#marpa_tokens
-                ? $#marpa_tokens
-                : $last_marpa_token;
-            my $furthest_offset =
-                Marpa::UrHTML::Internal::earleme_to_offset( $self,
-                $last_marpa_token );
-
-            my $last_good_earleme = $recce->find_parse();
-            say 'last_good_earleme=', Data::Dumper::Dumper($last_good_earleme)
-                or Carp::croak("Cannot print: $ERRNO");
-            my $last_good_offset =
-                Marpa::UrHTML::Internal::earleme_to_offset( $self,
-                $last_good_earleme );
-            say 'last_good_offset=', Data::Dumper::Dumper($last_good_offset)
-                or Carp::croak("Cannot print: $ERRNO");
-
-            # 100 characters --
-            # the amount of context to put in the error message
-            say 'last good at ',
-                ( substr ${$document}, $last_good_offset, 100 )
-                or Carp::croak("Cannot print: $ERRNO");
-
-            say Data::Dumper::Dumper( $recce->find_parse() )
-                or Carp::croak("Cannot print: $ERRNO");
-
-            Marpa::exception( 'HTML parse exhausted at location ',
-                $furthest_offset );
-        } ## end if ( not $evaler )
-        $evaler->value;
     };
     Marpa::exception('No parse: evaler returned undef') if not defined $value;
     return ${$value};

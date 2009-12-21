@@ -3,10 +3,12 @@
 use 5.010;
 use strict;
 use warnings;
+use Carp;
+use Fatal qw(open close);
 
 use Module::Build;
 
-my $marpa_version = '0.001_036';
+my $marpa_version = '0.001_037';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -24,7 +26,11 @@ my $class = Module::Build->subclass(
             next FILE if $file !~ /[.](pl|pm|t)$/xmsi;
             my $file_text = do {
                 local $/ = undef;
-                open( my $fh, q{<}, $file ) or die("Cannot open $file: $!");
+                if ( not -r $file ) {
+                    Carp::carp("Cannot open $file: $!");
+                    next FILE;
+                }
+                open( my $fh, q{<}, $file );
                 <$fh>;
             };
             if ( $file_text =~ /^ \s+ use \s+ Smart[:][:]Comments /xms ) {
@@ -32,7 +38,7 @@ my $class = Module::Build->subclass(
             }
         } ## end while ( my $file = <$manifest_fh> )
 
-        die(join "\n", @problems, "Fatal Error\n") if @problems;
+        Carp::carp(join "\n", @problems, "Fatal Error\n") if @problems;
         $self->SUPER::ACTION_dist;
     } ## end sub ACTION_dist
 SUBCLASS
