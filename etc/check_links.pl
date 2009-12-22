@@ -60,9 +60,11 @@ my @doc_urls = ();
 
 my %url_seen = ();
 
+my $at_col_0 = 1;
 PAGE: for my $url (@doc_urls) {
     $url = $marpa_doc_base . $url;
-    say "Examining document $url" or Carp::croak("Cannot print: $ERRNO");
+    print "Examining document $url" or Carp::croak("Cannot print: $ERRNO");
+    $at_col_0 = 0;
 
     my $p  = HTML::LinkExtor->new();
     my $ua = LWP::UserAgent->new;
@@ -94,31 +96,45 @@ PAGE: for my $url (@doc_urls) {
         } ## end given
 
         if ( $url_seen{$link}++ ) {
-            $verbose < 2
-                or say STDERR "Already tried $link"
-                or Carp::croak("Cannot print: $ERRNO");
+            if ( $verbose >= 2 ) {
+                say STDERR "Already tried $link"
+                    or Carp::croak("Cannot print: $ERRNO");
+                $at_col_0 = 1;
+            }
             next LINK;
         } ## end if ( $url_seen{$link}++ )
-        $verbose < 1
-            or say STDERR "Trying $link"
-            or Carp::croak("Cannot print: $ERRNO");
+
+        if ($verbose) {
+            say STDERR "Trying $link" or Carp::croak("Cannot print: $ERRNO");
+            $at_col_0 = 1;
+        }
 
         my $link_response =
             $ua->request( HTTP::Request->new( GET => $link ) );
 
         if ( $link_response->code == OK ) {
-            $verbose
-                or print {STDERR} q{.}
-                or Carp::croak("Cannot print: $ERRNO");
+            if ( not $verbose ) {
+                print {*STDERR} q{.}
+                    or Carp::croak("Cannot print: $ERRNO");
+                $at_col_0 = 0;
+            }
             next LINK;
         } ## end if ( $link_response->code == OK )
 
-        say 'LINK: ', $link_response->status_line, q{ }, $link
+        $at_col_0 or print "\n" or Carp::croak("Cannot print: $ERRNO");
+        say 'FAIL: ', $link_response->status_line, q{ }, $link
             or Carp::croak("Cannot print: $ERRNO");
+        $at_col_0 = 1;
 
     } ## end for my $link (@links)
 
-    say " PAGE: $page_response_status_line: $url"
-        or Carp::croak("Cannot print: $ERRNO");
+    $at_col_0 or print "\n" or Carp::croak("Cannot print: $ERRNO");
+    $at_col_0 = 1;
+
+    if ($verbose) {
+        say " PAGE: $page_response_status_line: $url"
+            or Carp::croak("Cannot print: $ERRNO");
+        $at_col_0 = 1;
+    }
 
 } ## end for my $url (@doc_urls)

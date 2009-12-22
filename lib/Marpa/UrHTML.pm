@@ -19,8 +19,7 @@ package Marpa::UrHTML::Internal;
 sub version_error {
     my $message = <<'END_OF_MESSAGE';
 ====================================
-Marpa::UrHTML's "use" statement semantics is non-standard,
-  at least while it remains alpha.
+Marpa::UrHTML's "use" statement HAS NON-STANDARD SEMANTICS.
 The "use Marpa::UrHTML" statement must have an argument.
 You have two choices:
 

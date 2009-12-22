@@ -66,6 +66,7 @@ lib/Marpa/UrHTML/t/no_tang.html
 lib/Marpa/UrHTML/t/parse.t
 lib/Marpa/UrHTML/t/score.t
 lib/Marpa/UrHTML/t/store.t
+lib/Marpa/UrHTML/t/synopsis.t
 lib/Marpa/UrHTML/t/tang.t
 lib/Marpa/UrHTML/t/test.html
 lib/Marpa/UrHTML/t/test.storable.old

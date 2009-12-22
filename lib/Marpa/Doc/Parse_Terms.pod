@@ -1,6 +1,6 @@
 =head1 NAME
 
-Parse_Terms - Standard Parsing Terms used in the Marpa Documents
+Marpa::Parse_Terms - Standard Parsing Terms used in the Marpa Documents
 
 =head1 DESCRIPTION
 
@@ -15,9 +15,9 @@ terse and should look elsewhere first.
 
 As an introduction, I recommend
 L<Mark Jason Dominus's
-excellent chapter on parsing in the Perl context|Marpa::Doc::Bibliography/"Dominus 2005">.
+excellent chapter on parsing in the Perl context|Marpa::Bibliography/"Dominus 2005">.
 It's available on-line.
-L<Wikipedia|Marpa::Doc::Bibliography/"Wikipedia"> is also an excellent place to start.
+L<Wikipedia|Marpa::Bibliography/"Wikipedia"> is also an excellent place to start.
 
 All the definitions here are consistent with
 at least some of the textbook definitions,

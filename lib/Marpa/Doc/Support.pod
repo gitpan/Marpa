@@ -1,6 +1,6 @@
 =head1 NAME
 
-Support - Marpa Support, and How to Report Bugs
+Marpa::Support - Marpa Support, and How to Report Bugs
 
 =head1 DESCRIPTION
 

@@ -1,6 +1,6 @@
 =head1 NAME
 
-Algorithm - The Marpa Algorithm
+Marpa::Algorithm - The Marpa Algorithm
 
 =head1 DESCRIPTION
 

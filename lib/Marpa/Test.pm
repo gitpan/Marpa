@@ -16,13 +16,13 @@ BEGIN {
 use Data::Dumper;
 
 ## no critic (Subroutines::RequireArgUnpacking)
-sub is {
+sub Marpa::Test::is {
 ## use critic
     goto &Test::Differences::eq_or_diff
         if defined &Test::Differences::eq_or_diff && @_ > 1;
     @_ = map { ref $_ ? Data::Dumper::Dumper(@_) : $_ } @_;
     goto &Test::More::is;
-} ## end sub is
+} ## end sub Marpa::Test::is
 
 1;
 

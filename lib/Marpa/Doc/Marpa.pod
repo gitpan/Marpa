@@ -127,12 +127,12 @@ L<http://www.amazon.com/God-Proof-Jeffrey-Kegler/dp/1434807355>.
 
 Marpa is
 derived from the parser described in
-L<Aycock and Horspool 2002|Marpa::Doc::Bibliography/"Aycock and Horspool 2002">.
+L<Aycock and Horspool 2002|Marpa::Bibliography/"Aycock and Horspool 2002">.
 I've made significant changes to it,
-which are documented separately (L<Marpa::Doc::Algorithm>).
+which are documented separately (L<Marpa::Algorithm>).
 Aycock and Horspool, for their part,
 built on the
-L<algorithm discovered by Jay Earley|Marpa::Doc::Bibliography/"Earley 1970">.
+L<algorithm discovered by Jay Earley|Marpa::Bibliography/"Earley 1970">.
 
 I'm grateful to Randal Schwartz for his support over the years that
 I've been working on Marpa.

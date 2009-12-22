@@ -107,7 +107,7 @@ severity=5
 
 [ControlStructures::ProhibitPostfixControls]
 severity=5
-flowcontrol = warn die Carp::carp Carp::croak Carp::cluck Carp::confess goto exit Marpa::exception last next break
+flowcontrol = warn die Carp::carp Carp::croak Carp::cluck Carp::confess goto exit Marpa::exception last next break Test::More::skip
 
 [ControlStructures::ProhibitUnlessBlocks]
 severity=5
@@ -350,7 +350,13 @@ allowed_values = -1 0 1 2 3 4 10
 [ValuesAndExpressions::ProhibitMismatchedOperators]
 severity=5
 
-[ValuesAndExpressions::ProhibitMixedBooleanOperators]
+# Just don't agree with this one.
+# The differences between operators
+# is obvious to the eye.
+# And the difference is not an obscure feature
+# of Perl, but one easy to remember and
+# important to know.
+[-ValuesAndExpressions::ProhibitMixedBooleanOperators]
 severity=5
 
 [ValuesAndExpressions::ProhibitNoisyQuotes]
