@@ -14,8 +14,8 @@ BEGIN {
     else {
         Test::More::plan skip_all => 'HTML::PullParser not available';
     }
-    Test::More::use_ok( 'Marpa',         'alpha' );
-    Test::More::use_ok( 'Marpa::UrHTML', 'alpha' );
+    Test::More::use_ok('Marpa');
+    Test::More::use_ok('Marpa::UrHTML');
 } ## end BEGIN
 
 use Carp;
@@ -31,7 +31,6 @@ my $document;
     close $fh
 };
 
-my $p     = Marpa::UrHTML->new();
-my $value = $p->parse( \$document );
+my $value = Marpa::UrHTML::urhtml( \$document );
 
 Test::More::is( ${$value}, $document, 'Straight copy using defaults' );

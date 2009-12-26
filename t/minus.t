@@ -8,13 +8,12 @@ use 5.010;
 use strict;
 use warnings;
 
-use Test::More tests => 13;
+use Test::More tests => 12;
 
 use lib 'lib';
 use Marpa::Test;
 
 BEGIN {
-    Test::More::use_ok( 'Marpa', 'alpha' );
     Test::More::use_ok('Marpa::MDLex');
 }
 

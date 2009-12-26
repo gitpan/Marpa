@@ -55,6 +55,7 @@ lib/Marpa/UrHTML.pm
 lib/Marpa/UrHTML/script/urhtml_fmt
 lib/Marpa/UrHTML/script/urhtml_score
 lib/Marpa/UrHTML/t/copy.t
+lib/Marpa/UrHTML/t/examples.t
 lib/Marpa/UrHTML/t/fmt.t
 lib/Marpa/UrHTML/t/fmt_t_data/expected1.html
 lib/Marpa/UrHTML/t/fmt_t_data/expected2.html

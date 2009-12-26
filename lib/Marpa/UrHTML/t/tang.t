@@ -10,13 +10,12 @@ use Marpa::Test;
 
 BEGIN {
     if ( eval { require HTML::PullParser } ) {
-        Test::More::plan tests => 3;
+        Test::More::plan tests => 2;
     }
     else {
         Test::More::plan skip_all => 'HTML::PullParser not available';
     }
-    Test::More::use_ok( 'Marpa',         'alpha' );
-    Test::More::use_ok( 'Marpa::UrHTML', 'alpha' );
+    Test::More::use_ok('Marpa::UrHTML');
 } ## end BEGIN
 
 use Carp;
@@ -40,8 +39,10 @@ my $no_tang_document;
     close $fh;
 };
 
-my $p = Marpa::UrHTML->new(
-    { handlers => [ [ '.ktang' => sub { return q{}; } ] ] } );
-my $value = $p->parse( \$document );
+my $value = Marpa::UrHTML::urhtml(
+    \$document,
+    {   '.ktang' => sub { return q{}; }
+    }
+);
 
 Marpa::Test::is( ${$value}, $no_tang_document, 'remove kTang class' );

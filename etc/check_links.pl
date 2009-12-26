@@ -13,16 +13,19 @@ use CPAN;
 use Getopt::Long;
 
 my $verbose = 0;
-Carp::croak("usage: $PROGRAM_NAME [--verbose=[0|1|2]")
+Carp::croak("usage: $PROGRAM_NAME [--verbose=[0|1|2] [distribution]")
     if not Getopt::Long::GetOptions( 'verbose=i' => \$verbose );
 
 use constant OK => 200;
 
-my @distributions =
-    sort map { $_->[2] }
-    CPAN::Shell->expand( 'Author', 'JKEGL' )->ls( 'Marpa-*', 2 );
-my $most_recent_distribution = pop @distributions;
-$most_recent_distribution =~ s/\.tar\.gz$//xms;
+my $most_recent_distribution = pop @ARGV;
+if ( not $most_recent_distribution ) {
+    my @distributions =
+        sort map { $_->[2] }
+        CPAN::Shell->expand( 'Author', 'JKEGL' )->ls( 'Marpa-*', 2 );
+    $most_recent_distribution = pop @distributions;
+    $most_recent_distribution =~ s/\.tar\.gz$//xms;
+} ## end if ( not $most_recent_distribution )
 
 my $cpan_base      = 'http://search.cpan.org';
 my $marpa_doc_base = $cpan_base . '/~jkegl/' . "$most_recent_distribution/";

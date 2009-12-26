@@ -13,13 +13,12 @@ use Test::More;
 
 BEGIN {
     if ( eval { require HTML::PullParser } ) {
-        Test::More::plan tests => 3;
+        Test::More::plan tests => 2;
     }
     else {
         Test::More::plan skip_all => 'HTML::PullParser not available';
     }
-    Test::More::use_ok( 'Marpa',         'alpha' );
-    Test::More::use_ok( 'Marpa::UrHTML', 'alpha' );
+    Test::More::use_ok('Marpa::UrHTML');
 } ## end BEGIN
 
 use Carp;
@@ -37,32 +36,29 @@ my $document;
     close $fh
 };
 
-my @handlers = (
-    [   ':TOP' => sub {
-            return $Marpa::UrHTML::INSTANCE;
-            }
-    ],
-    [   '.codepoint' => sub {
-            CHILD: for my $value ( @{ ( Marpa::UrHTML::child_values() ) } ) {
-                next CHILD if not $value;
-                my ( $class, $literal, $data ) = @{$value};
-                if ( $class eq 'occurrences' ) {
-                    $Marpa::UrHTML::INSTANCE->{ Marpa::UrHTML::title() }
-                        ->{occurrence_count} = $data;
-                }
+my %handlers = (
+    ':TOP' => sub {
+        return $Marpa::UrHTML::INSTANCE;
+    },
+    '.codepoint' => sub {
+        CHILD: for my $value ( @{ ( Marpa::UrHTML::values() ) } ) {
+            next CHILD if not $value;
+            my ( $class, $literal, $data ) = @{$value};
+            if ( $class eq 'occurrences' ) {
                 $Marpa::UrHTML::INSTANCE->{ Marpa::UrHTML::title() }
-                    ->{$class} = $literal;
-            } ## end for my $value ( @{ ( Marpa::UrHTML::child_values() ) ...})
-            return;
+                    ->{occurrence_count} = $data;
             }
-    ],
-    [   '.occurrences' => sub {
-            my $literal = Marpa::UrHTML::literal_ref();
-            my ($occurrence_count) =
-                ( ${$literal} =~ / Occurrences \s+ [(] (\d+) [)] [:] /xms );
-            return [ 'occurrences', $literal, $occurrence_count ];
-            }
-    ],
+            $Marpa::UrHTML::INSTANCE->{ Marpa::UrHTML::title() }->{$class} =
+                $literal;
+        } ## end for my $value ( @{ ( Marpa::UrHTML::values() ) } )
+        return;
+    },
+    '.occurrences' => sub {
+        my $literal = Marpa::UrHTML::literal_ref();
+        my ($occurrence_count) =
+            ( ${$literal} =~ / Occurrences \s+ [(] (\d+) [)] [:] /xms );
+        return [ 'occurrences', $literal, $occurrence_count ];
+    },
 );
 
 my @text_fields = qw( cedict_definition glyph kfrequency kgradelevel
@@ -71,13 +67,11 @@ my @text_fields = qw( cedict_definition glyph kfrequency kgradelevel
     shrift_occurrences unicode_value unihan_definition );
 
 for my $text_field (@text_fields) {
-    push @handlers,
-        [ ".$text_field" =>
-            sub { return [ $text_field, Marpa::UrHTML::literal_ref() ] } ];
+    $handlers{".$text_field"} =
+        sub { return [ $text_field, Marpa::UrHTML::literal_ref() ] };
 }
 
-my $p = Marpa::UrHTML->new( { handlers => \@handlers, } );
-my $value = $p->parse( \$document );
+my $value = Marpa::UrHTML::urhtml( \$document, \%handlers );
 
 my $old = 'lib/Marpa/UrHTML/t/test.storable.old';
 my $new = 'lib/Marpa/UrHTML/t/test.storable.new';

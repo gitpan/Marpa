@@ -16,7 +16,7 @@ use Marpa::Test;
 use constant A_LOT_OF_VALUES => 25;
 
 BEGIN {
-    Test::More::use_ok( 'Marpa', 'alpha' );
+    Test::More::use_ok('Marpa');
 }
 
 sub make_rule {

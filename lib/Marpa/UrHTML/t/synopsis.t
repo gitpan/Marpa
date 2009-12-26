@@ -5,239 +5,169 @@ use strict;
 use warnings;
 use English qw( -no_match_vars );
 use List::Util;
-use Test::More tests => 10;
-use Marpa::Test;
 use Test::More;
+use Marpa::Test;
 
 BEGIN {
-    Test::More::use_ok( 'Marpa::UrHTML', 'alpha' );
-}
-
-# Delete comments
-# From notes: # 'delete_me' class
-
-my $example1 = '<?pi><table><?pi><tr><td><table><?pi>x</table></table><?pi>';
-my $example_y =
-    q{<p>I say<q>hello</q>I don't know why you say<q>goodbye</q></p>};
-
-{
-    my $expected = $example1;
-    my $result   = Marpa::UrHTML->new()->parse( \$example1 );
-    Marpa::Test::is( ${$result}, $expected, 'no args is a straight copy' );
-}
-
-my $example2 = <<'END_OF_EXAMPLE';
-I am text
-<table>
-<tr>Table Cell
-</table>
-I am text between tables
-<tr>Cell in table with missing start tag
-</table>
-Text at the end
-END_OF_EXAMPLE
-
-my $expected2 = <<'END_OF_EXPECTED';
-I am text
-
-I am text between tables
-
-Text at the end
-END_OF_EXPECTED
-
-{
-    my $result = Marpa::UrHTML->new(
-        { handlers => [ [ table => sub { return q{} } ] ] } )
-        ->parse( \$example2 );
-    Marpa::Test::is( ${$result}, $expected2, 'delete tables' );
-}
-
-my $comment_example = <<'END_OF_EXAMPLE';
-I am text.
-<!-- I am a comment -->
-I am more text.
-END_OF_EXAMPLE
-
-my $comment_example_expected = <<'END_OF_EXPECTED';
-I am text.
-
-I am more text.
-END_OF_EXPECTED
-
-{
-    my $result = Marpa::UrHTML->new(
-        { handlers => [ [ ':COMMENT' => sub { return q{} } ] ] } )
-        ->parse( \$comment_example );
-    Marpa::Test::is( ${$result}, $comment_example_expected,
-        'delete comment' );
-}
-
-my $delete_class_example = <<'END_OF_EXAMPLE';
-I am text.
-<span class="delete_me">I am text in a span</span>
-I am more text.
-END_OF_EXAMPLE
-
-my $delete_class_expected = <<'END_OF_EXPECTED';
-I am text.
-
-I am more text.
-END_OF_EXPECTED
-
-{
-    my $result = Marpa::UrHTML->new(
-        { handlers => [ [ '.delete_me' => sub { return q{} } ] ] } )
-        ->parse( \$delete_class_example );
-    Marpa::Test::is( ${$result}, $delete_class_expected, 'delete by class' );
-}
-
-chomp( my $expected3 = <<'END_OF_EXPECTED');
-<table>
-<tr>Table Cell
-</table><tr>Cell in table with missing start tag
-</table>
-END_OF_EXPECTED
-
-{
-    my $result = Marpa::UrHTML->new(
-        {   handlers => [
-                [ table => sub { return; } ],
-                [ q{*}  => sub { return Marpa::UrHTML::contents(); } ],
-                map {
-                    [ $_ => sub { return q{} }, ]
-                    } qw(:PI :DECL :COMMENT :WHITESPACE :CDATA :PCDATA :CRUFT),
-            ],
-        },
-    )->parse( \$example2 );
-    Marpa::Test::is( ${$result}, $expected3,
-        'delete everything but tables: natural' );
-}
-
-{
-    my $result = Marpa::UrHTML->new(
-        {   handlers => [
-                [ table => sub { return Marpa::UrHTML::original() } ],
-                [   ':TOP' => sub {
-                        return join q{}, @{ Marpa::UrHTML::child_values() };
-                    },
-                ],
-            ]
-        }
-    )->parse( \$example2 );
-    Marpa::Test::is( $result, $expected3,
-        'delete everything but tables: fast' );
-}
-
-{
-
-    sub compute_depth {
-        return List::Util::max( 0,
-            map { ${$_} } grep { ref $_ }
-            map { $_->[0] } @{ Marpa::UrHTML::child_data('value') } );
+    if ( eval { require HTML::PullParser } ) {
+        Test::More::plan tests => 11;
     }
-    my $result = Marpa::UrHTML->new(
-        {   handlers => [
-                [ q{*} => sub { return \( 1 + compute_depth() ) }, ],
-                [   ':TOP' =>
-                        sub { return 'Maximum depth = ' . compute_depth() }
-                ],
-            ]
-        }
-    )->parse( \$example1 );
-    Marpa::Test::is( $result, 'Maximum depth = 10', 'maximum depth' );
-}
+    else {
+        Test::More::plan skip_all => 'HTML::PullParser not available';
+    }
+    Test::More::use_ok('Marpa');
+    Test::More::use_ok( 'Marpa::UrHTML', 'urhtml' );
+} ## end BEGIN
 
-{
-    chomp( my $expected = <<'END_OF_EXPECTED');
-I am body text
-<!-- 24 characters of cruft on the next line -->
-<head attr="I am cruft">I am more body text
+# This is just a dummy value for the synopsis
+my %empty_elements = ();
+
+# Marpa::Display
+# name: 'UrHTML Synopsis: Delete Tables'
+
+use Marpa::UrHTML qw(urhtml);
+
+my $with_table = 'Text<table><tr><td>I am a cell</table> More Text';
+my $no_table   = urhtml(
+    \$with_table,
+    {   table => sub { return q{} }
+    }
+);
+
+# Marpa::Display::End
+
+# Marpa::Display
+# name: 'UrHTML Synopsis: Delete Everything But Tables'
+
+my %handlers_to_keep_only_tables = (
+    table  => sub { return Marpa::UrHTML::original() },
+    ':TOP' => sub { return \( join q{}, @{ Marpa::UrHTML::values() } ) }
+);
+my $only_table = urhtml( \$with_table, \%handlers_to_keep_only_tables );
+
+# Marpa::Display::End
+
+# Marpa::Display
+# name: 'UrHTML Synopsis: Defective Tables'
+
+my $with_bad_table = 'Text<tr>I am a cell</table> More Text';
+my $only_bad_table =
+    urhtml( \$with_bad_table, \%handlers_to_keep_only_tables );
+
+# Marpa::Display::End
+
+# Marpa::Display
+# name: 'UrHTML Synopsis: Delete Comments'
+
+my $with_comment = 'Text <!-- I am a comment --> I am not a comment';
+my $no_comment   = urhtml(
+    \$with_comment,
+    {   ':COMMENT' => sub { return q{} }
+    }
+);
+
+# Marpa::Display::End
+
+# Marpa::Display
+# name: 'UrHTML Synopsis: Change Title'
+
+my $old_title = '<title>Old Title</title>A little html text';
+my $new_title = urhtml(
+    \$old_title,
+    {   'title' => sub { return '<title>New Title</title>' }
+    }
+);
+
+# Marpa::Display::End
+
+# Marpa::Display
+# name: 'UrHTML Synopsis: Delete by Class'
+
+my $stuff_to_be_edited = '<p>A<p class="delete_me">B<p>C';
+my $edited_stuff       = urhtml(
+    \$stuff_to_be_edited,
+    {   '.delete_me' => sub { return q{} }
+    }
+);
+
+# Marpa::Display::End
+
+# Marpa::Display
+# name: 'UrHTML Synopsis: Supply Missing Tags'
+
+sub supply_missing_tags {
+    my $tagname = Marpa::UrHTML::tagname();
+    return if $empty_elements{$tagname};
+    return
+          ( Marpa::UrHTML::start_tag() // "<$tagname>\n" )
+        . Marpa::UrHTML::contents()
+        . ( Marpa::UrHTML::end_tag() // "</$tagname>\n" );
+} ## end sub supply_missing_tags
+my $html_with_just_a_title = '<title>I am a title and That is IT!';
+my $valid_html_with_all_tags =
+    urhtml( \$html_with_just_a_title, { q{*} => \&supply_missing_tags } );
+
+# Marpa::Display::End
+
+# Marpa::Display
+# name: 'UrHTML Synopsis: Maximum Element Depth'
+
+sub depth_below_me {
+    return List::Util::max( 0, @{ Marpa::UrHTML::values() } );
+}
+my %handlers_to_calculate_maximum_element_depth = (
+    q{*}   => sub { return 1 + depth_below_me() },
+    ':TOP' => sub { return depth_below_me() },
+);
+my $maximum_depth_with_just_a_title = urhtml( \$html_with_just_a_title,
+    \%handlers_to_calculate_maximum_element_depth );
+
+# Marpa::Display::End
+
+my $maximum_depth_with_all_tags_supplied = urhtml( $valid_html_with_all_tags,
+    \%handlers_to_calculate_maximum_element_depth );
+Marpa::Test::is( $maximum_depth_with_just_a_title,
+    3, 'compute maximum depth' );
+Marpa::Test::is(
+    $maximum_depth_with_just_a_title,
+    $maximum_depth_with_all_tags_supplied,
+    'compare maximum depths'
+);
+
+my $expected_valid_html_with_all_tags = <<'END_OF_EXPECTED';
+<html>
+<head>
+<title>I am a title and That is IT!</title>
+</head>
+<body>
+</body>
+</html>
 END_OF_EXPECTED
 
-    sub mark_cruft {
-        my $literal = Marpa::UrHTML::literal();
-        my ( $dummy, $line ) = Marpa::UrHTML::offset();
-        return
-              "\n<!-- "
-            . ( length $literal )
-            . " characters of cruft on the next line -->\n"
-            . $literal;
-    } ## end sub mark_cruft
-    my $cruft_example =
-        'I am body text<head attr="I am cruft">I am more body text';
-    my $result =
-        Marpa::UrHTML->new( { handlers => [ [ ':CRUFT' => \&mark_cruft ] ] } )
-        ->parse( \$cruft_example );
-    Marpa::Test::is( ${$result}, $expected, 'cruft marking' );
-}
-
-SKIP: {
-    Test::More::skip 'test requires HTML::Tagset', 1
-        if not eval { require HTML::Tagset };
-
-    my $expected = <<'END_OF_EXPECTED';
-<?pi>
-<!-- Missing start tag for html element -->
-
-<!-- Missing start tag for head element -->
-
-<!-- Missing end tag for head element -->
-
-<!-- Missing start tag for body element -->
-<table><?pi>
-<!-- Missing start tag for tbody element -->
-<tr><td><table><?pi>
-<!-- Missing start tag for tbody element -->
-
-<!-- Missing start tag for tr element -->
-
-<!-- Missing start tag for td element -->
-x
-<!-- Missing end tag for td element -->
-
-<!-- Missing end tag for tr element -->
-
-<!-- Missing end tag for tbody element -->
-</table>
-<!-- Missing end tag for td element -->
-
-<!-- Missing end tag for tr element -->
-
-<!-- Missing end tag for tbody element -->
-</table><?pi>
-<!-- Missing end tag for body element -->
-
-<!-- Missing end tag for html element -->
-END_OF_EXPECTED
-
-    sub mark_missing_tags {
-        my $tagname = Marpa::UrHTML::tagname();
-        ## no critic (Variables::ProhibitPackageVars)
-        return if $HTML::Tagset::emptyElement{$tagname};
-        ## use critic
-        my $literal = (
-            Marpa::UrHTML::start_tag()
-            ? q{}
-            : qq{\n<!-- Missing start tag for $tagname element -->\n}
-        ) . Marpa::UrHTML::literal();
-        !Marpa::UrHTML::end_tag()
-            and $literal
-            .= qq{\n<!-- Missing end tag for $tagname element -->\n};
-        return $literal;
-    } ## end sub mark_missing_tags
-    my $result = Marpa::UrHTML->new(
-        {   handlers => [
-                [ q{*} => \&mark_missing_tags ],
-                [   ':TOP' => sub {
-                        my $r = Marpa::UrHTML::literal();
-                        $r =~ s/^$//xmsg;
-                        return $r;
-                        }
-                ],
-            ]
-        }
-    )->parse( \$example1 );
-    Marpa::Test::is( $result, $expected, 'missing tag marking' );
-
-} ## end SKIP:
-
+Marpa::Test::is( ${$no_table}, 'Text More Text', 'delete tables' );
+Marpa::Test::is(
+    ${$only_table},
+    '<table><tr><td>I am a cell</table>',
+    'keep only tables'
+);
+Marpa::Test::is(
+    ${$only_bad_table},
+    '<tr>I am a cell</table>',
+    'keep only tables -- bad table'
+);
+Marpa::Test::is(
+    ${$no_comment},
+    'Text  I am not a comment',
+    'delete comments'
+);
+Marpa::Test::is(
+    ${$new_title},
+    '<title>New Title</title>A little html text',
+    'replace title'
+);
+Marpa::Test::is( ${$edited_stuff}, '<p>A<p>C', 'delete by class name' );
+Marpa::Test::is(
+    ${$valid_html_with_all_tags},
+    $expected_valid_html_with_all_tags,
+    'supply tags'
+);

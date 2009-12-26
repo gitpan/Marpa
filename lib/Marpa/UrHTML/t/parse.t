@@ -22,85 +22,71 @@ BEGIN {
         $skipping = 1;
     }
     if ( not $skipping ) {
-        Test::More::plan tests => 42;
+        Test::More::plan tests => 41;
     }
-    Test::More::use_ok( 'Marpa',         'alpha' );
-    Test::More::use_ok( 'Marpa::UrHTML', 'alpha' );
+    Test::More::use_ok('Marpa::UrHTML');
 } ## end BEGIN
 
-use Marpa::UrHTML 'alpha';
-
 my $urhtml_args = {
-    handlers => [
-        [   ':CRUFT' => sub {
-                my $literal = Marpa::UrHTML::literal();
-                say STDERR 'Cruft: ', $literal
-                    or Carp::croak("Cannot print: $ERRNO");
-                return qq{<CRUFT literal="$literal">};
-                }
-        ],
-        [   ':PCDATA' => sub {
-                my $literal = Marpa::UrHTML::literal();
-                if ( defined &HTML::Entities::decode_entities ) {
-                    $literal =
-                        HTML::Entities::encode_entities(
-                        HTML::Entities::decode_entities($literal) );
-                }
-                return $literal;
-                }
-        ],
-        [   ':PROLOG' => sub {
-                my $literal = Marpa::UrHTML::literal();
-                $literal =~ s/\A [\x{20}\t\f\x{200B}]+ //xms;
-                $literal =~ s/ [\x{20}\t\f\x{200B}]+ \z//xms;
-                return $literal;
-                }
-        ],
-        [ ':COMMENT' => sub { return q{} } ],
-        [   q{*} => (
-                sub {
-                    my $tagname = Marpa::UrHTML::tagname();
+    ':CRUFT' => sub {
+        my $literal = Marpa::UrHTML::literal();
+        say STDERR 'Cruft: ', $literal
+            or Carp::croak("Cannot print: $ERRNO");
+        return qq{<CRUFT literal="$literal">};
+    },
+    ':PCDATA' => sub {
+        my $literal = Marpa::UrHTML::literal();
+        if ( defined &HTML::Entities::decode_entities ) {
+            $literal =
+                HTML::Entities::encode_entities(
+                HTML::Entities::decode_entities($literal) );
+        }
+        return $literal;
+    },
+    ':PROLOG' => sub {
+        my $literal = Marpa::UrHTML::literal();
+        $literal =~ s/\A [\x{20}\t\f\x{200B}]+ //xms;
+        $literal =~ s/ [\x{20}\t\f\x{200B}]+ \z//xms;
+        return $literal;
+    },
+    ':COMMENT' => sub { return q{} },
+    q{*}       => sub {
+        my $tagname = Marpa::UrHTML::tagname();
 
-                    # say STDERR "In handler for $tagname element";
+        # say STDERR "In handler for $tagname element";
 
-                    Carp::croak('Not in an element') if not $tagname;
-                    my $attributes = Marpa::UrHTML::attributes();
+        Carp::croak('Not in an element') if not $tagname;
+        my $attributes = Marpa::UrHTML::attributes();
 
-                    # Note this logic suffices to get through
-                    # the test set but it does not handle
-                    # the necessary escaping for a production
-                    # version
-                    my $start_tag = "<$tagname";
-                    for my $attribute ( sort keys %{$attributes} ) {
-                        $start_tag .= qq{ $attribute="}
-                            . $attributes->{$attribute} . q{"};
-                    }
-                    $start_tag .= '>';
-                    my $end_tag = "</$tagname>";
+        # Note this logic suffices to get through
+        # the test set but it does not handle
+        # the necessary escaping for a production
+        # version
+        my $start_tag = "<$tagname";
+        for my $attribute ( sort keys %{$attributes} ) {
+            $start_tag
+                .= qq{ $attribute="} . $attributes->{$attribute} . q{"};
+        }
+        $start_tag .= '>';
+        my $end_tag = "</$tagname>";
 
-                    my $child_data = Marpa::UrHTML::child_data(
-                        'token_type,literal,element');
+        my $descendant_data =
+            Marpa::UrHTML::descendants('token_type,literal,element');
 
-                    # For UL element, eliminate all but the LI element children
-                    if ( $tagname eq 'ul' ) {
-                        $child_data =
-                            [ grep { defined $_->[2] and $_->[2] eq 'li' }
-                                @{$child_data} ];
-                    }
+        # For UL element, eliminate all but the LI element children
+        if ( $tagname eq 'ul' ) {
+            $descendant_data =
+                [ grep { defined $_->[2] and $_->[2] eq 'li' }
+                    @{$descendant_data} ];
+        }
 
-                    my $contents = join q{}, map { $_->[1] }
-                        grep {
-                               not defined $_->[0]
-                            or not $_->[0] ~~
-                            [qw(S E)]
-                        } @{$child_data};
-                    $contents =~ s/\A [\x{20}\t\f\x{200B}]+ //xms;
-                    $contents =~ s/ [\x{20}\t\f\x{200B}]+ \z//xms;
-                    return join q{}, $start_tag, $contents, $end_tag;
-                }
-            )
-        ]
-    ]
+        my $contents = join q{}, map { $_->[1] }
+            grep { not defined $_->[0] or not $_->[0] ~~ [qw(S E)] }
+            @{$descendant_data};
+        $contents =~ s/\A [\x{20}\t\f\x{200B}]+ //xms;
+        $contents =~ s/ [\x{20}\t\f\x{200B}]+ \z//xms;
+        return join q{}, $start_tag, $contents, $end_tag;
+    },
 };
 
 Test::More::ok 1;
@@ -200,33 +186,32 @@ Test::More::ok same(
 
 sub same {
     my ( $code1, $code2, $flip ) = @_;
-    my $p1 = Marpa::UrHTML->new($urhtml_args);
-    my $p2 = Marpa::UrHTML->new($urhtml_args);
 
     if ( ref $code1 ) { $code1 = ${$code1} }
     if ( ref $code2 ) { $code2 = ${$code2} }
 
     my $value1;
-    if ( not eval { $value1 = $p1->parse( \$code1 ); 1 } ) {
+    if (not
+        eval { $value1 = Marpa::UrHTML::urhtml( \$code1, $urhtml_args ); 1 } )
+    {
         say "No parse for $code1"
             or Carp::croak("Cannot print: $ERRNO");
         return $flip;
-    }
+    } ## end if ( not eval { $value1 = Marpa::UrHTML::urhtml( \$code1...)})
 
     my $value2;
-    if ( not eval { $value2 = $p2->parse( \$code2 ); 1 } ) {
+    if (not
+        eval { $value2 = Marpa::UrHTML::urhtml( \$code2, $urhtml_args ); 1 } )
+    {
         say "No parse for $code2"
             or Carp::croak("Cannot print: $ERRNO");
         return $flip;
-    }
+    } ## end if ( not eval { $value2 = Marpa::UrHTML::urhtml( \$code2...)})
 
     my $out1 = ${$value1};
     my $out2 = ${$value2};
 
     my $rv = ( $out1 eq $out2 );
-
-    #print $rv? "RV TRUE\n" : "RV FALSE\n";
-    #print $flip? "FLIP TRUE\n" : "FLIP FALSE\n";
 
     if ( $flip ? ( !$rv ) : $rv ) {
         if ( $DEBUG > 2 ) {

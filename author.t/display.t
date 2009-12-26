@@ -8,8 +8,9 @@ use English qw( -no_match_vars );
 use Fatal qw(open close);
 use Text::Diff;
 use Getopt::Long qw(GetOptions);
-use Test::More tests => 1;
+use Test::More 0.94;
 use Carp;
+use Perl::Tidy;
 
 use lib 'lib';
 use Marpa::Display;
@@ -20,15 +21,6 @@ my $options_result = GetOptions( 'warnings' => \$warnings );
 Marpa::exception("$PROGRAM_NAME options parsing failed")
     if not $options_result;
 
-sub normalize_whitespace {
-    my $ref  = shift;
-    my $text = ${$ref};
-    $text =~ s/\A\s*//xms;
-    $text =~ s/\s*\z//xms;
-    $text =~ s/\s+/ /gxms;
-    return \$text;
-} ## end sub normalize_whitespace
-
 my %exclude = map { ( $_, 1 ) } qw(
     Makefile.PL
     inc/Test/Weaken.pm
@@ -38,13 +30,21 @@ my %exclude = map { ( $_, 1 ) } qw(
 my @test_files = @ARGV;
 my $debug_mode = scalar @test_files;
 if ( not $debug_mode ) {
+
+    for my $additional_file (
+        'lib/Marpa/UrHTML/Doc/UrHTML.pod',
+        'lib/Marpa/UrHTML/Doc/Parsing_HTML.pod'
+        )
+    {
+        Test::More::diag("Adding $additional_file");
+        push @test_files, $additional_file;
+    } ## end for my $additional_file ( 'lib/Marpa/UrHTML/Doc/UrHTML.pod'...)
+
     open my $manifest, '<', 'MANIFEST'
         or Marpa::exception("Cannot open MANIFEST: $ERRNO");
     FILE: while ( my $file = <$manifest> ) {
         chomp $file;
         $file =~ s/\s*[#].*\z//xms;
-        next FILE if $exclude{$file};
-        next FILE if -d $file;
         my ($ext) = $file =~ / [.] ([^.]+) \z /xms;
         next FILE if not defined $ext;
         $ext = lc $ext;
@@ -53,10 +53,20 @@ if ( not $debug_mode ) {
                 and $ext ne 'pl'
                 and $ext ne 'pm'
                 and $ext ne 't';
-
         push @test_files, $file;
     }    # FILE
     close $manifest;
+
+    my %file_seen = ();
+    FILE: for my $test_file (@test_files) {
+        next FILE if $exclude{$test_file};
+        next FILE if -d $test_file;
+        if ( $file_seen{$test_file}++ ) {
+            Test::More::diag("Duplicate file: $test_file");
+        }
+    } ## end for my $test_file (@test_files)
+    @test_files = keys %file_seen;
+
 } ## end if ( not $debug_mode )
 
 my $error_file;
@@ -82,7 +92,7 @@ FILE: for my $file (@test_files) {
 
 } ## end for my $file (@test_files)
 
-my @formatting_instructions = qw(normalize-whitespace);
+my @formatting_instructions = qw(perltidy normalize-whitespace);
 
 sub format_display {
     my ( $text, $instructions ) = @_;
@@ -91,9 +101,18 @@ sub format_display {
     if ( $instructions->{'normalize-whitespace'} ) {
         $result =~ s/^\s+//gxms;
         $result =~ s/\s+$//gxms;
-        $result =~ s/\s+/ /gxms;
+        $result =~ s/[ \f\t]+/ /gxms;
         $result =~ s/\n+/\n/gxms;
     } ## end if ( $instructions->{'normalize-whitespace'} )
+    if ( defined( my $tidy_options = $instructions->{'perltidy'} ) ) {
+        my $tidied;
+        Perl::Tidy::perltidy(
+            source      => \$result,
+            destination => \$tidied,
+            perltidyrc  => \$tidy_options
+        );
+        $result = $tidied;
+    } ## end if ( defined( my $tidy_options = $instructions->{'perltidy'...}))
     return \$result;
 } ## end sub format_display
 
@@ -104,19 +123,26 @@ sub compare {
     my $formatted_original = format_display( \$original->{content}, $copy );
     my $formatted_copy     = format_display( \$copy->{content},     $copy );
     return 1 if ${$formatted_original} eq ${$formatted_copy};
-    say STDERR Text::Diff::diff $formatted_original, $formatted_copy,
-        { STYLE => 'Table' }
-        or Carp::croak("Cannot print: $ERRNO");
+    Test::More::diag(
+        'Differences: ', $original->{filename},
+        ' vs. ',         $copy->{filename},
+        "\n",            Text::Diff::diff $formatted_original,
+        $formatted_copy, { STYLE => 'Table' }
+    );
     return 0;
 } ## end sub compare
 
+my $tests_run        = 0;
 my $displays_by_name = $display_data->{displays};
 DISPLAY_NAME: for my $display_name ( keys %{$displays_by_name} ) {
 
     my $displays = $displays_by_name->{$display_name};
     if ( scalar @{$displays} <= 1 ) {
-        Test::More::fail("Display $display_name has only one instance");
-    }
+        Test::More::fail(
+            qq{Display "$display_name" has only one instance, in file }
+                . $displays->[0]->{filename} );
+        $tests_run++;
+    } ## end if ( scalar @{$displays} <= 1 )
 
     # find the "original"
     my $original_ix;
@@ -136,8 +162,11 @@ DISPLAY_NAME: for my $display_name ( keys %{$displays_by_name} ) {
         next DISPLAY if $copy_ix == $original_ix;
         Test::More::ok compare( $displays->[$original_ix],
             $displays->[$copy_ix] ), "$display_name, copy $copy_ix";
-    }
+        $tests_run++;
+    } ## end for my $copy_ix ( 0 .. $#{$displays} )
 
 } ## end for my $display_name ( keys %{$displays_by_name} )
+
+Test::More::done_testing($tests_run);
 
 __END__

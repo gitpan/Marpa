@@ -15,7 +15,7 @@ use Marpa::Test;
 use Carp;
 
 BEGIN {
-    Test::More::use_ok( 'Marpa', 'alpha' );
+    Test::More::use_ok('Marpa');
 }
 
 ## no critic (Subroutines::RequireArgUnpacking)

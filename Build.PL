@@ -8,7 +8,7 @@ use Fatal qw(open close);
 
 use Module::Build;
 
-my $marpa_version = '0.001_038';
+my $marpa_version = '0.001_039';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -52,7 +52,7 @@ my $build = $class->new(
     build_requires => {
 
         # Scalar::Util::weaken no longer required
-        'Test::More' => 0,
+        'Test::More' => 0.94,
     },
     script_files => [
         'lib/Marpa/UrHTML/script/urhtml_fmt',

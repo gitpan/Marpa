@@ -15,7 +15,7 @@ BEGIN {
     else {
         Test::More::plan skip_all => 'Scalar::Util::weaken() not implemented';
     }
-    Test::More::use_ok( 'Marpa', 'alpha' );
+    Test::More::use_ok('Marpa');
     Test::More::use_ok('Test::Weaken');
 } ## end BEGIN
 

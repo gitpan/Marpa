@@ -14,7 +14,7 @@ sub usage {
         "$PROGRAM_NAME: usage [-Ilib|-Mpackage] ... [-Oaction_object | -oaction_object] raw_grammar text");
 }
 
-use Marpa 'alpha';
+use Marpa;
 use Marpa::MDLex;
 
 my $small_o_object;

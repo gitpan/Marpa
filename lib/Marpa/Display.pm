@@ -19,7 +19,7 @@ sub Marpa::Display::new {
 }
 
 @Marpa::Display::Internal::DISPLAY_SPECS = qw(
-    start-after-line end-before-line normalize-whitespace name
+    start-after-line end-before-line perltidy normalize-whitespace name
 );
 
 sub Marpa::Display::read {
@@ -44,7 +44,6 @@ sub Marpa::Display::read {
         my $display_spec_line_number = $zero_based_line + 1;
         if ( $line =~ /^[#] \s+ Marpa[:][:]Display/xms ) {
 
-            # say STDERR "Found at $name, line $display_spec_line_number: $line";
             my $yaml = q{};
             while ( ( my $yaml_line = $lines[ ++$zero_based_line ] )
                 =~ /^[#]/xms )
@@ -69,7 +68,6 @@ sub Marpa::Display::read {
 
         if ( $line =~ /^[=]for \s+ Marpa[:][:]Display/xms ) {
 
-            # say STDERR "Found at $name, line $display_spec_line_number: $line";
             my $yaml = q{};
             while (
                 ( my $yaml_line = $lines[ ++$zero_based_line ] ) =~ /\S/xms )

@@ -4,7 +4,7 @@ use 5.010;
 use strict;
 use warnings;
 use English qw( -no_match_vars );
-use Marpa::UrHTML 'alpha';
+use Marpa::UrHTML;
 use List::Util qw(sum);
 use Fatal qw(open close);
 use Getopt::Long;
@@ -28,9 +28,9 @@ if ($locator =~ /^[a-zA-Z0-9]+[:]/) {
 }
 
 sub calculate_max_depths {
-    my ($child_data) = @_;
+    my ($descendant_data) = @_;
     my %return_depths = ( ANY => 0 );
-    for my $child_value ( grep { ref $_ } map { $_->[0] } @{$child_data} ) {
+    for my $child_value ( grep { ref $_ } map { $_->[0] } @{$descendant_data} ) {
         my $depths = $child_value->{depths};
         CHILD_TAGNAME: for my $child_tagname ( keys %{$depths} ) {
             my $depth = $depths->{$child_tagname};
@@ -46,54 +46,48 @@ sub calculate_max_depths {
 } ## end sub calculate_max_depths
 
 sub calculate_length {
-    my ($child_data) = @_;
+    my ($descendant_data) = @_;
     my $length = 0;
-    CHILD: for my $child_data ( @{$child_data} ) {
-        my ( $value, $literal ) = @{$child_data};
+    CHILD: for my $descendant_data ( @{$descendant_data} ) {
+        my ( $value, $literal ) = @{$descendant_data};
         if ( defined $value ) {
             $length += $value->{length};
             next CHILD;
         }
         $length += ( $literal =~ tr/\t\f \x{200B}//c );
-    } ## end for my $child_data ( @{$child_data} )
+    } ## end for my $descendant_data ( @{$descendant_data} )
     return $length;
 } ## end sub calculate_length
 
-my ( $instance, $value ) = @{ Marpa::UrHTML->new(
-        {   handlers => [
-                [ ':COMMENT' => sub { return { depths => {}, length => 0 } }
-                ],
-                [   q{*} => sub {
-                        my $child_data =
-                            Marpa::UrHTML::child_data('value,literal');
-                        my $tagname = Marpa::UrHTML::tagname();
-                        my $length  = calculate_length($child_data);
-                        $Marpa::UrHTML::INSTANCE->{count}->{$tagname}++;
-                        $Marpa::UrHTML::INSTANCE->{length}->{$tagname}
-                            += $length;
-                        my $return_depths = calculate_max_depths($child_data);
-                        ( $return_depths->{$tagname} //= 0 )++;
-                        $return_depths->{ANY}++;
-                        return {
-                            depths => $return_depths,
-                            length => $length,
-                        };
+my ( $instance, $value ) = @{
+    Marpa::UrHTML::urhtml(
+        \$document,
+        {   ':COMMENT' => sub { return { depths => {}, length => 0 } },
+            q{*}       => sub {
+                my $descendant_data = Marpa::UrHTML::descendants('value,literal');
+                my $tagname    = Marpa::UrHTML::tagname();
+                my $length     = calculate_length($descendant_data);
+                $Marpa::UrHTML::INSTANCE->{count}->{$tagname}++;
+                $Marpa::UrHTML::INSTANCE->{length}->{$tagname} += $length;
+                my $return_depths = calculate_max_depths($descendant_data);
+                ( $return_depths->{$tagname} //= 0 )++;
+                $return_depths->{ANY}++;
+                return {
+                    depths => $return_depths,
+                    length => $length,
+                };
+            },
+            ':TOP' => sub {
+                my $descendant_data = Marpa::UrHTML::descendants('value,literal');
+                return [
+                    $Marpa::UrHTML::INSTANCE,
+                    {   depths => calculate_max_depths($descendant_data),
+                        length => calculate_length($descendant_data),
                     },
-                ],
-                [   ':TOP' => sub {
-                        my $child_data =
-                            Marpa::UrHTML::child_data('value,literal');
-                        return [
-                            $Marpa::UrHTML::INSTANCE,
-                            {   depths => calculate_max_depths($child_data),
-                                length => calculate_length($child_data),
-                            },
-                        ];
-                    },
-                ],
-            ],
-        }
-        )->parse( \$document )
+                ];
+            },
+        },
+    )
     };
 
 my $length_by_element = $instance->{length};
