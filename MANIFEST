@@ -28,7 +28,6 @@ lib/Marpa/Doc/Support.pod
 lib/Marpa/Evaluator.pm
 lib/Marpa/Grammar.pm
 lib/Marpa/Internal.pm
-lib/Marpa/Recce_Value.pm
 lib/Marpa/MDL/bin/mdl_to_raw
 lib/Marpa/MDL/bootstrap.pl
 lib/Marpa/MDL/example/equation.marpa
@@ -46,11 +45,13 @@ lib/Marpa/MDL/self.mdl.raw
 lib/Marpa/MDL/Symbol.pm
 lib/Marpa/Offset.pm
 lib/Marpa.pm
+lib/Marpa/Recce_Value.pm
 lib/Marpa/Recognizer.pm
 lib/Marpa/Test/capture-stderr
 lib/Marpa/Test.pm
 lib/Marpa/Test/Util.pm
 lib/Marpa/UrHTML/Callback.pm
+lib/Marpa/UrHTML/Doc/UrHTML.pod
 lib/Marpa/UrHTML.pm
 lib/Marpa/UrHTML/script/urhtml_fmt
 lib/Marpa/UrHTML/script/urhtml_score

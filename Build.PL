@@ -8,7 +8,7 @@ use Fatal qw(open close);
 
 use Module::Build;
 
-my $marpa_version = '0.001_039';
+my $marpa_version = '0.001_040';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -59,14 +59,14 @@ my $build = $class->new(
         'lib/Marpa/UrHTML/script/urhtml_score',
     ],
     pod_files => {
-        'lib/Marpa/Doc/Bibliography.pod' => 'lib/Marpa/Bibliography.pod',
-        'lib/Marpa/Doc/Marpa.pod'        => 'lib/Marpa.pod',
-        'lib/Marpa/Doc/Parse_Terms.pod'  => 'lib/Marpa/Parse_Terms.pod',
-        'lib/Marpa/Doc/Support.pod'      => 'lib/Marpa/Support.pod',
+        'lib/Marpa/Doc/Bibliography.pod'  => 'lib/Marpa/Bibliography.pod',
+        'lib/Marpa/Doc/Marpa.pod'         => 'lib/Marpa.pod',
+        'lib/Marpa/Doc/Parse_Terms.pod'   => 'lib/Marpa/Parse_Terms.pod',
+        'lib/Marpa/Doc/Support.pod'       => 'lib/Marpa/Support.pod',
+        'lib/Marpa/UrHTML/Doc/UrHTML.pod' => 'lib/Marpa/UrHTML.pod',
 
         # 'lib/Marpa/Doc/TODO.pod'         => 'lib/Marpa/TODO.pod',
         # 'lib/Marpa/UrHTML/Doc/Parsing_HTML.pod' => 'lib/Marpa/Parsing_HTML.pod',
-        # 'lib/Marpa/UrHTML/Doc/UrHTML.pod' => 'lib/Marpa/UrHTML.pod',
     },
     meta_merge => {
         no_index => {

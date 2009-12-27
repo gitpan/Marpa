@@ -244,8 +244,7 @@ sub create_fetch_attribute_closure {
             qq{Attempt to fetch attribute "$attribute" outside of a parse instance}
         ) if not defined $parse_instance;
 
-        # It is OK to call this routine on a non-element -- you'll just
-        # get back an empty list of attributes.
+        # It is OK to call this routine on a non-element.
         my $start_tag_token_id =
             $Marpa::UrHTML::Internal::PER_NODE_DATA->{start_tag_token_id};
 

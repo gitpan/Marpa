@@ -92,12 +92,17 @@ FILE: for my $file (@test_files) {
 
 } ## end for my $file (@test_files)
 
-my @formatting_instructions = qw(perltidy normalize-whitespace);
+my @formatting_instructions = qw(perltidy remove-display-indent normalize-whitespace);
 
 sub format_display {
-    my ( $text, $instructions ) = @_;
+    my ( $text, $instructions, $is_copy ) = @_;
     my $result = ${$text};
 
+    if ( $instructions->{'remove-display-indent'} and $is_copy) {
+        my ($first_line_spaces) = ($result =~ /^ (\s+) \S/xms);
+        $first_line_spaces = quotemeta $first_line_spaces;
+        $result =~ s/^$first_line_spaces//gxms;
+    }
     if ( $instructions->{'normalize-whitespace'} ) {
         $result =~ s/^\s+//gxms;
         $result =~ s/\s+$//gxms;
@@ -120,8 +125,8 @@ sub format_display {
 # second, and compare.
 sub compare {
     my ( $original, $copy ) = @_;
-    my $formatted_original = format_display( \$original->{content}, $copy );
-    my $formatted_copy     = format_display( \$copy->{content},     $copy );
+    my $formatted_original = format_display( \$original->{content}, $copy, 0 );
+    my $formatted_copy     = format_display( \$copy->{content},     $copy, 1 );
     return 1 if ${$formatted_original} eq ${$formatted_copy};
     Test::More::diag(
         'Differences: ', $original->{filename},

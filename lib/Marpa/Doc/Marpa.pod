@@ -15,7 +15,7 @@ It is still alpha,
 but in the near future it will replace
 L<Parse::Marpa> as the main branch.
 
-=head1 DO YOU HAVE ANYTHING ACTUALLY USEFUL?
+=head1 WHAT'S ALREADY USEFUL
 
 =over
 
@@ -40,24 +40,27 @@ It's an interesting number.
 
 =back
 
-These scripts are demos of Marpa::UrHTML,
+These scripts are demos of L<Marpa::UrHTML>,
 which is a high level HTML parser.
 "High level" means that it
 finds the structure of an HTML document,
 as opposed to L<HTML::Parser> which does tokenization
 or "low level parsing".
-(Marpa::UrHTML uses L<HTML::Parser>
+(L<Marpa::UrHTML> uses L<HTML::Parser>
 as its low-level parser.)
 
 =head1 GUIDE TO THE MARPA DOCUMENTATION
 
+An incomplete user document for
+L<Marpa::UrHTML> is now available.
+
 Marpa's documentation is being brought up to date.
-What is ready at the moment is only helpful
-for readers who are familiar
+What is ready at the moment is only of interest
+to readers who are familiar
 with other parsing algorithms,
-and who are
-interested in learning more about the approach
-I used to write the Marpa parse engine.
+and who
+want to know more about the approach
+used in the Marpa parse engine.
 L<Marpa::Algorithm> describes the Marpa algorithm itself.
 My sources, and other useful references are described in
 L<Marpa::Bibliography>.
@@ -66,7 +69,7 @@ L<Marpa::Parse_Terms> is intended as a quick refresher
 of parsing terminology.
 It's all standard, but the emphasis is on the meanings
 of the terms as they will be used
-in the (not yet released) documents.
+in the (mostly not yet released) documents.
 
 Support, on a volunteer basis,
 is provided via the standard mechanisms for CPAN modules.
