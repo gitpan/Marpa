@@ -783,7 +783,7 @@ all descendant values which were visible B<disappear>.
 
 =head2 Root Element versus :TOP Pseudoclass
 
-It is important not to keep clear the very
+It is important to understand the very
 special function of the C<:TOP>
 component,
 and to avoid confusing it with the HTML root element.
