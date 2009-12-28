@@ -31,14 +31,10 @@ my @test_files = @ARGV;
 my $debug_mode = scalar @test_files;
 if ( not $debug_mode ) {
 
-    for my $additional_file (
-        'lib/Marpa/UrHTML/Doc/UrHTML.pod',
-        'lib/Marpa/UrHTML/Doc/Parsing_HTML.pod'
-        )
-    {
+    for my $additional_file ( 'lib/Marpa/UrHTML/Doc/Parsing_HTML.pod' ) {
         Test::More::diag("Adding $additional_file");
         push @test_files, $additional_file;
-    } ## end for my $additional_file ( 'lib/Marpa/UrHTML/Doc/UrHTML.pod'...)
+    }
 
     open my $manifest, '<', 'MANIFEST'
         or Marpa::exception("Cannot open MANIFEST: $ERRNO");
@@ -92,14 +88,15 @@ FILE: for my $file (@test_files) {
 
 } ## end for my $file (@test_files)
 
-my @formatting_instructions = qw(perltidy remove-display-indent normalize-whitespace);
+my @formatting_instructions =
+    qw(perltidy remove-display-indent normalize-whitespace);
 
 sub format_display {
     my ( $text, $instructions, $is_copy ) = @_;
     my $result = ${$text};
 
-    if ( $instructions->{'remove-display-indent'} and $is_copy) {
-        my ($first_line_spaces) = ($result =~ /^ (\s+) \S/xms);
+    if ( $instructions->{'remove-display-indent'} and $is_copy ) {
+        my ($first_line_spaces) = ( $result =~ /^ (\s+) \S/xms );
         $first_line_spaces = quotemeta $first_line_spaces;
         $result =~ s/^$first_line_spaces//gxms;
     }
@@ -125,8 +122,9 @@ sub format_display {
 # second, and compare.
 sub compare {
     my ( $original, $copy ) = @_;
-    my $formatted_original = format_display( \$original->{content}, $copy, 0 );
-    my $formatted_copy     = format_display( \$copy->{content},     $copy, 1 );
+    my $formatted_original =
+        format_display( \$original->{content}, $copy, 0 );
+    my $formatted_copy = format_display( \$copy->{content}, $copy, 1 );
     return 1 if ${$formatted_original} eq ${$formatted_copy};
     Test::More::diag(
         'Differences: ', $original->{filename},

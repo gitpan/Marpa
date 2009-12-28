@@ -57,7 +57,7 @@ perltidy: '-dcsc -sil=0'
 
 =for Marpa::Display::End
 
-By default text is passed through unchanged, so that the user
+By default, text is passed through unchanged, so that the user
 need only specify semantic actions for those components she
 wants changed.  To B<change the title of a document>:
 
@@ -140,11 +140,12 @@ L<Marpa::UrHTML> is an extremely liberal HTML parser.
 L<Marpa::UrHTML> does not reject any documents,
 no mater how poorly they fit the HTML standards.
 
-=head1 THE C<urhtml> STATIC METHOD
+=head1 THE Marpa::UrHTML::urhtml STATIC METHOD
 
 The interface to 
 L<Marpa::UrHTML> is through the
-C<Marpa::UrHTML::urhtml> static method.
+C<Marpa::UrHTML::urhtml>
+static method.
 It is
 the only
 L<Marpa::UrHTML>
@@ -157,7 +158,7 @@ a string to be parsed as HTML.
 The second and
 subsequent arguments (all optional) are hash references
 with handler descriptions.
-(See L<the synopsis|//"SYNOPSIS"> for several examples of
+(See L<the synopsis|/"SYNOPSIS"> for several examples of
 calls using the C<urhtml> method.)
 
 =head2 CSS-style Handler Options
@@ -193,9 +194,10 @@ element names must be specified in lowercase.
 
 =item Class Specifiers
 
-A specifier which begins with a dot or period (such as "C<.delete_me>")
-will match any element whose class attribute is 
-"C<delete_me>".
+A specifier which is a dot or period followed by a name
+will match any element whose class attribute is the same as the specified name.
+For example, the specifier "C<.delete_me>" will match any element whose
+class attribute is "C<delete_me>".
 
 =item Tagname-Class Pair Specifiers
 
@@ -217,7 +219,7 @@ The element wildcard specifier will not match any pseudoclasses.
 
     ':COMMENT' => \&delete_it
 
-A specifier which begins with a colon ("C<:>") is a pseudoclass.
+A specifier which begins with a colon ("C<:>") matches a pseudoclass.
 L<Marpa::UrHTML> defines
 pseudoclasses to deal with terminals and other non-element
 components of the HTML hierarchy.
@@ -226,7 +228,7 @@ components of the HTML hierarchy.
 
 =head2 Conflicting Specifiers
 
-Only one handler is called for each component.
+At most one semantic action is called for each component.
 Where an element component matches several specifiers,
 the action is picked based on the B<most specific match>.
 
@@ -320,28 +322,30 @@ No CSS pseudoclasses are supported at this writing.
 L<Marpa::UrHTML> uses
 L<HTML::Parser> to do its low-level parsing.
 L<HTML::Parser> "events"
-become the terminals for L<Marpa::UrHTML>'s parser.
+become the terminals for L<Marpa::UrHTML>.
 
 Besides terminals and elements,
 three other HTML components are recognized:
-the physical document's SGML prolog (C<:PROLOG>),
-the physical document's SGML trailer (C<:TRAILER>),
+the SGML prolog (C<:PROLOG>),
+the SGML trailer (C<:TRAILER>),
 and the HTML document as a whole (C<:TOP>).
 
 =head2 :CDATA
 
 The C<:CDATA> pseudoclass specifies the action for
 CDATA terminals.
-Its action is called once for each non-whitespace raw C<text> event.
+Its action is called once for each non-whitespace raw C<text> event
+that is not reclassed as cruft.
 (B<Raw text>
 is text in which any markup and entities should be left as is.)
 
 More precisely,
 a C<:CDATA> terminal is created from any
-L<HTML::Parser> C<text> event that has the C<is_cdata> flag on,
-and that contains a non-whitespace character
+L<HTML::Parser> C<text> event that has the C<is_cdata> flag on;
+that contains a non-whitespace character
 as defined in the HTML 4.01 specification
-(L<http://www.w3.org/TR/html4/struct/text.html#h-9.1>).
+(L<http://www.w3.org/TR/html4/struct/text.html#h-9.1>);
+and that is not reclassed as cruft.
 
 =head2 :COMMENT
 
@@ -379,14 +383,16 @@ is not reclassed as cruft.
 
 The C<:PCDATA> pseudoclass specifies the action for
 PCDATA terminals.
-Its action is called once for each non-whitespace non-raw C<text> event.
+Its action is called once for each non-whitespace non-raw C<text> event
+that is not reclassed as cruft.
 
 More precisely,
 a C<:PCDATA> terminal is created from any
-L<HTML::Parser> C<text> event that has the C<is_cdata> flag B<off>,
-and that contains a non-whitespace character
+L<HTML::Parser> C<text> event that has the C<is_cdata> flag B<off>;
+that contains a non-whitespace character
 as defined in the HTML 4.01 specification
-(L<http://www.w3.org/TR/html4/struct/text.html#h-9.1>).
+(L<http://www.w3.org/TR/html4/struct/text.html#h-9.1>);
+and that is not reclassed as cruft.
 
 Markup and entities in
 C<:PCDATA> text
@@ -396,13 +402,12 @@ during parsing.
 An application may, for example,
 be rewriting a document for display on the web.
 In that case it will often
-need to leave markup and entities for the client's browser
+want to leave markup and entities for the client's browser
 to interpret.
 
-To allow flexibility,
 L<Marpa::UrHTML> leaves interpretation of markup and entities entirely to
-the user.
-A user who does choose to do the interpretation
+the application.
+An application which chooses to do the interpretation itself
 may do it in the actions,
 or deal with it in post-processing.
 CPAN has excellent tools for this,
@@ -419,7 +424,7 @@ is not reclassed as cruft.
 The C<:PROLOG> pseudoclass specifies the action for SGML prolog.
 This is the part of the HTML document which precedes the HTML root element.
 Components valid in the
-prolog include SGML comments, processing instructions and whitespace.
+trailer include SGML comments, processing instructions and whitespace.
 
 =head2 :TOP
 
@@ -456,22 +461,23 @@ last resort.
 A L<Marpa::UrHTML> C<:WHITESPACE> terminal is created for every
 L<HTML::Parser> C<text> event that is entirely whitespace
 as defined in the HTML 4.01 specification
-(L<http://www.w3.org/TR/html4/struct/text.html#h-9.1>).
+(L<http://www.w3.org/TR/html4/struct/text.html#h-9.1>)
+and that is not reclassed as cruft.
 Whitespace is acceptable in places where non-whitespace is not,
 and the difference can be very significant structurally.
 
 =head1 VIEWS
 
-I hope L<the synopsis|//"SYNOPSIS"> convinces the reader
+I hope L<the synopsis|/"SYNOPSIS"> convinces the reader
 that the action semantics of L<Marpa::UrHTML> are natural.
 This naturalness is achieved at the price of some novelty.
-This section explains the ideas behind the action API.
+This section explains the ideas behind the semantic action API.
 Depending on taste,
 readers may want to skip this section and go straight to
 the API.
 
 The components of an HTML document form a hierarchy,
-with the TOP component on top, and the terminals on the bottom.
+with the C<:TOP> component on top, and the terminals on the bottom.
 The traditional syntax tree method requires semantic actions
 to know precisely
 what children every component will have.
@@ -481,38 +487,37 @@ L<Marpa::UrHTML> gives the writer of semantic actions
 where the number and type of
 children is unknown or vaguely defined.
 
-L<Marpa::UrHTML>'s action semantics therefore
-often focus more on a components descendants than its
-direct children.
-The terms ancestor and descendant are used in the standard way:
-A component is
-an B<ancestor> of a second component if it is above that second
-component in the hierarchy.
-In this case, also,
-the second component is a B<descendant> of the first one.
+L<Marpa::UrHTML>'s semantics
+focus more widely --
+on a component's descendants instead of
+just its direct children.
+(The terms ancestor and descendant are used in the standard way:
+If a component X is
+above Y in the hierarchy,
+X is an B<ancestor> of Y; and
+Y is a B<descendant> of the X.)
 
 =head2 The Original View
 
 The B<original view> sees the text of a component as it was
 originally passed to the parser.
 The original view never changes.
-In its "pure form" call, the original view is seen
-through the L<Marpa::UrHTML::original> API call.
+The original view is seen
+through the L</"Marpa::UrHTML::original"> API method.
 
-=head2 The Terminal View
+=head2 The Terminals View
 
-The B<terminal view> sees the terminals for a component.
-The terminal view sees the terminals corresponding to the
+The B<terminals view> sees the terminals corresponding to the
 original text of a component.
-The terminal view never changes.
-The terminal view is usually seen as part of other views.
+The terminals view never changes.
+The terminals view is usually seen as part of other views.
 
-At this writing the API does not contain a "pure form" terminal view call.
-For a terminal view of the whole HTML document,
-the L<HTML::PullParser> does the job with significantly lower overhead.
-For a terminal view of the sections with no values defined,
-the descendants view (L<described below|//"The Descendants View">
-is equivalent to the terminals view).
+At this writing the API does not contain a "pure" terminals view method.
+For a terminals view of the whole HTML document,
+L<HTML::PullParser> does the job with significantly lower overhead.
+For a terminals view of the sections with no values defined,
+the descendants view (L<described below|/"The Descendants View">)
+is equivalent to the terminals view.
 
 =head2 The Values View
 
@@ -549,9 +554,8 @@ not only do the values of all its descendants disappear,
 the component for the action also will not appear in the values view.
 When its semantic action returns C<undef>, a component permanently "drops out" of the values view
 taking all descendants with it.
-
-In its "pure form", the original view is seen
-through the L<Marpa::UrHTML::values> API call.
+The original view is seen
+through the L</"Marpa::UrHTML::values"> API method.
 
 =head2 The Literal View
 
@@ -568,17 +572,18 @@ In all L<Marpa::UrHTML>'s views,
 whether descendants are seen as text or values,
 they
 are seen in the original lexical order.
-In its "pure form", the literal view is seen
-through the L<Marpa::UrHTML::literal> API call.
+The literal view is seen
+through the L</"Marpa::UrHTML::literal"> API method.
 
 =head2 The Descendants View
 
 Just as the literal view can be thought of as a mix between the original view
 and the values view,
-the descendants view can be thought of a mix between the terminal view and the
+the descendants view can be thought of a mix between the terminals view and the
 values view.
 
-The B<descendants view> sees an array of element with data for each
+The B<descendants view> sees an array of elements
+with data for each
 of the component's descendants,
 in lexical order.
 Where a value is visible, the descendants view sees data for the component with the
@@ -590,8 +595,8 @@ when no values are visible, the descendants view is the same as the terminals vi
 The descendants view is implemented via the L</"Marpa::UrHTML::descendants"> method.
 It is the most fine-grained and detailed way to look at the descendants of a component.
 The descendants view can do anything that the other views can do,
-but the other views should be prefered when they fit the application.
-The other views are typically more intuitive and efficient.
+but the other views should be preferred when they fit the application.
+Other views are typically more intuitive and efficient.
 
 =head2 Views versus Syntax Trees
 
@@ -601,32 +606,32 @@ The values view is the view that most
 closely resembles a syntax tree.
 But there are important differences.
 
-The syntax tree model, in its pure form,
+In its purest form,
+the syntax tree model
 required the semantic actions to 
 define exactly how many and what kind of immediate children
 each node had.
-Each node in a syntax tree working with its immediate children.
-And children in a syntax tree always appeared as values.
+Each node in a syntax tree worked with its immediate children.
+Children in a syntax tree appeared as values.
 
-The values view, on the other hand, sees all descendants,
-but only those which make themselves visible.
+The values view, on the other hand, sees all its descendants,
+not just its immediate children, but only if
+they make themselves visible.
+Because of this,
+the values view lends itself to being mixed with other views.
 The values view allows pieces of the tree to decide when they will
 come into sight
 and when they will fall out of view.
-Because of this,
-the values view lends itself to being mixed with other views.
 
 =head2 Views and Efficiency
 
 In most applications,
 views are more efficient than syntax trees.
-From the L<Marpa::UrHTML> point of view,
-Tradtional syntax tree processing,
-in its pure form,
-corresponds to the case
-in which all components have actions which return defined values.
-For
-L<Marpa::UrHTML> this is close to its worst case.
+In terms of L<Marpa::UrHTML> views,
+traditional syntax tree processing
+corresponds most closely to the values view
+when every component in the parse has a visible value.
+For L<Marpa::UrHTML> this is close to the worst case.
 
 L<Marpa::UrHTML> optimizes for unvalued components.
 Unvalued components are represented as terminal spans.
@@ -634,16 +639,16 @@ Adjacent descendant spans are automatically merged.
 This means the size and time required do not increase as 
 processing rises up the component hierarchy.
 
-Terminal views are calculated on a just-in-time basis
+Terminals views are calculated on a just-in-time basis
 when they are requested through the action API.
-The terminal view is produced quickly from the merged terminal span.
+The terminals view is produced quickly from the merged terminal span.
 
 Original views are also calculated on a just-in-time basis
 as requested.
 Each terminal tracks the text it represents as a
 character span.
 The original text can be quickly reconstructed
-as the text from
+as the text in the source document from
 the first character location of its component's first terminal
 to the last character location of the component's last terminal.
 
@@ -698,7 +703,7 @@ the per-descendant data requested in the string.
 
 The descendant data specification string has a syntax
 similar to that of the C<argspec> strings of L<HTML::Parser>.
-Details of that syntax L<are given below|Dataspecs>
+Details of that syntax L<are given below|/"Dataspecs">
 
 =item Marpa::UrHTML::values
 
@@ -732,14 +737,13 @@ component.  This can be useful for very long strings.
 =item Marpa::UrHTML::offset
 
 Returns the start offset of the component.
-This is a zero-based location in the original text string.
+This is a zero-based location in the source document.
 
 =item Marpa::UrHTML::original
 
 The C<Marpa::UrHTML::original> method implements the original view.
 Returns a string containing the original view of the component --
-its text as modified by any the visible values of its
-descendants.
+its text unchanged from the source document.
 
 =item Marpa::UrHTML::start_tag
 
@@ -750,17 +754,18 @@ For elements with no start tag, returns undef.
 
 =item Marpa::UrHTML::tagname
 
-For an element component returns its tagname.
+For an element component,
+returns its tagname.
 There is a tagname even if there are no
 explicit tags.
-It is determined based on structure,
+Tagname is determined based on structure.
 For non-element components, returns undef.
 
 =item Marpa::UrHTML::title
 
-Returns the values of the title attribute.
+Returns the value of the title attribute.
 For a non-element component, returns undef.
-If there was explicit start tag, returns undef.
+If there was no explicit start tag, returns undef.
 If there was no title attribute, returns undef.
 
 =back
@@ -770,8 +775,7 @@ If there was no title attribute, returns undef.
     Marpa::UrHTML::descendants('token_type,literal,element')
 
 The data specification string, or dataspec,
-is a comma separated list of B<descendant data specifiers> for
-per-descendant data.
+is a comma separated list of B<descendant data specifiers>.
 The C<Marpa::UrHTML::descendants> method takes a dataspec
 as its argument.
 The C<Marpa::UrHTML::descendants> method returns a reference
@@ -786,7 +790,7 @@ These are the valid descendant data specifiers:
 =item C<element>
 
 For an element descendant, returns the tagname.
-The tagname is known even if there were not explicit tags.
+A valid tagname is returned even if there were no explicit tags.
 For non-element descendants, returns undef.
 
 =item C<literal>
@@ -801,7 +805,8 @@ descendant.
 
 =item C<pseudoclass>
 
-If the descendant is a pseudoclass terminal, returns the
+If the descendant is a pseudoclass component,
+returns the
 name of the pseudoclass.
 In all other cases, returns undef.
 
@@ -814,9 +819,9 @@ are the event types from L<HTML::Parser>:
 "C<S>" for a start tag,
 "C<E>" for an end tag,
 "C<PI>" for a processing instruction,
-"C<D>" for an SGML desclaration,
-and "C<C>" for a comment,
-For elements with visible values, returns undef.
+"C<D>" for an SGML declaration,
+and "C<C>" for a comment.
+For components with visible values, returns undef.
 
 =item C<value>
 
@@ -833,10 +838,13 @@ makes available
 a per-instance variable
 as a scratchpad for the application:
 C<$Marpa::UrHTML::INSTANCE>.
-Each call to L<Marpa::UrHTML::urhtml> internally creates a C<$Marpa::UrHTML::INSTANCE>
+Each call to
+L<Marpa::UrHTML::urhtml|/"THE Marpa::UrHTML::urhtml STATIC METHOD">
+creates a C<$Marpa::UrHTML::INSTANCE>
 variable which is
 reserved for that application using the C<local> keyword.
-L<Marpa::UrHTML::urhtml> initializes it to an empty hash,
+L<Marpa::UrHTML::urhtml|/"THE Marpa::UrHTML::urhtml STATIC METHOD">
+initializes it to an empty hash,
 but after that does not touch it.
 When programming via side effects
 is more natural than
@@ -883,7 +891,7 @@ The most important distinctions are that
 =item *
 
 The semantic action
-for C<:TOP> psuedoclass is always the last action
+for C<:TOP> pseudoclass is always the last action
 to be called in a parse.
 
 =item *
@@ -896,7 +904,9 @@ all cases.
 
 The value that the action for the C<:TOP> component
 returns becomes the value that
-the C<Marpa::UrHTML::urhtml> method returns.
+the
+L<Marpa::UrHTML::urhtml|/"THE Marpa::UrHTML::urhtml STATIC METHOD">
+method returns.
 
 =back
 
@@ -919,32 +929,24 @@ If an action for the root element is specified,
 it will also be called
 once and only once in every parse.
 An action for the root element can be specified in same way as actions
-for other elements, by using its tagname of "C<html>".
+for other elements, using its tagname of "C<html>".
 An element wildcard action also becomes the action for the root element,
-if no more specific action takes precedence.
+if no more specific handler declaration takes precedence.
 
 A C<:TOP> action will be called once and only once in every parse.
-The C<:TOP> action is unique in that there is a default action -- that is,
-an action is run whether the user specifies it or not.
+The C<:TOP> action is unique in that there is a default action.
 No other component has a default action.
 
 =head2 Tags versus Structure
 
-In a defective HTML document, tags for an element may be missing.
-Also, tags for an element may exist
-that did not fit into
-the structure of an HTML document,
-even by
-L<HTML::Parser>'s very liberal standards.
-
 Where tags conflict with structure,
 L<HTML::Parser> follows structure.
 Following the structure means, for example,
-that handlers for the C<html>, C<head>,
-and C<body> elements will be called once and only once for every
-document.
+that, if semantic actions for the C<html>, C<head>,
+and C<body> elements exist,
+they will be called once and only once during every parse.
 
-For example, consider this short and very defective HTML document:
+Consider this short and very defective HTML document:
 
 =for Marpa::Display
 name: 'UrHTML Pod: Structure vs. Element Example'
@@ -972,15 +974,18 @@ the C<body> element, and reclassed as
 
 =head2 Explicit and Implicit Elements
 
-If a handler is specified for a tagname, it is called
-whenever that element is found,
+If a semantic action
+is specified for a tagname, it is called
+whenever an element is found with that tagname,
 even if there are no explicit tags for
 that element.
-The HTML standards allow both tags for
+The HTML standards allow both start and end tags
+to be missing
+for
 C<html>,
 C<head>,
 C<body> and
-C<tbody> to be missing.
+C<tbody> elements.
 L<Marpa::UrHTML> is more liberal,
 and will recognize virtual tags for
 C<table>, C<tr>, and C<td> elements
@@ -1004,11 +1009,12 @@ currently active elements.
 =head1 EXPORTS
 
 L<Marpa::UrHTML> exports nothing by default.
-Optionally, L<Marpa::UrHTML::urhtml> may be exported.
+Optionally,
+L<Marpa::UrHTML::urhtml|/"THE Marpa::UrHTML::urhtml STATIC METHOD">
+may be exported.
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2007-2009 Jeffrey Kegler, all rights reserved.
-
-This program is free software; you can redistribute
-it and/or modify it under the same terms as Perl 5.10.0.
+Copyright 2007-2009 Jeffrey Kegler, all rights reserved.  Marpa is free
+software under the Perl license.  For details see the LICENSE file in
+the Marpa distribution.

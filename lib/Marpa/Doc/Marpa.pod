@@ -1,6 +1,6 @@
 =head1 NAME
 
-Marpa - Parse any Language You Can Write in BNF
+Marpa - Parse any Language You Can Describe in BNF
 
 =head1 DESCRIPTION
 

@@ -5,10 +5,7 @@ Marpa::Support - Marpa Support, and How to Report Bugs
 =head1 DESCRIPTION
 
 Marpa is free software.
-As such there is no warranty and or guarantee of support.
-Nonetheless, through the generosity of volunteers,
-there is a mechanism for bug reporting and
-limited support.
+There is no warranty.
 
 =head1 BUGS
 
@@ -54,5 +51,6 @@ L<http://search.cpan.org/dist/Marpa>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2007-2009 Jeffrey Kegler, all rights reserved.
-Marpa is free software under the Perl license.
+Copyright 2007-2009 Jeffrey Kegler, all rights reserved.  Marpa is free
+software under the Perl license.  For details see the LICENSE file in
+the Marpa distribution.
