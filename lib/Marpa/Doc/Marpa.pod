@@ -1,61 +1,77 @@
 =head1 NAME
 
-Marpa - Generate Parsers for any BNF Grammar
+Marpa - Parse any Language You Can Write in BNF
 
 =head1 DESCRIPTION
 
-Marpa generates parses from any BNF grammar.  That includes recursive
-grammars, ambiguous grammars, infinitely ambiguous grammars and
-grammars with useless or empty productions.  If you can write it in
-BNF, Marpa parses it.
+L<Marpa> parses any language whose
+grammar can be written in BNF.
+That includes recursive grammars,
+ambiguous grammars, infinitely ambiguous grammars and
+grammars with useless or empty productions.
 
-This is a branch from L<Parse::Marpa>.
-This branch started out experimental.
-It is still alpha,
-but in the near future it will replace
-L<Parse::Marpa> as the main branch.
+L<Marpa> is a branch from L<Parse::Marpa>.
+L<Marpa> started as an experiment, but is now alpha.
+L<Marpa> will, in the near future, replace L<Parse::Marpa>.
 
-=head1 WHAT'S ALREADY USEFUL
+Documentation is only partially complete.
+An HTML parser based on the Marpa parse engine
+is finished and documented.
+The documentation for the interface to the Marpa parse engine itself
+is in progress.
+
+=head1 WHAT'S ALREADY DOCUMENTED
 
 =over
 
-=item L<urhtml_fmt>
+=item urhtml_fmt
+
+L<urhtml_fmt>
 formats HTML documents, indenting them according to their
 structure.
 It supplies missing start and end tags.
-I find L<urhtml_fmt>
-quite handy.
-It allows me to get a quick look at
+L<urhtml_fmt> is handy for getting a quick overview
+of
 the structure of an HTML document.
-And the formatted version is easier and safer to
-transform using regular expressions.
+Once
+an HTML document has been reformatted
+according to its structure by
+L<urhtml_fmt>,
+it can be easier to
+transform using other programs.
+L<urhtml_fmt> uses L<Marpa::UrHTML> to do the HTML parsing.
 
-=item L<urhtml_score> computes a
+=item urhtml_score
+
+L<urhtml_score>
+computes a
 "complexity" score
 and other statistics for HTML scripts.
 The complexity score is the average depth in the element structure
 of the
 characters, divided by the log of the document's length.
 It's an interesting number.
+L<urhtml_score> uses L<Marpa::UrHTML> to do the HTML parsing.
+
+=item Marpa::UrHTML
+
+L<Marpa::UrHTML> is a high-level HTML parser,
+based on the L<Marpa>
+parse engine.
+It finds the structure of an HTML document.
+A CSS-like specifier syntax allows
+the user to specify semantic actions written
+in Perl for elements, classes and terminals.
+L<Marpa::UrHTML> uses L<HTML::Parser> as its tokenization layer.
 
 =back
 
-These scripts are demos of L<Marpa::UrHTML>,
-which is a high level HTML parser.
-"High level" means that it
-finds the structure of an HTML document,
-as opposed to L<HTML::Parser> which does tokenization
-or "low level parsing".
-(L<Marpa::UrHTML> uses L<HTML::Parser>
-as its low-level parser.)
+=head1 MARPA PARSE ENGINE DOCUMENTATION
 
-=head1 GUIDE TO THE MARPA DOCUMENTATION
-
-An incomplete user document for
-L<Marpa::UrHTML> is now available.
-
-Marpa's documentation is being brought up to date.
-What is ready at the moment is only of interest
+The documentation for the Marpa parse engine itself
+is in progress.
+The few documents which are
+ready at the moment are of interest only
 to readers who are familiar
 with other parsing algorithms,
 and who
@@ -64,16 +80,8 @@ used in the Marpa parse engine.
 L<Marpa::Algorithm> describes the Marpa algorithm itself.
 My sources, and other useful references are described in
 L<Marpa::Bibliography>.
-
 L<Marpa::Parse_Terms> is intended as a quick refresher
 of parsing terminology.
-It's all standard, but the emphasis is on the meanings
-of the terms as they will be used
-in the (mostly not yet released) documents.
-
-Support, on a volunteer basis,
-is provided via the standard mechanisms for CPAN modules.
-L<The Support document|Marpa::Support> has details.
 
 =head1 AUTHOR
 
@@ -172,6 +180,14 @@ Adam Kennedy patiently instructed me
 in module writing,
 both on the finer points and
 on issues about which I really should have know better.
+
+=head1 SUPPORT
+
+L<Marpa> comes without warranty.
+Support is provided
+on a volunteer basis 
+through the standard mechanisms for CPAN modules.
+L<The Support document|Marpa::Support> has details.
 
 =head1 LICENSE AND COPYRIGHT
 

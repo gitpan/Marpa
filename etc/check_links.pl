@@ -49,9 +49,7 @@ my @doc_urls = ();
 
     my $page_response_status_line = $response->status_line;
     if ( $response->code != OK ) {
-        say 'PAGE: ', $page_response_status_line, q{ }, $marpa_doc_base
-            or Carp::croak("Cannot print: $ERRNO");
-        next PAGE;
+        Carp::croak( 'PAGE: ', $page_response_status_line, q{ }, $marpa_doc_base )
     }
 
     my @links =
