@@ -4,11 +4,23 @@ Marpa - Parse any Language You Can Describe in BNF
 
 =head1 DESCRIPTION
 
+=head2 This is ALPHA software
+
+This is B<alpha> software.
+There may be bugs. The interface may change.
+Please be careful.
+Do not rely
+on it for anything mission-critical.
+
+=head2 General BNF Parsing
+
 L<Marpa> parses any language whose
 grammar can be written in BNF.
 That includes recursive grammars,
 ambiguous grammars, infinitely ambiguous grammars and
 grammars with useless or empty productions.
+
+=head2 Status
 
 L<Marpa> is a branch from L<Parse::Marpa>.
 L<Marpa> started as an experiment, but is now alpha.
