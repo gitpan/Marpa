@@ -12,7 +12,7 @@ use Marpa::Test;
 
 BEGIN {
     if ( eval { require HTML::PullParser } ) {
-        Test::More::plan tests => 3;
+        Test::More::plan tests => 4;
     }
     else {
         Test::More::plan skip_all => 'HTML::PullParser not available';
@@ -73,3 +73,40 @@ EXPECTED_RESULT
 # Marpa::Display::End
 
 Marpa::Test::is( ${$result}, $expected_result, 'handler precedence example' );
+
+# Marpa::Display
+# name: 'UrHTML Pod: Structure vs. Element Example'
+# start-after-line: END_OF_EXAMPLE
+# end-before-line: '^END_OF_EXAMPLE$'
+
+my $tagged_html_example = <<'END_OF_EXAMPLE';
+    <title>Short</title><p>Text</head><head>
+END_OF_EXAMPLE
+
+# Marpa::Display::End
+
+my $expected_structured_result = <<'END_OF_EXPECTED';
+    <html>
+<head>
+<title>Short</title></head>
+<body>
+<p>Text</head><head>
+</p>
+</body>
+</html>
+END_OF_EXPECTED
+
+sub supply_missing_tags {
+    my $tagname = Marpa::UrHTML::tagname();
+    return
+          ( Marpa::UrHTML::start_tag() // "<$tagname>\n" )
+        . Marpa::UrHTML::contents()
+        . ( Marpa::UrHTML::end_tag() // "</$tagname>\n" );
+} ## end sub supply_missing_tags
+my $structured_html_ref =
+    Marpa::UrHTML::urhtml( \$tagged_html_example,
+    { q{*} => \&supply_missing_tags } );
+
+Marpa::Test::is( ${$structured_html_ref}, $expected_structured_result,
+    'structure vs. tags example' );
+

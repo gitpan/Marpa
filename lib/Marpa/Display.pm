@@ -20,7 +20,7 @@ sub Marpa::Display::new {
 
 @Marpa::Display::Internal::DISPLAY_SPECS = qw(
     start-after-line end-before-line perltidy normalize-whitespace name
-    remove-display-indent
+    remove-display-indent partial flatten
 );
 
 sub Marpa::Display::read {
@@ -112,14 +112,15 @@ sub Marpa::Display::read {
                 my $start_pat = qr/$start_pattern/xms;
                 PRE_CONTENT_LINE: while (1) {
                     my $pre_content_line = $lines[ ++$zero_based_line ];
-                    last PRE_CONTENT_LINE
-                        if $pre_content_line =~ /$start_pat/xms;
                     if ( not defined $pre_content_line ) {
                         say STDERR
                             qq{Warning: Pattern "$start_pattern" never found, },
-                            qq{start looking at $name, line $display_spec_line_number}
+                            qq{started looking at $name, line $display_spec_line_number}
                             or Carp::croak("Cannot print: $ERRNO");
+                        return $self;
                     } ## end if ( not defined $pre_content_line )
+                    last PRE_CONTENT_LINE
+                        if $pre_content_line =~ /$start_pat/xms;
                 } ## end while (1)
             } ## end if ( defined( my $start_pattern = $display_spec->{...}))
 
@@ -127,9 +128,10 @@ sub Marpa::Display::read {
                 my $content_line = $lines[ ++$zero_based_line ];
                 if ( not defined $content_line ) {
                     say STDERR
-                        qq{Warning: Pattern "$end_pattern" never found, start looking at $name, line $display_spec_line_number}
+                        qq{Warning: Pattern "$end_pattern" never found, },
+                        qq{started looking at $name, line $display_spec_line_number}
                         or Carp::croak("Cannot print: $ERRNO");
-                }
+                } ## end if ( not defined $content_line )
                 last CONTENT_LINE if $content_line =~ /$end_pat/xms;
                 $content .= "$content_line\n";
                 $content_start_line //= $zero_based_line + 1;
@@ -144,7 +146,7 @@ sub Marpa::Display::read {
                         q{Warning: Pattern "Marpa::Display::End" never found,}
                         . qq{started looking at $name, line $display_spec_line_number}
                         or Carp::croak("Cannot print: $ERRNO");
-                    last CONTENT_LINE;
+                    return $self;
                 } ## end if ( not defined $content_line )
                 last CONTENT_LINE
                     if $content_line

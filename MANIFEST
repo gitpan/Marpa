@@ -11,7 +11,6 @@ author.t/pod.t
 author.t/spelling_exceptions.list
 author.t/test_pod
 author.t/tidy1
-author.t/TODO.pod
 Build.PL
 Changes
 etc/change_version.pl
@@ -23,6 +22,7 @@ inc/Test/Weaken.pm
 lib/Marpa/Callback.pm
 lib/Marpa/Display.pm
 lib/Marpa/Doc/Algorithm.pod
+lib/Marpa/Doc/API.pod
 lib/Marpa/Doc/Bibliography.pod
 lib/Marpa/Doc/Marpa.pod
 lib/Marpa/Doc/Parse_Terms.pod
@@ -114,6 +114,7 @@ t/priority.t
 t/randal.t
 t/sequence.t
 t/stripped.t
+t/syn_engine.t
 t/timeflies.t
 t/wall.t
 t/weaken.t

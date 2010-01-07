@@ -11,6 +11,7 @@ use Getopt::Long qw(GetOptions);
 use Test::More 0.94;
 use Carp;
 use Perl::Tidy;
+use Text::Wrap;
 
 use lib 'lib';
 use Marpa::Display;
@@ -31,7 +32,7 @@ my @test_files = @ARGV;
 my $debug_mode = scalar @test_files;
 if ( not $debug_mode ) {
 
-    for my $additional_file ( 'lib/Marpa/UrHTML/Doc/Parsing_HTML.pod' ) {
+    for my $additional_file ('lib/Marpa/UrHTML/todo/Implementation.pod') {
         Test::More::diag("Adding $additional_file");
         push @test_files, $additional_file;
     }
@@ -81,15 +82,15 @@ my $display_data = Marpa::Display->new();
 
 FILE: for my $file (@test_files) {
     if ( not -f $file ) {
-        Test::More::fail("attempt to test displays in non-file: $file");
+        Test::More::fail(qq{"$file" is not a file});
         next FILE;
     }
     $display_data->read($file);
 
 } ## end for my $file (@test_files)
 
-my @formatting_instructions =
-    qw(perltidy remove-display-indent normalize-whitespace);
+my @formatting_instructions = qw(perltidy remove-display-indent
+    partial flatten normalize-whitespace);
 
 sub format_display {
     my ( $text, $instructions, $is_copy ) = @_;
@@ -99,6 +100,9 @@ sub format_display {
         my ($first_line_spaces) = ( $result =~ /^ (\s+) \S/xms );
         $first_line_spaces = quotemeta $first_line_spaces;
         $result =~ s/^$first_line_spaces//gxms;
+    }
+    if ( $instructions->{'flatten'} ) {
+        $result =~ s/[\n\r]/ /gxms;
     }
     if ( $instructions->{'normalize-whitespace'} ) {
         $result =~ s/^\s+//gxms;
@@ -125,12 +129,29 @@ sub compare {
     my $formatted_original =
         format_display( \$original->{content}, $copy, 0 );
     my $formatted_copy = format_display( \$copy->{content}, $copy, 1 );
+    if ( $copy->{partial} ) {
+        return 1 if -1 != index ${$formatted_original}, ${$formatted_copy};
+        Test::More::diag(
+            $original->{filename},
+            "\n",
+            "Sought Substring:\n",
+            Text::Wrap::wrap( q{    }, q{    }, ${$formatted_copy} ),
+            "\nOriginal:\n",
+            Text::Wrap::wrap( q{    }, q{    }, ${$formatted_original} )
+        );
+        return 0;
+    } ## end if ( $copy->{partial} )
     return 1 if ${$formatted_original} eq ${$formatted_copy};
     Test::More::diag(
-        'Differences: ', $original->{filename},
-        ' vs. ',         $copy->{filename},
-        "\n",            Text::Diff::diff $formatted_original,
-        $formatted_copy, { STYLE => 'Table' }
+        'Differences: ',
+        $original->{filename},
+        ' vs. ',
+        $copy->{filename},
+        "\n",
+        (   Text::Diff::diff $formatted_original,
+            $formatted_copy,
+            { STYLE => 'Table' }
+        )
     );
     return 0;
 } ## end sub compare
