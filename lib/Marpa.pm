@@ -5,7 +5,7 @@ use warnings;
 use strict;
 
 BEGIN {
-    our $VERSION = '0.003_001';
+    our $VERSION = '0.003_002';
 }
 
 use Marpa::Internal;
