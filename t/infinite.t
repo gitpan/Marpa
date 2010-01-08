@@ -189,15 +189,15 @@ for my $base_test ( $cycle1_test, $cycle2_test, $cycle8_test ) {
     my $test_name = $base_test->[0];
     push @test_data,
         [
-        "$test_name cycle rewrite",
+        "$test_name infinite_rewrite",
         @{$base_test}[ 1 .. $#{$base_test} ],
-        { cycle_rewrite => 0 }
+        { infinite_rewrite => 0 }
         ];
     push @test_data,
         [
-        "$test_name no cycle rewrite",
+        "$test_name no infinite_rewrite",
         @{$base_test}[ 1 .. $#{$base_test} ],
-        { cycle_rewrite => 1 }
+        { infinite_rewrite => 1 }
         ];
 } ## end for my $base_test ( $cycle1_test, $cycle2_test, $cycle8_test)
 
@@ -208,7 +208,7 @@ for my $test_data (@test_data) {
     my $trace = q{};
     open my $MEMORY, '>', \$trace;
     my $grammar = Marpa::Grammar->new(
-        {   cycle_action      => 'warn',
+        {   infinite_action      => 'warn',
             trace_file_handle => $MEMORY,
         },
         @{$marpa_options},

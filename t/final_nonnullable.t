@@ -49,9 +49,9 @@ $grammar->precompute();
 
 Marpa::Test::is( $grammar->show_rules,
     <<'END_OF_STRING', 'final nonnulling Rules' );
-0: S -> p p p n /* !useful maximal */
+0: S -> p p p n /* !used maximal */
 1: p -> a /* maximal */
-2: p -> /* empty !useful nullable maximal */
+2: p -> /* empty !used nullable maximal */
 3: n -> a /* maximal */
 4: S -> p p S[R0:2][x5] /* vrhs maximal real=2 */
 5: S -> p p[] S[R0:2][x5] /* vrhs maximal real=2 */

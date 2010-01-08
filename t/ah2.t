@@ -48,10 +48,10 @@ $grammar->set( { terminals => ['a'], } );
 $grammar->precompute();
 
 Marpa::Test::is( $grammar->show_rules, <<'EOS', 'Aycock/Horspool Rules' );
-0: S -> A A A A /* !useful nullable maximal */
+0: S -> A A A A /* !used nullable maximal */
 1: A -> a /* maximal */
-2: A -> E /* !useful nullable maximal */
-3: E -> /* empty !useful nullable maximal */
+2: A -> E /* !used nullable maximal */
+3: E -> /* empty !used nullable maximal */
 4: S -> A S[R0:1][x6] /* vrhs maximal real=1 */
 5: S -> A A[] A[] A[] /* maximal */
 6: S -> A[] S[R0:1][x6] /* vrhs maximal real=1 */

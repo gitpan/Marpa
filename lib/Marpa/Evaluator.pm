@@ -151,9 +151,9 @@ use Marpa::Offset qw(
     RANKING_CLOSURES_BY_RULE :{ array, by rule id }
     RANKING_CLOSURES_BY_SYMBOL :{ array, by symbol id }
 
-    CYCLE_NODES
-    CYCLE_REWRITE
-    CYCLE_SCALE
+    INFINITE_NODES
+    INFINITE_REWRITE
+    INFINITE_SCALE
     EXPERIMENTAL
     MAX_PARSES
     PARSE_ORDER
@@ -390,7 +390,7 @@ sub set_actions {
 
     RULE: for my $rule ( @{$rules} ) {
 
-        next RULE if not $rule->[Marpa::Internal::Rule::USEFUL];
+        next RULE if not $rule->[Marpa::Internal::Rule::USED];
 
         my $rule_id = $rule->[Marpa::Internal::Rule::ID];
         my $ops = $evaluator_rules->[$rule_id] = [];
@@ -885,8 +885,8 @@ sub delete_nodes {
 } ## end sub delete_nodes
 
 # Rewrite to eliminate cycles.
-sub rewrite_cycles {
-    my ( $evaler, $cycle_rule_ids ) = @_;
+sub rewrite_infinite {
+    my ( $evaler, $infinite_rule_ids ) = @_;
 
     my $or_nodes  = $evaler->[Marpa::Internal::Evaluator::OR_NODES];
     my $and_nodes = $evaler->[Marpa::Internal::Evaluator::AND_NODES];
@@ -894,33 +894,33 @@ sub rewrite_cycles {
     my $trace_evaluation;
 
     my $grammar = $evaler->[Marpa::Internal::Evaluator::GRAMMAR];
-    my $warn_on_cycle =
-        $grammar->[Marpa::Internal::Grammar::CYCLE_ACTION] ne 'quiet';
+    my $warn_on_infinite =
+        $grammar->[Marpa::Internal::Grammar::INFINITE_ACTION] ne 'quiet';
     $trace_evaluation =
         $evaler->[Marpa::Internal::Evaluator::TRACE_EVALUATION];
 
     my $initial_and_nodes = @{$and_nodes};
     my $maximum_and_nodes = List::Util::max(
         $initial_and_nodes
-            + $evaler->[Marpa::Internal::Evaluator::CYCLE_NODES],
+            + $evaler->[Marpa::Internal::Evaluator::INFINITE_NODES],
         $initial_and_nodes
-            * $evaler->[Marpa::Internal::Evaluator::CYCLE_SCALE]
+            * $evaler->[Marpa::Internal::Evaluator::INFINITE_SCALE]
     );
 
-    my @cycle_rules;
-    @cycle_rules[ @{$cycle_rule_ids} ] = (1) x scalar @{$cycle_rule_ids};
-    my @cycle_or_nodes =
+    my @infinite_rules;
+    @infinite_rules[ @{$infinite_rule_ids} ] = (1) x scalar @{$infinite_rule_ids};
+    my @infinite_or_nodes =
         grep { not $_->[Marpa::Internal::Or_Node::DELETED] }
         map  { $or_nodes->[ $_->[Marpa::Internal::And_Node::PARENT_ID] ] }
         grep {
         not $_->[Marpa::Internal::And_Node::DELETED]
-            and $cycle_rules[ $_->[Marpa::Internal::And_Node::RULE_ID] ]
+            and $infinite_rules[ $_->[Marpa::Internal::And_Node::RULE_ID] ]
         } @{$and_nodes};
 
     # Group or-nodes by span.  Only or-nodes with the same
     # span can be in a cycle.
     my %or_nodes_by_span;
-    for my $or_node (@cycle_or_nodes) {
+    for my $or_node (@infinite_or_nodes) {
         push @{
             $or_nodes_by_span{
                 join q{,},
@@ -931,7 +931,7 @@ sub rewrite_cycles {
                 }
             },
             $or_node;
-    } ## end for my $or_node (@cycle_or_nodes)
+    } ## end for my $or_node (@infinite_or_nodes)
 
     # Initialize the span sets
     my @span_sets = values %or_nodes_by_span;
@@ -1109,7 +1109,7 @@ sub rewrite_cycles {
                     if ( $new_child_and_node_id > $maximum_and_nodes ) {
                         Marpa::exception(
                             "Cycle produced too many nodes: $maximum_and_nodes\n",
-                            "Rewrite grammar or increase cycle_scale\n"
+                            "Rewrite grammar or increase infinite_scale\n"
                         );
                     } ## end if ( $new_child_and_node_id > $maximum_and_nodes )
                     $translate_and_node_id{$old_child_and_node_id} =
@@ -1230,7 +1230,7 @@ sub rewrite_cycles {
         # Have we deleted the top or-node?
         # If so, there will be no parses.
         if ( $or_nodes->[0]->[Marpa::Internal::Or_Node::DELETED] ) {
-            if ($warn_on_cycle) {
+            if ($warn_on_infinite) {
                 print {$Marpa::Internal::TRACE_FH}
                     "Cycles found, but no parses\n"
                     or Marpa::exception('print to trace handle failed');
@@ -1243,7 +1243,7 @@ sub rewrite_cycles {
     ### assert: Marpa'Evaluator'audit($evaler) or 1
 
     return;
-} ## end sub rewrite_cycles
+} ## end sub rewrite_infinite
 
 =begin Implementation:
 
@@ -1541,9 +1541,9 @@ sub Marpa::Evaluator::new {
     ) if $furthest_earleme > $last_completed_earleme;
 
     # default settings
-    $self->[Marpa::Internal::Evaluator::CYCLE_NODES]   = 1000;
-    $self->[Marpa::Internal::Evaluator::CYCLE_SCALE]   = 2;
-    $self->[Marpa::Internal::Evaluator::CYCLE_REWRITE] = 1;
+    $self->[Marpa::Internal::Evaluator::INFINITE_NODES]   = 1000;
+    $self->[Marpa::Internal::Evaluator::INFINITE_SCALE]   = 2;
+    $self->[Marpa::Internal::Evaluator::INFINITE_REWRITE] = 1;
     $self->[Marpa::Internal::Evaluator::MAX_PARSES]    = -1;
     $self->[Marpa::Internal::Evaluator::PARSE_ORDER]   = 'numeric';
     $self->[Marpa::Internal::Evaluator::TRACE_VALUES]  = 0;
@@ -1632,7 +1632,7 @@ sub Marpa::Evaluator::new {
                 ->[Marpa::Internal::Symbol::ID] ] = $ranking_closure;
         } ## end if ( not scalar @{ $rule->[Marpa::Internal::Rule::RHS...]})
 
-        next RULE if not $rule->[Marpa::Internal::Rule::USEFUL];
+        next RULE if not $rule->[Marpa::Internal::Rule::USED];
         my $ranking_closure =
             Marpa::Internal::Evaluator::resolve_semantics( $grammar,
             $ranking_action );
@@ -1660,11 +1660,11 @@ sub Marpa::Evaluator::new {
 
     my @tree_rules;
     $#tree_rules = $#{$rules};
-    my @cycle_rule_ids =
+    my @infinite_rule_ids =
         map { $_->[Marpa::Internal::Rule::ID] }
-        @{ Marpa::Internal::Grammar::cycle_rules($grammar) };
-    @tree_rules[@cycle_rule_ids] =
-        ( [Marpa::Internal::Evaluator_Op::CYCLE] ) x scalar @cycle_rule_ids;
+        @{ Marpa::Internal::Grammar::infinite_rules($grammar) };
+    @tree_rules[@infinite_rule_ids] =
+        ( [Marpa::Internal::Evaluator_Op::CYCLE] ) x scalar @infinite_rule_ids;
 
     my $start_symbol = $start_rule->[Marpa::Internal::Rule::LHS];
     my ( $nulling, $symbol_id ) =
@@ -2115,10 +2115,10 @@ of the rule, where it will end.
 
     ### assert: Marpa'Evaluator'audit($self) or 1
 
-    if (    $grammar->[Marpa::Internal::Grammar::HAS_CYCLE]
-        and $self->[Marpa::Internal::Evaluator::CYCLE_REWRITE] )
+    if (    $grammar->[Marpa::Internal::Grammar::IS_INFINITE]
+        and $self->[Marpa::Internal::Evaluator::INFINITE_REWRITE] )
     {
-        rewrite_cycles( $self, \@cycle_rule_ids );
+        rewrite_infinite( $self, \@infinite_rule_ids );
     }
 
     ### assert: Marpa'Evaluator'audit($self) or 1
@@ -2372,9 +2372,9 @@ sub Marpa::Evaluator::show_ambiguity {
 
 use constant EVALUATOR_OPTIONS => [
     qw{
-        cycle_nodes
-        cycle_rewrite
-        cycle_scale
+        infinite_nodes
+        infinite_rewrite
+        infinite_scale
         experimental
         max_parses
         parse_order
@@ -2469,29 +2469,29 @@ sub Marpa::Evaluator::set {
             } ## end if ($value)
         } ## end if ( defined( my $value = $args->{'trace_evaluation'...}))
 
-        if ( defined( my $value = $args->{'cycle_scale'} ) ) {
+        if ( defined( my $value = $args->{'infinite_scale'} ) ) {
             Marpa::exception(
-                'cycle_scale option only allowed in experimental mode')
+                'infinite_scale option only allowed in experimental mode')
                 if not $evaler->[Marpa::Internal::Evaluator::EXPERIMENTAL];
-            Marpa::exception(q{cycle_scale must be >1})
+            Marpa::exception(q{infinite_scale must be >1})
                 if $value <= 1;
             no integer;
-            $evaler->[Marpa::Internal::Evaluator::CYCLE_SCALE] =
+            $evaler->[Marpa::Internal::Evaluator::INFINITE_SCALE] =
                 POSIX::ceil($value);
             use integer;
-        } ## end if ( defined( my $value = $args->{'cycle_scale'} ) )
+        } ## end if ( defined( my $value = $args->{'infinite_scale'} ) )
 
-        if ( defined( my $value = $args->{'cycle_nodes'} ) ) {
+        if ( defined( my $value = $args->{'infinite_nodes'} ) ) {
             Marpa::exception(
-                'cycle_nodes option only allowed in experimental mode')
+                'infinite_nodes option only allowed in experimental mode')
                 if $evaler->[Marpa::Internal::Evaluator::EXPERIMENTAL] <= 0;
-            Marpa::exception(q{cycle_nodes must be >0})
+            Marpa::exception(q{infinite_nodes must be >0})
                 if $value <= 0;
-            $evaler->[Marpa::Internal::Evaluator::CYCLE_NODES] = $value;
-        } ## end if ( defined( my $value = $args->{'cycle_nodes'} ) )
+            $evaler->[Marpa::Internal::Evaluator::INFINITE_NODES] = $value;
+        } ## end if ( defined( my $value = $args->{'infinite_nodes'} ) )
 
-        if ( defined( my $value = $args->{'cycle_rewrite'} ) ) {
-            $evaler->[Marpa::Internal::Evaluator::CYCLE_REWRITE] = $value;
+        if ( defined( my $value = $args->{'infinite_rewrite'} ) ) {
+            $evaler->[Marpa::Internal::Evaluator::INFINITE_REWRITE] = $value;
         }
 
         if ( defined( my $value = $args->{'max_parses'} ) ) {
@@ -3403,7 +3403,7 @@ is harmless.  But in some cases the number of derivations is O(n!)
 in the size of the input and the CPU time consumed can be staggering.
 
 Preventing re-visits to reset items is NOT the same as cycle prevention.
-Reset nodes are tracked over the entire tree.  Cycles only occur is a
+Reset nodes are tracked over the entire tree.  Cycles only occur if a
 node appears more than once on the path back to the root node.
 
 =end Implementation:

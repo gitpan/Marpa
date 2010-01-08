@@ -74,7 +74,7 @@ my $grammar = Marpa::Grammar->new(
     {   start        => 'S',
         strip        => 0,
         maximal      => 1,
-        cycle_action => 'quiet',
+        infinite_action => 'quiet',
 
         rules => [
             { lhs => 'S', rhs => [qw/p n/], action => 'main::start_rule' },
@@ -148,7 +148,7 @@ for my $input_length ( 1 .. 3 ) {
     my $evaler = Marpa::Evaluator->new(
         { experimental => 'no warning' },
         {   recce         => $recce,
-            cycle_rewrite => 0,
+            infinite_rewrite => 0,
             parse_order   => 'none',
         }
     );

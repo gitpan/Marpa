@@ -43,13 +43,13 @@ sub make_plex_rules {
     my ($size) = @_;
     my @symbol_names = map { chr +( $_ + ord 'A' ) } ( 0 .. $size - 1 );
     my @rules;
-    for my $cycle_symbol (@symbol_names) {
+    for my $infinite_symbol (@symbol_names) {
         for my $rhs_symbol (@symbol_names) {
-            push @rules, make_rule( $cycle_symbol, $rhs_symbol );
+            push @rules, make_rule( $infinite_symbol, $rhs_symbol );
         }
-        push @rules, make_rule( $cycle_symbol, 't' );
-        push @rules, make_rule( 's',           $cycle_symbol );
-    } ## end for my $cycle_symbol (@symbol_names)
+        push @rules, make_rule( $infinite_symbol, 't' );
+        push @rules, make_rule( 's',           $infinite_symbol );
+    } ## end for my $infinite_symbol (@symbol_names)
     return \@rules;
 } ## end sub make_plex_rules
 
@@ -153,7 +153,7 @@ for my $test_data ( $plex1_test, $plex2_test, $plex3_test ) {
     open my $MEMORY, '>', \$trace;
     my %args = (
         @{$rules},
-        cycle_action => 'warn',
+        infinite_action => 'warn',
         strip        => 0,
 
         # Let the cycles make the parse absurdly large
@@ -170,12 +170,12 @@ for my $test_data ( $plex1_test, $plex2_test, $plex3_test ) {
         { grammar => $grammar, trace_file_handle => \*STDERR } );
     $recce->tokens( [ [ 't', 't', 1 ] ] );
 
-    for my $cycle_rewrite ( 0, 1 ) {
+    for my $infinite_rewrite ( 0, 1 ) {
         my $evaler = Marpa::Evaluator->new(
             { experimental => 'no warning' },
             {   recce         => $recce,
-                cycle_scale   => 200,
-                cycle_rewrite => $cycle_rewrite,
+                infinite_scale   => 200,
+                infinite_rewrite => $infinite_rewrite,
             }
         );
         if ( not defined $evaler ) {
@@ -196,11 +196,11 @@ for my $test_data ( $plex1_test, $plex2_test, $plex3_test ) {
         }
         Marpa::Test::is(
             "$values\n",
-            (   $cycle_rewrite ? $expected_values_rw : $expected_values_norw,
-                "$test_name " . ( $cycle_rewrite ? 'rewrite' : 'no rewrite' )
+            (   $infinite_rewrite ? $expected_values_rw : $expected_values_norw,
+                "$test_name " . ( $infinite_rewrite ? 'rewrite' : 'no rewrite' )
             )
         );
-    } ## end for my $cycle_rewrite ( 0, 1 )
+    } ## end for my $infinite_rewrite ( 0, 1 )
 
 } ## end for my $test_data ( $plex1_test, $plex2_test, $plex3_test)
 

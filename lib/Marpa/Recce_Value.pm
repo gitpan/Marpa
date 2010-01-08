@@ -55,10 +55,10 @@ sub Marpa::Recognizer::value {
         $grammar->[Marpa::Internal::Grammar::ACTION_OBJECT];
     my $earley_sets = $self->[Marpa::Internal::Recognizer::EARLEY_SETS];
     Marpa::exception(
-        "Attempt to use quick evaluator on parse with cycles\n",
+        "Attempt to use quick evaluator on an infinitely ambiguous grammar\n",
         "  Rewrite to remove cycles, or\n",
         "  Use the power evaluator\n"
-    ) if $grammar->[Marpa::Internal::Grammar::HAS_CYCLE];
+    ) if $grammar->[Marpa::Internal::Grammar::IS_INFINITE];
 
     my $furthest_earleme =
         $self->[Marpa::Internal::Recognizer::FURTHEST_EARLEME];

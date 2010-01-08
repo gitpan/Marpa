@@ -47,7 +47,7 @@ $Test_Grammar::MARPA_OPTIONS = [
         ],
         'start'        => 's',
         'terminals'    => ['a:k0'],
-        'cycle_action' => 'warn'
+        'infinite_action' => 'warn'
     }
 ];
 
@@ -63,7 +63,7 @@ $Test_Grammar::MDLEX_OPTIONS = [
 my $trace;
 open my $MEMORY, '>', \$trace;
 my $grammar = Marpa::Grammar->new(
-    { trace_file_handle => $MEMORY, cycle_action => 'warn' },
+    { trace_file_handle => $MEMORY, infinite_action => 'warn' },
     @{$Test_Grammar::MARPA_OPTIONS} );
 $grammar->precompute();
 close $MEMORY;
@@ -89,7 +89,7 @@ if ( $fail_location >= 0 ) {
 }
 $recce->end_input();
 
-my $evaler = Marpa::Evaluator->new( { recce => $recce, cycle_rewrite => 0 } );
+my $evaler = Marpa::Evaluator->new( { recce => $recce, infinite_rewrite => 0 } );
 my $parse_count = 0;
 while ( my $value = $evaler->value() ) {
     Marpa::Test::is(
@@ -100,7 +100,7 @@ while ( my $value = $evaler->value() ) {
     $parse_count++;
 } ## end while ( my $value = $evaler->value() )
 
-$evaler = Marpa::Evaluator->new( { recce => $recce, cycle_rewrite => 1 } );
+$evaler = Marpa::Evaluator->new( { recce => $recce, infinite_rewrite => 1 } );
 $parse_count = 0;
 while ( my $value = $evaler->value() ) {
     Marpa::Test::is(

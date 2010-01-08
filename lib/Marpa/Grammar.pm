@@ -22,21 +22,26 @@ what in C would be structures.
 
 =cut
 
-#<<< no perltidy
 use Marpa::Offset qw(
 
     :package=Marpa::Internal::Symbol
 
-    ID NAME
+    ID
+    NAME
+
     =LAST_BASIC_DATA_FIELD
 
-    NULL_ALIAS
-    NULLING
+    NULL_ALIAS { for a non-nullable symbol,
+    ref of a its nulling alias,
+    if there is one
+    otherwise undef }
+
+    NULLING { always is null? }
     RANKING_ACTION
 
     GREED { Maximal (longest possible)
-        or minimal (shortest possible) evaluation
-        Default is indifferent. }
+    or minimal (shortest possible) evaluation
+    Default is indifferent. }
 
     NULLABLE { The number of nullable symbols
     the symbol represents,
@@ -44,141 +49,100 @@ use Marpa::Offset qw(
 
     =LAST_EVALUATOR_FIELD
 
-    TERMINAL
+    TERMINAL { terminal? }
+
     =LAST_RECOGNIZER_FIELD
 
-    LH_RULE_IDS
-    RH_RULE_IDS
-    ACCESSIBLE
-    PRODUCTIVE
-    START
+    LH_RULE_IDS { rules with this as the lhs,
+    as a ref to an array of rule refs }
 
-    NULL_VALUE
-    COUNTED
+    RH_RULE_IDS { rules with this in the rhs,
+    as a ref to an array of rule refs }
+
+    ACCESSIBLE { reachable from start symbol? }
+    PRODUCTIVE { reachable from input symbol? }
+    START { is one of the start symbols? }
+    NULL_VALUE { value when null }
+    COUNTED { used on rhs of counted rule? }
+
     =LAST_FIELD
 );
-#>>> End of no perltidy
-#
-
-# LHS             - rules with this as the lhs,
-#                   as a ref to an array of rule refs
-# RHS             - rules with this in the rhs,
-#                   as a ref to an array of rule refs
-# ACCESSIBLE      - reachable from start symbol?
-# PRODUCTIVE      - reachable from input symbol?
-# START           - is one of the start symbols?
-# REGEX           - regex, for terminals; undef otherwise
-# NULLING         - always is null?
-# NULLABLE        - can match null?
-# NULL_VALUE      - value when null
-# NULL_ALIAS      - for a non-nullable symbol,
-#                   ref of a its nulling alias,
-#                   if there is one
-#                   otherwise undef
-# TERMINAL        - terminal?
-# CLOSURE         - closure to do lexing
-# COUNTED         - used on rhs of counted rule?
-# ACTION          - lexing action specified by user
-# PREFIX          - lexing prefix specified by user
-# SUFFIX          - lexing suffix specified by user
 
 use Marpa::Offset qw(
 
     :package=Marpa::Internal::Rule
 
-    ID NAME LHS RHS
+    ID
+    NAME
+    LHS { ref of the left hand symbol }
+    RHS { array of symbol refs }
     =LAST_BASIC_DATA_FIELD
 
-    USEFUL
-    ACTION
+    USED { Use this rule in NFA? }
+    ACTION { action for this rule as specified by user }
     RANKING_ACTION
-    PRIORITY
+    PRIORITY { rule priority, from user }
     GREED
-    VIRTUAL_LHS VIRTUAL_RHS
+    VIRTUAL_LHS
+    VIRTUAL_RHS
     DISCARD_SEPARATION
     REAL_SYMBOL_COUNT
 
     =LAST_EVALUATOR_FIELD
     =LAST_RECOGNIZER_FIELD
 
-    ORIGINAL_RULE
+    ORIGINAL_RULE { for a rewritten rule, the original }
     VIRTUAL_START
     VIRTUAL_END
-    NULLABLE ACCESSIBLE PRODUCTIVE
+    NULLABLE { can match null? }
+    ACCESSIBLE { reachable from start symbol? }
+    PRODUCTIVE { reachable from input symbol? }
+
     =LAST_FIELD
 );
-
-=begin Implementation:
-
-LHS - ref of the left hand symbol
-RHS - array of symbol refs
-NULLABLE - can match null?
-ACCESSIBLE - reachable from start symbol?
-PRODUCTIVE - reachable from input symbol?
-NULLING - always matches null?
-USEFUL - use this rule in NFA?
-ACTION - action for this rule as specified by user
-CLOSURE - closure for evaluating this rule
-ORIGINAL_RULE - for a rewritten rule, the original
-PRIORITY - rule priority, from user
-CODE - code used to create closure
-
-=end Implementation:
-
-=cut
 
 use Marpa::Offset qw(
 
     :package=Marpa::Internal::NFA
 
-    ID NAME ITEM TRANSITION AT_NULLING COMPLETE
+    ID
+    NAME
+    ITEM { an LR(0) item }
+    TRANSITION { the transitions, as a hash from symbol name to NFA states }
+    AT_NULLING { dot just before a nullable symbol? }
+    COMPLETE { rule is complete? }
+
 );
-
-=begin Implementation:
-
-ITEM - an LR(0) item
-TRANSITION - the transitions, as a hash from symbol name to NFA states
-AT_NULLING - dot just before a nullable symbol?
-COMPLETE - rule is complete?
-
-=end Implementation:
-
-=cut
 
 use Marpa::Offset qw(
 
     :package=Marpa::Internal::QDFA
 
-    ID NAME
+    ID
+    NAME
     =LAST_BASIC_DATA_FIELD
 
-    COMPLETE_RULES START_RULE
+    COMPLETE_RULES { an array of lists of the complete rules,
+    indexed by lhs }
+
+    START_RULE { the start rule }
+
     =LAST_EVALUATOR_FIELD
 
-    TRANSITION COMPLETE_LHS
-    RESET_ORIGIN
+    TRANSITION { the transitions, as a hash
+    from symbol name to references to arrays
+    of QDFA states }
+
+    COMPLETE_LHS { an array of the lhs's of complete rules }
+
+    RESET_ORIGIN { reset origin for this state? }
+
     =LAST_RECOGNIZER_FIELD
 
-    NFA_STATES
+    NFA_STATES { in an QDFA: an array of NFA states }
+
     =LAST_FIELD
 );
-
-=begin Implementation:
-
-NFA_STATES     - in an QDFA: an array of NFA states
-TRANSITION     - the transitions, as a hash
-               - from symbol name to references to arrays
-               - of QDFA states
-COMPLETE_LHS   - an array of the lhs's of complete rules
-COMPLETE_RULES - an array of lists of the complete rules,
-               - indexed by lhs
-START_RULE     - the start rule
-TAG            - implementation-independant tag
-RESET_ORIGIN   - reset origin for this state?
-
-=end Implementation:
-
-=cut
 
 use Marpa::Offset qw(
 
@@ -193,42 +157,51 @@ use Marpa::Offset qw(
 
     :package=Marpa::Internal::Grammar
 
-    ID
-    NAME
-    RULES
-    SYMBOLS
-    QDFA
-    PHASE
+    ID { number of this grammar }
+
+    NAME { namespace special to this grammar
+    it should only be used BEFORE compilation, because it's not
+    guaranteed unique after decompilation }
+
+    RULES { array of rule refs }
+    SYMBOLS { array of symbol refs }
+    QDFA { array of states }
+    PHASE { the grammar's phase }
     ACTIONS { Default package in which to find actions }
     DEFAULT_ACTION { Action for rules without one }
     TRACE_FILE_HANDLE
-    TRACING
-    STRIP
-    WARNINGS
+    STRIP { Boolean.  If true, strip unused data to save space. }
+    WARNINGS { print warnings about grammar? }
+    TRACING { master flag, set if any tracing is being done
+    (to control overhead for non-tracing processes) }
 
     =LAST_BASIC_DATA_FIELD
 
     { === Evaluator Fields === }
 
-    SYMBOL_HASH
-    RULE_HASH
-    DEFAULT_NULL_VALUE
+    SYMBOL_HASH { hash by name of symbol refs }
+    RULE_HASH { hash by name of rule refs }
+    DEFAULT_NULL_VALUE { default value for nulling symbols }
     ACTION_OBJECT
-    CYCLE_ACTION
-    HAS_CYCLE
+    INFINITE_ACTION
+    IS_INFINITE
 
     =LAST_EVALUATOR_FIELD
 
-    PROBLEMS
-    ACADEMIC
-    START_STATES
+    PROBLEMS { fatal problems }
+    START_STATES { ref to array of the start states }
+    ACADEMIC { true if this is a textbook grammar,
+    for checking the NFA and QDFA, and NOT
+    for actual Earley parsing }
 
     =LAST_RECOGNIZER_FIELD
 
     RULE_SIGNATURE_HASH
-    START START_NAME
-    NFA QDFA_BY_NAME
-    NULLABLE_SYMBOL
+    START { ref to start symbol }
+    START_NAME { name of original symbol }
+    NFA { array of states }
+    QDFA_BY_NAME { hash from QDFA name to QDFA reference }
+    NULLABLE_SYMBOL { array of refs of the nullable symbols }
     INACCESSIBLE_OK
     UNPRODUCTIVE_OK
     TRACE_RULES
@@ -246,45 +219,6 @@ use POSIX qw(ceil);
 
 ### Using smart comments <where>...
 
-=begin Implementation:
-
-ID                 - number of this grammar
-NAME               - namespace special to this grammar
-                     it should only be used BEFORE compilation, because it's not
-                     guaranteed unique after decompilation
-RULES              - array of rule refs
-SYMBOLS            - array of symbol refs
-RULE_HASH          - hash by name of rule refs
-SYMBOL_HASH        - hash by name of symbol refs
-START              - ref to start symbol
-START_NAME         - name of original symbol
-NFA                - array of states
-QDFA               - array of states
-QDFA_BY_NAME       - hash from QDFA name to QDFA reference
-NULLABLE_SYMBOL    - array of refs of the nullable symbols
-ACADEMIC           - true if this is a textbook grammar,
-                   - for checking the NFA and QDFA, and NOT
-                   - for actual Earley parsing
-DEFAULT_NULL_VALUE - default value for nulling symbols
-DEFAULT_ACTION     - action for rules without one
-DEFAULT_LEX_PREFIX - default prefix for lexing
-DEFAULT_LEX_SUFFIX - default suffix for lexing
-AMBIGUOUS_LEX      - lex ambiguously?
-PROBLEMS - fatal problems
-WARNINGS - print warnings about grammar?
-VERSION - Marpa version this grammar was stringified from
-STRIP - Boolean.  If true, strip unused data to save space.
-TRACING - master flag, set if any tracing is being done
-    (to control overhead for non-tracing processes)
-TRACE_STRINGS - trace strings defined in marpa grammar
-TRACE_PREDEFINEDS - trace predefineds in marpa grammar
-PHASE - the grammar's phase
-START_STATES - ref to array of the start states
-CYCLE_ACTION - ref to array of the start states
-
-=end Implementation:
-
-=cut
 
 # values for grammar phases
 use Marpa::Offset qw(
@@ -427,7 +361,7 @@ sub Marpa::Grammar::new {
     $grammar->[Marpa::Internal::Grammar::WARNINGS]        = 1;
     $grammar->[Marpa::Internal::Grammar::INACCESSIBLE_OK] = {};
     $grammar->[Marpa::Internal::Grammar::UNPRODUCTIVE_OK] = {};
-    $grammar->[Marpa::Internal::Grammar::CYCLE_ACTION]    = 'fatal';
+    $grammar->[Marpa::Internal::Grammar::INFINITE_ACTION]    = 'fatal';
 
     $grammar->[Marpa::Internal::Grammar::SYMBOLS]             = [];
     $grammar->[Marpa::Internal::Grammar::SYMBOL_HASH]         = {};
@@ -497,7 +431,7 @@ use constant GRAMMAR_OPTIONS => [
         academic
         action_object
         actions
-        cycle_action
+        infinite_action
         default_action
         default_null_value
         inaccessible_ok
@@ -647,17 +581,17 @@ sub Marpa::Grammar::set {
             $grammar->[Marpa::Internal::Grammar::STRIP] = $value;
         }
 
-        if ( defined( my $value = $args->{'cycle_action'} ) ) {
+        if ( defined( my $value = $args->{'infinite_action'} ) ) {
             if ( $value && $phase >= Marpa::Internal::Phase::PRECOMPUTED ) {
                 say {$trace_fh}
-                    '"cycle_action" option is useless after grammar is precomputed'
+                    '"infinite_action" option is useless after grammar is precomputed'
                     or Marpa::exception("Could not print: $ERRNO");
             }
             Marpa::exception(
-                q{cycle_action must be 'warn', 'quiet' or 'fatal'})
+                q{infinite_action must be 'warn', 'quiet' or 'fatal'})
                 if not $value ~~ [qw(warn quiet fatal)];
-            $grammar->[Marpa::Internal::Grammar::CYCLE_ACTION] = $value;
-        } ## end if ( defined( my $value = $args->{'cycle_action'} ) )
+            $grammar->[Marpa::Internal::Grammar::INFINITE_ACTION] = $value;
+        } ## end if ( defined( my $value = $args->{'infinite_action'} ) )
 
         if ( defined( my $value = $args->{'warnings'} ) ) {
             if ( $value && $phase >= Marpa::Internal::Phase::PRECOMPUTED ) {
@@ -794,7 +728,7 @@ sub Marpa::Grammar::precompute {
     }
     else {
         rewrite_as_CHAF($grammar);
-        detect_cycle($grammar);
+        detect_infinite($grammar);
     }
     create_NFA($grammar);
     create_QDFA($grammar);
@@ -1174,7 +1108,7 @@ sub Marpa::show_rule {
 
     ELEMENT:
     for my $comment_element (
-        (   [ 1, '!useful',      Marpa::Internal::Rule::USEFUL, ],
+        (   [ 1, '!used',        Marpa::Internal::Rule::USED, ],
             [ 1, 'unproductive', Marpa::Internal::Rule::PRODUCTIVE, ],
             [ 1, 'inaccessible', Marpa::Internal::Rule::ACCESSIBLE, ],
             [ 0, 'nullable',     Marpa::Internal::Rule::NULLABLE, ],
@@ -1190,7 +1124,7 @@ sub Marpa::show_rule {
         if ($reverse) { $value = !$value }
         next ELEMENT if not $value;
         push @comment, $comment;
-    } ## end for my $comment_element ( ( [ 1, '!useful', ...]))
+    } ## end for my $comment_element ( ( [ 1, '!used', ...]))
 
     given ( $rule->[Marpa::Internal::Rule::GREED] ) {
         when (undef) {break}
@@ -1401,16 +1335,13 @@ sub Marpa::Grammar::show_QDFA {
 # Used by lexers to check that symbol is a terminal
 sub Marpa::Grammar::check_terminal {
     my ( $grammar, $name ) = @_;
-    Marpa::exception('Attempt to use symbol with undefined name')
-        if not defined $name;
+    return 0 if not defined $name;
     my $symbol_hash = $grammar->[Marpa::Internal::Grammar::SYMBOL_HASH];
     my $symbol_id   = $symbol_hash->{$name};
-    Marpa::exception("Attempt to use unknown symbol as terminal: $name")
-        if not defined $symbol_id;
+    return 0 if not defined $symbol_id;
     my $symbols = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
     my $symbol  = $symbols->[$symbol_id];
-    Marpa::exception("Attempt to use non-terminal as terminal: $name")
-        if not $symbol->[Marpa::Internal::Symbol::TERMINAL];
+    return 0 if not $symbol->[Marpa::Internal::Symbol::TERMINAL];
     return 1;
 } ## end sub Marpa::Grammar::check_terminal
 
@@ -2342,7 +2273,7 @@ sub nullable {
 
 } ## end sub nullable
 
-sub cycle_rules {
+sub infinite_rules {
     my ($grammar) = @_;
     my $rules     = $grammar->[Marpa::Internal::Grammar::RULES];
     my $symbols   = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
@@ -2353,7 +2284,7 @@ sub cycle_rules {
 
     # initialize the unit derivations from the rules
     RULE: for my $rule ( @{$rules} ) {
-        next RULE if not $rule->[Marpa::Internal::Rule::USEFUL];
+        next RULE if not $rule->[Marpa::Internal::Rule::USED];
         my $rhs = $rule->[Marpa::Internal::Rule::RHS];
         my $non_nullable_symbol;
 
@@ -2412,7 +2343,7 @@ sub cycle_rules {
 
     } ## end while ( my $new_unit_derivation = shift @new_unit_derivations)
 
-    my @cycle_rules = ();
+    my @infinite_rules = ();
 
     # produce a list of the rules which cycle
     RULE: while ( my $unit_rule_data = pop @unit_rules ) {
@@ -2424,52 +2355,52 @@ sub cycle_rules {
             if $start_symbol_id != $derived_symbol_id
                 and
                 not $unit_derivation[$derived_symbol_id][$start_symbol_id];
-        push @cycle_rules, $rule;
+        push @infinite_rules, $rule;
     } ## end while ( my $unit_rule_data = pop @unit_rules )
-    return \@cycle_rules;
-} ## end sub cycle_rules
+    return \@infinite_rules;
+} ## end sub infinite_rules
 
 # This assumes the grammar has been rewritten into CHAF form.
-sub detect_cycle {
+sub detect_infinite {
     my $grammar  = shift;
     my $rules    = $grammar->[Marpa::Internal::Grammar::RULES];
     my $trace_fh = $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE];
 
-    my $cycle_is_fatal = 1;
-    my $warn_on_cycle  = 1;
-    given ( $grammar->[Marpa::Internal::Grammar::CYCLE_ACTION] ) {
-        when ('warn') { $cycle_is_fatal = 0; }
+    my $infinite_is_fatal = 1;
+    my $warn_on_infinite  = 1;
+    given ( $grammar->[Marpa::Internal::Grammar::INFINITE_ACTION] ) {
+        when ('warn') { $infinite_is_fatal = 0; }
         when ('quiet') {
-            $cycle_is_fatal = 0;
-            $warn_on_cycle  = 0;
+            $infinite_is_fatal = 0;
+            $warn_on_infinite  = 0;
         }
     } ## end given
 
-    my $cycle_rules = cycle_rules($grammar);
+    my $infinite_rules = infinite_rules($grammar);
 
     # produce a list of the rules which cycle
-    RULE: for my $rule ( @{$cycle_rules} ) {
+    RULE: for my $rule ( @{$infinite_rules} ) {
 
         my $warning_rule = $rule->[Marpa::Internal::Rule::ORIGINAL_RULE]
             // $rule;
 
-        if ( $warn_on_cycle and defined $warning_rule ) {
+        if ( $warn_on_infinite and defined $warning_rule ) {
             print {$trace_fh}
                 'Cycle found involving rule: ',
                 Marpa::brief_rule($warning_rule), "\n"
                 or Marpa::exception("Could not print: $ERRNO");
-        } ## end if ( $warn_on_cycle and defined $warning_rule )
-    } ## end for my $rule ( @{$cycle_rules} )
+        } ## end if ( $warn_on_infinite and defined $warning_rule )
+    } ## end for my $rule ( @{$infinite_rules} )
 
-    if ( scalar @{$cycle_rules} ) {
+    if ( scalar @{$infinite_rules} ) {
         Marpa::exception('Cycle in grammar, fatal error')
-            if $cycle_is_fatal;
-        $grammar->[Marpa::Internal::Grammar::HAS_CYCLE] = 1;
+            if $infinite_is_fatal;
+        $grammar->[Marpa::Internal::Grammar::IS_INFINITE] = 1;
     }
 
     return 1;
 
-}    # sub detect_cycle
+}    # sub detect_infinite
 
 sub create_NFA {
     my $grammar = shift;
@@ -2500,7 +2431,7 @@ sub create_NFA {
     RULE: for my $rule ( @{$rules} ) {
         my ( $rule_id, $rhs, $useful ) = @{$rule}[
             Marpa::Internal::Rule::ID, Marpa::Internal::Rule::RHS,
-            Marpa::Internal::Rule::USEFUL
+            Marpa::Internal::Rule::USED
         ];
         next RULE if not $academic and not $useful;
         for my $position ( 0 .. scalar @{$rhs} ) {
@@ -2541,7 +2472,7 @@ sub create_NFA {
             # of the RHS.
             RULE: for my $start_rule_id (@start_rule_ids) {
                 my $start_rule = $rules->[$start_rule_id];
-                next RULE if not $start_rule->[Marpa::Internal::Rule::USEFUL];
+                next RULE if not $start_rule->[Marpa::Internal::Rule::USED];
                 push @{ $transition->{q{}} }, $NFA_by_item[$start_rule_id][0];
             }
             next STATE;
@@ -2582,7 +2513,7 @@ sub create_NFA {
             @{ $next_symbol->[Marpa::Internal::Symbol::LH_RULE_IDS] } )
         {
             my $predicted_rule = $rules->[$predicted_rule_id];
-            next RULE if not $predicted_rule->[Marpa::Internal::Rule::USEFUL];
+            next RULE if not $predicted_rule->[Marpa::Internal::Rule::USED];
             push @{ $transition->{q{}} }, $NFA_by_item[$predicted_rule_id][0];
         } ## end for my $predicted_rule_id ( @{ $next_symbol->[...]})
     } ## end for my $state ( @{$NFA} )
@@ -2800,7 +2731,7 @@ sub setup_academic_grammar {
 
     # in an academic grammar, consider all rules useful
     for my $rule ( @{$rules} ) {
-        $rule->[Marpa::Internal::Rule::USEFUL] = 1;
+        $rule->[Marpa::Internal::Rule::USED] = 1;
     }
 
     return;
@@ -2899,7 +2830,7 @@ sub rewrite_as_CHAF {
         my $rule = $rules->[$rule_id];
 
         # Rules are useless unless proven otherwise
-        $rule->[Marpa::Internal::Rule::USEFUL] = 0;
+        $rule->[Marpa::Internal::Rule::USED] = 0;
 
         # unreachable rules are useless
         my $productive = $rule->[Marpa::Internal::Rule::PRODUCTIVE];
@@ -2970,7 +2901,7 @@ sub rewrite_as_CHAF {
         # we found no properly nullable symbols in the RHS, so this rule is useful without
         # any changes
         if ( not scalar @proper_nullable_ixes ) {
-            $rule->[Marpa::Internal::Rule::USEFUL] = 1;
+            $rule->[Marpa::Internal::Rule::USED] = 1;
             next RULE;
         }
 
@@ -3180,7 +3111,7 @@ sub rewrite_as_CHAF {
                     }
                 );
 
-                $new_rule->[Marpa::Internal::Rule::USEFUL]        = 1;
+                $new_rule->[Marpa::Internal::Rule::USED]        = 1;
                 $new_rule->[Marpa::Internal::Rule::ACCESSIBLE]    = 1;
                 $new_rule->[Marpa::Internal::Rule::PRODUCTIVE]    = 1;
                 $new_rule->[Marpa::Internal::Rule::NULLABLE]      = 0;
@@ -3228,7 +3159,7 @@ sub rewrite_as_CHAF {
 
     $new_start_rule->[Marpa::Internal::Rule::PRODUCTIVE]        = $productive;
     $new_start_rule->[Marpa::Internal::Rule::ACCESSIBLE]        = 1;
-    $new_start_rule->[Marpa::Internal::Rule::USEFUL]            = 1;
+    $new_start_rule->[Marpa::Internal::Rule::USED]            = 1;
     $new_start_rule->[Marpa::Internal::Rule::VIRTUAL_LHS]       = 1;
     $new_start_rule->[Marpa::Internal::Rule::REAL_SYMBOL_COUNT] = 1;
 
@@ -3250,7 +3181,7 @@ sub rewrite_as_CHAF {
         $new_start_alias_rule->[Marpa::Internal::Rule::PRODUCTIVE] =
             $productive;
         $new_start_alias_rule->[Marpa::Internal::Rule::ACCESSIBLE] = 1;
-        $new_start_alias_rule->[Marpa::Internal::Rule::USEFUL]     = 1;
+        $new_start_alias_rule->[Marpa::Internal::Rule::USED]     = 1;
         $new_start_alias_rule->[Marpa::Internal::Rule::NULLABLE]   = 1;
     } ## end if ($old_start_alias)
     $grammar->[Marpa::Internal::Grammar::START] = $new_start_symbol;

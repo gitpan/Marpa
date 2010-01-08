@@ -48,9 +48,9 @@ $grammar->precompute();
 
 Marpa::Test::is( $grammar->show_rules,
     <<'END_OF_STRING', 'final nonnulling Rules' );
-0: S -> p p p n /* !useful */
+0: S -> p p p n /* !used */
 1: p -> a
-2: p -> /* empty !useful nullable */
+2: p -> /* empty !used nullable */
 3: n -> a
 4: S -> p p S[R0:2][x5] /* vrhs real=2 */
 5: S -> p p[] S[R0:2][x5] /* vrhs real=2 */

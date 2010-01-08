@@ -204,11 +204,17 @@ If any symbol non-trivially produces a symbol string with itself on the right,
 the grammar is said to be B<right-recursive>.
 
 A B<cycle> is a non-trivial derivation
-from any symbol to a string of symbols of length 1, where the one
-symbol in the result string is the same as the original symbol.
+from any symbol to the string of symbols
+which contains only itself.
 Since the result of a cycle is exactly the same as the beginning of
 a cycle, a cycle is the parsing equivalent of an infinite loop.
 A grammar which contains no cycles is B<cycle-free>.
+
+A grammar which contains a cycle is B<infinitely ambigious>.
+This is a grammar with a cycle can repeat the cycle in a derivation
+an arbitrary number of times.
+Therefore, for some input, there is no limit to the number
+of parses a grammar with a cycle can produce.
 
 A B<proper context-free grammar> in one which is
 cycle-free and has no useless rules or empty productions.
