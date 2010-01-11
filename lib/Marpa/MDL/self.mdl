@@ -55,7 +55,7 @@ definition: string definition.  'concatenate_lines'.
 
 predefined setting: default action setting.  'concatenate_lines'.
 
-predefined setting: default null value setting.  'concatenate_lines'.
+predefined setting: default null action setting.  'concatenate_lines'.
 
 predefined setting: semantics setting.  'concatenate_lines'.
 
@@ -93,13 +93,13 @@ default lex prefix setting: optional /the/, /default/, /lex/,
 /prefix/, copula, regex, .
 'default_lex_prefix_predicate'.
 
-default null value setting: string specifier, copula, optional /the/, /default/,
-/null/, /value/, .
-'default_null_value_subject'.
+default null action setting: string specifier, copula, optional /the/, /default/,
+/null/, /action/, .
+'default_null_action_subject'.
 
-default null value setting: optional /the/, /default/, /null/,
-/value/, copula, string specifier, .
-'default_null_value_predicate'.
+default null action setting: optional /the/, /default/, /null/,
+/action/, copula, string specifier, .
+'default_null_action_predicate'.
  
 copula: /is/.
 

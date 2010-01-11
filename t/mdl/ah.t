@@ -49,6 +49,8 @@ for my $i ( 0 .. 4 ) {
 
 ## no critic (Subroutines::RequireArgUnpacking)
 
+sub null_string { return q{} }
+
 sub default_action {
     shift;
     my $v_count = scalar @_;
@@ -68,7 +70,7 @@ sub default_action {
 
 __DATA__
 semantics are perl5.  the start symbol is
-S.  the default null value is q{}.
+S.  the default null action is 'main::null_string'.
 the default action is 'main::default_action'.
 
 S: A, A, A, A.

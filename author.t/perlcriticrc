@@ -206,7 +206,12 @@ severity=5
 
 [-Modules::RequireVersionVar]
 
-[NamingConventions::Capitalization]
+# I do not use because
+# 1.) Obvious when violated
+# 2.) Many good reasons to make exceptions
+# 3.) Turning off on a case-by-case basis is too noisy
+#     considering the severity
+[-NamingConventions::Capitalization]
 local_lexical_variable_exemptions=.*_NFA.* .*NFA_.* .*QDFA_.*
 file_lexical_variable_exemptions=.*SGML_.*
 subroutine_exemptions=.*_NFA.* .*_QDFA.* Marpa::.* .*_CHAF.*

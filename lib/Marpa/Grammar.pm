@@ -38,6 +38,7 @@ use Marpa::Offset qw(
 
     NULLING { always is null? }
     RANKING_ACTION
+    NULL_ACTION { closure to compute null value }
 
     GREED { Maximal (longest possible)
     or minimal (shortest possible) evaluation
@@ -62,8 +63,10 @@ use Marpa::Offset qw(
     ACCESSIBLE { reachable from start symbol? }
     PRODUCTIVE { reachable from input symbol? }
     START { is one of the start symbols? }
-    NULL_VALUE { value when null }
     COUNTED { used on rhs of counted rule? }
+
+    WARN_IF_NO_NULL_ACTION { should have a null action -- warn
+    if not }
 
     =LAST_FIELD
 );
@@ -181,7 +184,7 @@ use Marpa::Offset qw(
 
     SYMBOL_HASH { hash by name of symbol refs }
     RULE_HASH { hash by name of rule refs }
-    DEFAULT_NULL_VALUE { default value for nulling symbols }
+    DEFAULT_NULL_ACTION { default action to compute value for nulling symbols }
     ACTION_OBJECT
     INFINITE_ACTION
     IS_INFINITE
@@ -218,7 +221,6 @@ use POSIX qw(ceil);
 # use Smart::Comments '-ENV';
 
 ### Using smart comments <where>...
-
 
 # values for grammar phases
 use Marpa::Offset qw(
@@ -361,7 +363,7 @@ sub Marpa::Grammar::new {
     $grammar->[Marpa::Internal::Grammar::WARNINGS]        = 1;
     $grammar->[Marpa::Internal::Grammar::INACCESSIBLE_OK] = {};
     $grammar->[Marpa::Internal::Grammar::UNPRODUCTIVE_OK] = {};
-    $grammar->[Marpa::Internal::Grammar::INFINITE_ACTION]    = 'fatal';
+    $grammar->[Marpa::Internal::Grammar::INFINITE_ACTION] = 'fatal';
 
     $grammar->[Marpa::Internal::Grammar::SYMBOLS]             = [];
     $grammar->[Marpa::Internal::Grammar::SYMBOL_HASH]         = {};
@@ -433,14 +435,14 @@ use constant GRAMMAR_OPTIONS => [
         actions
         infinite_action
         default_action
-        default_null_value
+        default_null_action
         inaccessible_ok
         maximal
         minimal
         rules
-        sort_method
         start
         strip
+        symbols
         terminals
         trace_file_handle
         trace_rules
@@ -527,11 +529,28 @@ sub Marpa::Grammar::set {
         } ## end if ( defined( my $value = $args->{'maximal'} ) )
 
         # Second pass options
+        if ( defined( my $value = $args->{'symbols'} ) ) {
+            Marpa::exception(
+                'symbols option not allowed after grammar is precomputed')
+                if $phase >= Marpa::Internal::Phase::PRECOMPUTED;
+            Marpa::exception('symbols value must be REF to HASH')
+                if ref $value ne 'HASH';
+            while ( my ( $symbol, $properties ) = each %{$value} ) {
+                assign_user_symbol( $grammar, $symbol, $properties );
+            }
+            $phase = $grammar->[Marpa::Internal::Grammar::PHASE] =
+                Marpa::Internal::Phase::RULES;
+        } ## end if ( defined( my $value = $args->{'symbols'} ) )
+
         if ( defined( my $value = $args->{'terminals'} ) ) {
             Marpa::exception(
                 'terminals option not allowed after grammar is precomputed')
                 if $phase >= Marpa::Internal::Phase::PRECOMPUTED;
-            add_user_terminals( $grammar, $value );
+            Marpa::exception('terminals value must be REF to ARRAY')
+                if ref $value ne 'ARRAY';
+            for my $symbol ( @{$value} ) {
+                assign_user_symbol( $grammar, $symbol, { terminal => 1 } );
+            }
             $phase = $grammar->[Marpa::Internal::Grammar::PHASE] =
                 Marpa::Internal::Phase::RULES;
         } ## end if ( defined( my $value = $args->{'terminals'} ) )
@@ -561,8 +580,9 @@ sub Marpa::Grammar::set {
             $grammar->[Marpa::Internal::Grammar::ACADEMIC] = $value;
         } ## end if ( defined( my $value = $args->{'academic'} ) )
 
-        if ( defined( my $value = $args->{'default_null_value'} ) ) {
-            $grammar->[Marpa::Internal::Grammar::DEFAULT_NULL_VALUE] = $value;
+        if ( defined( my $value = $args->{'default_null_action'} ) ) {
+            $grammar->[Marpa::Internal::Grammar::DEFAULT_NULL_ACTION] =
+                $value;
         }
 
         if ( defined( my $value = $args->{'actions'} ) ) {
@@ -591,7 +611,7 @@ sub Marpa::Grammar::set {
                 q{infinite_action must be 'warn', 'quiet' or 'fatal'})
                 if not $value ~~ [qw(warn quiet fatal)];
             $grammar->[Marpa::Internal::Grammar::INFINITE_ACTION] = $value;
-        } ## end if ( defined( my $value = $args->{'infinite_action'} ) )
+        } ## end if ( defined( my $value = $args->{'infinite_action'}...))
 
         if ( defined( my $value = $args->{'warnings'} ) ) {
             if ( $value && $phase >= Marpa::Internal::Phase::PRECOMPUTED ) {
@@ -776,6 +796,22 @@ sub Marpa::Grammar::precompute {
                 or Marpa::exception("Could not print: $ERRNO");
         } ## end for my $symbol ( @{ Marpa::Grammar::unproductive_symbols...})
     } ## end if ( $grammar->[Marpa::Internal::Grammar::WARNINGS] ...)
+
+    if ( $grammar->[Marpa::Internal::Grammar::WARNINGS] ) {
+        SYMBOL:
+        for my $symbol ( @{ $grammar->[Marpa::Internal::Grammar::SYMBOLS] } )
+        {
+
+            next SYMBOL
+                if not $symbol
+                    ->[Marpa::Internal::Symbol::WARN_IF_NO_NULL_ACTION];
+            next SYMBOL
+                if not $symbol->[Marpa::Internal::Symbol::NULL_ACTION];
+            say {$trace_fh}
+                qq{Zero length sequence for symbol without null action: "$symbol"}
+                or Marpa::exception("Could not print: $ERRNO");
+        } ## end for my $symbol ( @{ $grammar->[...]})
+    } ## end if ( $grammar->[Marpa::Internal::Grammar::WARNINGS] )
 
     $grammar->[Marpa::Internal::Grammar::PHASE] =
         Marpa::Internal::Phase::PRECOMPUTED;
@@ -1345,78 +1381,12 @@ sub Marpa::Grammar::check_terminal {
     return 1;
 } ## end sub Marpa::Grammar::check_terminal
 
-sub add_terminal {
-    my $grammar  = shift;
-    my $name     = shift;
-    my $options  = shift;
-    my $priority = 0;
-    my $greed;
-    my $ranking_action;
-
-    while ( my ( $key, $value ) = each %{$options} ) {
-        given ($key) {
-            when ('maximal')        { $greed          = 1; }
-            when ('minimal')        { $greed          = -1; }
-            when ('ranking_action') { $ranking_action = $value; }
-            default {
-                Marpa::exception(
-                    "Attempt to add terminal named $name with unknown option $key"
-                );
-            }
-        } ## end given
-    } ## end while ( my ( $key, $value ) = each %{$options} )
-
-    my $symbol_hash = $grammar->[Marpa::Internal::Grammar::SYMBOL_HASH];
-    my $symbols     = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
-    my $default_null_value =
-        $grammar->[Marpa::Internal::Grammar::DEFAULT_NULL_VALUE];
-    my $default_greed = $grammar->[Marpa::Internal::Grammar::GREED];
-
-    # I allow redefinition of a LHS symbol as a terminal
-    # I need to test that this works, or disallow it
-    #
-    # 11 August 2008 -- I'm pretty sure I have tested this,
-    # but sometime should test it again to make sure
-    # before removing this comment
-
-    my $symbol_id = $symbol_hash->{$name};
-    if ( defined $symbol_id ) {
-
-        my $symbol = $symbols->[$symbol_id];
-        if ( $symbol->[Marpa::Internal::Symbol::TERMINAL] ) {
-            Marpa::exception("Attempt to add terminal twice: $name");
-        }
-
-        $symbol->[Marpa::Internal::Symbol::TERMINAL] = 1;
-        $symbol->[Marpa::Internal::Symbol::GREED] = $greed // $default_greed;
-
-        return;
-    } ## end if ( defined $symbol_id )
-
-    my $new_symbol = [];
-    $#{$new_symbol} = Marpa::Internal::Symbol::LAST_FIELD;
-    $new_symbol->[Marpa::Internal::Symbol::NAME]        = $name;
-    $new_symbol->[Marpa::Internal::Symbol::LH_RULE_IDS] = [];
-    $new_symbol->[Marpa::Internal::Symbol::RH_RULE_IDS] = [];
-    $new_symbol->[Marpa::Internal::Symbol::TERMINAL]    = 1;
-    $new_symbol->[Marpa::Internal::Symbol::GREED] = $greed // $default_greed;
-    $new_symbol->[Marpa::Internal::Symbol::RANKING_ACTION] = $ranking_action;
-
-    $symbol_id = @{$symbols};
-    push @{$symbols}, $new_symbol;
-    $new_symbol->[Marpa::Internal::Symbol::ID] = $symbol_id;
-    $symbol_hash->{$name} = $symbol_id;
-    return $new_symbol;
-
-} ## end sub add_terminal
-
 sub assign_symbol {
-    my $grammar     = shift;
-    my $name        = shift;
+    my ( $grammar, $name ) = @_;
+
+    my $new         = 0;
     my $symbol_hash = $grammar->[Marpa::Internal::Grammar::SYMBOL_HASH];
     my $symbols     = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
-    my $default_null_value =
-        $grammar->[Marpa::Internal::Grammar::DEFAULT_NULL_VALUE];
 
     my $symbol;
     if ( defined( my $symbol_id = $symbol_hash->{$name} ) ) {
@@ -1424,6 +1394,7 @@ sub assign_symbol {
     }
 
     if ( not defined $symbol ) {
+        $new = 1;
         $#{$symbol} = Marpa::Internal::Symbol::LAST_FIELD;
         $symbol->[Marpa::Internal::Symbol::NAME]        = $name;
         $symbol->[Marpa::Internal::Symbol::LH_RULE_IDS] = [];
@@ -1440,19 +1411,44 @@ sub assign_symbol {
             $symbol_id;
 
     } ## end if ( not defined $symbol )
-    return $symbol;
+
+    return ( $new, $symbol );
 } ## end sub assign_symbol
 
 sub assign_user_symbol {
-    my $self = shift;
-    my $name = shift;
+    my $self    = shift;
+    my $name    = shift;
+    my $options = shift;
+
     if ( my $type = ref $name ) {
         Marpa::exception(
             "Symbol name was ref to $type; it must be a scalar string");
     }
     Marpa::exception("Symbol name $name ends in ']': that's not allowed")
         if $name =~ /\]\z/xms;
-    return assign_symbol( $self, $name );
+    my ( $new, $symbol ) = assign_symbol( $self, $name );
+
+    my $priority = 0;
+    my $greed;
+    my $ranking_action;
+    my $terminal;
+
+    PROPERTY: while ( my ( $property, $value ) = each %{$options} ) {
+        if (not $property ~~
+            [qw(maximal minimal terminal ranking_action null_action)] )
+        {
+            Marpa::exception(qq{Unknown symbol property "$property"});
+        }
+        if ( $property eq 'terminal' ) {
+            $symbol->[Marpa::Internal::Symbol::TERMINAL] = $value;
+        }
+        if ( $property eq 'null_action' ) {
+            $symbol->[Marpa::Internal::Symbol::NULL_ACTION] = $value;
+        }
+    } ## end while ( my ( $property, $value ) = each %{$options} )
+
+    return $symbol;
+
 } ## end sub assign_user_symbol
 
 sub add_rule {
@@ -1551,6 +1547,18 @@ sub add_rule {
 
     my $nulling = @{$rhs} ? undef : 1;
 
+    if ( $action and $nulling ) {
+        Marpa::exception(
+            "Empty Rule cannot have an action\n",
+            '  Rule #',
+            $#{$rules},
+            ': ',
+            $lhs->[Marpa::Internal::Symbol::NAME],
+            ' -> /* empty */',
+            "\n"
+        );
+    } ## end if ( $action and $nulling )
+
     $new_rule->[Marpa::Internal::Rule::ID]             = $new_rule_id;
     $new_rule->[Marpa::Internal::Rule::LHS]            = $lhs;
     $new_rule->[Marpa::Internal::Rule::RHS]            = $rhs;
@@ -1608,7 +1616,7 @@ sub add_user_rules {
                             . join( ', ',
                             map { defined $_ ? $_ : 'undef' } @{$rule} )
                             . "\n"
-                            . 'Rule must have from 1 to 3 arguments'
+                            . 'Rule must have from 1 to 4 arguments'
                     );
                 } ## end if ( $arg_count > 4 or $arg_count < 1 )
                 my ( $lhs, $rhs, $action, $priority ) = @{$rule};
@@ -1784,7 +1792,15 @@ sub add_user_rule {
             rhs     => [],
             @rule_options,
         );
-        if ($action) { push @rule_args, action => $action }
+
+        # For a zero-length sequence
+        # with an action
+        # warn if we don't also have a null action.
+
+        if ($action) {
+            $lhs->[Marpa::Internal::Symbol::WARN_IF_NO_NULL_ACTION] = 1;
+        }
+
         if ($ranking_action) {
             push @rule_args, ranking_action => $ranking_action;
         }
@@ -1882,46 +1898,6 @@ sub add_user_rule {
     return;
 
 } ## end sub add_user_rule
-
-sub add_user_terminals {
-    my $grammar   = shift;
-    my $terminals = shift;
-
-    my $type = ref $terminals;
-    TERMINAL: for my $terminal ( @{$terminals} ) {
-        my $lhs_name;
-        my $options = {};
-        if ( ref $terminal eq 'ARRAY' ) {
-            my $arg_count = @{$terminal};
-            if ( $arg_count > 2 or $arg_count < 1 ) {
-                Marpa::exception('terminal must have 1 or 2 arguments');
-            }
-            ( $lhs_name, $options ) = @{$terminal};
-        } ## end if ( ref $terminal eq 'ARRAY' )
-        else {
-            $lhs_name = $terminal;
-        }
-        add_user_terminal( $grammar, $lhs_name, $options );
-    } ## end for my $terminal ( @{$terminals} )
-    return 1;
-} ## end sub add_user_terminals
-
-sub add_user_terminal {
-    my $grammar = shift;
-    my $name    = shift;
-    my $options = shift;
-
-    if ( my $type = ref $name ) {
-        Marpa::exception(
-            "Terminal name was ref to $type; it must be a scalar string");
-    }
-    Marpa::exception('Terminal options must be a hash of named arguments')
-        if defined $options and ref $options ne 'HASH';
-    Marpa::exception("Symbol name $name ends in ']': that's not allowed")
-        if $name =~ /\]\z/xms;
-    add_terminal( $grammar, $name, $options );
-    return;
-} ## end sub add_user_terminal
 
 sub check_start {
     my $grammar = shift;
@@ -2743,12 +2719,13 @@ sub alias_symbol {
     my $nullable_symbol = shift;
     my $symbol_hash     = $grammar->[Marpa::Internal::Grammar::SYMBOL_HASH];
     my $symbols         = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
-    my ( $accessible, $productive, $name, $null_value ) = @{$nullable_symbol}[
+    my ( $accessible, $productive, $name, $null_action ) =
+        @{$nullable_symbol}[
         Marpa::Internal::Symbol::ACCESSIBLE,
         Marpa::Internal::Symbol::PRODUCTIVE,
         Marpa::Internal::Symbol::NAME,
-        Marpa::Internal::Symbol::NULL_VALUE,
-    ];
+        Marpa::Internal::Symbol::NULL_ACTION,
+        ];
 
     # create the new, nulling symbol
     my $alias_name = $nullable_symbol->[Marpa::Internal::Symbol::NAME] . '[]';
@@ -2760,7 +2737,7 @@ sub alias_symbol {
     $alias->[Marpa::Internal::Symbol::ACCESSIBLE]  = $accessible;
     $alias->[Marpa::Internal::Symbol::PRODUCTIVE]  = $productive;
     $alias->[Marpa::Internal::Symbol::NULLING]     = 1;
-    $alias->[Marpa::Internal::Symbol::NULL_VALUE]  = $null_value;
+    $alias->[Marpa::Internal::Symbol::NULL_ACTION] = $null_action;
     $nullable_symbol->[Marpa::Internal::Symbol::NULLABLE] //= 0;
     $alias->[Marpa::Internal::Symbol::NULLABLE] = List::Util::max(
         $nullable_symbol->[Marpa::Internal::Symbol::NULLABLE], 1 );
@@ -3111,7 +3088,7 @@ sub rewrite_as_CHAF {
                     }
                 );
 
-                $new_rule->[Marpa::Internal::Rule::USED]        = 1;
+                $new_rule->[Marpa::Internal::Rule::USED]          = 1;
                 $new_rule->[Marpa::Internal::Rule::ACCESSIBLE]    = 1;
                 $new_rule->[Marpa::Internal::Rule::PRODUCTIVE]    = 1;
                 $new_rule->[Marpa::Internal::Rule::NULLABLE]      = 0;
@@ -3134,9 +3111,9 @@ sub rewrite_as_CHAF {
     }    # RULE
 
     # Create a new start symbol
-    my ( $productive, $null_value ) = @{$old_start_symbol}[
+    my ( $productive, $null_action ) = @{$old_start_symbol}[
         Marpa::Internal::Symbol::PRODUCTIVE,
-        Marpa::Internal::Symbol::NULL_VALUE,
+        Marpa::Internal::Symbol::NULL_ACTION,
     ];
     my $new_start_symbol =
         assign_symbol( $grammar,
@@ -3145,9 +3122,9 @@ sub rewrite_as_CHAF {
         Marpa::Internal::Symbol::PRODUCTIVE,
         Marpa::Internal::Symbol::ACCESSIBLE,
         Marpa::Internal::Symbol::START,
-        Marpa::Internal::Symbol::NULL_VALUE,
+        Marpa::Internal::Symbol::NULL_ACTION,
         ]
-        = ( $productive, 1, 1, $null_value );
+        = ( $productive, 1, 1, $null_action );
 
     # Create a new start rule
     my $new_start_rule = add_rule(
@@ -3159,7 +3136,7 @@ sub rewrite_as_CHAF {
 
     $new_start_rule->[Marpa::Internal::Rule::PRODUCTIVE]        = $productive;
     $new_start_rule->[Marpa::Internal::Rule::ACCESSIBLE]        = 1;
-    $new_start_rule->[Marpa::Internal::Rule::USED]            = 1;
+    $new_start_rule->[Marpa::Internal::Rule::USED]              = 1;
     $new_start_rule->[Marpa::Internal::Rule::VIRTUAL_LHS]       = 1;
     $new_start_rule->[Marpa::Internal::Rule::REAL_SYMBOL_COUNT] = 1;
 
@@ -3181,7 +3158,7 @@ sub rewrite_as_CHAF {
         $new_start_alias_rule->[Marpa::Internal::Rule::PRODUCTIVE] =
             $productive;
         $new_start_alias_rule->[Marpa::Internal::Rule::ACCESSIBLE] = 1;
-        $new_start_alias_rule->[Marpa::Internal::Rule::USED]     = 1;
+        $new_start_alias_rule->[Marpa::Internal::Rule::USED]       = 1;
         $new_start_alias_rule->[Marpa::Internal::Rule::NULLABLE]   = 1;
     } ## end if ($old_start_alias)
     $grammar->[Marpa::Internal::Grammar::START] = $new_start_symbol;

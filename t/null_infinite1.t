@@ -71,27 +71,31 @@ sub rule_r2 {
 ## use critic
 
 my $grammar = Marpa::Grammar->new(
-    {   start        => 'S',
-        strip        => 0,
-        maximal      => 1,
+    {   start           => 'S',
+        strip           => 0,
+        maximal         => 1,
         infinite_action => 'quiet',
 
         rules => [
             { lhs => 'S', rhs => [qw/p n/], action => 'main::start_rule' },
             { lhs => 'p', rhs => ['a'],     action => 'main::rule_p' },
-            { lhs => 'p', rhs => [],        action => 'main::null_p' },
+            { lhs => 'p', rhs => [] },
             { lhs => 'n', rhs => ['a'],     action => 'main::rule_na' },
-            { lhs => 'n', rhs => [],        action => 'main::null_n' },
+            { lhs => 'n', rhs => [] },
             { lhs => 'n', rhs => ['r2'],    action => 'main::rule_nr2' },
             {   lhs    => 'r2',
                 rhs    => [qw/a z/],
                 action => 'main::rule_r2'
             },
-            { lhs => 'a', rhs => [],    action => 'main::null_a' },
+            { lhs => 'a', rhs => [] },
             { lhs => 'a', rhs => ['a'], action => 'main::rule_a' },
             { lhs => 'z', rhs => ['S'], action => 'main::rule_z' },
         ],
-        terminals      => ['a'],
+        symbols => {
+            a => { null_action => 'main::null_a', terminal => 1 },
+            n => { null_action => 'main::null_n' },
+            p => { null_action => 'main::null_p' },
+        },
         maximal        => 1,
         default_action => 'main::default_action',
     }
@@ -147,9 +151,9 @@ for my $input_length ( 1 .. 3 ) {
         or Marpa::exception('Parsing exhausted');
     my $evaler = Marpa::Evaluator->new(
         { experimental => 'no warning' },
-        {   recce         => $recce,
+        {   recce            => $recce,
             infinite_rewrite => 0,
-            parse_order   => 'none',
+            parse_order      => 'none',
         }
     );
     my $i = 0;

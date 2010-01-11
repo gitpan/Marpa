@@ -112,6 +112,7 @@ t/mdl/equation.t
 t/mdl/minus.t
 t/mdl/randal.t
 t/minus.t
+t/null_example.t
 t/null_infinite1.t
 t/null_infinite4.t
 t/null_value.t

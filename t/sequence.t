@@ -18,6 +18,9 @@ BEGIN {
 }
 
 ## no critic (Subroutines::RequireArgUnpacking)
+
+sub null_string { return q{} }
+
 sub default_action {
     shift;
     my $v_count = scalar @_;
@@ -25,6 +28,7 @@ sub default_action {
     return $_[0] if $v_count == 1;
     return '(' . join( q{;}, @_ ) . ')';
 } ## end sub default_action
+
 ## use critic
 
 sub run_sequence_test {
@@ -51,8 +55,8 @@ sub run_sequence_test {
                     @separation_args
                 },
             ],
-            default_action     => 'main::default_action',
-            default_null_value => q{},
+            default_action      => 'main::default_action',
+            default_null_action => 'main::null_string',
         }
     );
 

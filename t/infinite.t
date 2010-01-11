@@ -208,7 +208,7 @@ for my $test_data (@test_data) {
     my $trace = q{};
     open my $MEMORY, '>', \$trace;
     my $grammar = Marpa::Grammar->new(
-        {   infinite_action      => 'warn',
+        {   infinite_action   => 'warn',
             trace_file_handle => $MEMORY,
         },
         @{$marpa_options},

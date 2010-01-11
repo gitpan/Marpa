@@ -1,27 +1,18 @@
 ---
-name: Marpa
-version: 0.003_002
+abstract: 'Generate Parsers from any BNF grammar'
 author:
-  - Jeffrey Kegler
-abstract: Generate Parsers from any BNF grammar
-license: perl
-resources:
-  license: http://dev.perl.org/licenses/
+  - 'Jeffrey Kegler'
 build_requires:
   Test::More: 0.94
-requires:
-  Scalar::Util: 0
 configure_requires:
-  Module::Build: 0.35
-provides:
-  Marpa::UrHTML:
-    file: lib/Marpa/UrHTML.pm
-    version: 0.003_002
-generated_by: Module::Build version 0.35
+  Module::Build: 0.36
+distribution_type: module
+generated_by: 'Module::Build version 0.3601'
+license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: 1.4
-distribution_type: module
+name: Marpa
 no_index:
   directory:
     - inc
@@ -37,9 +28,21 @@ no_index:
     - Marpa::Display::Internal
     - Marpa::Test
   package:
+    - Marpa::Grammar
+    - Marpa::Recognizer
+    - Marpa::Evaluator
     - Marpa::MDL
     - Marpa::MDLex
     - Marpa::Offset
     - Marpa::Test
     - Marpa::Display
     - Marpa::Internal
+provides:
+  Marpa::UrHTML:
+    file: lib/Marpa/UrHTML.pm
+    version: 0.003_003
+requires:
+  Scalar::Util: 0
+resources:
+  license: http://dev.perl.org/licenses/
+version: 0.003_003

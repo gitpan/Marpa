@@ -308,7 +308,7 @@ $data = {
           ]
         },
         {
-          'action' => 'default_null_value_subject',
+          'action' => 'default_null_action_subject',
           'lhs' => 'default-null-value-setting',
           'rhs' => [
             'string-specifier',
@@ -320,7 +320,7 @@ $data = {
           ]
         },
         {
-          'action' => 'default_null_value_predicate',
+          'action' => 'default_null_action_predicate',
           'lhs' => 'default-null-value-setting',
           'rhs' => [
             'the:k1:optional',
@@ -450,7 +450,6 @@ $data = {
           ]
         },
         {
-          'action' => 'empty_rhs',
           'lhs' => 'rhs',
           'rhs' => []
         },
@@ -619,6 +618,7 @@ $data = {
         }
       ],
       'start' => 'grammar',
+      'symbols' => { rhs => { null_action => 'empty_rhs' } },
       'terminals' => [
         'priority:k0',
         'the:k1',

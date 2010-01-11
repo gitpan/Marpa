@@ -5,13 +5,33 @@ use 5.010;
 use strict;
 use warnings;
 
-use Test::More tests => 8;
+use Test::More tests => 11;
 
 use lib 'lib';
 use Marpa::Test;
+use English qw( -no_match_vars );
+use Fatal qw( close open );
 
 BEGIN {
     Test::More::use_ok('Marpa');
+}
+
+## no critic (InputOutput::RequireBriefOpen)
+open my $original_stdout, q{>&STDOUT};
+## use critic
+
+sub save_stdout {
+    my $save;
+    my $save_ref = \$save;
+    close STDOUT;
+    open STDOUT, q{>}, $save_ref;
+    return $save_ref;
+} ## end sub save_stdout
+
+sub restore_stdout {
+    close STDOUT;
+    open STDOUT, q{>&}, $original_stdout;
+    return 1;
 }
 
 ## no critic (Subroutines::RequireArgUnpacking)
@@ -67,15 +87,85 @@ my $grammar = Marpa::Grammar->new(
 
 $grammar->precompute();
 
-Marpa::Test::is( $grammar->show_rules,
-    <<'END_RULES', 'Ambiguous Equation Rules' );
+my $actual_ref;
+$actual_ref = save_stdout();
+
+# Marpa::Display
+# name: show_symbols Synopsis
+
+print $grammar->show_symbols()
+    or Carp::croak "print failed: $OS_ERROR";
+
+# Marpa::Display::End
+
+restore_stdout();
+
+Marpa::Test::is( ${$actual_ref},
+    <<'END_SYMBOLS', 'Ambiguous Equation Symbols' );
+0: E, lhs=[0 1] rhs=[0 2] terminal
+1: Op, lhs=[] rhs=[0] terminal
+2: Number, lhs=[] rhs=[1] terminal
+3: E['], lhs=[2] rhs=[]
+END_SYMBOLS
+
+$actual_ref = save_stdout();
+
+# Marpa::Display
+# name: show_rules Synopsis
+
+print $grammar->show_rules()
+    or Carp::croak "print failed: $OS_ERROR";
+
+# Marpa::Display::End
+
+Marpa::Test::is( ${$actual_ref}, <<'END_RULES', 'Ambiguous Equation Rules' );
 0: E -> E Op E
 1: E -> Number
 2: E['] -> E /* vlhs real=1 */
 END_RULES
 
-Marpa::Test::is( $grammar->show_QDFA,
-    <<'END_QDFA', 'Ambiguous Equation QDFA' );
+$actual_ref = save_stdout();
+
+# Marpa::Display
+# name: show_NFA Synopsis
+
+print $grammar->show_NFA()
+    or Carp::croak "print failed: $OS_ERROR";
+
+# Marpa::Display::End
+
+Marpa::Test::is( ${$actual_ref}, <<'END_NFA', 'Ambiguous Equation NFA' );
+S0: /* empty */
+ empty => S7
+S1: E -> . E Op E
+ empty => S1 S5
+ <E> => S2
+S2: E -> E . Op E
+ <Op> => S3
+S3: E -> E Op . E
+ empty => S1 S5
+ <E> => S4
+S4: E -> E Op E .
+S5: E -> . Number
+ <Number> => S6
+S6: E -> Number .
+S7: E['] -> . E
+ empty => S1 S5
+ <E> => S8
+S8: E['] -> E .
+END_NFA
+
+$actual_ref = save_stdout();
+
+# Marpa::Display
+# name: show_QDFA Synopsis
+
+print $grammar->show_QDFA()
+    or Carp::croak "print failed: $OS_ERROR";
+
+# Marpa::Display::End
+
+Marpa::Test::is( ${$actual_ref}, <<'END_QDFA', 'Ambiguous Equation QDFA' );
 Start States: S0; S1
 S0: 7
 E['] -> . E
@@ -98,6 +188,24 @@ E -> E Op . E
 S6: 4
 E -> E Op E .
 END_QDFA
+
+$actual_ref = save_stdout();
+
+# Marpa::Display
+# name: show_problems Synopsis
+
+print $grammar->show_problems()
+    or Carp::croak "print failed: $OS_ERROR";
+
+# Marpa::Display::End
+
+Marpa::Test::is(
+    ${$actual_ref},
+    "Grammar has no problems\n",
+    'Ambiguous Equation Problems'
+);
+
+restore_stdout();
 
 my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
 

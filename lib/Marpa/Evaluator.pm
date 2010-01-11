@@ -206,100 +206,64 @@ sub set_null_values {
 
     my $rules   = $grammar->[Marpa::Internal::Grammar::RULES];
     my $symbols = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
-    my $default_null_value =
-        $grammar->[Marpa::Internal::Grammar::DEFAULT_NULL_VALUE];
+    my $default_null_action =
+        $grammar->[Marpa::Internal::Grammar::DEFAULT_NULL_ACTION];
     my $actions_package = $grammar->[Marpa::Internal::Grammar::ACTIONS];
 
     my $null_values;
     $#{$null_values} = $#{$symbols};
 
     SYMBOL: for my $symbol ( @{$symbols} ) {
-        my $id = $symbol->[Marpa::Internal::Symbol::ID];
-        $null_values->[$id] = $default_null_value;
-    }
+        next SYMBOL if not $symbol->[Marpa::Internal::Symbol::NULLING];
 
-    # Set null values specified in
-    # empty rules.
-    RULE: for my $rule ( @{$rules} ) {
+        my $null_action = $symbol->[Marpa::Internal::Symbol::NULL_ACTION]
+            // $default_null_action;
+        next SYMBOL if not defined $null_action;
 
-        my $action = $rule->[Marpa::Internal::Rule::ACTION];
+        my $closure = Marpa::Internal::Evaluator::resolve_semantics( $grammar,
+            $null_action );
+        Marpa::exception(qq{Action closure "$null_action" not found})
+            if not defined $closure;
 
-        # Set the null value of symbols from the action for their
-        # empty rules
-        my $rhs = $rule->[Marpa::Internal::Rule::RHS];
+        my $null_value;
 
-        # Empty rule with action?
-        if ( defined $action and @{$rhs} <= 0 ) {
+        DO_EVAL: {
+            my @warnings;
+            my $eval_ret;
+            my $eval_error;
+            {
+                local $EVAL_ERROR = undef;
+                local $SIG{__WARN__} =
+                    sub { push @warnings, [ $_[0], ( caller 0 ) ]; };
+                $eval_ret = eval { $null_value = $closure->(); 1; };
+                $eval_error = $EVAL_ERROR;
+            }
 
-            my $closure =
-                Marpa::Internal::Evaluator::resolve_semantics( $grammar,
-                $action );
-            Marpa::exception("Action closure '$action' not found")
-                if not defined $closure;
-
-            my $lhs            = $rule->[Marpa::Internal::Rule::LHS];
-            my $nulling_symbol = $lhs->[Marpa::Internal::Symbol::NULL_ALIAS]
-                // $lhs;
-
-            my $null_value;
-
-            DO_EVAL: {
-                my @warnings;
-                my $eval_ret;
-                my $eval_error;
-                {
-                    local $EVAL_ERROR = undef;
-                    local $SIG{__WARN__} =
-                        sub { push @warnings, [ $_[0], ( caller 0 ) ]; };
-                    $eval_ret = eval { $null_value = $closure->(); 1; };
-                    $eval_error = $EVAL_ERROR;
+            last DO_EVAL if $eval_ret and not scalar @warnings;
+            Marpa::Internal::code_problems(
+                {   eval_ok     => $eval_ret,
+                    fatal_error => $eval_error,
+                    grammar     => $grammar,
+                    warnings    => \@warnings,
+                    where       => 'evaluating null value',
+                    long_where  => 'evaluating null value for '
+                        . $symbol->[Marpa::Internal::Symbol::NAME],
                 }
+            );
+        } ## end DO_EVAL:
+        my $symbol_id = $symbol->[Marpa::Internal::Symbol::ID];
+        $null_values->[$symbol_id] = $null_value;
 
-                last DO_EVAL if $eval_ret and not scalar @warnings;
-                Marpa::Internal::code_problems(
-                    {   eval_ok     => $eval_ret,
-                        fatal_error => $eval_error,
-                        grammar     => $grammar,
-                        warnings    => \@warnings,
-                        where       => 'evaluating null value',
-                        long_where  => 'evaluating null value for '
-                            . $nulling_symbol
-                            ->[Marpa::Internal::Symbol::NAME],
-                    }
-                );
-            } ## end DO_EVAL:
-            my $nulling_symbol_id =
-                $nulling_symbol->[Marpa::Internal::Symbol::ID];
-            $null_values->[$nulling_symbol_id] = $null_value;
-
-            if ($Marpa::Internal::TRACE_ACTIONS) {
-                print {$Marpa::Internal::TRACE_FH}
-                    'Setting null value for symbol ',
-                    $nulling_symbol->[Marpa::Internal::Symbol::NAME],
-                    ' to ',
-                    Data::Dumper->new( [ \$null_value ] )->Terse(1)->Dump,
-                    "\n"
-                    or Marpa::exception('Could not print to trace file');
-            } ## end if ($Marpa::Internal::TRACE_ACTIONS)
-
-            next RULE;
-
-        } ## end if ( defined $action and @{$rhs} <= 0 )
-
-    }    # RULE
-
-    if ($Marpa::Internal::TRACE_ACTIONS) {
-        SYMBOL: for my $symbol ( @{$symbols} ) {
-            my ( $name, $id ) = @{$symbol}[
-                Marpa::Internal::Symbol::NAME, Marpa::Internal::Symbol::ID,
-            ];
+        if ($Marpa::Internal::TRACE_ACTIONS) {
             print {$Marpa::Internal::TRACE_FH}
-                'Setting null value for CHAF symbol ',
-                $name, ' to ',
-                Data::Dumper->new( [ $null_values->[$id] ] )->Terse(1)->Dump,
+                'Setting null value for symbol ',
+                $symbol->[Marpa::Internal::Symbol::NAME],
+                ' to ',
+                Data::Dumper->new( [ \$null_value ] )->Terse(1)->Dump, "\n"
                 or Marpa::exception('Could not print to trace file');
-        } ## end for my $symbol ( @{$symbols} )
-    } ## end if ($Marpa::Internal::TRACE_ACTIONS)
+        } ## end if ($Marpa::Internal::TRACE_ACTIONS)
+
+    } ## end for my $symbol ( @{$symbols} )
 
     return $null_values;
 
@@ -908,7 +872,8 @@ sub rewrite_infinite {
     );
 
     my @infinite_rules;
-    @infinite_rules[ @{$infinite_rule_ids} ] = (1) x scalar @{$infinite_rule_ids};
+    @infinite_rules[ @{$infinite_rule_ids} ] =
+        (1) x scalar @{$infinite_rule_ids};
     my @infinite_or_nodes =
         grep { not $_->[Marpa::Internal::Or_Node::DELETED] }
         map  { $or_nodes->[ $_->[Marpa::Internal::And_Node::PARENT_ID] ] }
@@ -1544,9 +1509,9 @@ sub Marpa::Evaluator::new {
     $self->[Marpa::Internal::Evaluator::INFINITE_NODES]   = 1000;
     $self->[Marpa::Internal::Evaluator::INFINITE_SCALE]   = 2;
     $self->[Marpa::Internal::Evaluator::INFINITE_REWRITE] = 1;
-    $self->[Marpa::Internal::Evaluator::MAX_PARSES]    = -1;
-    $self->[Marpa::Internal::Evaluator::PARSE_ORDER]   = 'numeric';
-    $self->[Marpa::Internal::Evaluator::TRACE_VALUES]  = 0;
+    $self->[Marpa::Internal::Evaluator::MAX_PARSES]       = -1;
+    $self->[Marpa::Internal::Evaluator::PARSE_ORDER]      = 'numeric';
+    $self->[Marpa::Internal::Evaluator::TRACE_VALUES]     = 0;
 
     $self->set(@arg_hashes);
 
@@ -1664,7 +1629,8 @@ sub Marpa::Evaluator::new {
         map { $_->[Marpa::Internal::Rule::ID] }
         @{ Marpa::Internal::Grammar::infinite_rules($grammar) };
     @tree_rules[@infinite_rule_ids] =
-        ( [Marpa::Internal::Evaluator_Op::CYCLE] ) x scalar @infinite_rule_ids;
+        ( [Marpa::Internal::Evaluator_Op::CYCLE] ) x
+        scalar @infinite_rule_ids;
 
     my $start_symbol = $start_rule->[Marpa::Internal::Rule::LHS];
     my ( $nulling, $symbol_id ) =
@@ -2488,7 +2454,7 @@ sub Marpa::Evaluator::set {
             Marpa::exception(q{infinite_nodes must be >0})
                 if $value <= 0;
             $evaler->[Marpa::Internal::Evaluator::INFINITE_NODES] = $value;
-        } ## end if ( defined( my $value = $args->{'infinite_nodes'} ) )
+        } ## end if ( defined( my $value = $args->{'infinite_nodes'} ...))
 
         if ( defined( my $value = $args->{'infinite_rewrite'} ) ) {
             $evaler->[Marpa::Internal::Evaluator::INFINITE_REWRITE] = $value;

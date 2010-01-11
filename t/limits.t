@@ -18,6 +18,9 @@ BEGIN {
 }
 
 ## no critic (Subroutines::RequireArgUnpacking)
+
+sub null_string { return q{} }
+
 sub default_action {
     shift;
     my $v_count = scalar @_;
@@ -25,6 +28,7 @@ sub default_action {
     return $_[0] if $v_count == 1;
     return '(' . join( q{;}, @_ ) . ')';
 } ## end sub default_action
+
 ## use critic
 
 sub test_grammar {
@@ -97,8 +101,8 @@ my $placebo = {
         [ 'A', [qw/a/] ]
         #>>>
     ],
-    default_null_value => q{},
-    default_action     => 'main::default_action',
+    default_null_action => 'main::null_string',
+    default_action      => 'main::default_action',
 };
 
 sub test_rule_priority {
@@ -111,8 +115,8 @@ sub test_rule_priority {
         [ 'A', [qw/a/], undef, $priority ]
         #>>>
         ],
-        default_null_value => q{},
-        default_action     => 'main::default_action',
+        default_null_action => 'main::null_string',
+        default_action      => 'main::default_action',
     };
 } ## end sub test_rule_priority
 

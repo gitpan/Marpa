@@ -12,6 +12,7 @@ use Marpa::MDL::Symbol;
 # MDL is EOL'd so its minor efficiency issues are not exactly a priority.
 
 ## no critic (Subroutines::RequireArgUnpacking)
+## no critic (Subroutines::ProhibitManyArgs)
 
 sub new {
     my $class = shift;
@@ -62,12 +63,20 @@ sub grammar {
 # optional action sentence,
 # non structural production sentences.
 sub production_paragraph {
-    my $self = shift;
+    my ( $self, $nonstr1, $production, $nonstr2, $action, $nonstr3 ) = @_;
+
+    my %production = @{$production};
+    if ( not scalar @{ $production{rhs} } and defined $action ) {
+        $self->{options}->[0]->{symbols}->{ $production{lhs} } =
+            { null_action => $action->[1] };
+        $action = undef;
+    }
+
     push @{ $self->{options}->[0]->{rules} },
         {
         map      { @{$_} }
             grep { defined $_ }
-            ( @{ $_[0] }, $_[1], @{ $_[2] }, $_[3], @{ $_[4] } )
+            ( @{$nonstr1}, $production, @{$nonstr2}, $action, @{$nonstr3} )
         };
     return q{};
 } ## end sub production_paragraph
@@ -156,17 +165,17 @@ sub default_lex_prefix_predicate {
 
 # default null value setting: string specifier, copula, optional /the/, /default/,
 # /null/, /value/, .
-sub default_null_value_subject {
+sub default_null_action_subject {
     my $self = shift;
-    $self->{options}->[0]->{default_null_value} = $_[0];
+    $self->{options}->[0]->{default_null_action} = $_[0];
     return q{};
 }
 
 # default null value setting: optional /the/, /default/, /null/,
 # /value/, copula, string specifier, .
-sub default_null_value_predicate {
+sub default_null_action_predicate {
     my $self = shift;
-    $self->{options}->[0]->{default_null_value} = $_[5];
+    $self->{options}->[0]->{default_null_action} = $_[5];
     return q{};
 }
 

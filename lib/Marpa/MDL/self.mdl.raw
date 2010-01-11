@@ -170,7 +170,7 @@ $data = {
           'action' => 'concatenate_lines',
           'lhs' => 'predefined-setting',
           'rhs' => [
-            'default-null-value-setting'
+            'default-null-action-setting'
           ]
         },
         {
@@ -288,25 +288,25 @@ $data = {
           ]
         },
         {
-          'action' => 'default_null_value_subject',
-          'lhs' => 'default-null-value-setting',
+          'action' => 'default_null_action_subject',
+          'lhs' => 'default-null-action-setting',
           'rhs' => [
             'string-specifier',
             'copula',
             'the:k1:optional',
             'default:ka',
             'null:kd',
-            'value:ke'
+            'action:k2'
           ]
         },
         {
-          'action' => 'default_null_value_predicate',
-          'lhs' => 'default-null-value-setting',
+          'action' => 'default_null_action_predicate',
+          'lhs' => 'default-null-action-setting',
           'rhs' => [
             'the:k1:optional',
             'default:ka',
             'null:kd',
-            'value:ke',
+            'action:k2',
             'copula',
             'string-specifier'
           ]
@@ -320,7 +320,7 @@ $data = {
         {
           'lhs' => 'copula',
           'rhs' => [
-            'are:kf'
+            'are:ke'
           ]
         },
         {
@@ -359,7 +359,7 @@ $data = {
           'lhs' => 'comment-sentence',
           'rhs' => [
             'comment-tag',
-            '%5c%3a:k10',
+            '%5c%3a:kf',
             'comment-words',
             'period'
           ]
@@ -405,13 +405,13 @@ $data = {
         {
           'lhs' => 'production-copula',
           'rhs' => [
-            '%5c%3a:k10'
+            '%5c%3a:kf'
           ]
         },
         {
           'lhs' => 'production-copula',
           'rhs' => [
-            '%5c%3a%5c%3a%5c%3d:k11'
+            '%5c%3a%5c%3a%5c%3d:k10'
           ]
         },
         {
@@ -430,7 +430,6 @@ $data = {
           ]
         },
         {
-          'action' => 'empty_rhs',
           'lhs' => 'rhs',
           'rhs' => []
         },
@@ -449,7 +448,7 @@ $data = {
           'priority' => '1000',
           'rhs' => [
             'symbol-phrase',
-            'sequence:k12'
+            'sequence:k11'
           ]
         },
         {
@@ -457,9 +456,9 @@ $data = {
           'lhs' => 'rhs',
           'priority' => '2000',
           'rhs' => [
-            'optional:k13',
+            'optional:k12',
             'symbol-phrase',
-            'sequence:k12'
+            'sequence:k11'
           ]
         },
         {
@@ -468,9 +467,9 @@ $data = {
           'priority' => '2000',
           'rhs' => [
             'symbol-phrase',
-            'separated:k14',
+            'separated:k13',
             'symbol-phrase',
-            'sequence:k12'
+            'sequence:k11'
           ]
         },
         {
@@ -478,11 +477,11 @@ $data = {
           'lhs' => 'rhs',
           'priority' => '3000',
           'rhs' => [
-            'optional:k13',
+            'optional:k12',
             'symbol-phrase',
-            'separated:k14',
+            'separated:k13',
             'symbol-phrase',
-            'sequence:k12'
+            'sequence:k11'
           ]
         },
         {
@@ -511,7 +510,7 @@ $data = {
           'action' => 'optional_rhs_element',
           'lhs' => 'optional-rhs-element',
           'rhs' => [
-            'optional:k13',
+            'optional:k12',
             'rhs-symbol-specifier'
           ]
         },
@@ -551,7 +550,7 @@ $data = {
           'lhs' => 'terminal-sentence',
           'rhs' => [
             'symbol-phrase',
-            'matches:k15',
+            'matches:k14',
             'regex',
             'period'
           ]
@@ -560,9 +559,9 @@ $data = {
           'action' => 'string_terminal_sentence',
           'lhs' => 'terminal-sentence',
           'rhs' => [
-            'match:k16',
+            'match:k15',
             'symbol-phrase',
-            'using:k17',
+            'using:k16',
             'string-specifier',
             'period'
           ]
@@ -599,6 +598,11 @@ $data = {
         }
       ],
       'start' => 'grammar',
+      'symbols' => {
+        'rhs' => {
+          'null_action' => 'empty_rhs'
+        }
+      },
       'terminals' => [
         'priority:k0',
         'the:k1',
@@ -614,16 +618,15 @@ $data = {
         'lex:kb',
         'prefix:kc',
         'null:kd',
-        'value:ke',
-        'are:kf',
-        '%5c%3a:k10',
-        '%5c%3a%5c%3a%5c%3d:k11',
-        'sequence:k12',
-        'optional:k13',
-        'separated:k14',
-        'matches:k15',
-        'match:k16',
-        'using:k17',
+        'are:ke',
+        '%5c%3a:kf',
+        '%5c%3a%5c%3a%5c%3d:k10',
+        'sequence:k11',
+        'optional:k12',
+        'separated:k13',
+        'matches:k14',
+        'match:k15',
+        'using:k16',
         'q-string',
         'regex',
         'empty-line',
@@ -703,43 +706,39 @@ $data = {
           'regex' => 'null'
         },
         {
-          'name' => 'value:ke',
-          'regex' => 'value'
-        },
-        {
-          'name' => 'are:kf',
+          'name' => 'are:ke',
           'regex' => 'are'
         },
         {
-          'name' => '%5c%3a:k10',
+          'name' => '%5c%3a:kf',
           'regex' => ':'
         },
         {
-          'name' => '%5c%3a%5c%3a%5c%3d:k11',
+          'name' => '%5c%3a%5c%3a%5c%3d:k10',
           'regex' => '::='
         },
         {
-          'name' => 'sequence:k12',
+          'name' => 'sequence:k11',
           'regex' => 'sequence'
         },
         {
-          'name' => 'optional:k13',
+          'name' => 'optional:k12',
           'regex' => 'optional'
         },
         {
-          'name' => 'separated:k14',
+          'name' => 'separated:k13',
           'regex' => 'separated'
         },
         {
-          'name' => 'matches:k15',
+          'name' => 'matches:k14',
           'regex' => 'matches'
         },
         {
-          'name' => 'match:k16',
+          'name' => 'match:k15',
           'regex' => 'match'
         },
         {
-          'name' => 'using:k17',
+          'name' => 'using:k16',
           'regex' => 'using'
         },
         {

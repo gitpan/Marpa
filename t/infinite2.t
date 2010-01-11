@@ -45,8 +45,8 @@ $Test_Grammar::MARPA_OPTIONS = [
                 'rhs'    => ['a']
             }
         ],
-        'start'        => 's',
-        'terminals'    => ['a:k0'],
+        'start'           => 's',
+        'terminals'       => ['a:k0'],
         'infinite_action' => 'warn'
     }
 ];
@@ -89,7 +89,8 @@ if ( $fail_location >= 0 ) {
 }
 $recce->end_input();
 
-my $evaler = Marpa::Evaluator->new( { recce => $recce, infinite_rewrite => 0 } );
+my $evaler =
+    Marpa::Evaluator->new( { recce => $recce, infinite_rewrite => 0 } );
 my $parse_count = 0;
 while ( my $value = $evaler->value() ) {
     Marpa::Test::is(

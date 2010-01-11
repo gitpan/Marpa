@@ -48,7 +48,7 @@ sub make_plex_rules {
             push @rules, make_rule( $infinite_symbol, $rhs_symbol );
         }
         push @rules, make_rule( $infinite_symbol, 't' );
-        push @rules, make_rule( 's',           $infinite_symbol );
+        push @rules, make_rule( 's', $infinite_symbol );
     } ## end for my $infinite_symbol (@symbol_names)
     return \@rules;
 } ## end sub make_plex_rules
@@ -154,7 +154,7 @@ for my $test_data ( $plex1_test, $plex2_test, $plex3_test ) {
     my %args = (
         @{$rules},
         infinite_action => 'warn',
-        strip        => 0,
+        strip           => 0,
 
         # Let the cycles make the parse absurdly large
         # That's the point of the test
@@ -173,7 +173,7 @@ for my $test_data ( $plex1_test, $plex2_test, $plex3_test ) {
     for my $infinite_rewrite ( 0, 1 ) {
         my $evaler = Marpa::Evaluator->new(
             { experimental => 'no warning' },
-            {   recce         => $recce,
+            {   recce            => $recce,
                 infinite_scale   => 200,
                 infinite_rewrite => $infinite_rewrite,
             }
@@ -196,8 +196,11 @@ for my $test_data ( $plex1_test, $plex2_test, $plex3_test ) {
         }
         Marpa::Test::is(
             "$values\n",
-            (   $infinite_rewrite ? $expected_values_rw : $expected_values_norw,
-                "$test_name " . ( $infinite_rewrite ? 'rewrite' : 'no rewrite' )
+            (     $infinite_rewrite
+                ? $expected_values_rw
+                : $expected_values_norw,
+                "$test_name "
+                    . ( $infinite_rewrite ? 'rewrite' : 'no rewrite' )
             )
         );
     } ## end for my $infinite_rewrite ( 0, 1 )

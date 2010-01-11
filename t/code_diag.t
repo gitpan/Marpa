@@ -141,16 +141,17 @@ sub canonical {
     return $template;
 } ## end sub canonical
 
-sub null_action { return '[null]' }
+sub null_action         { return '[null]' }
+sub default_null_action { return '[default null]' }
 
 sub run_test {
     my $args = shift;
 
-    my $e_op_action        = $good_code{e_op_action};
-    my $e_number_action    = $good_code{e_number_action};
-    my $default_action     = $good_code{default_action};
-    my $null_action        = 'main::null_action';
-    my $default_null_value = q{[default null]};
+    my $e_op_action         = $good_code{e_op_action};
+    my $e_number_action     = $good_code{e_number_action};
+    my $default_action      = $good_code{default_action};
+    my $null_action         = 'main::null_action';
+    my $default_null_action = 'main::default_null_action';
 
     ### e_op_action default: $e_op_action
     ### e_number_action default: $e_number_action
@@ -178,12 +179,14 @@ sub run_test {
                 [ 'E', [qw/Number/], $e_number_action, ],
                 [ 'optional_trailer1', [qw/trailer/], ],
                 [ 'optional_trailer1', [], ],
-                [ 'optional_trailer2', [], $null_action ],
+                [ 'optional_trailer2', [], ],
                 [ 'trailer',           [qw/Text/], ],
             ],
-            default_action     => $default_action,
-            default_null_value => $default_null_value,
-            terminals          => [qw(Number Op Text)],
+            default_action      => $default_action,
+            default_null_action => $default_null_action,
+            symbols =>
+                { optional_trailer2 => { null_action => $null_action } },
+            terminals => [qw(Number Op Text)],
         }
     );
     $grammar->precompute();

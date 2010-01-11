@@ -28,11 +28,16 @@ my %exclude = map { ( $_, 1 ) } qw(
     sandbox/TODO.pod
 );
 
+my @additional_files = qw(
+    lib/Marpa/UrHTML/todo/Implementation.pod
+    lib/Marpa/todo/Doc/Grammar.pod
+);
+
 my @test_files = @ARGV;
 my $debug_mode = scalar @test_files;
 if ( not $debug_mode ) {
 
-    for my $additional_file ('lib/Marpa/UrHTML/todo/Implementation.pod') {
+    for my $additional_file (@additional_files) {
         Test::More::diag("Adding $additional_file");
         push @test_files, $additional_file;
     }

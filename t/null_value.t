@@ -39,21 +39,18 @@ $Test_Grammar::MARPA_OPTIONS = [
                 'lhs'    => 's',
                 'rhs'    => [ 'a', 'y' ]
             },
-            {   'action' => 'rule1',
-                'lhs'    => 'a',
-                'rhs'    => []
+            {   'lhs' => 'a',
+                'rhs' => []
             },
             {   'action' => 'rule2',
                 'lhs'    => 'a',
                 'rhs'    => [ 'b', 'c' ]
             },
-            {   'action' => 'rule3',
-                'lhs'    => 'b',
-                'rhs'    => []
+            {   'lhs' => 'b',
+                'rhs' => []
             },
-            {   'action' => 'rule4',
-                'lhs'    => 'c',
-                'rhs'    => []
+            {   'lhs' => 'c',
+                'rhs' => []
             },
             {   'action' => 'rule5',
                 'lhs'    => 'c',
@@ -64,7 +61,12 @@ $Test_Grammar::MARPA_OPTIONS = [
                 'rhs'    => ['Z']
             }
         ],
-        'start'         => 's',
+        'start' => 's',
+        symbols => {
+            a => { null_action => 'rule1' },
+            b => { null_action => 'rule3' },
+            c => { null_action => 'rule4' },
+        },
         'terminals'     => ['Z'],
         'action_object' => 'Test'
     }
