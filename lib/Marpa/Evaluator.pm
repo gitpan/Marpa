@@ -2445,7 +2445,7 @@ sub Marpa::Evaluator::set {
             $evaler->[Marpa::Internal::Evaluator::INFINITE_SCALE] =
                 POSIX::ceil($value);
             use integer;
-        } ## end if ( defined( my $value = $args->{'infinite_scale'} ) )
+        } ## end if ( defined( my $value = $args->{'infinite_scale'} ...))
 
         if ( defined( my $value = $args->{'infinite_nodes'} ) ) {
             Marpa::exception(

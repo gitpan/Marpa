@@ -8,7 +8,7 @@ use Fatal qw(open close);
 
 use Module::Build;
 
-my $marpa_version = '0.003_003';
+my $marpa_version = '0.003_004';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -78,9 +78,6 @@ my $build = $class->new(
                 'Marpa::Display::Internal', 'Marpa::Test',
             ],
             package => [
-
-                # Documented, but not to be shown as provided packages
-                qw( Marpa::Grammar Marpa::Recognizer Marpa::Evaluator ),
 
                 # now permanently on the noindex list, as they are EOL'd
                 # and will not be documented
