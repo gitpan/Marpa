@@ -32,6 +32,10 @@ sub Marpa::cause_location {
     return $and_node->[Marpa::Internal::And_Node::CAUSE_EARLEME];
 } ## end sub Marpa::cause_location
 
+no strict 'refs';
+*{'Marpa::token_location'} = \&Marpa::cause_location;
+use strict;
+
 sub Marpa::length {
     Marpa::exception('No context for LENGTH tie')
         if not my $context = $Marpa::Internal::CONTEXT;

@@ -1,6 +1,6 @@
 =head1 NAME
 
-Marpa::Evaluator - Marpa Evaluator Objects
+Marpa::API::Evaluator - Marpa Evaluator Objects
 
 =head1 DESCRIPTION
 

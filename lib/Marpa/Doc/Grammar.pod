@@ -1,6 +1,6 @@
 =head1 NAME
 
-Marpa::Grammar - Marpa Grammar Objects
+Marpa::API::Grammar - Marpa Grammar Objects
 
 =head1 DESCRIPTION
 

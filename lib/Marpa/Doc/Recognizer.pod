@@ -1,6 +1,6 @@
 =head1 NAME
 
-Marpa::Recognizer - Marpa Recognizer Objects
+Marpa::API::Recognizer - Marpa Recognizer Objects
 
 =head1 DESCRIPTION
 
