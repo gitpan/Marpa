@@ -55,18 +55,6 @@ sub change {
     return 1;
 } ## end sub change
 
-sub fix_meta_yml {
-    my $text_ref  = shift;
-    my $file_name = shift;
-
-    if ( ${$text_ref} !~ s/(version:\s*)$old/$1$new/gxms ) {
-        say {*STDERR}
-            "failed to change version from $old to $new in $file_name"
-            or Carp::croak("Could not print to STDERR: $ERRNO");
-    }
-    return $text_ref;
-} ## end sub fix_meta_yml
-
 sub fix_build_pl {
     my $text_ref  = shift;
     my $file_name = shift;
@@ -106,7 +94,6 @@ sub update_changes {
     return $text_ref;
 } ## end sub update_changes
 
-change( \&fix_meta_yml,   'META.yml' );
 change( \&fix_build_pl,   'Build.PL' );
 change( \&fix_marpa_pm,   'lib/Marpa.pm' );
 change( \&update_changes, 'Changes' );

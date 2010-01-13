@@ -140,6 +140,8 @@ sub compare {
     if ( $copy->{partial} ) {
         return 1 if -1 != index ${$formatted_original}, ${$formatted_copy};
         Test::More::diag(
+            $copy->{filename},
+            ' vs. ',
             $original->{filename},
             "\n",
             "Sought Substring:\n",

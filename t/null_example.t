@@ -74,10 +74,9 @@ my $grammar = Marpa::Grammar->new(
             R => { null_action => 'null_R' },
             A => { null_action => 'null_A' },
             B => { null_action => 'null_B' },
-            X => { null_action => 'null_X' },
-            Y => { null_action => 'null_Y' },
+            X => { null_action => 'null_X', terminal => 1 },
+            Y => { null_action => 'null_Y', terminal => 1 },
         },
-        terminals => [qw(X Y)],
     }
 );
 

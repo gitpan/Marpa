@@ -1,5 +1,6 @@
 Revision history for Marpa
 
+0.003_005 Tue Jan 12 20:33:16 2010
 0.003_004 Mon Jan 11 18:31:18 2010
 0.003_003 Mon Jan 11 10:21:25 2010
 0.003_002 Fri Jan  8 12:10:17 2010
@@ -9,4 +10,4 @@ A series of developer's releases.
 
 0.002000 Tue Dec 29 18:10:47 2009
 First alpha release.  A fork from Parse::Marpa.  The documentation is
-not complete.
+in progress.

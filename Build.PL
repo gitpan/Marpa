@@ -8,7 +8,7 @@ use Fatal qw(open close);
 
 use Module::Build;
 
-my $marpa_version = '0.003_004';
+my $marpa_version = '0.003_005';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -60,11 +60,11 @@ my $build = $class->new(
     ],
     pod_files => {
         'lib/Marpa/Doc/Bibliography.pod'  => 'lib/Marpa/Bibliography.pod',
-        'lib/Marpa/Doc/Evaluator.pod'     => 'lib/Evaluator.pod',
-        'lib/Marpa/Doc/Grammar.pod'       => 'lib/Grammar.pod',
+        'lib/Marpa/Doc/Evaluator.pod'     => 'lib/Marpa/Evaluator.pod',
+        'lib/Marpa/Doc/Grammar.pod'       => 'lib/Marpa/Grammar.pod',
         'lib/Marpa/Doc/Marpa.pod'         => 'lib/Marpa.pod',
         'lib/Marpa/Doc/Parse_Terms.pod'   => 'lib/Marpa/Parse_Terms.pod',
-        'lib/Marpa/Doc/Recognizer.pod'    => 'lib/Recognizer.pod',
+        'lib/Marpa/Doc/Recognizer.pod'    => 'lib/Marpa/Recognizer.pod',
         'lib/Marpa/Doc/Support.pod'       => 'lib/Marpa/Support.pod',
         'lib/Marpa/UrHTML/Doc/UrHTML.pod' => 'lib/Marpa/UrHTML.pod',
     },
@@ -79,12 +79,14 @@ my $build = $class->new(
             ],
             package => [
 
-                # now permanently on the noindex list, as they are EOL'd
+                qw( Marpa::Grammar Marpa::Recognizer Marpa::Evaluator ),
+
+                # not public, at least for now
+                qw(Marpa::Offset Marpa::Test Marpa::Display ),
+
+                # permanently on the noindex list, as they are EOL'd
                 # and will not be documented
                 qw( Marpa::MDL Marpa::MDLex ),
-
-                # not, at least at the moment, public
-                qw(Marpa::Offset Marpa::Test Marpa::Display ),
 
                 # never intended to see the light of day
                 qw(Marpa::Internal),
@@ -95,6 +97,10 @@ my $build = $class->new(
     meta_add => {
         distribution_type => 'module',
         provides          => {
+            'Marpa' => {
+                file    => 'lib/Marpa.pm',
+                version => $marpa_version,
+            },
             'Marpa::UrHTML' => {
                 file    => 'lib/Marpa/UrHTML.pm',
                 version => $marpa_version,
