@@ -68,7 +68,7 @@ sub production_paragraph {
     my %production = @{$production};
     if ( not scalar @{ $production{rhs} } and defined $action ) {
         $self->{options}->[0]->{symbols}->{ $production{lhs} } =
-            { null_action => $action->[1] };
+            { null_value => $action->[1] };
         $action = undef;
     }
 
@@ -165,17 +165,17 @@ sub default_lex_prefix_predicate {
 
 # default null value setting: string specifier, copula, optional /the/, /default/,
 # /null/, /value/, .
-sub default_null_action_subject {
+sub default_null_value_subject {
     my $self = shift;
-    $self->{options}->[0]->{default_null_action} = $_[0];
+    $self->{options}->[0]->{default_null_value} = $_[0];
     return q{};
 }
 
 # default null value setting: optional /the/, /default/, /null/,
 # /value/, copula, string specifier, .
-sub default_null_action_predicate {
+sub default_null_value_predicate {
     my $self = shift;
-    $self->{options}->[0]->{default_null_action} = $_[5];
+    $self->{options}->[0]->{default_null_value} = $_[5];
     return q{};
 }
 
@@ -218,7 +218,9 @@ sub literal_string {
 
 # production sentence: lhs, production copula, rhs, period.
 sub production_sentence {
-    return [ lhs => $_[1], @{ $_[3] } ];
+    my $rhs = $_[3];
+    $rhs = [ rhs => [] ] if not ref $rhs;
+    return [ lhs => $_[1], @{$rhs} ];
 }
 
 # symbol phrase: symbol word sequence.

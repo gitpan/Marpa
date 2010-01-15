@@ -18,8 +18,6 @@ BEGIN {
 
 ## no critic (Subroutines::RequireArgUnpacking)
 
-sub null_string { return q{} }
-
 sub default_action {
     shift;
     my $v_count = scalar @_;
@@ -40,8 +38,8 @@ my $grammar = Marpa::Grammar->new(
             [ 'A', [qw/E/] ],
             ['E'],
         ],
-        default_null_action => 'main::null_string',
-        default_action      => 'main::default_action',
+        default_null_value => q{},
+        default_action     => 'main::default_action',
     }
 );
 

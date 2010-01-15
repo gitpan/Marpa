@@ -100,3 +100,5 @@ change( \&update_changes, 'Changes' );
 
 say {*STDERR} 'REMEMBER TO UPDATE Changes file'
     or Carp::croak("Could not print to STDERR: $ERRNO");
+say {*STDERR} q{REMEMBER TO RUN "(cd etc;make update)"}
+    or Carp::croak("Could not print to STDERR: $ERRNO");

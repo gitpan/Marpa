@@ -47,13 +47,6 @@ sub default_action {
     return '(' . ( join q{;}, ( map { $_ // 'undef' } @_ ) ) . ')';
 } ## end sub default_action
 
-sub null_A { return 'null A' }
-sub null_B { return 'null B' }
-sub null_R { return 'null R' }
-sub null_L { return 'null L' }
-sub null_X { return 'null X' }
-sub null_Y { return 'null Y' }
-
 my $grammar = Marpa::Grammar->new(
     {   start   => 'S',
         actions => 'main',
@@ -70,12 +63,12 @@ my $grammar = Marpa::Grammar->new(
         ],
         default_action => 'default_action',
         symbols        => {
-            L => { null_action => 'null_L' },
-            R => { null_action => 'null_R' },
-            A => { null_action => 'null_A' },
-            B => { null_action => 'null_B' },
-            X => { null_action => 'null_X', terminal => 1 },
-            Y => { null_action => 'null_Y', terminal => 1 },
+            L => { null_value => 'null L' },
+            R => { null_value => 'null R' },
+            A => { null_value => 'null A' },
+            B => { null_value => 'null B' },
+            X => { null_value => 'null X', terminal => 1 },
+            Y => { null_value => 'null Y', terminal => 1 },
         },
     }
 );

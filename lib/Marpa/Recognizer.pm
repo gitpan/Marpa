@@ -45,6 +45,7 @@ use Marpa::Offset qw(
     EARLEY_SETS
     FURTHEST_EARLEME :{ last earley set with something in it }
     LAST_COMPLETED_EARLEME
+    FINISHED
 
     TRACE_FILE_HANDLE
 
@@ -54,7 +55,6 @@ use Marpa::Offset qw(
     CURRENT_TERMINALS
     EARLEY_HASH
     EXHAUSTED
-    FINISHED
     TERMINALS_BY_STATE
 
     TOO_MANY_EARLEY_ITEMS
@@ -414,9 +414,11 @@ sub Marpa::Recognizer::find_parse {
 
 sub Marpa::Recognizer::strip {
     my ($recce) = @_;
+    Marpa::exception('Cannot strip recognizer before input is finished')
+        if not $recce->[Marpa::Internal::Recognizer::FINISHED];
     $#{$recce} = Marpa::Internal::Recognizer::LAST_EVALUATOR_FIELD;
     return 1;
-}
+} ## end sub Marpa::Recognizer::strip
 
 # Viewing methods, for debugging
 

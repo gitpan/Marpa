@@ -18,9 +18,7 @@ BEGIN {
 
 ## no critic (Subroutines::RequireArgUnpacking)
 
-sub null_string { return q{} }
-
-sub null_a {
+sub rank_null_a {
     return ( $MyTest::MAXIMAL ? -1 : 1 )
         * 10**( 3 - Marpa::token_location() );
 }
@@ -41,11 +39,11 @@ my $grammar = Marpa::Grammar->new(
             [ 'S', [qw/A A A A/] ],
             [ 'A', [qw/a/] ],
             [ 'A', [qw/E/] ],
-            { lhs => 'A', rhs => [], ranking_action => 'main::null_a' },
+            { lhs => 'A', rhs => [], ranking_action => 'main::rank_null_a' },
             ['E'],
         ],
-        default_null_action => 'main::null_string',
-        default_action      => 'main::default_action',
+        default_null_value => q{},
+        default_action     => 'main::default_action',
     }
 );
 

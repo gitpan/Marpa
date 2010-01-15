@@ -24,13 +24,6 @@ sub default_action {
     return '(' . join( q{;}, @vals ) . ')';
 } ## end sub default_action
 
-sub null_a { return 'a' }
-sub null_b { return 'b' }
-sub null_c { return 'c' }
-sub null_d { return 'd' }
-sub null_e { return 'e' }
-sub null_p { return 'p' }
-
 sub rule_a {
     shift;
     return 'a(' . ( join q{;}, map { $_ // q{-} } @_ ) . ')';
@@ -120,12 +113,12 @@ my $grammar = Marpa::Grammar->new(
             { lhs => 'z', rhs => ['S'], action => 'main::rule_z' },
         ],
         symbols => {
-            p => { null_action => 'main::null_p' },
-            a => { null_action => 'main::null_a', terminal => 1 },
-            b => { null_action => 'main::null_b' },
-            c => { null_action => 'main::null_c' },
-            d => { null_action => 'main::null_d' },
-            e => { null_action => 'main::null_e' },
+            p => { null_value => 'p' },
+            a => { null_value => 'a', terminal => 1 },
+            b => { null_value => 'b' },
+            c => { null_value => 'c' },
+            d => { null_value => 'd' },
+            e => { null_value => 'e' },
         },
         maximal        => 1,
         default_action => 'main::default_action',

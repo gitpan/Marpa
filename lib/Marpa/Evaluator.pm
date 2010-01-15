@@ -206,8 +206,8 @@ sub set_null_values {
 
     my $rules   = $grammar->[Marpa::Internal::Grammar::RULES];
     my $symbols = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
-    my $default_null_action =
-        $grammar->[Marpa::Internal::Grammar::DEFAULT_NULL_ACTION];
+    my $default_null_value =
+        $grammar->[Marpa::Internal::Grammar::DEFAULT_NULL_VALUE];
     my $actions_package = $grammar->[Marpa::Internal::Grammar::ACTIONS];
 
     my $null_values;
@@ -216,52 +216,26 @@ sub set_null_values {
     SYMBOL: for my $symbol ( @{$symbols} ) {
         next SYMBOL if not $symbol->[Marpa::Internal::Symbol::NULLING];
 
-        my $null_action = $symbol->[Marpa::Internal::Symbol::NULL_ACTION]
-            // $default_null_action;
-        next SYMBOL if not defined $null_action;
+        my $null_value = undef;
+        if ( $symbol->[Marpa::Internal::Symbol::NULL_VALUE] ) {
+            $null_value = ${ $symbol->[Marpa::Internal::Symbol::NULL_VALUE] };
+        }
+        else {
+            $null_value = $default_null_value;
+        }
+        next SYMBOL if not defined $null_value;
 
-        my $closure = Marpa::Internal::Evaluator::resolve_semantics( $grammar,
-            $null_action );
-        Marpa::exception(qq{Action closure "$null_action" not found})
-            if not defined $closure;
-
-        my $null_value;
-
-        DO_EVAL: {
-            my @warnings;
-            my $eval_ret;
-            my $eval_error;
-            {
-                local $EVAL_ERROR = undef;
-                local $SIG{__WARN__} =
-                    sub { push @warnings, [ $_[0], ( caller 0 ) ]; };
-                $eval_ret = eval { $null_value = $closure->(); 1; };
-                $eval_error = $EVAL_ERROR;
-            }
-
-            last DO_EVAL if $eval_ret and not scalar @warnings;
-            Marpa::Internal::code_problems(
-                {   eval_ok     => $eval_ret,
-                    fatal_error => $eval_error,
-                    grammar     => $grammar,
-                    warnings    => \@warnings,
-                    where       => 'evaluating null value',
-                    long_where  => 'evaluating null value for '
-                        . $symbol->[Marpa::Internal::Symbol::NAME],
-                }
-            );
-        } ## end DO_EVAL:
         my $symbol_id = $symbol->[Marpa::Internal::Symbol::ID];
         $null_values->[$symbol_id] = $null_value;
 
-        if ($Marpa::Internal::TRACE_ACTIONS) {
+        if ($Marpa::Internal::TRACE_VALUES) {
             print {$Marpa::Internal::TRACE_FH}
                 'Setting null value for symbol ',
                 $symbol->[Marpa::Internal::Symbol::NAME],
                 ' to ',
                 Data::Dumper->new( [ \$null_value ] )->Terse(1)->Dump, "\n"
                 or Marpa::exception('Could not print to trace file');
-        } ## end if ($Marpa::Internal::TRACE_ACTIONS)
+        } ## end if ($Marpa::Internal::TRACE_VALUES)
 
     } ## end for my $symbol ( @{$symbols} )
 

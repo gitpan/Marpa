@@ -8,7 +8,7 @@ use Fatal qw(open close);
 
 use Module::Build;
 
-my $marpa_version = '0.003_006';
+my $marpa_version = '0.003_009';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -69,6 +69,8 @@ my $build = $class->new(
         'lib/Marpa/UrHTML/Doc/UrHTML.pod' => 'lib/Marpa/UrHTML.pod',
     },
     meta_merge => {
+        resources =>
+            { repository => 'git://github.com/jeffreykegler/Marpa.git', },
         no_index => {
             directory =>
                 [qw( inc t author.t save lib/Marpa/Doc/Not_Updated )],

@@ -105,17 +105,25 @@ severity=5
 [ControlStructures::ProhibitNegativeExpressionsInUnlessAndUntilConditions]
 severity=5
 
-[ControlStructures::ProhibitPostfixControls]
+# These constructs are there because they can
+# be the clearest way to express the logic.
+# Disabling them is against the Perl spirit.
+[-ControlStructures::ProhibitPostfixControls]
 severity=5
-flowcontrol = warn die Carp::carp Carp::croak Carp::cluck Carp::confess goto exit Marpa::exception last next break Test::More::skip
 
-[ControlStructures::ProhibitUnlessBlocks]
+# These constructs are there because they can
+# be the clearest way to express the logic.
+# Disabling them is against the Perl spirit.
+[-ControlStructures::ProhibitUnlessBlocks]
 severity=5
 
 [ControlStructures::ProhibitUnreachableCode]
 severity=5
 
-[ControlStructures::ProhibitUntilBlocks]
+# These constructs are there because they can
+# be the clearest way to express the logic.
+# Disabling them is against the Perl spirit.
+[-ControlStructures::ProhibitUntilBlocks]
 severity=5
 
 [-Documentation::RequirePodAtEnd]

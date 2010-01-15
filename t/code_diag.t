@@ -5,7 +5,7 @@ use 5.010;
 use strict;
 use warnings;
 
-use Test::More tests => 11;
+use Test::More tests => 8;
 
 use lib 'lib';
 use Marpa::Test;
@@ -19,7 +19,6 @@ BEGIN {
 
 my @features = qw(
     e_op_action default_action
-    null_action
 );
 
 my @tests = ( 'run phase warning', 'run phase error', 'run phase die', );
@@ -141,17 +140,12 @@ sub canonical {
     return $template;
 } ## end sub canonical
 
-sub null_action         { return '[null]' }
-sub default_null_action { return '[default null]' }
-
 sub run_test {
     my $args = shift;
 
-    my $e_op_action         = $good_code{e_op_action};
-    my $e_number_action     = $good_code{e_number_action};
-    my $default_action      = $good_code{default_action};
-    my $null_action         = 'main::null_action';
-    my $default_null_action = 'main::default_null_action';
+    my $e_op_action     = $good_code{e_op_action};
+    my $e_number_action = $good_code{e_number_action};
+    my $default_action  = $good_code{default_action};
 
     ### e_op_action default: $e_op_action
     ### e_number_action default: $e_number_action
@@ -161,7 +155,6 @@ sub run_test {
             when ('e_op_action')     { $e_op_action     = $value }
             when ('e_number_action') { $e_number_action = $value }
             when ('default_action')  { $default_action  = $value }
-            when ('null_action')     { $null_action     = $value }
             default {
                 Marpa::exception("unknown argument to run_test: $arg");
             };
@@ -182,10 +175,9 @@ sub run_test {
                 [ 'optional_trailer2', [], ],
                 [ 'trailer',           [qw/Text/], ],
             ],
-            default_action      => $default_action,
-            default_null_action => $default_null_action,
-            symbols =>
-                { optional_trailer2 => { null_action => $null_action } },
+            default_action     => $default_action,
+            default_null_value => '[default null]',
+            symbols   => { optional_trailer2 => { null_value => '[null]' } },
             terminals => [qw(Number Op Text)],
         }
     );
@@ -226,13 +218,11 @@ run_test( {} );
 my %where = (
     e_op_action    => 'running action',
     default_action => 'running action',
-    null_action    => 'evaluating null value',
 );
 
 my %long_where = (
     e_op_action    => 'running action for 1: E -> E Op E',
     default_action => 'running action for 3: optional_trailer1 -> trailer',
-    null_action    => 'evaluating null value for optional_trailer2',
 );
 
 for my $test (@tests) {
@@ -339,18 +329,6 @@ Test Warning 2, <DATA> line <LINE_NO>.
 ======
 __END__
 
-| expected null_action run phase warning
-Fatal problem(s) in <LONG_WHERE>
-2 Warning(s)
-Warning(s) treated as fatal problem
-Warning #0 in <WHERE>:
-Test Warning 1, <DATA> line <LINE_NO>.
-======
-Warning #1 in <WHERE>:
-Test Warning 2, <DATA> line <LINE_NO>.
-======
-__END__
-
 | bad code run phase error
 # this should be a run phase error
 my $x = 0;
@@ -375,14 +353,6 @@ Illegal division by zero, <DATA> line <LINE_NO>.
 ======
 __END__
 
-| expected null_action run phase error
-Fatal problem(s) in <LONG_WHERE>
-Fatal Error
-Error in <WHERE>:
-Illegal division by zero, <DATA> line <LINE_NO>.
-======
-__END__
-
 | bad code run phase die
 # this is a call to die()
 my $x = 0;
@@ -403,14 +373,6 @@ __END__
 Fatal problem(s) in computing value for rule: 6: trailer -> Text
 Fatal Error
 Error in computing value:
-test call to die, <DATA> line <LINE_NO>.
-======
-__END__
-
-| expected null_action run phase die
-Fatal problem(s) in <LONG_WHERE>
-Fatal Error
-Error in <WHERE>:
 test call to die, <DATA> line <LINE_NO>.
 ======
 __END__

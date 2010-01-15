@@ -126,13 +126,8 @@ END_RULES
 
 $actual_ref = save_stdout();
 
-# Marpa::Display
-# name: show_NFA Synopsis
-
 print $grammar->show_NFA()
     or Carp::croak "print failed: $OS_ERROR";
-
-# Marpa::Display::End
 
 Marpa::Test::is( ${$actual_ref}, <<'END_NFA', 'Ambiguous Equation NFA' );
 S0: /* empty */

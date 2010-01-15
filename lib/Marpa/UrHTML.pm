@@ -1320,6 +1320,7 @@ sub parse {
             or Carp::croak("Cannot print: $ERRNO");
     }
 
+    $recce->end_input();
     $recce->strip();    # Saves lots of memory
 
     my %closure = ();

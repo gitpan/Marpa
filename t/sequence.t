@@ -19,8 +19,6 @@ BEGIN {
 
 ## no critic (Subroutines::RequireArgUnpacking)
 
-sub null_string { return q{} }
-
 sub default_action {
     shift;
     my $v_count = scalar @_;
@@ -55,8 +53,8 @@ sub run_sequence_test {
                     @separation_args
                 },
             ],
-            default_action      => 'main::default_action',
-            default_null_action => 'main::null_string',
+            default_action     => 'main::default_action',
+            default_null_value => q{},
         }
     );
 

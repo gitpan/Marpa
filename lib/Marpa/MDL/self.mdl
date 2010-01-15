@@ -94,12 +94,12 @@ default lex prefix setting: optional /the/, /default/, /lex/,
 'default_lex_prefix_predicate'.
 
 default null action setting: string specifier, copula, optional /the/, /default/,
-/null/, /action/, .
-'default_null_action_subject'.
+/null/, /value/, .
+'default_null_value_subject'.
 
 default null action setting: optional /the/, /default/, /null/,
-/action/, copula, string specifier, .
-'default_null_action_predicate'.
+/value/, copula, string specifier, .
+'default_null_value_predicate'.
  
 copula: /is/.
 

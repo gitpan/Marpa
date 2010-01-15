@@ -38,7 +38,7 @@ use Marpa::Offset qw(
 
     NULLING { always is null? }
     RANKING_ACTION
-    NULL_ACTION { closure to compute null value }
+    NULL_VALUE { null value }
 
     GREED { Maximal (longest possible)
     or minimal (shortest possible) evaluation
@@ -65,7 +65,7 @@ use Marpa::Offset qw(
     START { is one of the start symbols? }
     COUNTED { used on rhs of counted rule? }
 
-    WARN_IF_NO_NULL_ACTION { should have a null action -- warn
+    WARN_IF_NO_NULL_VALUE { should have a null value -- warn
     if not }
 
     =LAST_FIELD
@@ -184,7 +184,7 @@ use Marpa::Offset qw(
 
     SYMBOL_HASH { hash by name of symbol refs }
     RULE_HASH { hash by name of rule refs }
-    DEFAULT_NULL_ACTION { default action to compute value for nulling symbols }
+    DEFAULT_NULL_VALUE { default value for nulled symbols }
     ACTION_OBJECT
     INFINITE_ACTION
     IS_INFINITE
@@ -435,7 +435,7 @@ use constant GRAMMAR_OPTIONS => [
         actions
         infinite_action
         default_action
-        default_null_action
+        default_null_value
         inaccessible_ok
         maximal
         minimal
@@ -580,9 +580,8 @@ sub Marpa::Grammar::set {
             $grammar->[Marpa::Internal::Grammar::ACADEMIC] = $value;
         } ## end if ( defined( my $value = $args->{'academic'} ) )
 
-        if ( defined( my $value = $args->{'default_null_action'} ) ) {
-            $grammar->[Marpa::Internal::Grammar::DEFAULT_NULL_ACTION] =
-                $value;
+        if ( defined( my $value = $args->{'default_null_value'} ) ) {
+            $grammar->[Marpa::Internal::Grammar::DEFAULT_NULL_VALUE] = $value;
         }
 
         if ( defined( my $value = $args->{'actions'} ) ) {
@@ -803,12 +802,12 @@ sub Marpa::Grammar::precompute {
         {
 
             next SYMBOL
-                if not $symbol
-                    ->[Marpa::Internal::Symbol::WARN_IF_NO_NULL_ACTION];
+                if
+                not $symbol->[Marpa::Internal::Symbol::WARN_IF_NO_NULL_VALUE];
             next SYMBOL
-                if not $symbol->[Marpa::Internal::Symbol::NULL_ACTION];
+                if not $symbol->[Marpa::Internal::Symbol::NULL_VALUE];
             say {$trace_fh}
-                qq{Zero length sequence for symbol without null action: "$symbol"}
+                qq{Zero length sequence for symbol without null value: "$symbol"}
                 or Marpa::exception("Could not print: $ERRNO");
         } ## end for my $symbol ( @{ $grammar->[...]})
     } ## end if ( $grammar->[Marpa::Internal::Grammar::WARNINGS] )
@@ -1435,15 +1434,15 @@ sub assign_user_symbol {
 
     PROPERTY: while ( my ( $property, $value ) = each %{$options} ) {
         if (not $property ~~
-            [qw(maximal minimal terminal ranking_action null_action)] )
+            [qw(maximal minimal terminal ranking_action null_value)] )
         {
             Marpa::exception(qq{Unknown symbol property "$property"});
         }
         if ( $property eq 'terminal' ) {
             $symbol->[Marpa::Internal::Symbol::TERMINAL] = $value;
         }
-        if ( $property eq 'null_action' ) {
-            $symbol->[Marpa::Internal::Symbol::NULL_ACTION] = $value;
+        if ( $property eq 'null_value' ) {
+            $symbol->[Marpa::Internal::Symbol::NULL_VALUE] = \$value;
         }
     } ## end while ( my ( $property, $value ) = each %{$options} )
 
@@ -1795,10 +1794,10 @@ sub add_user_rule {
 
         # For a zero-length sequence
         # with an action
-        # warn if we don't also have a null action.
+        # warn if we don't also have a null value.
 
         if ($action) {
-            $lhs->[Marpa::Internal::Symbol::WARN_IF_NO_NULL_ACTION] = 1;
+            $lhs->[Marpa::Internal::Symbol::WARN_IF_NO_NULL_VALUE] = 1;
         }
 
         if ($ranking_action) {
@@ -2719,13 +2718,12 @@ sub alias_symbol {
     my $nullable_symbol = shift;
     my $symbol_hash     = $grammar->[Marpa::Internal::Grammar::SYMBOL_HASH];
     my $symbols         = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
-    my ( $accessible, $productive, $name, $null_action ) =
-        @{$nullable_symbol}[
+    my ( $accessible, $productive, $name, $null_value ) = @{$nullable_symbol}[
         Marpa::Internal::Symbol::ACCESSIBLE,
         Marpa::Internal::Symbol::PRODUCTIVE,
         Marpa::Internal::Symbol::NAME,
-        Marpa::Internal::Symbol::NULL_ACTION,
-        ];
+        Marpa::Internal::Symbol::NULL_VALUE,
+    ];
 
     # create the new, nulling symbol
     my $alias_name = $nullable_symbol->[Marpa::Internal::Symbol::NAME] . '[]';
@@ -2737,7 +2735,7 @@ sub alias_symbol {
     $alias->[Marpa::Internal::Symbol::ACCESSIBLE]  = $accessible;
     $alias->[Marpa::Internal::Symbol::PRODUCTIVE]  = $productive;
     $alias->[Marpa::Internal::Symbol::NULLING]     = 1;
-    $alias->[Marpa::Internal::Symbol::NULL_ACTION] = $null_action;
+    $alias->[Marpa::Internal::Symbol::NULL_VALUE]  = $null_value;
     $nullable_symbol->[Marpa::Internal::Symbol::NULLABLE] //= 0;
     $alias->[Marpa::Internal::Symbol::NULLABLE] = List::Util::max(
         $nullable_symbol->[Marpa::Internal::Symbol::NULLABLE], 1 );
@@ -3111,9 +3109,9 @@ sub rewrite_as_CHAF {
     }    # RULE
 
     # Create a new start symbol
-    my ( $productive, $null_action ) = @{$old_start_symbol}[
+    my ( $productive, $null_value ) = @{$old_start_symbol}[
         Marpa::Internal::Symbol::PRODUCTIVE,
-        Marpa::Internal::Symbol::NULL_ACTION,
+        Marpa::Internal::Symbol::NULL_VALUE,
     ];
     my $new_start_symbol =
         assign_symbol( $grammar,
@@ -3122,9 +3120,9 @@ sub rewrite_as_CHAF {
         Marpa::Internal::Symbol::PRODUCTIVE,
         Marpa::Internal::Symbol::ACCESSIBLE,
         Marpa::Internal::Symbol::START,
-        Marpa::Internal::Symbol::NULL_ACTION,
+        Marpa::Internal::Symbol::NULL_VALUE,
         ]
-        = ( $productive, 1, 1, $null_action );
+        = ( $productive, 1, 1, $null_value );
 
     # Create a new start rule
     my $new_start_rule = add_rule(

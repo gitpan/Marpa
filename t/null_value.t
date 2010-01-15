@@ -63,9 +63,9 @@ $Test_Grammar::MARPA_OPTIONS = [
         ],
         'start' => 's',
         symbols => {
-            a => { null_action => 'rule1' },
-            b => { null_action => 'rule3' },
-            c => { null_action => 'rule4' },
+            a => { null_value => 'A is missing' },
+            b => { null_value => 'B is missing' },
+            c => { null_value => 'C is missing' },
         },
         'terminals'     => ['Z'],
         'action_object' => 'Test'
