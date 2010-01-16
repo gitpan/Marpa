@@ -29,10 +29,10 @@ my %exclude = map { ( $_, 1 ) } qw(
 );
 
 my @additional_files = qw(
-    lib/Marpa/UrHTML/todo/Implementation.pod
-    lib/Marpa/todo/Doc/Evaluator.pod
-    lib/Marpa/todo/Doc/Recognizer.pod
-    lib/Marpa/todo/Doc/Semantics.pod
+    lib/Marpa/UrHTML/drafts/Implementation.pod
+    lib/Marpa/drafts/Doc/Evaluator.pod
+    lib/Marpa/drafts/Doc/Recognizer.pod
+    lib/Marpa/drafts/Doc/Semantics.pod
 );
 
 my @test_files = @ARGV;

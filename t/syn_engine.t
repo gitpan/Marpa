@@ -6,7 +6,7 @@ use 5.010;
 use strict;
 use warnings;
 
-use Test::More tests => 3;
+use Test::More tests => 4;
 
 use lib 'lib';
 use Marpa::Test;
@@ -103,6 +103,36 @@ if ($evaler) {
 
 Test::More::is( $value, 49, 'Unambiguous Value' );
 Test::More::is_deeply( [ sort @values ], [ 336, 49 ], 'Ambiguous Values' );
+
+# An example of interactive lexing, using
+# the unambiguous grammar.
+
+sub fix_things {
+    Carp::croak(q{Don't know how to fix things})
+}
+
+$recce = Marpa::Recognizer->new( { grammar => $grammar, mode => 'stream' } );
+
+# Marpa::Display
+# name: Engine Synopsis Interactive Parse
+
+RECCE_RESPONSE: for ( my $token_ix = 0;; ) {
+
+    my ( $current_earleme, $expected_tokens ) =
+        $recce->tokens( \@tokens, \$token_ix );
+
+    last RECCE_RESPONSE if $token_ix > $#tokens;
+
+    fix_things( \@tokens, $expected_tokens )
+        or Carp::croak(q{Don't know how to fix things});
+
+} ## end for ( my $token_ix = 0;; )
+
+# Marpa::Display::End
+
+$value_ref = $recce->value;
+$value = $value_ref ? ${$value_ref} : 'No Parse';
+Test::More::is( $value, 49, 'Interactive Value' );
 
 # Local Variables:
 #   mode: cperl

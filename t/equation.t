@@ -5,7 +5,7 @@ use 5.010;
 use strict;
 use warnings;
 
-use Test::More tests => 11;
+use Test::More tests => 12;
 
 use lib 'lib';
 use Marpa::Test;
@@ -214,6 +214,66 @@ $recce->tokens(
         [ 'Number', 1,    1 ],
     ]
 );
+
+$actual_ref = save_stdout();
+
+# Marpa::Display
+# name: show_earley_sets Synopsis
+
+print $recce->show_earley_sets()
+    or Carp::croak "print failed: $OS_ERROR";
+
+# Marpa::Display::End
+
+Marpa::Test::is( ${$actual_ref},
+    <<'END_OF_EARLEY_SETS', 'Ambiguous Equation Earley Sets' );
+Last Completed: 7; Furthest: 7
+Earley Set 0
+S0@0-0
+S1@0-0
+Earley Set 1
+S4@0-1 [p=S1@0-0; s=Number; t=\2]
+S2@0-1 [p=S0@0-0; c=S4@0-1]
+S3@0-1 [p=S1@0-0; c=S4@0-1]
+Earley Set 2
+S5@0-2 [p=S3@0-1; s=Op; t=\'-']
+S1@2-2
+Earley Set 3
+S4@2-3 [p=S1@2-2; s=Number; t=\0]
+S6@0-3 [p=S5@0-2; c=S4@2-3]
+S3@2-3 [p=S1@2-2; c=S4@2-3]
+S2@0-3 [p=S0@0-0; c=S6@0-3]
+S3@0-3 [p=S1@0-0; c=S6@0-3]
+Earley Set 4
+S5@2-4 [p=S3@2-3; s=Op; t=\'*']
+S1@4-4
+S5@0-4 [p=S3@0-3; s=Op; t=\'*']
+Earley Set 5
+S4@4-5 [p=S1@4-4; s=Number; t=\3]
+S6@2-5 [p=S5@2-4; c=S4@4-5]
+S3@4-5 [p=S1@4-4; c=S4@4-5]
+S6@0-5 [p=S5@0-4; c=S4@4-5] [p=S5@0-2; c=S6@2-5]
+S3@2-5 [p=S1@2-2; c=S6@2-5]
+S2@0-5 [p=S0@0-0; c=S6@0-5]
+S3@0-5 [p=S1@0-0; c=S6@0-5]
+Earley Set 6
+S5@4-6 [p=S3@4-5; s=Op; t=\'+']
+S1@6-6
+S5@2-6 [p=S3@2-5; s=Op; t=\'+']
+S5@0-6 [p=S3@0-5; s=Op; t=\'+']
+Earley Set 7
+S4@6-7 [p=S1@6-6; s=Number; t=\1]
+S6@4-7 [p=S5@4-6; c=S4@6-7]
+S3@6-7 [p=S1@6-6; c=S4@6-7]
+S6@2-7 [p=S5@2-6; c=S4@6-7] [p=S5@2-4; c=S6@4-7]
+S6@0-7 [p=S5@0-6; c=S4@6-7] [p=S5@0-4; c=S6@4-7] [p=S5@0-2; c=S6@2-7]
+S3@4-7 [p=S1@4-4; c=S6@4-7]
+S3@2-7 [p=S1@2-2; c=S6@2-7]
+S2@0-7 [p=S0@0-0; c=S6@0-7]
+S3@0-7 [p=S1@0-0; c=S6@0-7]
+END_OF_EARLEY_SETS
+
+restore_stdout();
 
 my %expected_value = (
     '(2-(0*(3+1)))==2' => 1,

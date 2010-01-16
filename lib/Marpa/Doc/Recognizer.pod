@@ -2,15 +2,537 @@
 
 Marpa::API::Recognizer - Marpa Recognizer Objects
 
+=head1 SYNOPSIS
+
+=for Marpa::Display
+name: Engine Synopsis Unambiguous Parse
+partial: 1
+normalize-whitespace: 1
+
+    my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
+
+    my @tokens = (
+        [ 'Number', 42 ],
+        [ 'Multiply', ],
+        [ 'Number', 1 ],
+        [ 'Add', ],
+        [ 'Number', 7 ],
+    );
+
+    $recce->tokens( \@tokens );
+
+=for Marpa::Display::End
+
 =head1 DESCRIPTION
 
-Not yet written.
+The L<C<Marpa::Recognizer::new> constructor|/new>
+creates a recognizer object from a
+precomputed Marpa grammar object.
+The L<C<Marpa::Recognizer::tokens>|/tokens>
+method recognizes tokens.
 
-=head1 METHODS
+Pedantically, recognition and evaluation are distinct things.
+Recognition is determining whether there is a parse.
+Evaluation is determining the value of a parse.
+But pure recognition in the pedantic sense is of little
+practical interest.
+L<Marpa::Recognizer> incorporates many evaluation functions.
+
+In particular,
+L<Marpa::Recognizer> has a built-in "Single Parse Evaluator",
+which works on unambiguous grammars.
+The Single Parse Evaluator also works for
+ambiguous parses if the grammar is not
+infinitely ambiguous.
+The Single Parse Evaluator only returns one parse.
+For ambiguous grammars,
+the Single Parse Evaluator
+arbitrarily
+selects one of the parses.
+
+The Single Parse Evaluator 
+is usually the best choice when there is only one parse.
+The Single Parse Evaluator 
+is also usually the best choice 
+for an application that only needs one parse,
+and is not fussy about which one.
+
+=head2 Location
+
+In traditional parsing, location is position in a token stream.
+This document will assume
+that Marpa is using the traditional, token-stream,
+model of the input,
+unless it states otherwise.
+Marpa supports other input models,
+which are discussed in L<a separate
+document|Marpa::Models>.
+
+The B<current parse location>, or B<current earleme>
+is the location at which the next input is expected.
+Intuitively, the current earleme can be thought of as
+the recognizer's current position.
+Marpa will have completed its tables (or Earley sets)
+out to the current earleme,
+so the current earleme is often referred to as the 
+B<last completed earleme>.
+
+At times, this document will refer to the location
+of the B<furthest earleme>.
+Users sticking to the 
+token-stream model can ignore the furthest earleme --
+for them it will always be the same as the current earleme.
+Alternative input models in which the furthest earleme is important,
+and the reasons for the term I<earleme> itself,
+are presented in L<the separate
+document on alternative input models|Marpa::Models>.
+
+=head1 CONSTRUCTOR
+
+=head2 new
+
+The C<new> method's arguments are references to hashes of named
+arguments.
+In the key/value pairs of these hashes, the key is the argument name,
+and the hash value is the value of the argument.
+The C<new> method either returns a new parse object or throws an exception.
+Details of the named arguments are L<below|/"NAMED ARGUMENTS">.
+
+=head1 MUTATORS
+
+=head2 end_input
+
+Indicates that input is finished.
+The C<end_input> method takes no arguments.
+Calling C<end_input> is not necessary in the recognizer's
+C<default> mode.
+The C<end_input> method returns a Perl true value on success.
+On failure, it throws an exception.
+
+After a successful call to 
+the C<end_input> method,
+the current earleme will be the same as the furthest earleme.
+Any further calls to C<tokens> will cause an
+exception to be thrown.
+The C<end_input> method can only usefully be called once
+per recognizer.
+Subsequent calls to the C<end_input> method
+have no effect and return a Perl true.
+
+=head2 set
+
+The C<set> method's arguments are references to hashes of named
+arguments.
+It can be used to set or change named arguments after the recognizer
+has been created.
+Details of the named arguments are L<below|/"NAMED ARGUMENTS">.
+
+=head2 strip
+
+To optimize reading input and building tables,
+the recognizer creates several large internal data structures.
+These are no longer needed when input is finished.
+
+The C<strip> method removes the recognizer's internal data structures,
+leaving only the earley sets and other data that is needed
+for the evaluation phase.
+Stripping a recognizer greatly reduces the amount of memory it uses.
+Attempting to strip a recognizer before input is finished
+will cause an exception.
+
+=head2 tokens
+
+=for Marpa::Display
+name: Engine Synopsis Unambiguous Parse
+partial: 1
+normalize-whitespace: 1
+
+    my @tokens = (
+        [ 'Number', 42 ],
+        [ 'Multiply', ],
+        [ 'Number', 1 ],
+        [ 'Add', ],
+        [ 'Number', 7 ],
+    );
+
+    $recce->tokens( \@tokens );
+
+=for Marpa::Display::End
+
+
+The C<tokens> method takes two arguments.
+The first is a reference to an array of token descriptors.
+The second, optional, argument is a B<reference> to an index into that array,
+used when the call is B<interactive>.
+
+Tokens descriptors are references to arrays.
+The elements of the token descriptor array are, in order,
+the token name, the token value, the token length
+and the token offset.
+The token name must be the name of a symbol which is valid as a terminal
+in the grammar.
+In a token descriptor,
+only the token name is required --
+the other elements may omitted.
+
+The token value can be any Perl scalar.
+If omitted, the token value is a Perl C<undef>.
+
+The token length and the token offset arguments are
+not used in the traditional, token-stream, model of the input.
+Their use is described in L<the document on alternative input
+models|Marpa::Models>.
+
+Parsing may reach a point where it is B<exhausted>.
+"Exhausted" means that there is no parse at the current location,
+and no possible input could produce any parses at a subsequent location.
+If a recognizer is not exhausted, it is B<active>.
+
+In the evaluators, the default end of parsing is the end of input,
+and that means that if the evaluators are called using the default
+end of parsing, they will find no parses in an exhausted recognizer.
+The only way an exhausted recognizer can produce a valid parse is
+if end of parsing is set to a location before the end of input.
+
+If the recognizer is exhausted,
+in scalar context,
+the C<tokens> method returns undef.
+If the recognizer is exhausted,
+in array context,
+the C<tokens> method returns an empty array.
+
+If the recognizer is active,
+in scalar context,
+the C<tokens> method returns the number of the current earleme.
+If the recognizer is active,
+in array context,
+the C<tokens> method returns an array of two elements.
+The first element of the return array is the number of the current earleme.
+The second element is a reference to a list of expected tokens.
+
+The list of expected tokens returned by the C<tokens> method is used
+for prediction-driven lexing.
+It is an array of strings.
+The strings are the names of the symbols that will be
+valid as token names at the current parse location.
+For more detail on how to use this list,
+see L<the section on interactive
+input|/"INTERACTIVE INPUT">.
 
 =head2 value
 
-Not yet written.
+The value mutator implements
+L<the Single Parse Evaluator|/"SINGLE PARSE EVALUATOR">.
+It is described in L<its own section|/"SINGLE PARSE EVALUATOR">.
+
+=head1 ACCESSOR
+
+=head2 check_terminal
+
+Returns a Perl true when its argument is the name of a terminal symbol.
+Otherwise, returns a Perl false.
+Not usually needed, but in unusual sitations a lexer may find this
+the easiest way to determine if a symbol is a terminal.
+
+=head1 TRACE ACCESSORS
+
+=head2 show_earley_sets
+
+=for Marpa::Display
+name: show_earley_sets Synopsis
+partial: 1
+normalize-whitespace: 1
+
+    print $recce->show_earley_sets()
+        or Carp::croak "print failed: $OS_ERROR";
+
+=for Marpa::Display::End
+
+Returns a multi-line string
+listing every Earley item in every Earley set.
+
+=head1 NAMED ARGUMENTS
+
+=head2 grammar
+
+The C<grammar> named argument is required.  Its
+value must be
+a precomputed Marpa grammar object.
+
+=head2 mode
+
+The C<mode> named argument is optional.
+If present, it must be a string, either
+"C<default>" or "C<stream>".
+
+In default mode (which is the default),
+only one call
+to the C<tokens> method is allowed for
+a recognizer object.
+The input is automatically finished after that
+call, and
+calling the C<end_input> method to indicate
+that input is finished is not
+necessary.
+
+In stream mode, the C<tokens> method may be called
+repeatedly.
+To indicate that input is finished, it
+is necessary to
+call the C<end_input> method.
+
+=head2 too_many_earley_items
+
+The C<too_many_earley_items> argument is optional.
+If specified, it sets the B<earley items warning threshold>.
+If an earley set becomes larger than the
+earley items warning threshold,
+a warning is printed to the trace file handle.
+
+Marpa parses from any BNF,
+and can handle grammars and inputs which produce large
+earley sets.
+But parsing that involves large earley sets can be slow.
+Large earley sets
+will be something most users can work around and
+will wish to avoid.
+
+By default, the earley items warning threshold
+is set to a number calculated based on the size of the
+grammar, but never less than 100.
+If the earley items warning threshold is set to 0,
+warnings about large earley sets are turned off.
+
+=head2 trace_earley_sets
+
+A boolean.
+If true, causes each earley set to be written
+to the trace file handle as it is completed.
+
+=head2 trace_file_handle
+
+The value is a file handle.
+Trace output and warning messages
+go to the trace file handle.
+By default the trace file handle is inherited
+from the grammar used to create the recognizer.
+
+=head2 trace_terminals
+
+Traces terminals as they are accepted or rejected
+by the recognizer.
+Very handy in debugging, and often useful
+even when the problem is not in the lexing.
+Requires little knowledge of Marpa internals
+to interpret.
+
+=head2 warnings
+
+The value is a boolean.
+Warnings are written to the trace file handle.
+By default, the recognizer's warnings are on.
+Usually, an application will want to leave them on.
+
+=head1 INTERACTIVE INPUT
+
+=for Marpa::Display
+name: Engine Synopsis Interactive Parse
+partial: 1
+normalize-whitespace: 1
+
+    RECCE_RESPONSE: for ( my $token_ix = 0;; ) {
+
+        my ( $current_earleme, $expected_tokens ) =
+            $recce->tokens( \@tokens, \$token_ix );
+
+        last RECCE_RESPONSE if $token_ix > $#tokens;
+
+        fix_things( \@tokens, $expected_tokens )
+            or Carp::croak(q{Don't know how to fix things});
+
+    } ## end for ( my $token_ix = 0;; )
+
+=for Marpa::Display::End
+
+Marpa allows prediction-driven
+lexing.
+That is, Marpa can tell the lexer
+what symbols will be acceptable as tokens at the next location
+in the parse.
+This can be very useful.
+
+Interactive input takes place, like all input,
+via the C<tokens> method.
+When a second argument is given to
+the C<tokens> method, it is B<interactive>.
+Interactive calls to the C<tokens> are only allowed in C<stream> mode.
+
+In interactive input, the first argument is a reference to a B<token descriptor array>,
+and the second argument is a reference to a B<token descriptor index>.
+The C<tokens> method will read token descriptors starting at the token
+descriptor index.
+Elements in the token descriptor array before the token descriptor index are ignored.
+
+In non-interactive calls,
+if the C<tokens> method sees a token descriptor for an invalid token,
+it throws an exception.
+In interactive calls, C<tokens> returns and leaves the B<token descriptor index>
+at the location where it had a problem.
+If, in an interactive call, C<tokens> reaches
+the end of the token descriptor array,
+the token descriptor index will be
+set to one past the end of the token descriptor array.
+
+The behavior of the token descriptor index is designed to
+facilitate loops like the one in the example above.
+In that loop, the token descriptor index is initialized
+to zero, and is never directly changed after that.
+The loop ends which the token descriptor index points past
+the end of the token descriptor array.
+
+The return values for interactive calls to C<tokens> are the same
+as the return values for non-interactive calls.
+Interactive calls to C<tokens> can be made in scalar context,
+but most often applications will want
+to use the list of expected tokens,
+which is only available in array context.
+
+Marpa's HTML parser, L<Marpa::UrHTML>, is
+an example of interactive input applied to a non-trivial, real-life application.
+When an interactive C<tokens> call returns due to a problem with
+a token descriptor,
+L<Marpa::UrHTML>
+tries to "fix" things in two ways.
+
+First, it looks at the expected tokens list,
+trying to find a expected token
+that it can create as a "virtual" token.
+If L<Marpa::UrHTML> finds an acceptable virtual token,
+it will create it "on the fly".
+Effectively, 
+L<Marpa::UrHTML> is
+supplying tokens that the parser wants
+but which are missing in the physical input.
+L<Marpa::UrHTML>
+inserts virtual tokens into the input with separate, non-interactive,
+calls to C<tokens>.
+After inserting the virtual tokens,
+L<Marpa::UrHTML>
+loops back to the main, interactive,
+C<tokens> call,
+resuming the original input at the point where it left off.
+
+Second,
+and if the first technique fails,
+L<Marpa::UrHTML> will change the next token descriptor in the
+token descriptor array so that it fits the parser's expectations.
+It then loops back to the main interactive call to C<tokens>,
+again resuming where it left off.
+
+The recognizer keeps no state for parts of the token descriptor array which
+it has yet to reach.
+This means that an application can be aggressive
+about adding input on the fly.
+An application is also free to change the portion
+of the token descriptors array which has yet to be read.
+Multiple interactive calls to C<tokens> can be "in progress" at once.
+Those interactive calls can be interspersed with as many non-interactive calls as the
+user wishes.
+
+=head1 SINGLE PARSE EVALUATOR
+
+=for Marpa::Display
+name: Engine Synopsis Unambiguous Parse
+partial: 1
+normalize-whitespace: 1
+
+    my $value_ref = $recce->value;
+    my $value = $value_ref ? ${$value_ref} : 'No Parse';
+
+=for Marpa::Display::End
+
+=for Marpa::Display::End
+
+The Single Parse Evaluator is implemented as
+the C<value> method call.
+Its arguments are zero or more hashes of named arguments.
+It returns a B<reference> to the value of a parse,
+or undef if there was no parse.
+
+If the parse is not ambiguous, the reference returned will
+be to the value of
+the only valid parse.
+If the parse is ambiguous,
+the reference returned will
+be to the value of
+a parse chosen arbitrarily.
+
+These are the named arguments available to the C<value> method
+call:
+
+=head2 end
+
+C<value>'s
+C<end> named argument
+is
+the earleme (that is, the location) where the parse
+should end.
+The default is for the parse to end where the input did,
+so that the parse returned is of the entire input.
+
+=head2 closure
+
+C<value>'s
+C<closure> named argument
+is
+a reference to a hash.
+In the key/value pairs of this hashes,
+the key must be an action name
+from the C<action> properties of a rule;
+from the C<default_action> named argument of the grammar;
+from the C<ranking_action> property of a rule;
+or from the C<ranking_action> property of a symbol.
+The value in the hashes key/value pair
+must be a CODE ref.
+
+When an action name is specified in
+the 
+C<closure> named argument,
+the usual action resolution mechanism of the semantics
+is bypassed.
+The value of a hash entry in
+the C<closure> named argument can be an
+anonymous subroutine.
+The most common use of
+the C<closure> named argument is to
+allow anonymous
+subroutines to be semantics actions.
+For more details, see L<the document on
+semantics|Marpa::Semantics>.
+
+=head2 trace_actions
+
+C<value>'s
+C<trace_values> named argument
+is a boolean.
+If the boolean value is true, Marpa traces the resolution of semantic actions.
+A boolean value of false turns tracing off, which is the default.
+The traces are written to the trace file handle.
+
+=head2 trace_values
+
+C<value>'s
+C<trace_values> named argument
+is a numeric trace level.
+If the numeric trace level is 1 or more, Marpa
+traces values as they are computed in the evaluation stack.
+A trace level of 0 turns value tracing off, which is
+the default.
+The traces are written to the trace file handle.
+
+Tracing becomes more verbose as the levels increase.
+At a level of 3, C<trace_values> becomes extremely verbose,
+writing out the entire stack every time it changes.
 
 =head1 LICENSE AND COPYRIGHT
 
@@ -19,3 +541,10 @@ Marpa is free software under the Perl license.
 For details see the LICENSE file in the Marpa distribution.
 
 =cut
+
+# Local Variables:
+#   mode: cperl
+#   cperl-indent-level: 4
+#   fill-column: 100
+# End:
+# vim: expandtab shiftwidth=4:

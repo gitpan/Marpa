@@ -28,6 +28,7 @@ lib/Marpa/Doc/Evaluator.pod
 lib/Marpa/Doc/Grammar.pod
 lib/Marpa/Doc/Implementation.pod
 lib/Marpa/Doc/Marpa.pod
+lib/Marpa/Doc/Models.pod
 lib/Marpa/Doc/Parse_Terms.pod
 lib/Marpa/Doc/Recognizer.pod
 lib/Marpa/Doc/Semantics.pod

@@ -42,7 +42,7 @@ sub Marpa::Recognizer::value {
         }
 
         if ( defined $arg_hash->{trace_values} ) {
-            $trace_values = $arg_hash->{trace_actions};
+            $trace_values = $arg_hash->{trace_values};
         }
 
     } ## end for my $arg_hash (@arg_hashes)
