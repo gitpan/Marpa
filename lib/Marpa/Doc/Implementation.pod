@@ -1,6 +1,6 @@
 =head1 NAME
 
-Marpa::Implementation - Marpa Implementation
+Marpa::API::Implementation - Marpa Implementation
 
 =head1 DESCRIPTION
 

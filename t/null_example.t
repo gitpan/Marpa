@@ -73,17 +73,29 @@ my $grammar = Marpa::Grammar->new(
     }
 );
 
-# Marpa::Display::End
-
-## use critic
 $grammar->precompute();
 
 my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
 
 $recce->tokens( [ [ 'X', 'x' ], ] );
 
+# Marpa::Display::End
+
+## use critic
+
+# Marpa::Display
+# name: Null Value Example Output
+# start-after-line: END_OF_OUTPUT
+# end-before-line: '^END_OF_OUTPUT$'
+
+chomp( my $expected = <<'END_OF_OUTPUT');
+((null A;null B;x);null R)
+END_OF_OUTPUT
+
+# Marpa::Display::End
+
 my $value = $recce->value();
-Marpa::Test::is( ${$value}, q{((null A;null B;x);null R)}, 'Null example' );
+Marpa::Test::is( ${$value}, $expected, 'Null example' );
 
 # Local Variables:
 #   mode: cperl

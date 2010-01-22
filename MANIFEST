@@ -100,6 +100,7 @@ t/equation.t
 t/final_nonnullable.t
 t/gj.t
 t/hu.t
+t/implementation.t
 t/infinite2.t
 t/infinite_plex.t
 t/infinite.t

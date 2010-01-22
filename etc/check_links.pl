@@ -106,7 +106,7 @@ PAGE: for my $url (@doc_urls) {
             next LINK;
         } ## end if ( $url_seen{$link}++ )
 
-        if ($verbose) {
+        if ( $verbose > 1 ) {
             say STDERR "Trying $link" or Carp::croak("Cannot print: $ERRNO");
             $at_col_0 = 1;
         }
@@ -114,19 +114,34 @@ PAGE: for my $url (@doc_urls) {
         my $link_response =
             $ua->request( HTTP::Request->new( GET => $link ) );
 
-        if ( $link_response->code == OK ) {
-            if ( not $verbose ) {
-                print {*STDERR} q{.}
-                    or Carp::croak("Cannot print: $ERRNO");
-                $at_col_0 = 0;
-            }
+        if ( $link_response->code != OK ) {
+            $at_col_0 or print "\n" or Carp::croak("Cannot print: $ERRNO");
+            say 'FAIL: ', $link_response->status_line, q{ }, $link
+                or Carp::croak("Cannot print: $ERRNO");
+            $at_col_0 = 1;
             next LINK;
-        } ## end if ( $link_response->code == OK )
+        } ## end if ( $link_response->code != OK )
 
-        $at_col_0 or print "\n" or Carp::croak("Cannot print: $ERRNO");
-        say 'FAIL: ', $link_response->status_line, q{ }, $link
-            or Carp::croak("Cannot print: $ERRNO");
-        $at_col_0 = 1;
+        if ( not $verbose ) {
+            print {*STDERR} q{.}
+                or Carp::croak("Cannot print: $ERRNO");
+            $at_col_0 = 0;
+        }
+
+        if ($verbose) {
+            $at_col_0 or print "\n" or Carp::croak("Cannot print: $ERRNO");
+            my $uri = $link_response->base();
+            say STDERR "FOUND $link" or Carp::croak("Cannot print: $ERRNO");
+            say STDERR "  uri: $uri" or Carp::croak("Cannot print: $ERRNO");
+            if ( $verbose >= 3 ) {
+                for my $redirect ( $link_response->redirects() ) {
+                    my $redirect_uri = $redirect->base();
+                    say STDERR "  redirect: $redirect_uri"
+                        or Carp::croak("Cannot print: $ERRNO");
+                }
+            } ## end if ( $verbose >= 3 )
+            $at_col_0 = 1;
+        } ## end if ($verbose)
 
     } ## end for my $link (@links)
 

@@ -1,10 +1,136 @@
 =head1 NAME
 
-Marpa::Tracing - Tracing Marpa Applications
+Marpa::API::Tracing - Tracing Your Grammar
 
 =head1 DESCRIPTION
 
-Not yet written.
+This document describes techniques for tracing and
+debugging Marpa parses and grammars.
+
+=head2 Check the Parse Exhaustion Location
+
+If parsing failed before or at the end of input,
+first look at the location in the input where parsing was exhausted.
+That, along with inspection of the input and the grammar,
+can be enough to pinpoint the problem.
+
+=head2 Turn on Warnings
+
+The next step is to make sure that 
+Marpa's C<warnings> named arguments
+for both the grammar and the recognizer
+are turned on.
+The C<warnings> named arguments are
+on by default.
+
+=head2 Turn off Stripping
+
+When Marpa "strips" its objects,
+it removes data that is not
+needed for subsequent processing.
+This saves time and memory, but data that is not
+needed for processing
+can be extremely valuable for debugging.
+When objects are stripped,
+many of Marpa's tracing methods will return
+partial information or no information at all.
+
+You should turn off Marpa's C<strip> named argument to the grammar.
+C<strip> is on by default.
+If you are
+using the
+L<recognizer's C<strip> method|Marpa::API::Recognizer/"strip">)
+to strip the recognizer
+you should stop doing that,
+perhaps by commenting it out.
+
+=head2 Trace Terminals
+
+The next thing to do is to turn on the C<trace_terminals> recognizer named argument.
+This tells you which tokens the recognizer is looking for and which ones it thinks it found.
+If the problem is in lexing, C<trace_terminals> tells you the whole story.
+
+Even if the problem is not in the lexing,
+tracing terminals can tell you a lot.
+Since Marpa uses prediction-driven lexing,
+at any given parse location,
+Marpa is only looking
+for those tokens that it thinks
+could result in a successful parse.
+That means that the list of
+tokens that the recognizer is looking for
+tells you where
+the recognizer thinks it is.
+
+=head2 Double Check Rules and Symbols
+
+It sometimes helps to look carefully at the output of
+C<show_rules> and C<show_symbols>.
+Check if anything there is
+clearly not right or not what you expected.
+
+=head2 Other Traces
+
+C<trace_actions> will show you how action names are resolved to semantic
+Perl closures.
+Setting the C<trace_values> evaluator named argument to a trace level of 1
+traces the values of the nodes as they are pushed on, and 
+popped off, the evaluation stack.
+
+You can trace the earley sets as they are completed,
+but it is usually best to wait until input to the recognizer
+is finished.
+At that point call
+L<the C<Marpa::Recognizer::show_earley_sets>
+method|Marpa::API::Recognizer/"show_earley_sets">.
+Since the items in the earley sets use QDFA states,
+you usually will want to call
+L<C<Marpa::Grammar::show_QDFA>
+method|Marpa::API::Grammar/"show_QDFA"> as well.
+The L<implementation document|Marpa::API::Implementation>
+has example outputs from
+the
+C<show_earley_sets> and
+C<show_QDFA>
+methods,
+and explains how to read them.
+
+=head1 CHECKLIST
+
+A complete investigation of a parse
+would include the following:
+
+=over 4
+
+=item * Make sure the C<warnings> option is turned on.  It is on by default.
+
+=item * Turn off the C<strip> Marpa named argument.  By default, it is on.
+
+=item * Make sure you're not stripping the recognizer.
+
+=item * Turn on the C<trace_terminals> recognizer named argument.
+
+=item * Run C<show_symbols> on the precomputed grammar.
+
+=item * Run C<show_rules> on the precomputed grammar.
+
+=item * Turn on the C<trace_actions> evaluator named argument.
+
+=item * Set the C<trace_values> evaluator named argument to level 1.
+
+=item * Run C<show_earley_sets> on the recognizer.
+
+=item * Run C<show_QDFA> on the precomputed grammar.
+
+=back
+
+When considering how much tracing to turn on,
+remember that if the input text to the grammar is large,
+the outputs from C<show_earley_sets>,
+C<trace_terminals>,
+and C<trace_values>
+can be very lengthy.
+You want to work with short inputs if at all possible.
 
 =head1 LICENSE AND COPYRIGHT
 
@@ -13,3 +139,4 @@ Marpa is free software under the Perl license.
 For details see the LICENSE file in the Marpa distribution.
 
 =cut
+

@@ -90,14 +90,14 @@ The API is structured around these phases.
 
 =head2 Creating a Grammar
 
-The package L<Marpa::Grammar> creates grammars.
+The package L<Marpa::API::Grammar> creates grammars.
 It also "precomputes" the grammars.
 Precomputation creates a set of data structures that
 the recognizer will need.
 
 =head2 Recognizing Input
 
-The L<Marpa::Recognizer> package creates recognizers from grammars.
+The L<Marpa::API::Recognizer> package creates recognizers from grammars.
 A recognizer reads input
 and produces tables based on
 the grammar and the input.
@@ -170,7 +170,7 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-Marpa grammars are L<Marpa::Grammar> objects.
+Marpa grammars are L<Marpa::API::Grammar> objects.
 They are created
 with the C<Marpa::Grammar::new> constructor.
 The arguments to 
@@ -525,31 +525,31 @@ Marpa's Single Parse Evaluator.
 The Single Parse Evaluator is not a separate package.
 It is implemented
 as the
-L<Marpa::Recognizer::value> method.
+L</"Marpa::Recognizer::value"> method.
 
-L<Marpa::Recognizer>'s Single Parse Evaluator is far more powerful
+L<Marpa::API::Recognizer>'s Single Parse Evaluator is far more powerful
 than the evaluator in most parser generators, but it does have
 limitations.
 
 =over
 
-=item * The L<Marpa::Recognizer::value> method cannot be used if
+=item * The L</"Marpa::Recognizer::value"> method cannot be used if
 your grammar is infinitely ambiguous.
 A grammar is infinitely ambiguous if there is some input
 for which you could, without duplication,
 list the parses forever.
 
-=item * The L<Marpa::Recognizer::value> method cannot be used if
+=item * The L</"Marpa::Recognizer::value"> method cannot be used if
 your parse is ambigious B<and>
 you want to see B<two or more> of the possible parses.
 
-=item * The L<Marpa::Recognizer::value> method cannot be used if
+=item * The L</"Marpa::Recognizer::value"> method cannot be used if
 your parse is ambigious B<and>
 you want to be able to B<choose which parse> you see.
 
 =back
 
-In all other cases, the L<Marpa::Recognizer::value> can be used,
+In all other cases, the L</"Marpa::Recognizer::value"> can be used,
 will be faster,
 and will usually be the best choice.
 
@@ -570,7 +570,7 @@ Few users will need or want to work with infinitely
 ambiguous grammars.
 Those interested in more on this topic can look
 at the documentation
-for L<Marpa::Evaluator>.
+for L<Marpa::API::Evaluator>.
 
 Finitely ambiguous grammars are a different matter.
 These can be very useful.
@@ -584,7 +584,7 @@ is limited to returning one parse, chosen arbitrarily.
 That is sufficient for
 a lot of work with ambiguous grammars.
 When it's not sufficient,
-L<the Multi-parse Evaluator|Marpa::Evaluator>
+L<the Multi-parse Evaluator|Marpa::API::Evaluator>
 is the right tool.
 
 =head1 EXAMPLE 2: AN AMBIGUOUS PARSE

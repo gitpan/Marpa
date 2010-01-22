@@ -160,12 +160,6 @@ use Marpa::Offset qw(
 
     :package=Marpa::Internal::Grammar
 
-    ID { number of this grammar }
-
-    NAME { namespace special to this grammar
-    it should only be used BEFORE compilation, because it's not
-    guaranteed unique after decompilation }
-
     RULES { array of rule refs }
     SYMBOLS { array of symbol refs }
     QDFA { array of states }
@@ -348,13 +342,6 @@ sub Marpa::Grammar::new {
 
     # set the defaults and the default defaults
     $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE] = *STDERR;
-    state $grammar_number = 0;
-    $grammar->[Marpa::Internal::Grammar::ID] = $grammar_number++;
-
-    # Note: this limits the number of grammar to the number of integers --
-    # not likely to be a big problem.
-    $grammar->[Marpa::Internal::Grammar::NAME] = sprintf 'Marpa::G_%x',
-        $grammar_number;
 
     $grammar->[Marpa::Internal::Grammar::ACADEMIC]        = 0;
     $grammar->[Marpa::Internal::Grammar::TRACE_RULES]     = 0;
@@ -1491,7 +1478,6 @@ sub add_rule {
 
     my $rules       = $grammar->[Marpa::Internal::Grammar::RULES];
     my $rule_hash   = $grammar->[Marpa::Internal::Grammar::RULE_HASH];
-    my $package     = $grammar->[Marpa::Internal::Grammar::NAME];
     my $trace_rules = $grammar->[Marpa::Internal::Grammar::TRACE_RULES];
     my $trace_fh    = $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE];
 

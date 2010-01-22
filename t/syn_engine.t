@@ -108,7 +108,7 @@ Test::More::is_deeply( [ sort @values ], [ 336, 49 ], 'Ambiguous Values' );
 # the unambiguous grammar.
 
 sub fix_things {
-    Carp::croak(q{Don't know how to fix things})
+    Carp::croak(q{Don't know how to fix things});
 }
 
 $recce = Marpa::Recognizer->new( { grammar => $grammar, mode => 'stream' } );

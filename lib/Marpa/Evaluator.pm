@@ -3155,21 +3155,23 @@ sub Marpa::Evaluator::value {
                     my $rank;
                     my @warnings;
                     my $eval_ok;
+                    my $eval_error;
                     DO_EVAL: {
+                        local $EVAL_ERROR = undef;
                         local $Marpa::Internal::CONTEXT =
                             [ 'rank and-node', $and_node ];
                         local $SIG{__WARN__} =
                             sub { push @warnings, [ $_[0], ( caller 0 ) ]; };
                         $eval_ok = eval { $rank = $ranking_closure->(); 1; };
+                        $eval_error = $EVAL_ERROR;
                     } ## end DO_EVAL:
 
                     if ( not $eval_ok or @warnings ) {
-                        my $fatal_error = $EVAL_ERROR;
                         my $rule_id =
                             $and_node->[Marpa::Internal::And_Node::RULE_ID];
                         my $rule = $rules->[$rule_id];
                         Marpa::Internal::code_problems(
-                            {   fatal_error => $fatal_error,
+                            {   fatal_error => $eval_error,
                                 grammar     => $grammar,
                                 eval_ok     => $eval_ok,
                                 warnings    => \@warnings,

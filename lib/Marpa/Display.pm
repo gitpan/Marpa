@@ -20,7 +20,9 @@ sub Marpa::Display::new {
 
 @Marpa::Display::Internal::DISPLAY_SPECS = qw(
     start-after-line end-before-line perltidy normalize-whitespace name
-    remove-display-indent partial flatten
+    remove-display-indent
+    remove-blank-last-line
+    partial flatten
 );
 
 sub Marpa::Display::read {
