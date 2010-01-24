@@ -31,7 +31,6 @@ my %exclude = map { ( $_, 1 ) } qw(
 my @additional_files = qw(
     lib/Marpa/UrHTML/drafts/Implementation.pod
     lib/Marpa/drafts/Doc/Evaluator.pod
-    lib/Marpa/drafts/Doc/Semantics.pod
     lib/Marpa/drafts/Doc/Implementation.pod
 );
 

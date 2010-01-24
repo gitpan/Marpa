@@ -107,6 +107,7 @@ PAGE: for my $url (@doc_urls) {
         } ## end if ( $url_seen{$link}++ )
 
         if ( $verbose > 1 ) {
+            $at_col_0 or print "\n" or Carp::croak("Cannot print: $ERRNO");
             say STDERR "Trying $link" or Carp::croak("Cannot print: $ERRNO");
             $at_col_0 = 1;
         }

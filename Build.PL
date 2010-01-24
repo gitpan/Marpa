@@ -8,7 +8,7 @@ use Fatal qw(open close);
 
 use Module::Build;
 
-my $marpa_version = '0.003_011';
+my $marpa_version = '0.003_012';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -54,6 +54,7 @@ my $build = $class->new(
         # Scalar::Util::weaken no longer required
         'Test::More' => 0.94,
     },
+    PL_files     => {},    # workaround Module::Build bug
     script_files => [
         'lib/Marpa/UrHTML/script/urhtml_fmt',
         'lib/Marpa/UrHTML/script/urhtml_score',

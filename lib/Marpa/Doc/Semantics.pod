@@ -1,10 +1,761 @@
 =head1 NAME
 
-Marpa::Semantics - How Marpa Implements the Semantics of Parses
+Marpa::API::Semantics - How Marpa Evaluates Parses
 
-=head1 DESCRIPTION
+=head1 SYNOPSIS
 
-Not yet written.
+=for Marpa::Display
+name: Engine Synopsis Unambiguous Parse
+partial: 1
+normalize-whitespace: 1
+
+    my $grammar = Marpa::Grammar->new(
+        {   start          => 'Expression',
+            actions        => 'My_Actions',
+            default_action => 'first_arg',
+            rules          => [
+                { lhs => 'Expression', rhs => [qw/Term/] },
+                { lhs => 'Term',       rhs => [qw/Factor/] },
+                { lhs => 'Factor',     rhs => [qw/Number/] },
+                { lhs => 'Term', rhs => [qw/Term Add Term/], action => 'do_add' },
+                {   lhs    => 'Factor',
+                    rhs    => [qw/Factor Multiply Factor/],
+                    action => 'do_multiply'
+                },
+            ],
+        }
+    );
+
+=for Marpa::Display::End
+
+=for Marpa::Display
+name: Engine Synopsis Unambiguous Parse
+partial: 1
+normalize-whitespace: 1
+
+    sub My_Actions::do_add {
+        my ( undef, $t1, undef, $t2 ) = @_;
+        return $t1 + $t2;
+    }
+
+    sub My_Actions::do_multiply {
+        my ( undef, $t1, undef, $t2 ) = @_;
+        return $t1 * $t2;
+    }
+
+    sub My_Actions::first_arg { shift; return shift; }
+
+    my $value_ref = $recce->value;
+    my $value = $value_ref ? ${$value_ref} : 'No Parse';
+
+=for Marpa::Display::End
+
+=head1 OVERVIEW
+
+This document describes
+Marpa's standard semantics.
+Marpa's
+B<standard semantics> are shared by Marpa's 
+Single Parse Evaluator and its
+Multi-parse Evaluator.
+As of this writing, the standard semantics are the only
+semantics available for Marpa.
+
+Marpa's standard semantics will be
+familiar
+to those who have used traditional
+methods to evaluate parses.
+A parse is seen as a parse tree.
+Nodes on the tree are evaluated recursively, bottom-up.
+Once the values of all its child nodes are known,
+a parent node is ready to be evaluated.
+The value of a parse is the value of the top node 
+of the parse tree.
+
+Marpa's semantics see
+a virtual parse tree with virtual nodes.
+These virtual structures keep
+ambiguity and rule rewrites invisible to
+the semantics.
+Nodes in Marpa's virtual parse trees are of three kinds:
+
+=over
+
+=item * Token Nodes
+
+=item * Rule Nodes
+
+=item * Null Nodes
+
+=back
+
+=head2 Action Names and Semantic Closures
+
+During grammar generation and input
+recognition,
+Marpa does not allow semantics to be 
+specified directly as Perl closures.
+This approach to semantics
+follows Perl 6,
+the wisdom of whose example I
+discovered the hard way.
+
+When a Marpa grammar is created,
+all non-constant semantics
+take the form of strings which express B<actions>.
+B<Actions> are semantics in an indirect form.
+Actions are given meaning
+later by an evaluator.
+
+At evaluation time,
+actions
+are resolved to
+semantic Perl closures,
+and the semantic Perl closures are run to produce values.
+(For brevity,
+B<semantic Perl closures>
+are sometimes called
+B<semantics closures>.)
+
+=head1 NODES
+
+=head2 Token Nodes
+
+For every input token, there is an associated B<token node>.
+In the usual, token-stream, model of input,
+every token will become a leaf node
+in the parse tree.
+Tokens always have a B<token symbol>.
+At lexing time,
+they can be assigned a B<token value>.
+If no token value is assigned at lex time,
+the token value defaults to a Perl C<undef>.
+
+=head2 Rule Nodes
+
+Nodes which are ancestors of token nodes
+are called B<rule nodes>.
+Rule nodes are always
+associated with a rule.
+The value of a rule node is computed at
+L<node evaluation time|/"Node Evaluation Time">.
+Applications can specify,
+on a per-rule basis,
+semantic Perl closures to evaluate rule nodes.
+
+The semantic closure's
+arguments will be a
+per-parse variable followed by
+the values of its child nodes in lexical order.
+The value returned by the semantic Perl closure becomes the
+value of the node.
+If there is no semantic closure for a
+rule node,
+the value of the rule node is
+a Perl C<undef>.
+
+=head2 Sequence Rule Nodes
+
+Some rules are L<sequence rules|Marpa::API::Grammar/"Sequence Rules">.
+Everything said above about rule nodes,
+also applies to sequence rule nodes.
+Specifically,
+the arguments to the semantic Perl closures for sequence rules
+are the 
+per-parse variable followed by
+the values of the child nodes in lexical order.
+
+The difference (and it is a big one)
+is that in an ordinary rule, the right hand side
+is fixed in length, and that length is known
+when you are writing the semantic Perl closure.
+In a sequence rule,
+the number of right hand side symbols is not known
+until node evaluation time.
+A semantic Perl closure for a sequence rule node is written in
+the same way
+that you write any Perl closure that handles
+a variable number of arguments.
+
+Sequence semantics work best for
+sequences of items
+all of which have the same semantics.
+When that is not the case,
+writing the sequence using
+ordinary non-sequence rules should be considered as
+an alternative.
+
+By default, if a sequence rule has separators,
+the separators are thrown away before
+the semantics are applied.
+They do not appear in the semantic Perl closure's
+C<@_> array.
+If the value of the C<keep> rule property
+is a Perl true, separators are kept,
+and do appear in the
+C<@_> array.
+
+=head2 Null Nodes
+
+A B<null node> is a node which derives the zero-length,
+or empty string.
+This means that a null node
+cannot be the ancestor of any token nodes.
+In Marpa, null nodes are always leaf nodes.
+
+A null node gets its value at parse setup time from the null
+value of a symbol.
+If the null node is for a nulled symbol,
+the node's value is the null value of the nulled symbol.
+If the null node is for a nulled rule,
+the node's value is the null value of the rule's left
+hand side symbol.
+
+If no C<null_value> property is defined for a symbol,
+that symbol's null value is
+the default null value for
+the grammar.
+The default null value is a Perl C<undef>.
+A grammar's
+default null value can be changed by defining the
+L<C<default_null_value> named argument|Marpa::API::Grammar/default_null_value>.
+
+A null subtree is a subtree all of whose nodes are null.
+Marpa prunes
+all null subtrees back to their topmost null node.
+This means that all null nodes that remain in
+Marpa's virtual parse tree will be leaf nodes.
+
+The "lost" semantics of the non-root nodes
+of null subtrees are usually not missed.
+Null subtrees cannot contain token nodes,
+so no token nodes are lost when
+null subtrees are pruned.
+As bushy as a null subtree might be,
+all of its nodes are null nodes,
+and the semantics of null nodes is almost always constant.
+
+All null nodes correspond to zero-length strings,
+so we are literally dealing here with
+the "semantics of nothing".
+In theory the semantics of nothing can be arbitrarily complex.
+In practice it should be possible to keep them simple.
+
+If any application ever actually needs it,
+Marpa could implement a complex, and even dynamic,
+"semantics of nothing".
+For details
+see L<below|/"NULL SUBTREES">.
+
+=head2 Null Sequence Nodes
+
+Rule nodes for sequences were mentioned above.
+Sequence nodes can also be null nodes.
+This happens with
+sequence rules which have a
+C<min> rule property of 0.
+Such a sequence rule can contain any number of sequence items, including zero items.
+When a sequence contains zero items, it must derive the zero-length string,
+and its node is a null node.
+
+Sequence null nodes follow the rules for null nodes.
+Their value is that of a symbol -- the left hand side
+symbol of the nulled sequence rule.
+
+Nullable sequence rules do have a potential to surprise.
+When the node for a nullable sequence rule
+is a null node,
+its semantics comes from the null value for its left hand side symbol.
+When the node for a nullable sequence rule
+is not a null node,
+then it is a rule node and
+its semantics come from the rule.
+It's up to the
+application to see that these two -- the null value
+and the sequence rule --
+"make sense" together.
+One way to do this is to create
+a special symbol which is dedicated to service as
+the left hand side symbol
+for the sequence rule.
+That dedicated symbol can then be given the
+correct semantics.
+
+The rules for nodes in null subtrees apply with equal force
+to nodes for sequence rules.
+In a nulled subtree, the only node whose semantics matters
+is the root node of that subtree.
+If a zero-length sequence is in a nulled subtree,
+and that zero-length sequence
+is not the root node of that subtree,
+its semantics will be completely ignored.
+
+=head1 PHASES
+
+This section outlines
+the standard semantics
+in chronological order.
+
+=head2 Evaluator Setup Phase
+
+Evaluator setup is the first phase and
+occurs before any processing of actual parses.
+In evaluator setup,
+all null symbol values are computed and
+all action names are resolved to semantic Perl closures.
+
+=head2 Bocage Setup Phase
+
+In the Single Parse Evaluator, this phase does not exist.
+In the Multi-parse Evaluator,
+bocage setup comes after evaluator setup,
+but before parse setup.
+
+B<Bocage setup> initializes a structure for iterating multiple parses.
+The bocage setup phase
+occurs the first time C<Marpa::Evaluator::value> is called.
+The Multi-parse evaluator calls the ranking actions for token nodes
+and for null nodes in this phase.
+
+=head2 Parse Setup Phase
+
+The B<parse setup phase> occurs after evaluator setup and,
+if applicable, after bocage setup.
+The B<parse setup phase> occurs before
+parse tree traversal.
+In the parse setup phase,
+the per-parse variable is created.
+If a constructor was found for the C<action_object>,
+it is run at this point, and the per-parse variable is
+its return value.
+
+In the Multi-parse Evaluator, this phase occurs once
+for each call to the 
+C<Marpa::Evaluator::value> method.
+The Multi-parse Evaluator calls
+the ranking actions for rule nodes in this phase.
+
+=head2 Parse Tree Traversal Phase
+
+Parse tree traversal is the last phase.
+During parse tree traversal, Marpa traverses the parse tree,
+evaluating each of its nodes.
+During parse tree traversal, node evaluation time occurs
+for every node in the parse.
+In the Multi-parse Evaluator, a parse tree traversal phase occurs once
+for each call to the 
+C<Marpa::Evaluator::value> method.
+
+=head2 Node Evaluation Time
+
+Node evaluation time occurs during parse tree traversal.
+Node evaluation time is parse tree traversal,
+seen from the point of view of the individual nodes of the parse tree.
+Marpa calls the semantic Perl closure for each rule node at node evaluation time.
+
+=head1 SEARCHING FOR RULE SEMANTIC CLOSURES
+
+Marpa finds the semantic Perl closure for each rule based on
+rule and symbol properties and on the grammar named arguments.
+The search for a semantic Perl closure is equivalent to
+following these steps:
+
+=over
+
+=item * Resolve the C<action> property
+
+If no C<action> property is defined for a rule,
+the search proceeds to the next step.
+
+If the C<action> property for a rule is defined
+and if it resolves to a Perl closure,
+that Perl closure becomes the rule's semantic Perl closure,
+and the search ends.
+The resolution of action names is L<described
+below|/"RESOLVING ACTION NAMES">.
+
+If a defined C<action> property does not successfully resolve to a closure,
+no further attempt to find the semantic Perl closure is made.
+The search ends, and an exception is thrown.
+
+=item * Resolve the C<lhs> property
+
+If the C<lhs> property for a rule resolves to a Perl closure,
+that Perl closure becomes
+the rule's semantic Perl closure,
+and the search ends.
+
+If the C<lhs> property fails to resolve to a Perl closure,
+Marpa is unusually lenient.
+No exception is thrown.
+This is the one case where failure of an action name to resolve
+is B<not> treated as a fatal error.
+The search proceeds to the next step.
+
+=item * Resolve the C<default_action> Named Argument
+
+If the grammar does not have a C<default_action> defined,
+the search proceeds to the next step.
+
+If the grammar does have a C<default_action> defined,
+and if it resolves to a Perl closure,
+that Perl closure becomes the rule's semantic Perl closure,
+and the search ends.
+
+If a defined C<default_action> grammar named argument
+does not successfully resolve to a closure,
+no further attempt to find the semantic Perl closure is made.
+The search ends, and an exception is thrown.
+
+=item * Evaluate to C<undef>
+
+If no semantic Perl closure is found,
+the value of the rule is always a Perl C<undef>.
+Marpa optimizes for this case, but
+the effect is the same as if the rule's semantic Perl
+closure was the following:
+
+     sub { return }
+
+=back
+
+=head1 RESOLVING ACTION NAMES
+
+Action names are B<resolved> to semantic Perl closures
+in the evaluator setup phase.
+Candidates for resolution as action names include
+
+=over
+
+=item * The C<default_action> named argument of Marpa's grammar.
+
+=item * The C<action> property of Marpa's rules.
+
+=item * The C<ranking_action> property of Marpa's rules.
+
+=item * The C<ranking_action> property of Marpa's symbols.
+
+=item * The C<new> constructor in the package specified by the
+C<action_object> named argument of the Marpa grammar;
+
+=item * The C<lhs> property of Marpa's rules.
+
+=back
+
+Resolution of the action object constructor
+is explained
+L<below|/"Action Object Constructor">
+as a special case.
+
+=head2 Explicit Resolution
+
+The standard semantics support the C<closures> named argument,
+which allows the user to directly control the mapping from action names
+to semantic Perl closures.
+The value of the C<closures> named argument
+is a reference to a hash whose keys are
+action names and whose hash values are CODE refs.
+
+If an action name is the key of an entry in the C<closures> hash,
+it resolves to the closure referenced by the value part of that hash entry.
+Resolution via the C<closures> named argument is
+called B<explicit resolution>.
+
+When explicit resolution is the only kind of resolution that is wanted,
+it is best to pick a name that is very unlikely to be the name
+of a Perl closure.
+Many of
+L<Marpa::UrHTML>'s action names
+are intended for explicit resolution only.
+In L<Marpa::UrHTML> those action names
+begin with
+an exclamation mark ("!"),
+and that convention is recommended.
+
+=head2 Fully Qualified Action Names
+
+If explicit resolution fails, 
+Marpa transforms the action name into a
+B<fully qualified> Perl name.
+An action name that
+contains a double colon ("C<::>") or a single quote ("C<'>")
+is considered to be a fully qualified name.
+Any other action name is considered to be a B<bare action name>.
+
+If the action name to be resolved is already a fully qualified name,
+it is not further transformed.
+It will be resolved in the form it was received,
+or not at all.
+
+For bare action names,
+Marpa tries to qualify them by adding a package name.
+If the C<actions> grammar named argument is defined,
+Marpa uses it as the package name.
+Otherwise,
+if the
+C<action_object> grammar named argument is defined,
+Marpa uses it as the package name.
+Once Marpa has fully qualified the action name,
+Marpa looks for a Perl closure with that name in the namespace.
+
+If Marpa cannot fully qualify 
+an action name, it will not attempt to resolve it.
+This means that for an action name to resolve successfully,
+one of these four things must be the case:
+
+=over
+
+=item * The C<actions> named argument is defined.
+
+=item * The C<action_object> named argument is defined.
+
+=item * The action name resolves explicitly.
+
+=item * The action name is fully qualified to begin with.
+
+=back
+
+In all but one circumstance,
+failure to resolve an action name
+is thrown as an exception.
+Marpa is more lenient
+when it attempts to use
+the C<lhs> rule property as an action name.
+That is the
+one case in which Marpa
+will look at other alternaties.
+See L<the section on finding rule semantic
+closures|/"SEARCHING FOR RULE SEMANTIC CLOSURES">.
+
+Marpa's philosophy is that
+asking the programmer to be specific about action names
+can be a slight inconvenience, but
+silently executing unintended code might be a major disaster.
+Marpa prefers action name resolution to fail
+when the application's intent is not clear.
+
+Generally it's best practice to put the semantic Perl closures
+into their own namespace.
+But if, for example, the user wants to leave the
+semantic closures in the C<main> namespace,
+she can specify
+C<"main">
+as the value of the C<actions> named argument.
+
+=head1 THE PER-PARSE VARIABLE
+
+In the parse setup phase, Marpa creates a per-parse variable.
+This becomes the first argument of the semantic Perl closures for
+the rule nodes.
+If the grammar's C<action_object> named argument is not defined,
+the per-parse variable is initialized to an empty hash ref.
+
+Most data for
+the rule node semantic Perl closures
+will be passed up the parse tree.
+The semantic Perl closures will see the values of their child nodes
+as arguments,
+and will return their own value to be seen as an argument
+by their parent node.
+The per-parse variable can be used for data which does not
+conveniently fit this model.
+
+The per-parse variable has the same lifetime as the parse.
+After it is initialized, Marpa's internals never alter it --
+it is reserved for use
+by the semantic Perl closures implementing rule node
+semantics.
+
+=head2 Action Object Constructor
+
+If the grammar's C<action_object> named argument has a defined value,
+that value is treated as the name of a class.
+The B<action object constructor> is
+the C<new> method
+in the C<action_object> class.
+
+The action object constructor is run at parse setup
+time.
+The return value of the
+action object constructor becomes the per-parse variable.
+It is a fatal error if the
+grammar's C<action_object> named argument is defined,
+but does not name a class with a C<new> method.
+
+The fully qualified name of the action object constructor is
+the value of the C<action_object> named argument
+followed by the literal string "C<::new>".
+Resolution of the action object constructor is
+done as resolution of this fully qualified action name.
+
+If a grammar has both the C<action> and the 
+C<action_object> named arguments defined,
+all action names B<except>
+for the action object constructor will be
+resolved in the C<action> package or not at all.
+Only the action object constructor name will be resolved
+using the C<action_object> class.
+
+Bypass via
+explicit resolution applies to
+the action object constructor.
+If the fully qualified name of the action object constructor is
+a hash key in the
+evaluator's C<closures> named argument,
+then 
+the Perl closure referred to by 
+the value of that hash entry becomes the
+action object constructor.
+
+=head1 NULL SUBTREES
+
+In Marpa, a null node must be leaf node.
+Because Marpa prunes every null subtree back to its topmost
+null node,
+none of the non-root nodes in a null subtree are
+represented in Marpa's virtual parse tree.
+Here's an example:
+
+=for Marpa::Display
+name: Null Value Example
+perltidy: '-dcsc -sil=0'
+
+    sub L {
+        shift;
+        return 'L(' . ( join q{;}, @_ ) . ')';
+    }
+
+    sub R {
+        shift;
+        return 'R(' . ( join q{;}, @_ ) . ')';
+    }
+
+    sub S {
+        shift;
+        return 'S(' . ( join q{;}, @_ ) . ')';
+    }
+
+    my $grammar = Marpa::Grammar->new(
+        {   start   => 'S',
+            actions => 'main',
+            rules   => [
+                [ 'S', [qw/L R/] ],
+                [ 'L', [qw/A B X/] ],
+                [ 'L', [] ],
+                [ 'R', [qw/A B Y/] ],
+                [ 'R', [] ],
+                [ 'A', [] ],
+                [ 'B', [] ],
+                [ 'X', [] ],
+                [ 'Y', [] ],
+            ],
+            symbols        => {
+                L => { null_value => 'null L' },
+                R => { null_value => 'null R' },
+                A => { null_value => 'null A' },
+                B => { null_value => 'null B' },
+                X => { null_value => 'null X', terminal => 1 },
+                Y => { null_value => 'null Y', terminal => 1 },
+            },
+        }
+    );
+
+    $grammar->precompute();
+
+    my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
+
+    $recce->tokens( [ [ 'X', 'x' ], ] );
+
+=for Marpa::Display::End
+
+If we write the unpruned parse tree
+one node per line in pre-order, depth-first, indenting children
+below their parents, we get something like this:
+
+        0: Rule Node, Rule: S := L R
+             1: Rule Node, Rule L := A B X
+                 1.1: Null Node, Symbol A
+                 1.2: Null Node, Symbol B
+                 1.3: Token Node, Token value is 'x'
+             2: Rule Node, Rule R := A B Y
+                 2.1: Null Node, Symbol A
+                 2.2: Null Node, Symbol B
+                 2.3: Null Node, Symbol Y
+
+In this example, six nodes are nulled.
+Four of them are in a single subtree: 2, 2.1, 2.2 and 2.3.
+Marpa prunes every null subtree back to its null root node, which
+in this case
+is the node numbered 2.
+
+The pruned tree looks like this
+
+        0: Rule Node, Rule: S := L R
+             1: Rule Node, Rule L := A B X
+                 1.1: Null Node, Symbol A
+                 1.2: Null Node, Symbol B
+                 1.3: Token Node, Token value is 'x'
+             2: Null Node, Symbol R
+
+Here is the output:
+
+=for Marpa::Display
+name: Null Value Example Output
+normalize-whitespace: 1
+
+    S(L(null A;null B;x);null R)
+
+=for Marpa::Display::End
+
+In the output we see
+
+=over
+
+=item * The null value for node 1.1: "C<null A>".
+
+=item * The null value for node 1.2: "C<null B>".
+
+=item * The token value for node 1.3: "C<x>".
+
+=item * An application of the semantic Perl closure for node 1.
+
+=item * The null value for node 2: "C<null R>".
+
+=item * An application of the semantic Perl closure for rule node 0.
+
+=back
+
+We do not see any output
+for nodes 2.1, 2.2, or 2.3 because they were non-root nodes
+in the pruned subtree.
+We B<do> see the null value for node 2,
+because after pruning it is a leaf node.
+We B<do not> see an application of the semantic Perl closure for node 2,
+because after pruning,
+node 2 is not a rule node.
+
+=head2 The Semantics of Nothing
+
+Rarely, your application
+may call for a complex semantics of nothing.
+If the semantics of nothing, while complex, remains constant,
+you can handle it
+setting every nullable symbol's C<null_value> property
+to the value
+which your semantics produces when that nullable symbol is the root
+symbol of a null subtree.
+
+If the values in your "semantics of nothing" are not constants,
+Marpa can still calculate them.
+Determine which of your nullable symbols have a dynamic semantics.
+Call these your B<dynamic nullables>.
+Let the C<null_value> property of every dynamic nullable be a hash key.
+For every rule with a dynamic nullable on its right hand side,
+write the rule's semantic Perl closure
+so that it maps that hash key
+to a Perl closure,
+which it then runs to
+calculate the value of the dynamic nullable.
 
 =head1 LICENSE AND COPYRIGHT
 
@@ -13,3 +764,10 @@ Marpa is free software under the Perl license.
 For details see the LICENSE file in the Marpa distribution.
 
 =cut
+
+# Local Variables:
+#   mode: cperl
+#   cperl-indent-level: 4
+#   fill-column: 100
+# End:
+# vim: expandtab shiftwidth=4:

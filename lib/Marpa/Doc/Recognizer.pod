@@ -197,7 +197,7 @@ The elements in each token descriptor are, in order:
 
 Required.
 Must be the name of a valid terminal symbol.
-For details about terminal symbols, see L<Marpa::Grammar/"Terminals">.
+For details about terminal symbols, see L<Marpa::API::Grammar/"Terminals">.
 
 =item * Token value
 

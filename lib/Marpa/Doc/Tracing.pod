@@ -7,16 +7,20 @@ Marpa::API::Tracing - Tracing Your Grammar
 This document describes techniques for tracing and
 debugging Marpa parses and grammars.
 
-=head2 Check the Parse Exhaustion Location
+=head2 Check the Input Location Where Parsing Failed
 
-If parsing failed before or at the end of input,
-first look at the location in the input where parsing was exhausted.
-That, along with inspection of the input and the grammar,
-can be enough to pinpoint the problem.
+If parsing failed in the recognizer,
+look at the input location where it happened.
+Compare the input against the grammar.
+This step is fairly obvious,
+but I include it because
+even experts (actually, especially experts)
+will sometimes overlook the obvious
+in a rush to use more advanced techniques.
 
 =head2 Turn on Warnings
 
-The next step is to make sure that 
+Make sure that 
 Marpa's C<warnings> named arguments
 for both the grammar and the recognizer
 are turned on.
@@ -36,24 +40,23 @@ many of Marpa's tracing methods will return
 partial information or no information at all.
 
 You should turn off Marpa's C<strip> named argument to the grammar.
-C<strip> is on by default.
+Grammar stripping is on by default.
 If you are
 using the
-L<recognizer's C<strip> method|Marpa::API::Recognizer/"strip">)
-to strip the recognizer
-you should stop doing that,
-perhaps by commenting it out.
+L<recognizer's C<strip> method|Marpa::API::Recognizer/"strip">
+to strip the recognizer,
+stop doing that.
 
 =head2 Trace Terminals
 
-The next thing to do is to turn on the C<trace_terminals> recognizer named argument.
+Turn on the C<trace_terminals> recognizer named argument.
 This tells you which tokens the recognizer is looking for and which ones it thinks it found.
 If the problem is in lexing, C<trace_terminals> tells you the whole story.
 
 Even if the problem is not in the lexing,
 tracing terminals can tell you a lot.
-Since Marpa uses prediction-driven lexing,
-at any given parse location,
+Marpa uses prediction-driven lexing.
+At any given parse location,
 Marpa is only looking
 for those tokens that it thinks
 could result in a successful parse.
@@ -67,26 +70,26 @@ the recognizer thinks it is.
 It sometimes helps to look carefully at the output of
 C<show_rules> and C<show_symbols>.
 Check if anything there is
-clearly not right or not what you expected.
+not what you expected.
 
 =head2 Other Traces
 
-C<trace_actions> will show you how action names are resolved to semantic
+C<trace_actions> will show you how action names resolve to semantic
 Perl closures.
 Setting the C<trace_values> evaluator named argument to a trace level of 1
-traces the values of the nodes as they are pushed on, and 
+traces the values of the parse tree nodes as they are pushed on, and 
 popped off, the evaluation stack.
 
 You can trace the earley sets as they are completed,
 but it is usually best to wait until input to the recognizer
 is finished.
 At that point call
-L<the C<Marpa::Recognizer::show_earley_sets>
-method|Marpa::API::Recognizer/"show_earley_sets">.
+L<C<Marpa::Recognizer::show_earley_sets>
+|Marpa::API::Recognizer/"show_earley_sets">.
 Since the items in the earley sets use QDFA states,
 you usually will want to call
 L<C<Marpa::Grammar::show_QDFA>
-method|Marpa::API::Grammar/"show_QDFA"> as well.
+|Marpa::API::Grammar/"show_QDFA"> as well.
 The L<implementation document|Marpa::API::Implementation>
 has example outputs from
 the
@@ -98,7 +101,7 @@ and explains how to read them.
 =head1 CHECKLIST
 
 A complete investigation of a parse
-would include the following:
+includes the following:
 
 =over 4
 
