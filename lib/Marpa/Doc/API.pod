@@ -60,16 +60,13 @@ perltidy: '-dcsc -sil=0'
 
 This document is the top-level overview
 of the API for the Marpa parse engine.
-It is the starting point for reading the
-API documentation.
-
-The two examples in the L<synopsis|SYNOPSIS>
+The two examples in the L<synopsis|/"SYNOPSIS">
 show the typical flow of calls in the Marpa API.
 This document will use these examples
 to describe the basic features of Marpa
 in semi-tutorial fashion.
 Marpa's advanced features, and full reference details of all features,
-can be found in L<the other Marpa API documents|OTHER API DOCUMENTS>.
+can be found in L<the other Marpa API documents|/"OTHER API DOCUMENTS">.
 
 =head2 The Three Phases
 
@@ -86,9 +83,9 @@ according to a semantics.
 
 =back
 
-In Marpa these are three phases.
-These phases are for the most part distinct, and
-the Marpa API is structured around them.
+In Marpa these three tasks
+are, for the most part, distinct phases.
+The Marpa API is structured around them.
 
 =head2 Creating a Grammar
 
@@ -131,13 +128,14 @@ to iterate parse trees.
 For each of its rules,
 a Marpa application
 can specify a Perl closure to implement
-its semantics.
+that rule's semantics.
 For each token,
 a Marpa application can specify
 a Perl scalar to be the token's value.
 The Marpa evaluators apply these semantics recursively to
 the parse trees.
-The value of the root node of a parse tree is the value of the parse
+The value of the root node of a parse tree
+becomes the value of the parse
 and is returned to the user.
 
 =head1 EXAMPLE 1: A SIMPLE CALCULATOR
@@ -183,8 +181,14 @@ L<Marpa::Grammar::new|Marpa::API::Grammar/"new">
 are references to
 hashes of named arguments.
 In the key/value pairs of these hashes,
-the name of the argument is the hash key,
-and the value of the argument is the hash value.
+the
+hash key
+is the
+name of the argument,
+and the
+hash value
+is the
+value of the named argument.
 
 =head3 The start Named Argument
 
@@ -222,14 +226,15 @@ on the evaluators.
 The evaluators will be described
 L<later|/"THE SINGLE PARSE EVALUATOR">.
 Peeking ahead,
-C<actions> is the name
-of a Perl package where Marpa looks for
-the semantic Perl closures.
-C<default_action> is the action name.
-The C<default_action> action name will
-resolve to a Perl closure
+the C<default_action> named argument
+will be interpreted
+as an action name.
+This action name will resolve to a Perl closure
 that implements the semantics for rules
 without a per-rule semantics.
+C<actions> will be the name
+of a Perl package where Marpa looks for
+the semantic Perl closures.
 
 =head3 The rules Named Argument
 
@@ -286,7 +291,7 @@ What the string means is up to the evaluator.
 Peeking ahead, each C<action> property string
 will be interpreted
 as an action name.
-This action name is resolved
+This action name will be resolved
 to a Perl closure that
 implements 
 the rule's semantics.
@@ -347,18 +352,32 @@ normalize-whitespace: 1
 =for Marpa::Display::End
 
 C<Marpa::Recognizer::tokens> reads the input to be recognized.
-In the example, its argument is a reference to an array of B<token descriptors>.
+Its first (and in our example, only)
+argument is a reference to an array of B<token descriptors>.
 Each token descriptor is an array reference.
 
 The first element of a token descriptor is a string containing the
 B<token name>.
-The token name must be a symbol name in the grammar.
+The token name must be the name
+of a valid terminal symbol in the grammar.
+By default all symbols are valid as terminal symbols,
+unless a grammar contains empty rules.
+
+The grammars in our examples do not contain empty
+rules,
+and therefore we are free to use any symbol in the
+grammar as a token name.
+For more on terminals,
+including how to explicitly mark terminal symbols
+when the grammar contains empty rules,
+see L<Marpa::API::Grammar/"Terminals">.
 
 The second element of a token descriptor is the B<token value>.
 A token value must be a Perl scalar, but the rest
 of its semantics
 is entirely up to the application.
-If the token value is omitted, it's a Perl C<undef>.
+If the token value is omitted,
+it is a Perl C<undef>.
 In the calculator example, the values of the
 "C<Add>" 
 and "C<Multiply>" tokens are never used,
@@ -376,8 +395,9 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-C<Marpa::Recognizer::value> method returns
-a reference to the parse's value, if there was a parse.
+The C<Marpa::Recognizer::value> method returns
+a reference to the parse's value,
+if there was a parse.
 If there was no parse,
 C<Marpa::Recognizer::value>
 returns
@@ -457,9 +477,29 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-For these rules,
-the semantics will be provided by the
-the grammar's default action.
+Where there is no C<action> rule property,
+Marpa tries to use the
+C<lhs> property
+as an action name.
+When Marpa cannot resolve the C<lhs> property
+as an action name, it will fall back to
+using the 
+default action for the grammar.
+
+For example, for the first rule in the above display,
+Marpa will look for a Perl closure with the fully qualified
+name "C<My_Actions::Expression>".
+When Marpa does not find a closure by that name,
+Marpa will fall back to trying to find a semantic Perl closure
+using the default action.
+
+The other two rules in the above display work similarly.
+Marpa will look for Perl closures named
+named "C<My_Actions::Term>"
+and "C<My_Actions::Factor>".
+It will not find them and will fall back to trying to use
+the default action,
+as described next.
 
 =for Marpa::Display
 name: Engine Synopsis Unambiguous Parse
@@ -485,10 +525,7 @@ name: Engine Synopsis Unambiguous Parse
 partial: 1
 normalize-whitespace: 1
 
-    sub My_Actions::do_add {
-        my ( undef, $t1, undef, $t2 ) = @_;
-        return $t1 + $t2;
-    }
+    sub My_Actions::first_arg { shift; return shift; }
 
 =for Marpa::Display::End
 
@@ -497,7 +534,10 @@ name: Engine Synopsis Unambiguous Parse
 partial: 1
 normalize-whitespace: 1
 
-    sub My_Actions::first_arg { shift; return shift; }
+    sub My_Actions::do_add {
+        my ( undef, $t1, undef, $t2 ) = @_;
+        return $t1 + $t2;
+    }
 
 =for Marpa::Display::End
 
@@ -552,11 +592,11 @@ for which you could, without duplication,
 list the parses forever.
 
 =item * The L</"Marpa::Recognizer::value"> method cannot be used if
-your parse is ambigious B<and>
+your parse is ambiguous B<and>
 you want to see B<two or more> of the possible parses.
 
 =item * The L</"Marpa::Recognizer::value"> method cannot be used if
-your parse is ambigious B<and>
+your parse is ambiguous B<and>
 you want to be able to B<choose which parse> you see.
 
 =back
@@ -569,13 +609,13 @@ and will usually be the best choice.
 
 The Multi-parse Evaluator is for situations
 in which you cannot use Marpa's Single Parse Evaluator.
-The Multi-parse Evaluator handles all possible general parses --
+The Multi-parse Evaluator handles all possible parses --
 every possible input to any BNF-expressible grammar.
 For unambiguous and finitely ambiguous grammars,
 the Multi-parse Evaluator will iterate all the parses.
 The Multi-parse Evaluator also
 allows the application to
-control the order in which those parses are produced.
+control the order in which parses are produced.
 
 For infinitely ambiguous grammars,
 the Multi-parse Evaluator will iterate all the non-cyclical parses.
@@ -605,7 +645,8 @@ is the right tool.
 This is the same calculator as before,
 rewritten to be ambiguous.
 Rather than give multiplication precedence over
-addition, it allows any order of operations.
+addition,
+the rewritten calculator allows any order of operations.
 In this example,
 the semantic Perl closures (C<My_Actions::do_add>, etc.)
 and the C<@tokens> array remain
@@ -613,9 +654,9 @@ the same as before.
 
 Eliminating precedence makes the grammar shorter,
 but it also means there can be multiple parses,
-and the different parses will often have different values.
+and the different parses can have different values.
 In this application we decide, for each input,
-to return the value for every one of its parses.
+to return the value for every one of the parses.
 The Single Parse Evaluator will not do this,
 so we use the Multi-parse Evaluator.
 
@@ -742,9 +783,11 @@ be inherited.
 =head1 OTHER API DOCUMENTS
 
 This document gave a semi-tutorial overview of the entire Marpa API.
-For detail about Marpa's grammar objects, see the
+For full details on Marpa's grammar objects and their methods,
+see the
 L<Marpa::API::Grammar> document.
-For detail about Marpa's recognizer objects, see the
+For full details on Marpa's recognizer objects and their methods,
+see the
 L<Marpa::API::Recognizer> document.
 
 Marpa's standard semantics are fully described in the
@@ -753,16 +796,16 @@ Techniques for tracing and for debugging your Marpa grammars
 are described in the
 L<Marpa::API::Tracing> document.
 
-=head2 Documents Yet to be Unwritten
+=head2 Documents Yet to be Written
 
 The L<Marpa::API::Implementation> document will describe Marpa's internals,
-focusing on the Marpa tables (earley sets) and how to read them.
+focusing on the Marpa tables (Earley sets) and how to read them.
 This information can be quite useful for users of Marpa who are
 tracing and debugging grammars they've written.
 
-Two other as-yet-unwritten documents desribe advanced features.
-The L<Marpa::API::Evaluator> document will give details about the Multi-parse Evaluator.
-The L<Marpa::API::Models> document will give details about alternative models
+Two other as-yet-unwritten documents describe advanced features.
+The L<Marpa::API::Evaluator> document will provide details about the Multi-parse Evaluator.
+The L<Marpa::API::Models> document will provide details about alternative models
 of the input for Marpa.
 
 =head1 LICENSE AND COPYRIGHT

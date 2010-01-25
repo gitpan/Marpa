@@ -159,7 +159,7 @@ a single Perl closure often results in
 simpler and more
 natural code.
 See L<the section on sequences in the semantics
-document|Marpa::Semantics/Sequences>.
+document|Marpa::API::Semantics/"Sequence Rule Nodes">.
 
 Marpa throws an exception if you try to use a nullable symbol
 as the right hand side of a sequence rule,
@@ -384,7 +384,7 @@ If a C<new> constructor is defined
 in the C<action_object> package,
 that constructor is used to create the per-parse variables.
 Details are in
-L<the document on semantics|Marpa::Semantics>.
+L<the document on semantics|Marpa::API::Semantics>.
 
 =head2 actions
 
@@ -411,7 +411,7 @@ The C<actions> package is treated only as a package,
 and not as a class.
 Any C<new> constructor in the C<actions> package is ignored.
 Details are given in
-L<the document on semantics|Marpa::Semantics>.
+L<the document on semantics|Marpa::API::Semantics>.
 
 =head2 default_action
 
@@ -428,7 +428,7 @@ The C<default_action> named argument expresses semantics.
 Its standard use is to specify the semantic action
 for rules without an L<C<action> property|/"action">.
 Details are given in
-L<the document on semantics|Marpa::Semantics>.
+L<the document on semantics|Marpa::API::Semantics>.
 
 =head2 default_null_value
 
@@ -438,7 +438,7 @@ the null value for
 symbols
 without a L<C<null_value> property|/"null_value">.
 Details are given in
-L<the document on semantics|Marpa::Semantics>.
+L<the document on semantics|Marpa::API::Semantics>.
 
 =head2 inaccessible_ok
 
@@ -650,7 +650,7 @@ expresses semantics.
 Its standard use is as the name of the rule's semantic action.
 The action name resolves to a Perl closure.
 For details, see
-L<the document on semantics|Marpa::Semantics>.
+L<the document on semantics|Marpa::API::Semantics>.
 
 The semantics of nulling symbols are dealt with on a per-symbol
 basis, rather than per rule.
@@ -681,7 +681,7 @@ work of distinguishing
 sequence separators from sequence items
 is pushed into the semantic actions.
 For details about the semantics, see
-L<the document on semantics|Marpa::Semantics>.
+L<the document on semantics|Marpa::API::Semantics>.
 
 =head2 lhs
 
@@ -697,7 +697,7 @@ or the grammar's C<action_object>
 for a Perl closure that has
 the name of the C<lhs> symbol.
 For details, see
-L<the document on semantics|Marpa::Semantics>.
+L<the document on semantics|Marpa::API::Semantics>.
 
 =head2 min
 
@@ -831,7 +831,7 @@ The C<null_value> symbol property expresses semantics.
 Its standard use is as 
 the null value of its symbol.
 Details are given in
-L<the document on semantics|Marpa::Semantics>.
+L<the document on semantics|Marpa::API::Semantics>.
 
 =head2 terminal
 

@@ -1,5 +1,6 @@
 Revision history for Marpa
 
+0.003_013 Sat Jan 23 21:43:35 2010
 0.003_012 Thu Jan 21 23:16:48 2010
 0.003_011 Fri Jan 15 20:56:17 2010
 0.003_010 Thu Jan 14 21:14:18 2010
@@ -14,6 +15,8 @@ Revision history for Marpa
 0.003_001 Fri Jan  8 09:18:41 2010
 0.003_000 Tue Jan  5 17:47:20 2010
 A series of developer's releases.
+Next alpha release:
+Core documentation of Marpa API added.
 
 0.002000 Tue Dec 29 18:10:47 2009
 First alpha release.  A fork from Parse::Marpa.  The documentation is
