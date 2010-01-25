@@ -20,10 +20,9 @@ That includes recursive grammars,
 ambiguous grammars, infinitely ambiguous grammars and
 grammars with useless or empty productions.
 
-=head2 Status
+=head2 History
 
 L<Marpa> is a branch from L<Parse::Marpa>.
-L<Marpa> started as an experiment, but is now alpha.
 L<Marpa> will, in the near future, replace L<Parse::Marpa>.
 
 =head1 WHAT MARPA CONTAINS
@@ -40,19 +39,20 @@ The Marpa package contains
 
 =head1 THE MARPA PARSER GENERATOR
 
-The API for the Marpa parser generator is documented
-in C<Marpa::API> namespace
 The L<Marpa::API> document
-is a semi-tutorial overview.
-It contains a guide to the rest of the parser generator's
+is a semi-tutorial overview
+of the Marpa parser generator
+and its API.
+L<Marpa::API>
+contains a guide to the rest of the parser generator's
 documentation.
 
 =head1 MARPA'S HTML PARSER
 
 L<Marpa::UrHTML> was written as a proof-of-concept of Marpa --
-a practical application of Marpa to a difficult problem.
+an application of Marpa to a difficult real-life problem.
 In addition to the L<Marpa::UrHTML> module itself,
-there are two handy utilities:
+there are two utilities:
 L<urhtml_fmt> and
 L<urhtml_score>.
 
@@ -95,7 +95,6 @@ and other statistics for HTML scripts.
 The complexity score is the average depth in the element structure
 of the
 characters, divided by the log of the document's length.
-It's an interesting number.
 L<urhtml_score> uses L<Marpa::UrHTML> to do the HTML parsing.
 
 =back
@@ -134,36 +133,26 @@ with the teachers who had the
 texts and could explain them.
 From Marpa's home in Tibet's
 Lhotrak Valley,
-the best way across the Himalayas to India was over
+the best way across the Himalayas was over
 the Khala Chela Pass.
 To reach the Khala Chela's
 three-mile high summit,
 Marpa had to cross two hundred lawless miles of Tibet.
 Once a pilgrim crested the Himalayas,
-the road to Nalanda University was all downhill.
+Nalanda University was downhill, four
+hundred miles beyond.
 
-Eager to reach their destination,
-the first travelers from Tibet had immediately descended the four hundred miles.
-For Marpa's predecessors,
-this last part of the journey had turned out to be by far
-the most deadly.
-Almost no germs live in the cold,
-thin air of Tibet.
-Marpa would spend two years in the foothills
-of Nepal,
+Marpa spent three years in Nepal,
 acclimatizing himself in the foothills.
-
-The first Tibetan
-pilgrims were unaware of the danger,
-and eager to find teachers
-in the hot plains of India.
-They reached the great Buddhist university at Nalanda
-with no immunity
-to India's many diseases.
-Their hosts could only watch as
-every single member of
-several large expeditions
-died with weeks of arrival.
+Tibetans
+had learned
+the hard way
+not to march straight on to Nalanda.
+Almost no germs live in the cold, thin air of Tibet.
+Tibetans arriving
+directly in the lowlands had no immunities.
+Whole expeditions had perished
+within weeks of arrival on the hot plains.
 
 =head2 Blatant Plug
 
@@ -190,7 +179,7 @@ L<algorithm discovered by Jay Earley|Marpa::Bibliography/"Earley 1970">.
 
 I'm grateful to Randal Schwartz for his support over the years that
 I've been working on Marpa.
-My contacts with
+My chats with
 Larry Wall have been few and brief,
 but his openness to new ideas has been
 a major encouragement
