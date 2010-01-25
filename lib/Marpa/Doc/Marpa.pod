@@ -26,15 +26,48 @@ L<Marpa> is a branch from L<Parse::Marpa>.
 L<Marpa> started as an experiment, but is now alpha.
 L<Marpa> will, in the near future, replace L<Parse::Marpa>.
 
-Documentation is only partially complete.
-An HTML parser based on the Marpa parse engine
-is finished and documented.
-The documentation for the interface to the Marpa parse engine itself
-is in progress.
+=head1 WHAT MARPA CONTAINS
 
-=head1 WHAT'S ALREADY DOCUMENTED
+The Marpa package contains
 
 =over
+
+=item * The L<Marpa parser generator|Marpa::API> itself.
+
+=item * An L<HTML parser|Marpa::UrHTML> based on Marpa.
+
+=back
+
+=head1 THE MARPA PARSER GENERATOR
+
+The API for the Marpa parser generator is documented
+in C<Marpa::API> namespace
+The L<Marpa::API> document
+is a semi-tutorial overview.
+It contains a guide to the rest of the parser generator's
+documentation.
+
+=head1 MARPA'S HTML PARSER
+
+L<Marpa::UrHTML> was written as a proof-of-concept of Marpa --
+a practical application of Marpa to a difficult problem.
+In addition to the L<Marpa::UrHTML> module itself,
+there are two handy utilities:
+L<urhtml_fmt> and
+L<urhtml_score>.
+
+=over
+
+=item Marpa::UrHTML
+
+L<Marpa::UrHTML> is a high-level HTML parser,
+based on the L<Marpa>
+parse engine.
+It finds the structure of an HTML document.
+A CSS-like specifier syntax allows
+the user to specify semantic actions written
+in Perl for elements, classes and terminals.
+L<Marpa::UrHTML> uses L<HTML::Parser> as its tokenization layer.
 
 =item urhtml_fmt
 
@@ -65,35 +98,22 @@ characters, divided by the log of the document's length.
 It's an interesting number.
 L<urhtml_score> uses L<Marpa::UrHTML> to do the HTML parsing.
 
-=item Marpa::UrHTML
-
-L<Marpa::UrHTML> is a high-level HTML parser,
-based on the L<Marpa>
-parse engine.
-It finds the structure of an HTML document.
-A CSS-like specifier syntax allows
-the user to specify semantic actions written
-in Perl for elements, classes and terminals.
-L<Marpa::UrHTML> uses L<HTML::Parser> as its tokenization layer.
-
 =back
 
-=head1 MARPA PARSE ENGINE DOCUMENTATION
+=head1 OTHER TECHNICAL DOCUMENTATION
 
-The documentation for the Marpa parse engine itself
-is in progress.
-The few documents which are
-ready at the moment are of interest only
-to readers who are familiar
-with other parsing algorithms,
-and who
-want to know more about the approach
-used in the Marpa parse engine.
-L<Marpa::Algorithm> describes the Marpa algorithm itself.
-My sources, and other useful references are described in
+A few of the technical documents are not specific to the
+L<API|Marpa::API>
+or to
+L<the HTML parser|Marpa::UrHTML>.
+
+L<Marpa::Parse_Terms> is intended as a quick refresher in
+parsing terminology.
+My sources, and other useful references, are described in
 L<Marpa::Bibliography>.
-L<Marpa::Parse_Terms> is intended as a quick refresher
-of parsing terminology.
+
+L<Marpa::Algorithm> describes the Marpa algorithm itself.
+It will only be of interest to those with a theoretical bent.
 
 =head1 AUTHOR
 
@@ -121,18 +141,29 @@ three-mile high summit,
 Marpa had to cross two hundred lawless miles of Tibet.
 Once a pilgrim crested the Himalayas,
 the road to Nalanda University was all downhill.
-Eager to reach their destination,
-the first travelers from Tibet had descended the four hundred miles straight to the hot plains.
 
-The last part of the journey had turned out to be by far
+Eager to reach their destination,
+the first travelers from Tibet had immediately descended the four hundred miles.
+For Marpa's predecessors,
+this last part of the journey had turned out to be by far
 the most deadly.
 Almost no germs live in the cold,
 thin air of Tibet.
-Pilgrims who didn't stop to acclimatize themselves
-reached the great Buddhist center
-with no immunity to India's diseases.
-Several large expeditions reached Nalanda
-only to have every single member die within weeks.
+Marpa would spend two years in the foothills
+of Nepal,
+acclimatizing himself in the foothills.
+
+The first Tibetan
+pilgrims were unaware of the danger,
+and eager to find teachers
+in the hot plains of India.
+They reached the great Buddhist university at Nalanda
+with no immunity
+to India's many diseases.
+Their hosts could only watch as
+every single member of
+several large expeditions
+died with weeks of arrival.
 
 =head2 Blatant Plug
 
@@ -142,8 +173,8 @@ Proof> centers around Kurt GE<ouml>del's proof of God's existence.
 Yes, I<that> Kurt GE<ouml>del, and yes, he really did work out a
 God Proof (it's in his I<Collected Works>, Vol. 3, pp. 403-404).
 B<The God Proof> is available
-as a free download (L<http://www.lulu.com/content/933192>)
-and in print form at Amazon.com:
+as a free download (L<http://www.lulu.com/content/933192>).
+It can be purchased in print form at Amazon.com:
 L<http://www.amazon.com/God-Proof-Jeffrey-Kegler/dp/1434807355>.
 
 =head1 ACKNOWLEDGMENTS
@@ -203,6 +234,6 @@ L<The Support document|Marpa::Support> has details.
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2007-2009 Jeffrey Kegler, all rights reserved.
+Copyright 2007-2010 Jeffrey Kegler, all rights reserved.
 Marpa is free software under the Perl license.
 For details see the LICENSE file in the Marpa distribution.
