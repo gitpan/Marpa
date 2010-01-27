@@ -1,24 +1,8 @@
 Revision history for Marpa
 
-0.003_015 Mon Jan 25 14:45:59 2010
-0.003_014 Sun Jan 24 17:27:11 2010
-0.003_013 Sat Jan 23 21:43:35 2010
-0.003_012 Thu Jan 21 23:16:48 2010
-0.003_011 Fri Jan 15 20:56:17 2010
-0.003_010 Thu Jan 14 21:14:18 2010
-0.003_009 Wed Jan 13 10:55:10 2010
-0.003_008 Wed Jan 13 10:52:51 2010
-0.003_007 Wed Jan 13 10:49:44 2010
-0.003_006 Wed Jan 13 10:23:41 2010
-0.003_005 Tue Jan 12 20:33:16 2010
-0.003_004 Mon Jan 11 18:31:18 2010
-0.003_003 Mon Jan 11 10:21:25 2010
-0.003_002 Fri Jan  8 12:10:17 2010
-0.003_001 Fri Jan  8 09:18:41 2010
-0.003_000 Tue Jan  5 17:47:20 2010
-A series of developer's releases.
-
-Description for upcoming alpha release:
+0.003_016 Tue Jan 26 16:25:40 2010
+Release candidate.
+Description of upcoming alpha release:
 Core documentation of Marpa API added.  Still not documented are some
 of the tracing and some advanced features.
 

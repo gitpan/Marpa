@@ -129,7 +129,7 @@ sub canonical {
             Marpa [:][:] Internal [:][:] Recognizer [:][:]
             [EP] _ [0-9a-fA-F]+ [;] $
         }{package Marpa::<PACKAGE>;}xms;
-    $template =~ s{ \s* at \s (\S*[/]|)code_diag[.]t \s line \s \d+}{}gxms;
+    $template =~ s{ \s* at \s (\S*)code_diag[.]t \s line \s \d+}{}gxms;
     $template =~ s/[<]WHERE[>]/$where/xmsg;
     $template =~ s/[<]LONG_WHERE[>]/$long_where/xmsg;
     $template =~ s{ \s [<]DATA[>] \s line \s \d+

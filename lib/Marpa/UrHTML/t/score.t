@@ -31,10 +31,12 @@ for my $test (qw(1 2)) {
         File::Spec->catfile( @script_dir, 'urhtml_score' ),
         File::Spec->catfile( @data_dir, ( 'input' . $test . '.html' ) )
     );
-    local $RS = undef;
+    $output =~ s/\A [^\n]* \n//xms;
     open my $fh, q{<},
         File::Spec->catfile( @data_dir,
         ( 'score_expected' . $test . '.html' ) );
+    $expected = <$fh>;
+    local $RS = undef;
     $expected = <$fh>;
     close $fh;
     Marpa::Test::is( $output, $expected, 'urhtml_score test' );
