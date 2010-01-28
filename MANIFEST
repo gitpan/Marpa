@@ -77,7 +77,6 @@ lib/Marpa/UrHTML/t/fmt_t_data/score_expected2.html
 lib/Marpa/UrHTML/t/no_tang.html
 lib/Marpa/UrHTML/t/parse.t
 lib/Marpa/UrHTML/t/score.t
-lib/Marpa/UrHTML/t/store.t
 lib/Marpa/UrHTML/t/synopsis.t
 lib/Marpa/UrHTML/t/tang.t
 lib/Marpa/UrHTML/t/test.html
