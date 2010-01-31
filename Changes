@@ -1,11 +1,8 @@
 Revision history for Marpa
 
-0.003_018 Wed Jan 27 16:36:00 2010
-0.003_017 Wed Jan 27 16:00:14 2010
-Release candidate.
-Description of upcoming alpha release:
+0.004000 Sat Jan 30 18:25:23 2010
 Core documentation of Marpa API added.  Still not documented are some
-of the tracing and some advanced features.
+of the tracing and advanced features.
 
 0.002000 Tue Dec 29 18:10:47 2009
 First alpha release.  A fork from Parse::Marpa.  The documentation is
