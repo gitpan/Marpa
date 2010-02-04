@@ -4,12 +4,10 @@ author.t/critic.t
 author.t/display.t
 author.t/Makefile
 author.t/meta_yaml.t
-author.t/minimal.marpa
 author.t/perlcriticrc
 author.t/perltidyrc
 author.t/pod.t
 author.t/spelling_exceptions.list
-author.t/test_pod
 author.t/tidy1
 Build.PL
 Changes

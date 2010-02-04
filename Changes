@@ -1,5 +1,8 @@
 Revision history for Marpa
 
+0.005_000 Sat Jan 30 18:58:15 2010
+First in a series of developer's releases.
+
 0.004000 Sat Jan 30 18:25:23 2010
 Core documentation of Marpa API added.  Still not documented are some
 of the tracing and advanced features.

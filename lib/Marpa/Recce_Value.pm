@@ -26,29 +26,43 @@ sub Marpa::Recognizer::value {
     # default settings
     local $Marpa::Internal::EXPLICIT_CLOSURES = {};
     local $Marpa::Internal::TRACE_ACTIONS     = 0;
+    local $Marpa::Internal::TRACE_FH =
+        $self->[Marpa::Internal::Recognizer::TRACE_FILE_HANDLE];
 
     for my $arg_hash (@arg_hashes) {
 
-        if ( defined $arg_hash->{end} ) {
+        if ( exists $arg_hash->{end} ) {
             $parse_set_arg = $arg_hash->{end};
+            delete $arg_hash->{end};
         }
 
-        if ( defined $arg_hash->{closures} ) {
+        if ( exists $arg_hash->{closures} ) {
             $Marpa::Internal::EXPLICIT_CLOSURES = $arg_hash->{closures};
+            delete $arg_hash->{closures};
         }
 
-        if ( defined $arg_hash->{trace_actions} ) {
+        if ( exists $arg_hash->{trace_actions} ) {
             $Marpa::Internal::TRACE_ACTIONS = $arg_hash->{trace_actions};
+            delete $arg_hash->{trace_actions};
         }
 
-        if ( defined $arg_hash->{trace_values} ) {
+        if ( exists $arg_hash->{trace_values} ) {
             $trace_values = $arg_hash->{trace_values};
+            delete $arg_hash->{trace_values};
         }
+
+        if ( exists $arg_hash->{trace_fh} ) {
+            $Marpa::Internal::TRACE_FH = $arg_hash->{trace_fh};
+            delete $arg_hash->{trace_fh};
+        }
+
+        my @unknown_arg_names = keys %{$arg_hash};
+        Marpa::exception(
+            'Unknown named argument(s) to Marpa::Recognizer::value: ',
+            ( join q{ }, @unknown_arg_names ) )
+            if @unknown_arg_names;
 
     } ## end for my $arg_hash (@arg_hashes)
-
-    local $Marpa::Internal::TRACE_FH =
-        $self->[Marpa::Internal::Recognizer::TRACE_FILE_HANDLE];
 
     my $grammar = $self->[Marpa::Internal::Recognizer::GRAMMAR];
     my $action_object_class =
@@ -127,6 +141,12 @@ sub Marpa::Recognizer::value {
     # null parse as special case?
 
     my $start_sapling = [];
+    {
+        my $start_name = $start_item->[Marpa::Internal::Earley_Item::NAME];
+        my $start_symbol_id = $start_symbol->[Marpa::Internal::Symbol::ID];
+        $start_name .= 'L' . $start_symbol_id;
+        $start_sapling->[Marpa::Internal::Or_Sapling::NAME] = $start_name;
+    }
     $start_sapling->[Marpa::Internal::Or_Sapling::ITEM] = $start_item;
     $start_sapling->[Marpa::Internal::Or_Sapling::CHILD_LHS_SYMBOL] =
         $start_symbol;
@@ -136,7 +156,8 @@ sub Marpa::Recognizer::value {
 
     OR_SAPLING: while ( my $or_sapling = pop @or_saplings ) {
 
-        my $item = $or_sapling->[Marpa::Internal::Or_Sapling::ITEM];
+        my $sapling_name = $or_sapling->[Marpa::Internal::Or_Sapling::NAME];
+        my $item         = $or_sapling->[Marpa::Internal::Or_Sapling::ITEM];
         my $child_lhs_symbol =
             $or_sapling->[Marpa::Internal::Or_Sapling::CHILD_LHS_SYMBOL];
         my $rule     = $or_sapling->[Marpa::Internal::Or_Sapling::RULE];
@@ -231,13 +252,21 @@ sub Marpa::Recognizer::value {
 
         if ( $sapling_position > 0 ) {
 
+            my $predecessor_name =
+                $predecessor->[Marpa::Internal::Earley_Item::NAME]
+                . "R$rule_id:$sapling_position";
+
             my $sapling = [];
             @{$sapling}[
+                Marpa::Internal::Or_Sapling::NAME,
                 Marpa::Internal::Or_Sapling::RULE,
                 Marpa::Internal::Or_Sapling::POSITION,
                 Marpa::Internal::Or_Sapling::ITEM,
                 ]
-                = ( $sapling_rule, $sapling_position, $predecessor, );
+                = (
+                $predecessor_name, $sapling_rule,
+                $sapling_position, $predecessor,
+                );
 
             push @or_saplings, $sapling;
 
@@ -245,12 +274,19 @@ sub Marpa::Recognizer::value {
 
         if ( defined $cause ) {
 
+            my $cause_symbol_id = $symbol->[Marpa::Internal::Symbol::ID];
+
+            my $cause_name =
+                  $cause->[Marpa::Internal::Earley_Item::NAME] . 'L'
+                . $cause_symbol_id;
+
             my $sapling = [];
             @{$sapling}[
+                Marpa::Internal::Or_Sapling::NAME,
                 Marpa::Internal::Or_Sapling::CHILD_LHS_SYMBOL,
                 Marpa::Internal::Or_Sapling::ITEM,
                 ]
-                = ( $symbol, $cause, );
+                = ( $cause_name, $symbol, $cause, );
 
             push @or_saplings, $sapling;
 
@@ -276,6 +312,9 @@ sub Marpa::Recognizer::value {
         my $id = $and_node->[Marpa::Internal::And_Node::ID] = scalar @stack;
         Marpa::exception("Too many and-nodes for evaluator: $id")
             if $id & ~(Marpa::Internal::N_FORMAT_MAX);
+        $and_node->[Marpa::Internal::And_Node::TAG] =
+            $sapling_name . 'o' . $id . 'a' . $id;
+
         push @stack, $and_node;
 
     }    # OR_SAPLING

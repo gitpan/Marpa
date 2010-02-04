@@ -45,8 +45,6 @@ sub change {
         open my $fh, '<', $file;
         my $text = do { local ($RS) = undef; <$fh> };
         close $fh;
-        my $backup = "save/$file";
-        rename $file, $backup;
         open my $argvout, '>', $file;
         print {$argvout} ${ $fix->( \$text, $file ) }
             or Carp::croak("Could not print to argvout: $ERRNO");

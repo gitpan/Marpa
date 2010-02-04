@@ -6,7 +6,8 @@ use 5.010;
 use strict;
 use warnings;
 
-use Test::More tests => 5;
+use Fatal qw(open close);
+use Test::More tests => 6;
 
 use lib 'lib';
 use Marpa::Test;
@@ -62,7 +63,7 @@ sub My_Actions::do_multiply {
 
 sub My_Actions::first_arg { shift; return shift; }
 
-my $value_ref = $recce->value;
+my $value_ref = $recce->value();
 my $value = $value_ref ? ${$value_ref} : 'No Parse';
 
 # Marpa::Display::End
@@ -209,6 +210,45 @@ S13@4-5 [p=S9@4-4; c=S3@4-5]
 S5@0-5 [p=S1@0-0; c=S12@0-5]
 S2@0-5 [p=S0@0-0; c=S5@0-5]
 END_EARLEY_SETS
+
+# Marpa::Display::End
+
+my $trace_output;
+open my $trace_fh, q{>}, \$trace_output;
+$value_ref = $recce->value( { trace_fh => $trace_fh, trace_values => 1 } );
+close $trace_fh;
+
+# Marpa::Display
+# name: Synopsis trace_values Output
+# start-after-line: END_TRACE_OUTPUT
+# end-before-line: '^END_TRACE_OUTPUT$'
+
+Marpa::Test::is( $trace_output,
+    <<'END_TRACE_OUTPUT', 'Synopsis Trace Output' );
+Pushed value from S4@0-1L2o12a12: Number = \42
+Popping 1 values to evaluate S4@0-1L2o12a12, rule: 2: Factor -> Number
+Calculated and pushed value: 42
+Pushed value from S6@0-2R4:2o10a10: Multiply = \undef
+Pushed value from S4@2-3L2o9a9: Number = \1
+Popping 1 values to evaluate S4@2-3L2o9a9, rule: 2: Factor -> Number
+Calculated and pushed value: 1
+Popping 3 values to evaluate S10@0-3L2o8a8, rule: 4: Factor -> Factor Multiply Factor
+Calculated and pushed value: 42
+Popping 1 values to evaluate S3@0-3L1o7a7, rule: 1: Term -> Factor
+Calculated and pushed value: 42
+Pushed value from S8@0-4R3:2o5a5: Add = \undef
+Pushed value from S4@4-5L2o4a4: Number = \7
+Popping 1 values to evaluate S4@4-5L2o4a4, rule: 2: Factor -> Number
+Calculated and pushed value: 7
+Popping 1 values to evaluate S3@4-5L1o3a3, rule: 1: Term -> Factor
+Calculated and pushed value: 7
+Popping 3 values to evaluate S12@0-5L1o2a2, rule: 3: Term -> Term Add Term
+Calculated and pushed value: 49
+Popping 1 values to evaluate S5@0-5L0o1a1, rule: 0: Expression -> Term
+Calculated and pushed value: 49
+New Virtual Rule: S2@0-5L6o0a0, rule: 5: Expression['] -> Expression
+Symbol count is 1, now 1 rules
+END_TRACE_OUTPUT
 
 # Marpa::Display::End
 
