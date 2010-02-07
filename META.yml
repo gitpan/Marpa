@@ -40,13 +40,13 @@ no_index:
 provides:
   Marpa:
     file: lib/Marpa.pm
-    version: 0.005_000
+    version: 0.006000
   Marpa::UrHTML:
     file: lib/Marpa/UrHTML.pm
-    version: 0.005_000
+    version: 0.006000
 requires:
   Scalar::Util: 0
 resources:
   license: http://dev.perl.org/licenses/
   repository: git://github.com/jeffreykegler/Marpa.git
-version: 0.005_000
+version: 0.006000
