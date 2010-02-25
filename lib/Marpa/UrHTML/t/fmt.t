@@ -9,18 +9,10 @@ use Fatal qw(open close);
 use File::Spec;
 
 use lib 'lib';
-use Test::More;
-use Marpa::Test;
-
-BEGIN {
-    if ( eval { require HTML::PullParser } ) {
-        Test::More::plan tests => 5;
-    }
-    else {
-        Test::More::plan skip_all => 'HTML::PullParser not available';
-    }
-    Test::More::use_ok('Marpa::Test::Util');
-} ## end BEGIN
+use Test::More tests => 7;
+Test::More::use_ok('Marpa::Test');
+Test::More::use_ok('Marpa::Test::Util');
+Test::More::use_ok('HTML::PullParser');
 
 my @script_dir = qw( lib Marpa UrHTML script );
 my @data_dir   = qw( lib Marpa UrHTML t fmt_t_data );

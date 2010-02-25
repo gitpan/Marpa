@@ -5,19 +5,10 @@ use strict;
 use warnings;
 use English qw( -no_match_vars );
 use List::Util;
-use Test::More;
-use Marpa::Test;
-
-BEGIN {
-    if ( eval { require HTML::PullParser } ) {
-        Test::More::plan tests => 11;
-    }
-    else {
-        Test::More::plan skip_all => 'HTML::PullParser not available';
-    }
-    Test::More::use_ok('Marpa');
-    Test::More::use_ok( 'Marpa::UrHTML', 'urhtml' );
-} ## end BEGIN
+use Test::More tests => 12;
+Test::More::use_ok('HTML::PullParser');
+Test::More::use_ok('Marpa');
+Test::More::use_ok('Marpa::Test');
 
 # This is just a dummy value for the synopsis
 my %empty_elements = ();

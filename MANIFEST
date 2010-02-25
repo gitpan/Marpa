@@ -22,6 +22,7 @@ lib/Marpa/Display.pm
 lib/Marpa/Doc/Algorithm.pod
 lib/Marpa/Doc/API.pod
 lib/Marpa/Doc/Bibliography.pod
+lib/Marpa/Doc/Bocage.pod
 lib/Marpa/Doc/Evaluator.pod
 lib/Marpa/Doc/Grammar.pod
 lib/Marpa/Doc/Implementation.pod
@@ -116,6 +117,7 @@ t/null_value.t
 t/pascal.t
 t/priority.t
 t/randal.t
+t/rewrite.t
 t/sequence.t
 t/stripped.t
 t/syn_engine.t

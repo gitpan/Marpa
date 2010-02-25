@@ -8,24 +8,13 @@ use English qw( -no_match_vars );
 # These tests are based closely on those in the HTML-Tree module,
 # the authors of which I gratefully acknowledge.
 
-use Test::More;
+use Test::More tests => 44;
 my $DEBUG = 2;
 
-BEGIN {
-    my $skipping;
-    if ( not eval { require HTML::PullParser } ) {
-        Test::More::plan skip_all => 'HTML::PullParser not available';
-        $skipping = 1;
-    }
-    if ( not eval { require HTML::Entities } ) {
-        Test::More::plan skip_all => 'HTML::Entities not available';
-        $skipping = 1;
-    }
-    if ( not $skipping ) {
-        Test::More::plan tests => 41;
-    }
-    Test::More::use_ok('Marpa::UrHTML');
-} ## end BEGIN
+Test::More::use_ok('HTML::Entities');
+Test::More::use_ok('HTML::PullParser');
+Test::More::use_ok('Marpa');
+Test::More::use_ok('Marpa::UrHTML');
 
 my $urhtml_args = {
     ':CRUFT' => sub {

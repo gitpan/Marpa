@@ -2208,7 +2208,8 @@ sub nullable {
             Marpa::Internal::Symbol::COUNTED,
         ];
         if ( $nullable and $counted ) {
-            my $problem = "Nullable symbol $name is on rhs of counted rule";
+            my $problem =
+                qq{Nullable symbol "$name" is on rhs of counted rule};
             push @{ $grammar->[Marpa::Internal::Grammar::PROBLEMS] },
                 $problem;
             $counted_nullable_count++;
@@ -3112,17 +3113,17 @@ sub rewrite_as_CHAF {
 
     # Create a new start rule
     my $new_start_rule = add_rule(
-        {   grammar => $grammar,
-            lhs     => $new_start_symbol,
-            rhs     => [$old_start_symbol],
+        {   grammar           => $grammar,
+            lhs               => $new_start_symbol,
+            rhs               => [$old_start_symbol],
+            virtual_lhs       => 1,
+            real_symbol_count => 1,
         }
     );
 
-    $new_start_rule->[Marpa::Internal::Rule::PRODUCTIVE]        = $productive;
-    $new_start_rule->[Marpa::Internal::Rule::ACCESSIBLE]        = 1;
-    $new_start_rule->[Marpa::Internal::Rule::USED]              = 1;
-    $new_start_rule->[Marpa::Internal::Rule::VIRTUAL_LHS]       = 1;
-    $new_start_rule->[Marpa::Internal::Rule::REAL_SYMBOL_COUNT] = 1;
+    $new_start_rule->[Marpa::Internal::Rule::PRODUCTIVE] = $productive;
+    $new_start_rule->[Marpa::Internal::Rule::ACCESSIBLE] = 1;
+    $new_start_rule->[Marpa::Internal::Rule::USED]       = 1;
 
     # If we created a null alias for the original start symbol, we need
     # to create a nulling start rule
@@ -3132,9 +3133,11 @@ sub rewrite_as_CHAF {
         my $new_start_alias = alias_symbol( $grammar, $new_start_symbol );
         $new_start_alias->[Marpa::Internal::Symbol::START] = 1;
         my $new_start_alias_rule = add_rule(
-            {   grammar => $grammar,
-                lhs     => $new_start_alias,
-                rhs     => [],
+            {   grammar           => $grammar,
+                lhs               => $new_start_alias,
+                rhs               => [],
+                virtual_lhs       => 1,
+                real_symbol_count => 1,
             }
         );
 
@@ -3144,7 +3147,9 @@ sub rewrite_as_CHAF {
         $new_start_alias_rule->[Marpa::Internal::Rule::ACCESSIBLE] = 1;
         $new_start_alias_rule->[Marpa::Internal::Rule::USED]       = 1;
         $new_start_alias_rule->[Marpa::Internal::Rule::NULLABLE]   = 1;
+
     } ## end if ($old_start_alias)
+
     $grammar->[Marpa::Internal::Grammar::START] = $new_start_symbol;
     return;
 } ## end sub rewrite_as_CHAF

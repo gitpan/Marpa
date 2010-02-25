@@ -658,8 +658,13 @@ END_OF_STRING
         $Marpa::UrHTML::Internal::VIRTUAL_TOKEN_HIERARCHY{E_tbody};
 }
 
+# This display set to be ignored
+# until the UrHTML::Implementation doc
+# is ready.
+
 # Marpa::Display
 # name: UrHTML BNF
+# ignore: 1
 # start-after-line: END_OF_BNF
 # end-before-line: '^END_OF_BNF$'
 

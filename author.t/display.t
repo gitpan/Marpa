@@ -29,9 +29,6 @@ my %exclude = map { ( $_, 1 ) } qw(
 );
 
 my @additional_files = qw(
-    lib/Marpa/UrHTML/drafts/Implementation.pod
-    lib/Marpa/drafts/Doc/Evaluator.pod
-    lib/Marpa/drafts/Doc/Implementation.pod
 );
 
 my @test_files = @ARGV;
@@ -203,6 +200,24 @@ DISPLAY_NAME: for my $display_name ( keys %{$displays_by_name} ) {
     } ## end for my $copy_ix ( 0 .. $#{$displays} )
 
 } ## end for my $display_name ( keys %{$displays_by_name} )
+
+my $verbatim_by_file = $display_data->{verbatim_lines};
+VERBATIM_FILE: for my $verbatim_file ( keys %{$verbatim_by_file} ) {
+    my @unchecked      = ();
+    my $verbatim_lines = $verbatim_by_file->{$verbatim_file};
+    for my $verbatim_line_number ( 1 .. $#{$verbatim_lines} ) {
+        my $verbatim_line = $verbatim_lines->[$verbatim_line_number];
+        if ($verbatim_line) {
+            push @unchecked, "$verbatim_line_number: $verbatim_line";
+        }
+    } ## end for my $verbatim_line_number ( 1 .. $#{$verbatim_lines...})
+    next VERBATIM_FILE if not @unchecked;
+    Test::More::fail( qq{Verbatim line(s) not checked in "$verbatim_file": }
+            . ( scalar @unchecked )
+            . " lines\n"
+            . ( join "\n", @unchecked ) );
+    $tests_run++;
+} ## end for my $verbatim_file ( keys %{$verbatim_by_file} )
 
 Test::More::done_testing($tests_run);
 

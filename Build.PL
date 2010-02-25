@@ -8,7 +8,7 @@ use Fatal qw(open close);
 
 use Module::Build;
 
-my $marpa_version = '0.006000';
+my $marpa_version = '0.007_000';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -61,6 +61,7 @@ my $build = $class->new(
     ],
     pod_files => {
         'lib/Marpa/Doc/Bibliography.pod'  => 'lib/Marpa/Bibliography.pod',
+        'lib/Marpa/Doc/Bocage.pod'        => 'lib/Marpa/Bocage.pod',
         'lib/Marpa/Doc/Evaluator.pod'     => 'lib/Marpa/Evaluator.pod',
         'lib/Marpa/Doc/Grammar.pod'       => 'lib/Marpa/Grammar.pod',
         'lib/Marpa/Doc/Marpa.pod'         => 'lib/Marpa.pod',
@@ -99,6 +100,8 @@ my $build = $class->new(
     },
     meta_add => {
         distribution_type => 'module',
+        requires          => { 'HTML::Parser' => '3.64' },
+        requires          => { 'HTML::PullParser' => '3.57' },
         provides          => {
             'Marpa' => {
                 file    => 'lib/Marpa.pm',

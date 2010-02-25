@@ -132,13 +132,69 @@ sub Marpa::Recognizer::value {
         $action_object_constructor = $closure;
     } ## end if ( defined( my $action_object = $grammar->[...]))
 
+    my $action_object;
+
+    if ($action_object_constructor) {
+        my @warnings;
+        my $eval_ok;
+        my $fatal_error;
+        DO_EVAL: {
+            local $EVAL_ERROR = undef;
+            local $SIG{__WARN__} = sub {
+                push @warnings, [ $_[0], ( caller 0 ) ];
+            };
+
+            $eval_ok = eval {
+                $action_object =
+                    $action_object_constructor->($action_object_class);
+                1;
+            };
+            $fatal_error = $EVAL_ERROR;
+        } ## end DO_EVAL:
+
+        if ( not $eval_ok or @warnings ) {
+            Marpa::Internal::code_problems(
+                {   fatal_error => $fatal_error,
+                    grammar     => $grammar,
+                    eval_ok     => $eval_ok,
+                    warnings    => \@warnings,
+                    where       => 'constructing action object',
+                }
+            );
+        } ## end if ( not $eval_ok or @warnings )
+    } ## end if ($action_object_constructor)
+
+    $action_object //= {};
+
     my $start_symbol = $start_rule->[Marpa::Internal::Rule::LHS];
     my ( $nulling, $symbol_id ) =
         @{$start_symbol}[ Marpa::Internal::Symbol::NULLING,
         Marpa::Internal::Symbol::ID, ];
-    my $start_null_value = $null_values->[$symbol_id];
 
-    # null parse as special case?
+    # null parse is special case
+    if ($nulling) {
+
+        my $and_node = [];
+        $#{$and_node} = Marpa::Internal::And_Node::LAST_FIELD;
+
+        $and_node->[Marpa::Internal::And_Node::VALUE_REF] =
+            \( $null_values->[$symbol_id] );
+        $and_node->[Marpa::Internal::And_Node::RULE_ID] = $start_rule_id;
+        $and_node->[Marpa::Internal::And_Node::VALUE_OPS] =
+            $evaluator_rules->[$start_rule_id];
+
+        $and_node->[Marpa::Internal::And_Node::POSITION]      = 0;
+        $and_node->[Marpa::Internal::And_Node::START_EARLEME] = 0;
+        $and_node->[Marpa::Internal::And_Node::CAUSE_EARLEME] = 0;
+        $and_node->[Marpa::Internal::And_Node::END_EARLEME]   = 0;
+        $and_node->[Marpa::Internal::And_Node::ID]            = 0;
+        $and_node->[Marpa::Internal::And_Node::TAG] =
+            $start_item->[Marpa::Internal::Earley_Item::NAME] . 'o0a0';
+
+        return Marpa::Internal::Evaluator::evaluate( $grammar, $action_object,
+            [$and_node], $trace_values );
+
+    } ## end if ($nulling)
 
     my $start_sapling = [];
     {
@@ -318,40 +374,6 @@ sub Marpa::Recognizer::value {
         push @stack, $and_node;
 
     }    # OR_SAPLING
-
-    my $action_object;
-
-    if ($action_object_constructor) {
-        my @warnings;
-        my $eval_ok;
-        my $fatal_error;
-        DO_EVAL: {
-            local $EVAL_ERROR = undef;
-            local $SIG{__WARN__} = sub {
-                push @warnings, [ $_[0], ( caller 0 ) ];
-            };
-
-            $eval_ok = eval {
-                $action_object =
-                    $action_object_constructor->($action_object_class);
-                1;
-            };
-            $fatal_error = $EVAL_ERROR;
-        } ## end DO_EVAL:
-
-        if ( not $eval_ok or @warnings ) {
-            Marpa::Internal::code_problems(
-                {   fatal_error => $fatal_error,
-                    grammar     => $grammar,
-                    eval_ok     => $eval_ok,
-                    warnings    => \@warnings,
-                    where       => 'constructing action object',
-                }
-            );
-        } ## end if ( not $eval_ok or @warnings )
-    } ## end if ($action_object_constructor)
-
-    $action_object //= {};
 
     return Marpa::Internal::Evaluator::evaluate( $grammar, $action_object,
         \@stack, $trace_values );

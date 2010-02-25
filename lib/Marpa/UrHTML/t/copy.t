@@ -5,18 +5,11 @@ use strict;
 use warnings;
 
 use lib 'lib';
-use Test::More;
+use Test::More tests => 4;
 
-BEGIN {
-    if ( eval { require HTML::PullParser } ) {
-        Test::More::plan tests => 3;
-    }
-    else {
-        Test::More::plan skip_all => 'HTML::PullParser not available';
-    }
-    Test::More::use_ok('Marpa');
-    Test::More::use_ok('Marpa::UrHTML');
-} ## end BEGIN
+Test::More::use_ok('HTML::PullParser');
+Test::More::use_ok('Marpa');
+Test::More::use_ok('Marpa::UrHTML');
 
 use Carp;
 use Data::Dumper;

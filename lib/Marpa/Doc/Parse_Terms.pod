@@ -68,13 +68,12 @@ and B<lexical analysis> is often called B<lexing> or B<scanning>.
 A standard way of describing rules is Backus-Naur Form, or B<BNF>.
 In one common way of writing BNF, a production looks like this.
 
-=begin Marpa::Test::Display:
-
-## skip display
-
-=end Marpa::Test::Display:
+=for Marpa::Display:
+ignore: 1
 
     Expression ::= Term Factor
+
+=for Marpa::Display::End
 
 In the production above, C<Expression>, C<Term> and C<Factor> are symbols.
 A production consists of a B<left hand side> and a B<right hand side>.
@@ -104,17 +103,21 @@ and replacing any occurrence of the lhs symbol in the symbol string with the
 rhs of the production.  For example, if C<A>, C<B>, C<C>, C<D>, and C<X> are symbols,
 and
 
-=begin Marpa::Test::Display:
-
-## skip 2 displays
-
-=end Marpa::Test::Display:
+=for Marpa::Display:
+ignore: 1
 
     X ::= B C
 
+=for Marpa::Display::End
+
 is a production, then
 
+=for Marpa::Display:
+ignore: 1
+
     A X D -> A B C D
+
+=for Marpa::Display::End
 
 is a derivation step, with "C<A X D>" as its beginning and "C<A B C D>" as its end or result.
 We say that the symbol string "C<A X D>"

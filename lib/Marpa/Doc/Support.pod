@@ -19,13 +19,12 @@ your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-=begin Marpa::Test::Display:
-
-## skip display
-
-=end Marpa::Test::Display:
+=for Marpa::Display
+ignore: 1
 
     perldoc Marpa
+
+=for Marpa::Display::End
     
 You can also look for information at:
 

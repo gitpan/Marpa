@@ -71,11 +71,12 @@ my $value = $value_ref ? ${$value_ref} : 'No Parse';
 my $show_symbols_output = $grammar->show_symbols();
 
 # Marpa::Display
-# name: Synopsis show_symbols Output
+# name: Implementation Example show_symbols Output
 # start-after-line: END_SYMBOLS
 # end-before-line: '^END_SYMBOLS$'
 
-Marpa::Test::is( $show_symbols_output, <<'END_SYMBOLS', 'Synopsis Symbols' );
+Marpa::Test::is( $show_symbols_output,
+    <<'END_SYMBOLS', 'Implementation Example Symbols' );
 0: Expression, lhs=[0] rhs=[5] terminal
 1: Term, lhs=[1 3] rhs=[0 3] terminal
 2: Factor, lhs=[2 4] rhs=[1 4] terminal
@@ -90,11 +91,12 @@ END_SYMBOLS
 my $show_rules_output = $grammar->show_rules();
 
 # Marpa::Display
-# name: Synopsis show_rules Output
+# name: Implementation Example show_rules Output
 # start-after-line: END_RULES
 # end-before-line: '^END_RULES$'
 
-Marpa::Test::is( $show_rules_output, <<'END_RULES', 'Synopsis Rules' );
+Marpa::Test::is( $show_rules_output,
+    <<'END_RULES', 'Implementation Example Rules' );
 0: Expression -> Term
 1: Term -> Factor
 2: Factor -> Number
@@ -108,11 +110,12 @@ END_RULES
 my $show_QDFA_output = $grammar->show_QDFA();
 
 # Marpa::Display
-# name: Synopsis show_QDFA Output
+# name: Implementation Example show_QDFA Output
 # start-after-line: END_QDFA
 # end-before-line: '^END_QDFA$'
 
-Marpa::Test::is( $show_QDFA_output, <<'END_QDFA', 'Synopsis QDFA' );
+Marpa::Test::is( $show_QDFA_output,
+    <<'END_QDFA', 'Implementation Example QDFA' );
 Start States: S0; S1
 S0: 15
 Expression['] -> . Expression
@@ -174,12 +177,12 @@ END_QDFA
 my $show_earley_sets_output = $recce->show_earley_sets();
 
 # Marpa::Display
-# name: Synopsis show_earley_sets Output
+# name: Implementation Example show_earley_sets Output
 # start-after-line: END_EARLEY_SETS
 # end-before-line: '^END_EARLEY_SETS$'
 
 Marpa::Test::is( $show_earley_sets_output,
-    <<'END_EARLEY_SETS', 'Synopsis Earley Sets' );
+    <<'END_EARLEY_SETS', 'Implementation Example Earley Sets' );
 Last Completed: 5; Furthest: 5
 Earley Set 0
 S0@0-0
@@ -219,12 +222,12 @@ $value_ref = $recce->value( { trace_fh => $trace_fh, trace_values => 1 } );
 close $trace_fh;
 
 # Marpa::Display
-# name: Synopsis trace_values Output
+# name: Implementation Example trace_values Output
 # start-after-line: END_TRACE_OUTPUT
 # end-before-line: '^END_TRACE_OUTPUT$'
 
 Marpa::Test::is( $trace_output,
-    <<'END_TRACE_OUTPUT', 'Synopsis Trace Output' );
+    <<'END_TRACE_OUTPUT', 'Implementation Example Trace Output' );
 Pushed value from S4@0-1L2o12a12: Number = \42
 Popping 1 values to evaluate S4@0-1L2o12a12, rule: 2: Factor -> Number
 Calculated and pushed value: 42

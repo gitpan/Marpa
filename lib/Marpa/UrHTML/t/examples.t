@@ -5,21 +5,13 @@ use strict;
 use warnings;
 use English qw( -no_match_vars );
 use List::Util;
-use Test::More;
-use Marpa::Test;
+use Test::More tests => 6;
+Test::More::use_ok('HTML::PullParser');
+Test::More::use_ok('Marpa');
+Test::More::use_ok('Marpa::Test');
+Test::More::use_ok('Marpa::UrHTML');
 
 # Non-synopsis example in UrHTML.pod
-
-BEGIN {
-    if ( eval { require HTML::PullParser } ) {
-        Test::More::plan tests => 4;
-    }
-    else {
-        Test::More::plan skip_all => 'HTML::PullParser not available';
-    }
-    Test::More::use_ok('Marpa');
-    Test::More::use_ok('Marpa::UrHTML');
-} ## end BEGIN
 
 # Marpa::Display
 # name: 'UrHTML Pod: Handler Precedence'

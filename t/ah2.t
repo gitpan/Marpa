@@ -62,7 +62,7 @@ Marpa::Test::is( $grammar->show_rules, <<'EOS', 'Aycock/Horspool Rules' );
 11: S[R0:2][x7] -> A A[] /* vlhs maximal real=2 */
 12: S[R0:2][x7] -> A[] A /* vlhs maximal real=2 */
 13: S['] -> S /* vlhs maximal real=1 */
-14: S['][] -> /* empty nullable maximal */
+14: S['][] -> /* empty nullable vlhs maximal real=1 */
 EOS
 
 Marpa::Test::is( $grammar->show_symbols, <<'EOS', 'Aycock/Horspool Symbols' );
