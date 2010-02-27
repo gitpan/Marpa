@@ -182,7 +182,15 @@ Supported specifier syntaxes are as follows:
 
 =item Tagname Specifiers
 
+=for Marpa::Display
+name: 'UrHTML Synopsis: Delete Everything But Tables'
+partial: 1
+normalize-whitespace: 1
+flatten: 1
+
         table  => sub { return Marpa::UrHTML::original() },
+
+=for Marpa::Display::End
 
 If a specifier contains no special characters
 it is taken
@@ -217,7 +225,15 @@ The element wildcard specifier will not match any pseudoclasses.
 
 =item Pseudoclass Specifiers
 
-    ':COMMENT' => \&delete_it
+=for Marpa::Display
+name: 'UrHTML Synopsis: Delete Comments'
+partial: 1
+normalize-whitespace: 1
+flatten: 1
+
+     ':COMMENT' => sub { return q{} }
+
+=for Marpa::Display::End
 
 A specifier which begins with a colon ("C<:>") matches a pseudoclass.
 L<Marpa::UrHTML> defines
@@ -772,7 +788,13 @@ If there was no title attribute, returns undef.
 
 =head2 Dataspecs
 
+=for Marpa::Display
+name: dataspec example
+perltidy: '-dcsc -sil=0'
+
     Marpa::UrHTML::descendants('token_type,literal,element')
+
+=for Marpa::Display::End
 
 The data specification string, or dataspec,
 is a comma separated list of B<descendant data specifiers>.

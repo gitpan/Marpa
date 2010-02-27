@@ -14,7 +14,7 @@
 -nolq   # Don't outdent long quoted strings
 -hsc    # hanging side comments
 -nolc   # Don't outdent long comments
--ibc    # Indent block comments
+-isbc   # Indent spaced block comments
 -csc    # Add closing side comments
 -cscb   # Balanced closing side comments
 -csct=50 # Max length of closing side comment is 50 chars

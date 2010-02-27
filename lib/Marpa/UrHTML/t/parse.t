@@ -60,7 +60,15 @@ my $urhtml_args = {
         my $end_tag = "</$tagname>";
 
         my $descendant_data =
-            Marpa::UrHTML::descendants('token_type,literal,element');
+
+# Marpa::Display
+# name: dataspec example
+
+            Marpa::UrHTML::descendants('token_type,literal,element')
+
+# Marpa::Display::End
+
+            ;    # semi to end $descendant_data definition
 
         # For UL element, eliminate all but the LI element children
         if ( $tagname eq 'ul' ) {

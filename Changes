@@ -1,7 +1,9 @@
 Revision history for Marpa
 
+0.007_001 Wed Feb 24 18:10:05 2010
 0.007_000 Sat Feb  6 21:08:37 2010
-First in a series of developer's releases.
+A series of developer's releases.
+Will add Marpa::Implementation.
 
 0.006000 Sat Feb  6 20:48:48 2010
 Fix problems in trace output.

@@ -109,14 +109,28 @@ C<min> can be 0 or 1, and indicates the minimum length of the
 sequence.
 As of this writing, the maximum length is always infinite.
 
+=for Marpa::Display
+name: Marpa::Grammar min 0 sequence example
+partial: 1
+normalize-whitespace: 1
+
     { lhs => 'sequence', rhs => ['sequence_item'], min => 0 }
+
+=for Marpa::Display::End
 
 A C<min> of zero indicates a sequence of 0 or more symbols.
 This is the equivalent of using the star quantifier
 ("C<sequence_item*>") in the
 standard regular expression notation.
 
+=for Marpa::Display
+name: Marpa::Grammar min 1 sequence example
+partial: 1
+normalize-whitespace: 1
+
     { lhs => 'sequence', rhs => ['sequence_item'], min => 1 }
+
+=for Marpa::Display::End
 
 A C<min> of one indicates a sequence of 1 or more symbols.
 This is the equivalent of using the plus quantifier
@@ -128,8 +142,15 @@ the right hand side of a sequence rule must be a single symbol.
 Of course, applications will often want to repeat sequences of multiple symbols.
 That is easy to do indirectly:
 
+=for Marpa::Display
+name: Marpa::Grammar multipart rhs sequence example
+partial: 1
+normalize-whitespace: 1
+
     { lhs => 'sequence', rhs => [qw(sequence_item)], min => 0 },
     { lhs => 'sequence_item', rhs => [qw(part1 part2)], },
+
+=for Marpa::Display::End
 
 Sequences can have a separator, specified
 with the C<separator> rule property.
@@ -331,27 +352,26 @@ When a rule is rewritten, the original rule is
 often not used.
 In that case, "C<!used>" will be one of the comments
 for the original rule.
-
-The "C<!used>" comment also indicates rules not used
+The "C<!used>" comment also marks rules not used
 for reasons other than rewrites.
 For example,
 inaccessible and unproductive rules are also
 marked "C<!used>".
 
-Comments for the rules indicate
-whether they
+The "C<discard_sep"> comment indicates that the rule
+discards separators
+This is only
+relevant in sequence rules.
+Other comments indicate
+whether rules
 were nullable, unproductive, inaccessible, empty,
 or had a non-zero priority.
-Many of the comments show
-rule settings relevant to the
-semantics.
-For example,
-the "C<discard_sep"> comment indicates that the rule
-discards separators
-(something that is only
-relevant in sequence rules).
-For more details,
-see
+
+The C<vlhs>, C<vrhs> and C<real> comments
+show rule settings relevant in tracking "virtual"
+internal symbols.
+Details on virtual symbols
+can be found in
 L<the implementation document|Marpa::API::Implementation>.
 
 =head2 show_symbols
