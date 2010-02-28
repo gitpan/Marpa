@@ -121,17 +121,19 @@ flatten: 1
 
 =for Marpa::Display::End
 
-This rule contains four proper nullables,
+This rule contains four instances
+of proper nullables,
 illustrating my fear
-that grammars of practical interest might
-lots of proper nullables on the right hand side.
+that grammars of practical interest will
+have lots of proper nullables
+on right hand sides.
 C<optional_whitespace>
 and C<optional_modifier> are both
 proper nullables and
 C<optional_whitespace>
 appears three times.
 
-Here's is the output from C<show_rules>, showing what Marpa did with this rule:
+Here's is the output from C<show_rules>, showing what Marpa does with this rule:
 
 =for Marpa::Display
 name: Rewrite show_rules Output
@@ -168,14 +170,39 @@ the rule is marked "C<!used>",
 telling later stages in the precomputation to ignore it.
 Marpa breaks Rule 0 up into three pieces,
 each with no more than two proper nullables.
-Rules 13 to 16 are the first piece, with the first two symbols from Rule 0.
-Rules 17 to 19 are the second piece, with the 3rd symbol.
-Rules 20 to 22 are the third piece, with the 4th and 5th symbols from Rule 0.
+Marpa then eliminates the proper nullables in each piece by B<factoring>.
+B<Factoring> is so called because the proper nullables are
+"factored out" into their nulling and non-nulling variants.
 
-Each piece is B<factored>, so that every combination of nulling and non-nullable symbols is included.
-New symbols are introduced to be the left hand sides of the pieces.
-The names of the new symbols are the name of the original left hand side with
-two suffixed tags.
+To B<factor> a piece, Marpa first rewrites it into multiple rules,
+one for each possible combination of nulled and non-nulled symbols.
+Marpa then replaces each proper nullable
+with its nulling or non-nullable variant, as appropriate.
+There are two symbol variants for each proper nullable,
+and a maximum of two proper nullables for each piece.
+That means that each piece will be factored into, at most,
+four rules.
+
+In the example in the above display,
+the original rule (Rule 0) was broken into three pieces.
+Rule 0 had 5 rhs symbols,
+and the three pieces contain, respectively, Rule 0's first two rhs symbols;
+Rule 0's 3rd rhs symbol;
+and Rule 0's last two (that is, 4th and 5th) rhs symbols.
+
+The first piece is factored into four rules: Rules 13 to 16.
+The second piece is factored into three rules: Rules 17 to 19.
+The third and last piece of Rule 0 is also factored into three rules:
+Rules 20 to 22.
+
+When the rule is broken into pieces, the
+left hand side of the first piece is the left hand
+side of the original rule.
+New symbols are introduced to be the left hand sides
+of the other pieces.
+The names of the new lhs symbols are formed
+by suffixing two tags to
+the name of the original left hand side.
 The first suffixed tag begins with a capital "R" and identifies the
 location of the piece in the original rule.
 For example,
@@ -185,38 +212,50 @@ symbol is the left hand side for the piece of Rule 0 which begins at right hand 
 The second suffixed tag begins with a lowercase "x" and is an arbitrary
 hex value to quarantee uniqueness.
 
-Rule 0 is a worst case for CHAF, because the last three symbols of the right hand side are all
+When a new lhs symbol is created for a piece,
+the worst case is that the new lhs is
+also a proper nullable.
+This worst case occurs when
+all the original symbols in the
+piece for the new lhs
+and all symbols in all subsequent pieces are proper nullables.
+When a newly created lhs symbol is a proper nullable,
+it counts against the limit of two proper nullables per piece,
+and it must also be factored,
+just like the proper nullables in the original rule.
+
+Rule 0 is such a worst case.
+The last three symbols
+of the right hand side are all
 proper nullables.
-That means that the last two pieces of the original rule can be either empty or non-empty,
-and therefore that both of the newly created lhs symbols are also proper nullables.
+That means that all the symbols in the last two pieces of the original rule
+are proper nullables.
+Therefore both of the newly created lhs symbols are proper nullables.
 
-With the CHAF rewrite,
-there are now a total of 6 proper nullables:
+The original Rule 0 has 4 proper nullables.
+After the CHAF rewrite,
+there are 6 proper nullables:
 the original 4 plus the 2 symbols newly created to serve as left hand sides.
-This is why, in order to have only 2 proper nullables per piece,
-the original rule
-needed to be divided into 3 pieces.
-The newly created lhs symbols, because they are proper nullables,
-need to be split into nulling and non-nullable
-variants and factored,
-just as the proper nullables
-found in the original rule
-had to be split and factored.
+This is why, in order to have at most 2 proper nullables per piece,
+the original rule must to be divided into 3 pieces.
 
-Even though this is CHAF's worst case,
-CHAF does this factoring with 10 rules,
-while the original Aycock-Horspool factoring (NNF)
-required 16 rules.
-After more than 4 proper nullables, the advantage of CHAF becomes overwhelming.
-With 5 proper nullables, there would be 13 rules for CHAF versus 32 for NNF.
-With 6 proper nullables, 16 versus 64.
+Even though Rule 0 is a CHAF worst case,
+CHAF's factoring result in 10 rules.
+The original Aycock-Horspool factoring (NNF)
+resulted in 16 rules.
+For cases other than the worst,
+and for situations with
+more than 4 proper nullables, the advantage of CHAF becomes overwhelming.
+For 5 proper nullables, there would be 13 rules for CHAF versus 32 for NNF.
+For 6 proper nullables, the count 16 for CHAF versus 64 for NNF.
 
-The user's semantics are preserved, because Marpa,
+CHAF preserves user semantics.
+Marpa,
 when it splits the rule into
 pieces and factors the pieces,
 inserts logic to gather and preserve the values of child nodes.
-These values are presented
-to the user's semantic actions
+These values are seen
+by the user's semantic actions
 as if no CHAF rewrite had occurred.
 
 =head2 Converting Sequence Productions to BNF
@@ -295,7 +334,7 @@ and that is why it was marked "C<!used>".
 
 Speaking pedantically,
 creating the Earley sets is
-is not B<parsing in the strict sense>.
+not B<parsing in the strict sense>.
 Creating the Earley sets is B<recognition> --
 determining whether or not a grammar recognizes an input.
 During recognition,
@@ -410,7 +449,8 @@ They will not be mentioned again in this document.
 
 Marpa uses QDFA states to track the parse.
 Every QDFA state has one or more LR(0) items.
-In this example, the second and third lines are LR(0) items.
+In the above display,
+the second and third lines are LR(0) items.
 B<LR(0) items> are rules with a dot added to indicate
 how far recognition has proceeded into the rule.
 
@@ -463,8 +503,12 @@ is called a B<rule initialization>.
 Beginning from the rule initialization,
 as each post-dot symbol is recognized,
 the dot position advances to the B<next non-null position>.
+
 Once all of the zero or more symbols are recognized,
 the LR(0) item becomes a B<completed rule>.
+When an LR(0) item is not a completed rule,
+it is called an B<incomplete> LR(0) item,
+or an B<incomplete rule>.
 
 Every QDFA state contains one or more LR(0) items.
 This means that every QDFA state
@@ -472,9 +516,6 @@ is a set of statements about rule recognition.
 An Earley item is present in the Earley sets if and only if
 every rule in every LR(0) item in the QDFA state of the Earley item has
 been recognized as far as its dot position.
-
-Each Marpa Earley item records the location in the earleme stream where
-a set of LR(0) items begin and end.
 The origin of each LR(0) item corresponds to the origin of the Earley item,
 and the dot position of each LR(0) item corresponds
 to the dot location of the Earley item.
@@ -495,8 +536,8 @@ represent the recognition of symbols that are
 not found directly in the input,
 but that are found indirectly by applying the rules of the grammar.
 
-B<Prediction> puts Earley items into the Earley sets
-which represent rules that might
+B<Prediction> add Earley items
+that represent rules that might
 start at a given location.
 B<Initialization> adds one or two Earley items to Earley set 0
 to represent the start rules.
@@ -547,7 +588,7 @@ on an C<Add> token
 there are two transitions:
 one to QDFA state S8
 and one to QDFA state S9.
-We will use both both transitions in our examples.
+We will use both transitions in our examples.
 
 The transition to
 QDFA state S9 is
@@ -608,7 +649,7 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-In the current example, the tokens are
+In the current example, the token values are
 "C<42>",
 "C<*>",
 "C<7>",
@@ -618,8 +659,9 @@ The current earleme for
 Earley item S8@0-4 is earleme 4,
 indicating that the 4th token has just been
 seen.
-The fourth token is a plus sign ("C<+>"),
-which the lexer reads as an C<Add> token.
+The fourth token value is a plus sign ("C<+>"),
+which the lexer of this example read
+as an C<Add> token.
 
 After the name of the Earley item is an
 B<Earley item source choice>, shown in brackets.
@@ -659,7 +701,7 @@ see L<Marpa::API::Models>.
 =head2 Prediction
 
 In the previous section, we looked at one of the transitions from QDFA state S5 at earleme 3
-on an C<Add> token with a token length of 1.
+on an C<Add> token.
 There were two transitions and we looked at one of them.
 The transition we looked at was to QDFA state S8.
 Now we will look at the other transition, to QDFA state S9.
@@ -723,32 +765,36 @@ Source choices are not recorded for predicted items.
 
 =head3 More about Prediction States
 
-Prediction states exist when
-the presence of LR(0) items at a certain location
-gives rise to the expectation of other LR(0)
-items at that same location.
+Prediction states exist because
+the presence of incomplete LR(0) items at an earleme location
+gives rise to rule initializations
+at that same earleme location.
 When
 an LR(0) item with a post-dot symbol is present at a given
 location,
-we call that symbol an B<expected symbol>.
-For every expected symbol at a given location,
+we call that symbol an B<expected symbol> at that location.
+At any given location,
+for every expected symbol,
 we can also expect
 the rule initializations for all the rules
 with that expected symbol on their left-hand side.
+
 Any rule initialization we introduce will have a post-dot symbol.
 If that post-dot symbol is not already an expected symbol,
 it may cause further rule initializations to be expected
 at the same location.
-In other words, LR(0) item expectations recurse.
+In other words, rule initializations recurse.
 
 The QDFA states invented by
 L<Aycock and Horspool
 |Marpa::Bibliography/"Aycock and Horspool 2002">
-handle these recursive LR(0)
-item expectations efficiently.
+handle these recursive rule initializations
+efficiently.
 Above we looked at QDFA states S8 and S9.
-We'll examine the recursive sequence of LR(0) item
-expectations that originates in S8
+In the following paragraphs,
+we'll examine the recursive sequence of rule
+initializations as it
+originates in S8
 and is collected in S9.
 
 The QDFA's invented by
@@ -769,16 +815,15 @@ normalize-whitespace: 1
 =for Marpa::Display::End
 
 In this LR(0) item the post-dot symbol is C<Term>.
-The paired prediction QDFA state for S8 will contain
-all the LR(0) item expectations caused by the expectation
-of the C<Term> symbol.
-
-Expectation of the C<Term> symbols
-gives rise to the expectation of rule
-initializations for all rules with
+S9, the prediction QDFA state
+paired with kernel QDFA state S8,
+will contain
+all the rule initializations
+caused by the expectation
+of a C<Term> symbol.
+There are two rules with
 C<Term> on their left hand side.
-There are two such rules
-and their rule initializations are
+Their rule initializations are
 
 =for Marpa::Display:
 name: Implementation Example show_QDFA Output
@@ -798,18 +843,19 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-Marpa LR(0) expectations recurse.
+Rule initializations recurse.
 The rule initializations above have two post-dot symbols:
 C<Term> and C<Factor>.
-C<Term> is already an expected symbol.
-
-But C<Factor> is a new expected symbol.
-That means that all rules with
+C<Term> is already an expected symbol,
+but C<Factor> is a new expected symbol.
+When C<Factor> is an expected symbol
+at an earleme location,
+all rules with
 C<Factor> on their left hand side
 will have rule initializations
-at this earleme location.
+at that same earleme location.
 There are two such rules.
-The rule initialization for the first is
+Here are their rule initializations:
 
 =for Marpa::Display:
 name: Implementation Example show_QDFA Output
@@ -831,18 +877,21 @@ normalize-whitespace: 1
 
 The post-dot symbols in these rule initializations
 are C<Factor> and C<Number>.
-C<Factor> is already an expected symbol,
-but C<Number> is new as an expected symbol.
-
-We need to add all rule initializations for any rules
-that the C<Number> on the left hand side.
-But there is no rule in our grammar with
+C<Factor> is already an expected symbol.
+C<Number> is new as an expected symbol,
+but there is no rule in our grammar with
 C<Number> on its left hand side.
-So there are no new LR(0) item expectations
-to add and our recursion is finished.
 
-Starting with the expected symbols in QDFA state S8,
-we found four new LR(0) item expectations.
+The recursion is finished.
+We have added all the rule initializations for
+the expected symbols found in previous steps.
+There are no new expected symbols in this recursion
+step.
+That means there will be no more new rule initializations,
+and therefore no more new expected symbols.
+
+Starting with the expected symbol in QDFA state S8,
+we found four rule initializations.
 The prediction state paired with S8 is S9.
 Let's look at it again:
 
@@ -862,8 +911,9 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-We see that it does contain all four of the LR(0)
-item expectations that we found in this section.
+We see that it does contain all four of the rule
+initializations
+that we found in this section.
 
 =head2 Completion
 
@@ -916,16 +966,22 @@ is S4@2-3 so that
 C<Factor> is a completed symbol with
 origin at 2 and current earleme at 3.
 
-An Earley item containing a completed rule is called a B<completion cause Earley item>,
-or simply a B<cause>.
-As a result of recognizing a completion cause Earley item,
+An Earley item containing a completed symbol is called a B<completion Earley item>,
+or simply a B<completion>.
+As a result of recognizing a completion Earley item,
 Marpa may add
 one or more B<completion effect Earley items> to the Earley sets.
-(A B<completion effect Earley item> is often called simply
-a B<completion effect>, or just an B<effect>.)
+A B<completion effect Earley item> is often called simply
+a B<completion effect>, or just an B<effect>.
+
+When a completion effect Earley item is added to the Earley sets,
+the completion Earley item which caused the effect is
+called a B<completion cause Earley item>.
+A B<completion cause Earley item> is often called simply
+a B<completion cause>, or just an B<cause>.
 
 For a completion effect Earley item to be added to the Earley sets,
-a completed symbol is necessary
+a completion cause is necessary
 but not sufficient.
 There must also be a matching predecessor Earley item.
 A B<matching predecessor> Earley item
@@ -943,8 +999,9 @@ Earley set 2 which has C<Factor> as one of the post-dot symbols.
 In this example we find two matching predecessors: 
 S6@0-2 and S7@2-2.
 Completion effects are added for both of these.
-We'll look only at the completion effect added
-using S6@0-2 as its
+We'll look only at the completion effect
+that has
+S6@0-2 as its
 matching predecessor.
 Here is QDFA state 6.
 
@@ -961,11 +1018,11 @@ normalize-whitespace: 1
 
 The transition for C<Factor> in QDFA state S6
 is to S10, so the new completion effect will have
-QDFA state S6.
+QDFA state S10.
 A completion effect always has the same current earleme
-as its completion cause.
+as its completion cause (in this case S4@2-3).
 The origin of a completion effect is always the
-same as the origin of its matching predecessor.
+same as the origin of its matching predecessor (in this case S6@0-2).
 The means our new 
 new completion effect
 will have QDFA state S10, origin 0 and current earleme 3.
@@ -996,15 +1053,15 @@ and all scanned Earley items
 and all completion effect Earley items will
 have one and only one source choice.
 
-Completion effects recurse.
+Completions recurse.
 A completion effect becomes the cause of another
-Earley item if the completion effect also
+completion if the completion effect also
 contains a completed symbol
 and if there is a matching predecessor.
 
 The completion effect that we just added (S10@0-3)
 is also a completion cause and
-leads to a recursion step.
+therefore is a step in a sequence of completions.
 Earley item S10@0-3 has QDFA state S10.
 QDFA state S10 contains a completed rule:
 
@@ -1057,7 +1114,8 @@ normalize-whitespace: 1
 
 In our previous example
 of scanning, we referred to S5@0-3.
-One more completion cause-effect pair and we will see
+One more step in the sequence of completions
+and we will see
 S5@0-3 again.
 The origin of S3@0-3 is at earleme 0.
 C<Term> is only the completed symbol in QDFA state 3.
@@ -1079,10 +1137,8 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-With completed items,
-if one Earley item is the matching predecessor of a second Earley item,
-then the second Earley item is the
-B<successor> of the first one.
+We call a completion effect Earley item the 
+B<successor> of its matching predecessor.
 For example,
 S5@0-3 is the successor
 of S1@0-0.
@@ -1131,11 +1187,13 @@ If the parse is ambiguous,
 some Earley items may have more than one applicable LR(0)
 item.
 
-An LR(0) item in a cause is B<applicable> if it matches
-the LR(0) item in the completion effect,
+An LR(0) item in a completion cause is B<applicable> if it matches
+the LR(0) item in its completion effect,
 and vice versa.
-An LR(0) item in a cause B<matches> the LR(0) item in a completion effect,
-if the left hand side of the cause's LR(0) item
+An LR(0) item in a completion cause
+B<matches> the LR(0) item in a completion effect,
+if and only if the left hand side of the LR(0) item
+in the completion cause
 is the same
 as the first non-null symbol
 before the dot position in the LR(0) item in the completion effect.
@@ -1144,25 +1202,22 @@ An LR(0) item in a predecessor is B<applicable> if it matches
 the LR(0) item in the successor,
 and vice versa.
 An LR(0) item in a predecessor B<matches> the LR(0) item in its successor
-if the two LR(0) items are for the same rule,
-and if the dot position is exactly one non-null symbol earlier in the predecessor
+if and only if
+
+=over
+
+=item * the two LR(0) items are for the same rule, and
+
+=item * the dot position is exactly one non-null symbol earlier in the predecessor
 than it is in the successor.
 
-The matching of LR(0) items is symmetric:
-An LR(0) item in a completion effect matches the LR(0) item in
-its cause if and only if
-the LR(0) item in the cause matches the LR(0) item in
-the completion effect.
-An LR(0) item in a predecessor matches the LR(0) item in
-its successor if and only if
-the LR(0) item in the successor matches the LR(0) item in
-the predecessor.
+=back
 
 =head2 Ambiguous Parsing
 
 The parse in this example is not ambiguous.
 Marpa allows ambiguous parses.
-When a parse is ambigious, the procedure for adding
+When a parse is ambiguous, the procedure for adding
 Earley items is the same as above,
 except when Marpa attempts to add the same
 Earley item twice.
@@ -1192,7 +1247,7 @@ Earley item to end up with
 
 =back
 
-A parse is ambigious if and only if it has one or more points of ambiguity.
+A parse is ambiguous if and only if it has one or more points of ambiguity.
 A B<point of ambiguity> is
 an Earley item with two or more
 source choices,
@@ -1202,12 +1257,11 @@ two or more applicable LR(0) items.
 Marpa's Single Parse Evaluator will produce one result
 from an ambiguous parse, but only one result.
 When the Single Parse Evaluator encounters a point of ambiguity,
-it picks just one of the alternatives,
-doing so arbitrarily.
+it arbitrarily picks one of the alternatives.
 
-Marpa's Multi-parse Evaluator will evaluate all the results of an
+Marpa's Multi-parse Evaluator will iterate all the results of an
 ambiguous parse.
-The Multi-parse Evaluator also allows the user
+The Multi-parse Evaluator allows the user
 to control the order in which the parse results are produced.
 
 =head2 Calculating the Parse Result
@@ -1215,12 +1269,11 @@ to control the order in which the parse results are produced.
 Marpa calculates parse results using fairly traditional methods.
 Marpa first derives a pre-order tree from the Earley sets
 using either the Single Parse Evaluator or the Multi-parse Evaluator.
-These two evaluators create the tree differently.
 In the case of an unambiguous parse the two evaluators will produce
 exactly the same tree.
 
-Marpa evaluates the pre-order tree using
-an evaluation stack.
+Marpa evaluates the pre-order tree bottom-up,
+using an evaluation stack.
 The evaluation stack is initialized to empty.
 Every time Marpa evaluates a tree node,
 it pushes the result onto the evaluation stack.
@@ -1228,9 +1281,12 @@ If a tree node needs values as input,
 perhaps because a Perl closure requires arguments,
 the values are popped from the evaluation stack.
 When Marpa reaches the root tree-node,
-computes its value and pushes it onto the stack,
-that value will be the only item on the stack.
-That one remaining stack item becomes the value of the parse.
+Marpa computes the root tree-node's value
+and pushes that value onto the stack.
+At that point, the root tree-node's value
+will be the only item on the stack.
+It is this value that
+becomes the value of the parse.
 
 The C<trace_values> output in the
 appendix
@@ -1245,31 +1301,35 @@ of the traditional method of evaluating a parse
 tree is extremely wasteful.
 Grammars of great practical interest often contain very long sequences.
 A C language "translation unit" is defined as sequence of definitions
-and declarations, and can be extremely long.
-A Perl lexical unit is also a sequence.
+and declarations, and that sequence
+can be extremely long.
+A Perl lexical unit is also a sequence, again,
+often quite long.
 
-In the case of sequences written as BNF rules,
-the pieces of the sequence
-often have no real semantics of their own.
-This means that popping and pushing the symbols for every
-piece of the sequence is pointless.
-It is most efficient to leave the items
-in the sequence
-on the stack until the sequence is complete.
-Often the semantics of individual pieces of the sequence
-are a no-op, and
-the stack can be left untouched.
+When a sequence is expressed as BNF rules,
+most of the rule instances used to implement
+a long sequence
+will have
+no significant semantics of their own.
+Popping and pushing the symbols for each
+of these rule instances
+is wasteful.
+It is more efficient to leave the values of
+the sequence items
+on the evaluation stack until the sequence is complete.
 
-Sequences are not the only case where symbols
-are best left on the stack.
-To optimize these cases,
+To optimize
+sequences
+and other cases
+where symbols
+are best left on the stack,
 Marpa marks some of its internal symbols as "virtual".
 A symbol is B<virtual> if it has no "real" semantics.
-When a symbol is virtual,
-Marpa will not bother to do the usual pop and/or push
-of symbols on the evaluation stack.
+In the presence of virtual symbols,
+Marpa skips much of the usual popping and pushing of values
+on the evaluation stack.
 
-Marpa uses these three
+Marpa uses three
 special rule properties to track virtual symbols:
 C<vlhs>, C<vrhs> and C<real>.
 C<vlhs> means that the left hand side is a virtual symbol.
@@ -1280,30 +1340,43 @@ symbols on the right hand side.
 
 =head1 DETERMINING WHETHER A PARSE IS SUCCESSFUL
 
-As mentioned, what's usually called Earley's algorithm is just a recognizer,
-an algorithm to build the Earley sets.
-The input is recognized successfully if,
-at the earleme location designated as the end of parsing,
+As mentioned, in the strict sense,
+Earley's algorithm is just a recognizer.
+The input is recognized successfully if
 there is
-an Earley item for a completed start rule state.
+an Earley item for a completed start rule state
+in the Earley set at
+the end of parsing.
 A B<completed start rule state> is a QDFA state containing a completed start rule.
-A B<completed start rule> is an LR(0) item that is for the start rule
-and that has a dot position after the last symbol of the rule.
+A completed start rule is an LR(0) item for a start rule
+with a dot position at the end of the rule.
 
-At most two of the QDFA states can be completed start rule states.
-One is a special case.
+A B<start rule> is any rule
+that has Marpa's internal start symbol on
+its left hand side.
+There are at most two start rules in any Marpa grammar:
+the B<empty start rule>
+and the B<non-empty start rule>.
+As a consequence, there are at most two completed start rule states
+in any Marpa grammar:
+the B<empty completed start rule state>
+and the B<non-empty completed start rule state>.
+
+The empty start rule is the rule with Marpa's internal start symbol
+on its left hand side and an empty right hand side.
+There is an empty start rule in a Marpa grammar if and only if
+that Marpa grammar allows the null parse.
+(Saying that a grammar allows the null parse is the same
+as saying that a grammar recognizes the zero-length,
+or empty, token string.)
 In grammars which allow a null parse,
 the start state, QDFA state 0,
-is also a completed start rule state.
+is the empty completed start rule state.
 
-The other completed start rule state
-contains the LR(0) item which has Marpa's internal start rule
-with the dot pointer at the end of the rule.
-The lhs of the internal start rule is
-the internal start symbol.
-The rhs of the internal start rule is
+The non-empty start rule is the rule with Marpa's internal start symbol
+on its left hand side and exactly one symbol on its right hand side --
 the grammar's original start symbol.
-QDFA state S2 is the completed start rule state
+QDFA state S2 is the non-empty completed start rule state
 for our example parse:
 
 =for Marpa::Display
@@ -1316,14 +1389,13 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-A parse starting at earleme I<S> is successful at earleme I<N> if it
+A parse is B<successful at earleme I<N>> if it
 contains an Earley item
 for a completed start rule state
-with a origin earleme of I<S> and
-a dot earleme of I<N>.
-As of this writing,
-Marpa parses always start at earleme 0.
-The parse in our example is successful, because the following Earley item appears
+with a dot earleme of I<N>.
+The parse in our example is successful at earleme location 5,
+because
+the following Earley item appears
 in Earley set 5:
 
 =for Marpa::Display
@@ -1335,6 +1407,20 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
       
+A parse is B<successful> if that parse is
+successful an its end of parsing location.
+Marpa's idea of the end of parsing location
+depends on its input model,
+and can be explcitly overriden by the user.
+
+The parse in our example
+reads five tokens,
+uses the default input model,
+and uses the default end of parsing.
+The end of parsing for our
+example parse is at earleme location 5.
+This means that the parse in our example is successful.
+
 =head1 APPENDIX: THE EXAMPLE
 
 Below are the code and the trace outputs
