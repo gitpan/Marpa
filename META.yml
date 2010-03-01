@@ -40,13 +40,13 @@ no_index:
 provides:
   Marpa:
     file: lib/Marpa.pm
-    version: 0.007_002
+    version: 0.007_003
   Marpa::UrHTML:
     file: lib/Marpa/UrHTML.pm
-    version: 0.007_002
+    version: 0.007_003
 requires:
   HTML::PullParser: 3.57
 resources:
   license: http://dev.perl.org/licenses/
   repository: git://github.com/jeffreykegler/Marpa.git
-version: 0.007_002
+version: 0.007_003
