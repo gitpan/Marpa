@@ -8,7 +8,7 @@ use Fatal qw(open close);
 
 use Module::Build;
 
-my $marpa_version = '0.008000';
+my $marpa_version = '0.009_000';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -44,11 +44,15 @@ my $class = Module::Build->subclass(
 SUBCLASS
 
 my $build = $class->new(
-    dist_name      => 'Marpa',
-    dist_author    => 'Jeffrey Kegler',
-    dist_version   => $marpa_version,
-    dist_abstract  => 'Generate Parsers from any BNF grammar',
-    requires       => { 'Scalar::Util' => 0, },
+    dist_name     => 'Marpa',
+    dist_author   => 'Jeffrey Kegler',
+    dist_version  => $marpa_version,
+    dist_abstract => 'Generate Parsers from any BNF grammar',
+    requires      => {
+        'Scalar::Util'     => 0,
+        'HTML::Parser'     => '3.64',
+        'HTML::PullParser' => '3.57',
+    },
     build_requires => {
 
         # Scalar::Util::weaken no longer required
@@ -101,9 +105,11 @@ my $build = $class->new(
     },
     meta_add => {
         distribution_type => 'module',
-        requires          => { 'HTML::Parser' => '3.64' },
-        requires          => { 'HTML::PullParser' => '3.57' },
-        provides          => {
+        requires          => {
+            'HTML::Parser'     => '3.64',
+            'HTML::PullParser' => '3.57'
+        },
+        provides => {
             'Marpa' => {
                 file    => 'lib/Marpa.pm',
                 version => $marpa_version,

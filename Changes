@@ -1,5 +1,8 @@
 Revision history for Marpa
 
+0.009_000 Thu Mar  4 20:47:49 2010
+Special development branch to fix missing requirements issue.
+
 0.008000 Wed Mar  3 15:30:27 2010
 Added Marpa::Implementation document.
 
