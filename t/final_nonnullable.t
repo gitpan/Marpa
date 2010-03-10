@@ -53,12 +53,12 @@ Marpa::Test::is( $grammar->show_rules,
 1: p -> a /* maximal */
 2: p -> /* empty !used nullable maximal */
 3: n -> a /* maximal */
-4: S -> p p S[R0:2][x5] /* vrhs maximal real=2 */
-5: S -> p p[] S[R0:2][x5] /* vrhs maximal real=2 */
-6: S -> p[] p S[R0:2][x5] /* vrhs maximal real=2 */
-7: S -> p[] p[] S[R0:2][x5] /* vrhs maximal real=2 */
-8: S[R0:2][x5] -> p n /* vlhs maximal real=2 */
-9: S[R0:2][x5] -> p[] n /* vlhs maximal real=2 */
+4: S -> p p S[R0:2] /* vrhs maximal real=2 */
+5: S -> p p[] S[R0:2] /* vrhs maximal real=2 */
+6: S -> p[] p S[R0:2] /* vrhs maximal real=2 */
+7: S -> p[] p[] S[R0:2] /* vrhs maximal real=2 */
+8: S[R0:2] -> p n /* vlhs maximal real=2 */
+9: S[R0:2] -> p[] n /* vlhs maximal real=2 */
 10: S['] -> S /* vlhs maximal real=1 */
 END_OF_STRING
 
@@ -71,57 +71,57 @@ S['] -> . S
 S1: predict; 1,3,5,9,14,19,21,25
 p -> . a
 n -> . a
-S -> . p p S[R0:2][x5]
-S -> . p p[] S[R0:2][x5]
-S -> p[] . p S[R0:2][x5]
-S -> p[] p[] . S[R0:2][x5]
-S[R0:2][x5] -> . p n
-S[R0:2][x5] -> p[] . n
- <S[R0:2][x5]> => S3
+S -> . p p S[R0:2]
+S -> . p p[] S[R0:2]
+S -> p[] . p S[R0:2]
+S -> p[] p[] . S[R0:2]
+S[R0:2] -> . p n
+S[R0:2] -> p[] . n
+ <S[R0:2]> => S3
  <a> => S4
  <n> => S5
  <p> => S6; S7
 S2: 28
 S['] -> S .
 S3: 20
-S -> p[] p[] S[R0:2][x5] .
+S -> p[] p[] S[R0:2] .
 S4: 2,4
 p -> a .
 n -> a .
 S5: 26
-S[R0:2][x5] -> p[] n .
+S[R0:2] -> p[] n .
 S6: 6,11,15,22
-S -> p . p S[R0:2][x5]
-S -> p p[] . S[R0:2][x5]
-S -> p[] p . S[R0:2][x5]
-S[R0:2][x5] -> p . n
- <S[R0:2][x5]> => S8
+S -> p . p S[R0:2]
+S -> p p[] . S[R0:2]
+S -> p[] p . S[R0:2]
+S[R0:2] -> p . n
+ <S[R0:2]> => S8
  <n> => S9
  <p> => S10; S7
 S7: predict; 1,3,21,25
 p -> . a
 n -> . a
-S[R0:2][x5] -> . p n
-S[R0:2][x5] -> p[] . n
+S[R0:2] -> . p n
+S[R0:2] -> p[] . n
  <a> => S4
  <n> => S5
  <p> => S11; S12
 S8: 12,16
-S -> p p[] S[R0:2][x5] .
-S -> p[] p S[R0:2][x5] .
+S -> p p[] S[R0:2] .
+S -> p[] p S[R0:2] .
 S9: 23
-S[R0:2][x5] -> p n .
+S[R0:2] -> p n .
 S10: 7
-S -> p p . S[R0:2][x5]
- <S[R0:2][x5]> => S13
+S -> p p . S[R0:2]
+ <S[R0:2]> => S13
 S11: 22
-S[R0:2][x5] -> p . n
+S[R0:2] -> p . n
  <n> => S9
 S12: predict; 3
 n -> . a
  <a> => S14
 S13: 8
-S -> p p S[R0:2][x5] .
+S -> p p S[R0:2] .
 S14: 4
 n -> a .
 END_OF_STRING

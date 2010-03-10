@@ -1,5 +1,8 @@
 Revision history for Marpa
 
+0.011_000 Sun Mar  7 16:41:50 2010
+First in a series of development releases.
+
 0.010000 Sun Mar  7 16:14:24 2010
 Fixes issue with missing requirement: HTML::PullParser.
 

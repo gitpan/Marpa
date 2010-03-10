@@ -440,7 +440,7 @@ is not reclassed as cruft.
 The C<:PROLOG> pseudoclass specifies the action for SGML prolog.
 This is the part of the HTML document which precedes the HTML root element.
 Components valid in the
-trailer include SGML comments, processing instructions and whitespace.
+prolog include SGML comments, processing instructions and whitespace.
 
 =head2 :TOP
 
@@ -468,7 +468,7 @@ of its descendants.
 The C<:TRAILER> pseudoclass specifies the action for SGML trailer.
 This is the part of the HTML document which precedes the HTML root element.
 Components valid in the
-prolog include SGML comments, processing instructions, and whitespace.
+trailer include SGML comments, processing instructions, and whitespace.
 Cruft can also be found here, though for L<Marpa::UrHTML> that is a
 last resort.
 

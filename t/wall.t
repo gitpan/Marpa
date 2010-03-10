@@ -100,10 +100,18 @@ for my $n ( 1 .. 12 ) {
         ]
     );
 
+    my $evaler =
+        Marpa::Evaluator->new( { recce => $recce, parse_order => 'none', } );
+
     # Set max_parses just in case there's an infinite loop.
     # This is for debugging, after all
-    my $evaler = Marpa::Evaluator->new(
-        { recce => $recce, max_parses => 300, parse_order => 'none', } );
+
+# Marpa::Display
+# name: Evaluator set Method Example
+
+    $evaler->set( { max_parses => 300 } );
+
+# Marpa::Display::End
 
     my $parse_count = 0;
     while ( $evaler->value() ) { $parse_count++; }

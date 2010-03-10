@@ -1813,9 +1813,6 @@ sub add_user_rule {
         $punctuation_free_separator_name =~ s/[^[:alnum:]]/_/gxms;
         $sequence_name .= '[Sep:' . $punctuation_free_separator_name . ']';
     }
-    my $unique_name_piece = sprintf '[x%x]',
-        scalar @{ $grammar->[Marpa::Internal::Grammar::SYMBOLS] };
-    $sequence_name .= $unique_name_piece;
     my $sequence = assign_symbol( $grammar, $sequence_name );
 
     # The top sequence rule
@@ -2928,16 +2925,11 @@ sub rewrite_as_CHAF {
                         shift @proper_nullable_ixes;
                     }
 
-                    my $unique_name_piece = sprintf '[x%x]',
-                        (
-                        scalar
-                            @{ $grammar->[Marpa::Internal::Grammar::SYMBOLS] }
-                        );
                     $next_subproduction_lhs = assign_symbol( $grammar,
                               $lhs->[Marpa::Internal::Symbol::NAME] . '[R'
                             . $rule_id . q{:}
-                            . ( $subproduction_end_ix + 1 ) . ']'
-                            . $unique_name_piece );
+                            . ( $subproduction_end_ix + 1 )
+                            . ']' );
 
                     $next_subproduction_lhs
                         ->[Marpa::Internal::Symbol::NULLABLE] = 0;

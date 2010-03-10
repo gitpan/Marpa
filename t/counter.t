@@ -21,9 +21,10 @@ BEGIN {
 ## no critic (Subroutines::RequireArgUnpacking)
 
 # Ranks are in increments to .001
-# to test that integer rounding does
-# not happen anywhere.  It would be
-# pretty obvious
+# This is to make sure
+# that the ranks are floating point --
+# that integer rounding
+# is not happening anywhere.
 use constant TEST_INCREMENT => .001;
 
 sub rank_one {

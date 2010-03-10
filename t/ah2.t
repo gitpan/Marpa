@@ -52,15 +52,15 @@ Marpa::Test::is( $grammar->show_rules, <<'EOS', 'Aycock/Horspool Rules' );
 1: A -> a /* maximal */
 2: A -> E /* !used nullable maximal */
 3: E -> /* empty !used nullable maximal */
-4: S -> A S[R0:1][x6] /* vrhs maximal real=1 */
+4: S -> A S[R0:1] /* vrhs maximal real=1 */
 5: S -> A A[] A[] A[] /* maximal */
-6: S -> A[] S[R0:1][x6] /* vrhs maximal real=1 */
-7: S[R0:1][x6] -> A S[R0:2][x7] /* vlhs vrhs maximal real=1 */
-8: S[R0:1][x6] -> A A[] A[] /* vlhs maximal real=3 */
-9: S[R0:1][x6] -> A[] S[R0:2][x7] /* vlhs vrhs maximal real=1 */
-10: S[R0:2][x7] -> A A /* vlhs maximal real=2 */
-11: S[R0:2][x7] -> A A[] /* vlhs maximal real=2 */
-12: S[R0:2][x7] -> A[] A /* vlhs maximal real=2 */
+6: S -> A[] S[R0:1] /* vrhs maximal real=1 */
+7: S[R0:1] -> A S[R0:2] /* vlhs vrhs maximal real=1 */
+8: S[R0:1] -> A A[] A[] /* vlhs maximal real=3 */
+9: S[R0:1] -> A[] S[R0:2] /* vlhs vrhs maximal real=1 */
+10: S[R0:2] -> A A /* vlhs maximal real=2 */
+11: S[R0:2] -> A A[] /* vlhs maximal real=2 */
+12: S[R0:2] -> A[] A /* vlhs maximal real=2 */
 13: S['] -> S /* vlhs maximal real=1 */
 14: S['][] -> /* empty nullable vlhs maximal real=1 */
 EOS
@@ -72,8 +72,8 @@ Marpa::Test::is( $grammar->show_symbols, <<'EOS', 'Aycock/Horspool Symbols' );
 3: E, lhs=[3] rhs=[2] nullable=1 nulling maximal
 4: S[], lhs=[] rhs=[] nullable=4 nulling maximal
 5: A[], lhs=[] rhs=[5 6 8 9 11 12] nullable=1 nulling maximal
-6: S[R0:1][x6], lhs=[7 8 9] rhs=[4 6] maximal
-7: S[R0:2][x7], lhs=[10 11 12] rhs=[7 9] maximal
+6: S[R0:1], lhs=[7 8 9] rhs=[4 6] maximal
+7: S[R0:2], lhs=[10 11 12] rhs=[7 9] maximal
 8: S['], lhs=[13] rhs=[] maximal
 9: S['][], lhs=[14] rhs=[] nullable=1 nulling maximal
 EOS
@@ -90,12 +90,12 @@ Marpa::Test::is(
 );
 Marpa::Test::is(
     $grammar->show_productive_symbols,
-    q{A A[] E S S['] S['][] S[R0:1][x6] S[R0:2][x7] S[] a},
+    q{A A[] E S S['] S['][] S[R0:1] S[R0:2] S[] a},
     'Aycock/Horspool Productive Symbols'
 );
 Marpa::Test::is(
     $grammar->show_accessible_symbols,
-    q{A A[] E S S['] S['][] S[R0:1][x6] S[R0:2][x7] S[] a},
+    q{A A[] E S S['] S['][] S[R0:1] S[R0:2] S[] a},
     'Aycock/Horspool Accessible Symbols'
 );
 
@@ -105,13 +105,13 @@ S0: /* empty */
 S1: A -> . a
  <a> => S2
 S2: A -> a .
-S3: S -> . A S[R0:1][x6]
+S3: S -> . A S[R0:1]
  empty => S1
  <A> => S4
-S4: S -> A . S[R0:1][x6]
+S4: S -> A . S[R0:1]
  empty => S14 S17 S21
- <S[R0:1][x6]> => S5
-S5: S -> A S[R0:1][x6] .
+ <S[R0:1]> => S5
+S5: S -> A S[R0:1] .
 S6: S -> . A A[] A[] A[]
  empty => S1
  <A> => S7
@@ -125,58 +125,58 @@ S9: S -> A A[] A[] . A[]
 at_nulling
  <A[]> => S10
 S10: S -> A A[] A[] A[] .
-S11: S -> . A[] S[R0:1][x6]
+S11: S -> . A[] S[R0:1]
 at_nulling
  <A[]> => S12
-S12: S -> A[] . S[R0:1][x6]
+S12: S -> A[] . S[R0:1]
  empty => S14 S17 S21
- <S[R0:1][x6]> => S13
-S13: S -> A[] S[R0:1][x6] .
-S14: S[R0:1][x6] -> . A S[R0:2][x7]
+ <S[R0:1]> => S13
+S13: S -> A[] S[R0:1] .
+S14: S[R0:1] -> . A S[R0:2]
  empty => S1
  <A> => S15
-S15: S[R0:1][x6] -> A . S[R0:2][x7]
+S15: S[R0:1] -> A . S[R0:2]
  empty => S24 S27 S30
- <S[R0:2][x7]> => S16
-S16: S[R0:1][x6] -> A S[R0:2][x7] .
-S17: S[R0:1][x6] -> . A A[] A[]
+ <S[R0:2]> => S16
+S16: S[R0:1] -> A S[R0:2] .
+S17: S[R0:1] -> . A A[] A[]
  empty => S1
  <A> => S18
-S18: S[R0:1][x6] -> A . A[] A[]
+S18: S[R0:1] -> A . A[] A[]
 at_nulling
  <A[]> => S19
-S19: S[R0:1][x6] -> A A[] . A[]
+S19: S[R0:1] -> A A[] . A[]
 at_nulling
  <A[]> => S20
-S20: S[R0:1][x6] -> A A[] A[] .
-S21: S[R0:1][x6] -> . A[] S[R0:2][x7]
+S20: S[R0:1] -> A A[] A[] .
+S21: S[R0:1] -> . A[] S[R0:2]
 at_nulling
  <A[]> => S22
-S22: S[R0:1][x6] -> A[] . S[R0:2][x7]
+S22: S[R0:1] -> A[] . S[R0:2]
  empty => S24 S27 S30
- <S[R0:2][x7]> => S23
-S23: S[R0:1][x6] -> A[] S[R0:2][x7] .
-S24: S[R0:2][x7] -> . A A
+ <S[R0:2]> => S23
+S23: S[R0:1] -> A[] S[R0:2] .
+S24: S[R0:2] -> . A A
  empty => S1
  <A> => S25
-S25: S[R0:2][x7] -> A . A
+S25: S[R0:2] -> A . A
  empty => S1
  <A> => S26
-S26: S[R0:2][x7] -> A A .
-S27: S[R0:2][x7] -> . A A[]
+S26: S[R0:2] -> A A .
+S27: S[R0:2] -> . A A[]
  empty => S1
  <A> => S28
-S28: S[R0:2][x7] -> A . A[]
+S28: S[R0:2] -> A . A[]
 at_nulling
  <A[]> => S29
-S29: S[R0:2][x7] -> A A[] .
-S30: S[R0:2][x7] -> . A[] A
+S29: S[R0:2] -> A A[] .
+S30: S[R0:2] -> . A[] A
 at_nulling
  <A[]> => S31
-S31: S[R0:2][x7] -> A[] . A
+S31: S[R0:2] -> A[] . A
  empty => S1
  <A> => S32
-S32: S[R0:2][x7] -> A[] A .
+S32: S[R0:2] -> A[] A .
 S33: S['] -> . S
  empty => S3 S6 S11
  <S> => S34
@@ -192,74 +192,74 @@ S['][] -> .
  <S> => S2
 S1: predict; 1,3,6,12,14,17,22,24,27,31
 A -> . a
-S -> . A S[R0:1][x6]
+S -> . A S[R0:1]
 S -> . A A[] A[] A[]
-S -> A[] . S[R0:1][x6]
-S[R0:1][x6] -> . A S[R0:2][x7]
-S[R0:1][x6] -> . A A[] A[]
-S[R0:1][x6] -> A[] . S[R0:2][x7]
-S[R0:2][x7] -> . A A
-S[R0:2][x7] -> . A A[]
-S[R0:2][x7] -> A[] . A
+S -> A[] . S[R0:1]
+S[R0:1] -> . A S[R0:2]
+S[R0:1] -> . A A[] A[]
+S[R0:1] -> A[] . S[R0:2]
+S[R0:2] -> . A A
+S[R0:2] -> . A A[]
+S[R0:2] -> A[] . A
  <A> => S3; S4
- <S[R0:1][x6]> => S5
- <S[R0:2][x7]> => S6
+ <S[R0:1]> => S5
+ <S[R0:2]> => S6
  <a> => S7
 S2: 34
 S['] -> S .
 S3: 4,10,15,20,25,29,32
-S -> A . S[R0:1][x6]
+S -> A . S[R0:1]
 S -> A A[] A[] A[] .
-S[R0:1][x6] -> A . S[R0:2][x7]
-S[R0:1][x6] -> A A[] A[] .
-S[R0:2][x7] -> A . A
-S[R0:2][x7] -> A A[] .
-S[R0:2][x7] -> A[] A .
+S[R0:1] -> A . S[R0:2]
+S[R0:1] -> A A[] A[] .
+S[R0:2] -> A . A
+S[R0:2] -> A A[] .
+S[R0:2] -> A[] A .
  <A> => S8
- <S[R0:1][x6]> => S9
- <S[R0:2][x7]> => S10
+ <S[R0:1]> => S9
+ <S[R0:2]> => S10
 S4: predict; 1,14,17,22,24,27,31
 A -> . a
-S[R0:1][x6] -> . A S[R0:2][x7]
-S[R0:1][x6] -> . A A[] A[]
-S[R0:1][x6] -> A[] . S[R0:2][x7]
-S[R0:2][x7] -> . A A
-S[R0:2][x7] -> . A A[]
-S[R0:2][x7] -> A[] . A
+S[R0:1] -> . A S[R0:2]
+S[R0:1] -> . A A[] A[]
+S[R0:1] -> A[] . S[R0:2]
+S[R0:2] -> . A A
+S[R0:2] -> . A A[]
+S[R0:2] -> A[] . A
  <A> => S11; S12
- <S[R0:2][x7]> => S6
+ <S[R0:2]> => S6
  <a> => S7
 S5: 13
-S -> A[] S[R0:1][x6] .
+S -> A[] S[R0:1] .
 S6: 23
-S[R0:1][x6] -> A[] S[R0:2][x7] .
+S[R0:1] -> A[] S[R0:2] .
 S7: 2
 A -> a .
 S8: 26
-S[R0:2][x7] -> A A .
+S[R0:2] -> A A .
 S9: 5
-S -> A S[R0:1][x6] .
+S -> A S[R0:1] .
 S10: 16
-S[R0:1][x6] -> A S[R0:2][x7] .
+S[R0:1] -> A S[R0:2] .
 S11: 15,20,25,29,32
-S[R0:1][x6] -> A . S[R0:2][x7]
-S[R0:1][x6] -> A A[] A[] .
-S[R0:2][x7] -> A . A
-S[R0:2][x7] -> A A[] .
-S[R0:2][x7] -> A[] A .
+S[R0:1] -> A . S[R0:2]
+S[R0:1] -> A A[] A[] .
+S[R0:2] -> A . A
+S[R0:2] -> A A[] .
+S[R0:2] -> A[] A .
  <A> => S8
- <S[R0:2][x7]> => S10
+ <S[R0:2]> => S10
 S12: predict; 1,24,27,31
 A -> . a
-S[R0:2][x7] -> . A A
-S[R0:2][x7] -> . A A[]
-S[R0:2][x7] -> A[] . A
+S[R0:2] -> . A A
+S[R0:2] -> . A A[]
+S[R0:2] -> A[] . A
  <A> => S13; S14
  <a> => S7
 S13: 25,29,32
-S[R0:2][x7] -> A . A
-S[R0:2][x7] -> A A[] .
-S[R0:2][x7] -> A[] A .
+S[R0:2] -> A . A
+S[R0:2] -> A A[] .
+S[R0:2] -> A[] A .
  <A> => S8
 S14: predict; 1
 A -> . a

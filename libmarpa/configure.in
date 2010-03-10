@@ -1,0 +1,16 @@
+dnl Process this file with autoconf to produce a configure script.
+
+AC_PREREQ(2.59)
+
+AC_INIT([marpa], [0.1], [JKEGL@cpan.org])
+
+AM_INIT_AUTOMAKE([1.9 foreign])
+
+AC_PROG_CC
+AC_PROG_RANLIB
+
+PKG_CHECK_MODULES(GLIB, [glib-2.0 >= 2.6.0], have_glib="yes", AC_MSG_ERROR([You need to have glib2 to compile Marpa]))
+
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
+

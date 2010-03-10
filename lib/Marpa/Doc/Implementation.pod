@@ -152,16 +152,16 @@ partial: 1
 normalize-whitespace: 1
 flatten: 1
 
-    13: statement -> optional_whitespace expression statement[R0:2][xe] /* vrhs real=2 */
+    13: statement -> optional_whitespace expression statement[R0:2] /* vrhs real=2 */
     14: statement -> optional_whitespace expression optional_whitespace[] optional_modifier[] optional_whitespace[]
-    15: statement -> optional_whitespace[] expression statement[R0:2][xe] /* vrhs real=2 */
+    15: statement -> optional_whitespace[] expression statement[R0:2] /* vrhs real=2 */
     16: statement -> optional_whitespace[] expression optional_whitespace[] optional_modifier[] optional_whitespace[]
-    17: statement[R0:2][xe] -> optional_whitespace statement[R0:3][xf] /* vlhs vrhs real=1 */
-    18: statement[R0:2][xe] -> optional_whitespace optional_modifier[] optional_whitespace[] /* vlhs real=3 */
-    19: statement[R0:2][xe] -> optional_whitespace[] statement[R0:3][xf] /* vlhs vrhs real=1 */
-    20: statement[R0:3][xf] -> optional_modifier optional_whitespace /* vlhs real=2 */
-    21: statement[R0:3][xf] -> optional_modifier optional_whitespace[] /* vlhs real=2 */
-    22: statement[R0:3][xf] -> optional_modifier[] optional_whitespace /* vlhs real=2 */
+    17: statement[R0:2] -> optional_whitespace statement[R0:3] /* vlhs vrhs real=1 */
+    18: statement[R0:2] -> optional_whitespace optional_modifier[] optional_whitespace[] /* vlhs real=3 */
+    19: statement[R0:2] -> optional_whitespace[] statement[R0:3] /* vlhs vrhs real=1 */
+    20: statement[R0:3] -> optional_modifier optional_whitespace /* vlhs real=2 */
+    21: statement[R0:3] -> optional_modifier optional_whitespace[] /* vlhs real=2 */
+    22: statement[R0:3] -> optional_modifier[] optional_whitespace /* vlhs real=2 */
 
 =for Marpa::Display::End
 
@@ -201,16 +201,14 @@ side of the original rule.
 New symbols are introduced to be the left hand sides
 of the other pieces.
 The names of the new lhs symbols are formed
-by suffixing two tags to
+by suffixing a tag to
 the name of the original left hand side.
-The first suffixed tag begins with a capital "R" and identifies the
+The suffixed tag begins with a capital "R" and identifies the
 location of the piece in the original rule.
 For example,
 the tag "C<[R0:3]>" indicates that this
 symbol is the left hand side for the piece of Rule 0 which begins at right hand symbol 3
 (the first symbol is symbol 0).
-The second suffixed tag begins with a lowercase "x" and is an arbitrary
-hex value to quarantee uniqueness.
 
 When a new lhs symbol is created for a piece,
 the worst case is that the new lhs is
@@ -283,10 +281,10 @@ name: Rewrite show_rules Output
 partial: 1
 normalize-whitespace: 1
 
-    1: statements -> statement[Seq:1-*][Sep:comma][x9] /* vrhs discard_sep real=0 */
-    2: statements -> statement[Seq:1-*][Sep:comma][x9] comma /* vrhs discard_sep real=1 */
-    3: statement[Seq:1-*][Sep:comma][x9] -> statement /* vlhs real=1 */
-    4: statement[Seq:1-*][Sep:comma][x9] -> statement[Seq:1-*][Sep:comma][x9] comma statement /* vlhs vrhs real=2 */
+    1: statements -> statement[Seq:1-*][Sep:comma] /* vrhs discard_sep real=0 */
+    2: statements -> statement[Seq:1-*][Sep:comma] comma /* vrhs discard_sep real=1 */
+    3: statement[Seq:1-*][Sep:comma] -> statement /* vlhs real=1 */
+    4: statement[Seq:1-*][Sep:comma] -> statement[Seq:1-*][Sep:comma] comma statement /* vlhs vrhs real=2 */
 
 =for Marpa::Display::End
 
@@ -314,9 +312,9 @@ partial: 1
 normalize-whitespace: 1
 
     5: block -> /* empty !used nullable */
-    6: block -> statements[Seq:1-*][xa] /* vrhs real=0 */
-    7: statements[Seq:1-*][xa] -> statements /* vlhs real=1 */
-    8: statements[Seq:1-*][xa] -> statements[Seq:1-*][xa] statements /* vlhs vrhs real=1 */
+    6: block -> statements[Seq:1-*] /* vrhs real=0 */
+    7: statements[Seq:1-*] -> statements /* vlhs real=1 */
+    8: statements[Seq:1-*] -> statements[Seq:1-*] statements /* vlhs vrhs real=1 */
 
 =for Marpa::Display::End
 
@@ -639,7 +637,7 @@ name: Implementation Example show_earley_sets Output
 partial: 1
 normalize-whitespace: 1
 
-    S8@0-4 [p=S5@0-3; s=Add; t=\undef]
+    S8@0-4 [p=S5@0-3; s=Add; t=\'+']
 
 =for Marpa::Display::End
 
@@ -668,17 +666,17 @@ When the context makes the
 meaning clear, an B<Earley item source choice>
 may be called a B<source> or a B<source choice>.
 In this example, the source choice is
-C<[p=S5@0-3; s=Add; t=\undef]>.
+C<[p=S5@0-3; s=Add; t=\'+']>.
 This parse is not ambiguous,
 so all Earley items have at most one source choice entry.
 
 In this case the source choice entry is for a B<token choice>.
 Token choices are shown as C<[p=>I<predecessor>C<; s=>I<token_name>C<; t=>I<token_value>C<]> 3-tuples.
 The token choice
-C<[p=S5@0-3; s=Add; t=\undef]>
+C<[p=S5@0-3; s=Add; t=\'+']>
 indicates that
 the scanned token was an C<Add> symbol,
-that the scanned token value is "C<undef>",
+that the scanned token value is "C<'+'>",
 and that
 the predecessor of S8@0-4 is
 S5@0-3.
@@ -1468,9 +1466,9 @@ perltidy: '-dcsc -sil=0'
 
     my @tokens = (
         [ 'Number', 42 ],
-        [ 'Multiply', ],
+        [ 'Multiply', q{*} ],
         [ 'Number', 1 ],
-        [ 'Add', ],
+        [ 'Add', q{+} ],
         [ 'Number', 7 ],
     );
 
@@ -1607,7 +1605,7 @@ remove-blank-last-line: 1
     S5@0-1 [p=S1@0-0; c=S3@0-1]
     S2@0-1 [p=S0@0-0; c=S5@0-1]
     Earley Set 2
-    S6@0-2 [p=S3@0-1; s=Multiply; t=\undef]
+    S6@0-2 [p=S3@0-1; s=Multiply; t=\'*']
     S7@2-2
     Earley Set 3
     S4@2-3 [p=S7@2-2; s=Number; t=\1]
@@ -1617,7 +1615,7 @@ remove-blank-last-line: 1
     S5@0-3 [p=S1@0-0; c=S3@0-3]
     S2@0-3 [p=S0@0-0; c=S5@0-3]
     Earley Set 4
-    S8@0-4 [p=S5@0-3; s=Add; t=\undef]
+    S8@0-4 [p=S5@0-3; s=Add; t=\'+']
     S9@4-4
     Earley Set 5
     S4@4-5 [p=S9@4-4; s=Number; t=\7]
@@ -1639,7 +1637,7 @@ remove-blank-last-line: 1
     Pushed value from S4@0-1L2o12a12: Number = \42
     Popping 1 values to evaluate S4@0-1L2o12a12, rule: 2: Factor -> Number
     Calculated and pushed value: 42
-    Pushed value from S6@0-2R4:2o10a10: Multiply = \undef
+    Pushed value from S6@0-2R4:2o10a10: Multiply = \'*'
     Pushed value from S4@2-3L2o9a9: Number = \1
     Popping 1 values to evaluate S4@2-3L2o9a9, rule: 2: Factor -> Number
     Calculated and pushed value: 1
@@ -1647,7 +1645,7 @@ remove-blank-last-line: 1
     Calculated and pushed value: 42
     Popping 1 values to evaluate S3@0-3L1o7a7, rule: 1: Term -> Factor
     Calculated and pushed value: 42
-    Pushed value from S8@0-4R3:2o5a5: Add = \undef
+    Pushed value from S8@0-4R3:2o5a5: Add = \'+'
     Pushed value from S4@4-5L2o4a4: Number = \7
     Popping 1 values to evaluate S4@4-5L2o4a4, rule: 2: Factor -> Number
     Calculated and pushed value: 7

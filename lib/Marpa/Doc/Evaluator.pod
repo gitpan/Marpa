@@ -2,9 +2,649 @@
 
 Marpa::API::Evaluator - Marpa Evaluator Objects
 
+=head1 SYNOPSIS
+
+=for Marpa::Display
+name: Engine Synopsis Ambiguous Parse
+partial: 1
+normalize-whitespace: 1
+
+    my $evaler = Marpa::Evaluator->new( { recce => $ambiguous_recce } );
+
+    my @values = ();
+    if ($evaler) {
+        while ( defined( my $ambiguous_value_ref = $evaler->value() ) ) {
+            push @values, ${$ambiguous_value_ref};
+        }
+    }
+
+=for Marpa::Display::End
+
 =head1 DESCRIPTION
 
-Not yet written.
+
+Marpa::Evaluator objects implement Marpa's Multi-parse
+Evaluator.
+Marpa has another Evaluator, its Single Parse Evaluator,
+which can handle all unambiguous and many ambiguous parses,
+and is simpler and faster.
+If you're not sure which to use, see 
+L<Marpa::API/"THE SINGLE PARSE EVALUATOR">.
+
+A Multi-parse Evaluator is created with the L<Marpa::Evaluator::new|/new> method.
+The user can then iterate through the parse results,
+using the 
+L<Marpa::Evaluator::value|/value> method.
+
+=head2 Parse Order
+
+The Multi-parse evaluator will produce all the parse results
+for a given parse, and allows the user to control the parse order.
+The method used to order parse results
+is specified with
+L<Marpa::Evaluator>'s L</parse_order> named argument.
+As of this writing, two values are supported for the 
+L</parse_order> named argument:
+C<none> and C<numeric>.
+
+Parses results are returned in an order determined by node
+rank.  The rules are
+
+=over
+
+Rule 1: In determining the order of parse results,
+the parse tree is traversed in pre-order,
+left to right.
+
+Rule 2:
+The same parse result is never returned twice.
+Two parse results are considered "the same" if they apply
+the same rules in the same order at the same earleme locations.
+
+Rule 3: 
+At each point of ambiguity, the choice with the
+highest rank is made, unless that choice would violate Rule 2.
+
+=back
+
+=head3 "none"
+
+When the parse order is "none",
+the node rank is arbitrary.
+and the parse results will be iterated in
+arbitrary order.
+This is the most efficient alternative,
+and is the default.
+
+=head3 "numeric"
+
+"C<numeric>" is
+the L</parse_order> value which allows user control
+of the order in which the L<value method|/"value">
+iterates through the parse results.
+The numeric parse order method
+assigns a Perl numeric value to each
+leaf node and rule node of the parse.
+This numeric value becomes the node's rank.
+The highest numeric value is the highest rank,
+the lowest numeric value is the lowest rank,
+and so forth.
+
+By default,
+
+=over
+
+=item * The rank of every leaf node is 0.
+
+=item * The rank of every rule node is the sum
+of the ranks of
+its child nodes.
+
+=back
+
+The defaults can be changed by assigning ranking actions.
+The ranking action of a token leaf node is specified
+using the token symbol's C<ranking_action> property.
+The ranking action of a nulled leaf node is specified
+using the null node symbol's C<ranking_action> property.
+The ranking action of a rule is specified
+using the rule's C<ranking_action> property.
+
+For the rank of a node to be calculated, the ranking action
+must first be resolved to a ranking Perl closure. 
+Ranking actions are resolved to ranking Perl closures
+in the L<evaluator setup phase|Marpa::API::Semantics/"Evaluator Setup Phase">,
+using the same logic that resolves semantics actions to 
+Perl semantic closures.
+The logic that resolves action names to closures is described in
+detail in
+L<the semantics document|Marpa::API::Semantics/"RESOLVING ACTION NAMES">.
+
+The ranking closures for token leaf nodes
+and the ranking closures for nulled leaf nodes
+are called
+in the L<bocage setup phase|Marpa::API::Semantics/"Bocage Setup Phase">.
+The ranking closures for rule nodes are called
+during the L<parse setup phase|Marpa::API::Semantics/"Parse Setup Phase">.
+
+=head2 Infinitely Ambiguous Grammars
+
+The fast evaluator does not allow an 
+B<infinitely> ambigious grammar,
+but the Multi-parse Evaluator does.
+An example of an infinitely ambiguous grammar is the following:
+
+=for Marpa::Display
+ignore: 1
+
+    S ::= A
+    A ::= B
+    B ::= A
+    B :: 'x'
+
+=for Marpa::Display::End
+
+Given the input 'x', this grammar will produce
+these parses 
+ 
+=for Marpa::Display
+ignore: 1
+
+    S -> A -> B -> x
+    S -> A -> B -> A -> B -> x
+    S -> A -> B -> A -> B -> x -> A -> B -> x
+    .
+    .
+    .
+
+=for Marpa::Display::End
+
+Because of the two rules C<A ::= B> and C<B ::= A>,
+this list of parses could go on forever.
+The two rules C<A ::= B> and C<B ::= A> form what is called a B<cycle>.
+
+Typically, if a user has written an grammar with an infinite cycle,
+it was a mistake and
+he wants to rewrite it before proceeding.
+By default, an infinitely ambiguous grammar is a fatal error.
+This is the behavior most users will want.
+
+If a user does want to parse with an infinitely ambiguous grammar,
+Marpa allows it.
+The details
+are described L<
+below|/"INFINITELY AMBIGUOUS GRAMMARS: THE DETAILS">.
+
+=head1 CONSTRUCTOR
+
+=head2 new
+
+=for Marpa::Display
+name: Engine Synopsis Ambiguous Parse
+partial: 1
+normalize-whitespace: 1
+
+    my $evaler = Marpa::Evaluator->new( { recce => $ambiguous_recce } );
+
+=for Marpa::Display::End
+
+The C<new> method's 
+arguments are one or more hashes of named arguments.
+On success,
+the C<new> method returns a new evaluator object.
+If the C<new> method finds that
+there is no parse of the
+input according to the grammar,
+it returns undefined.
+For other failures,
+the C<new> method
+throws an exception.
+
+A unsuccessful return from
+the C<new> method means that there is
+no parse of the input according to the grammar,
+but the opposite is not necessarily true.
+It is possible that the C<new> method will successfully
+return an evaluator object,
+only for the C<value> method to return undefined
+the first time it is called,
+indicating that there are
+no parse results.
+The number of parse results,
+including whether there are any at all,
+is not known until they are iterated by
+the C<value> method.
+
+The C<recognizer> named argument is required,
+and its value must be a recognizer object which has finished recognizing a text.
+The C<recce> named argument is a synonym for the C<recognizer> named argument.
+Other named arguments are described L<below|/"NAMED ARGUMENTS">.
+
+=head1 MUTATORS
+
+=head2 set
+
+=for Marpa::Display
+name: Evaluator set Method Example
+normalize-whitespace: 1
+
+    $evaler->set( { max_parses => 300 } );
+
+=for Marpa::Display::End
+
+The C<set>
+allows Marpa named arguments
+to be specified for an evaluator object after its creation.
+The arguments to the C<set> method are zero or more hashes of named arguments.
+
+=head2 value
+
+=for Marpa::Display
+name: Engine Synopsis Ambiguous Parse
+partial: 1
+normalize-whitespace: 1
+
+    my @values = ();
+    if ($evaler) {
+        while ( defined( my $ambiguous_value_ref = $evaler->value() ) ) {
+            push @values, ${$ambiguous_value_ref};
+        }
+    }
+
+=for Marpa::Display::End
+
+Iterates the evaluator object, returning a reference
+to the value of the next parse result.
+A Perl C<undef> is
+a valid parse result value,
+and is returned as
+a reference to an C<undef>.
+
+If there are no more parse results, returns undefined.
+If the input did not match the grammar,
+the C<value> method will
+return undefined the first time it is called.
+Failures are thrown as exceptions.
+
+=head1 TRACE ACCESSORS
+
+=head2 show_bocage
+
+=for Marpa::Display
+name: Implementation Example show_bocage Call
+perltidy: '-dcsc -sil=0'
+
+    my $show_bocage_output = $evaler->show_bocage(2);
+
+=for Marpa::Display::End
+
+Returns a multi-line string describing the bocage
+for an evaluator.
+The first line contains
+the count of the parse results produced up to this
+point from the bocage.
+The bocage follows
+in the form of a parse bocage grammar,
+listed in pre-order.
+
+Parse bocage grammars are similar to
+parse forest grammars.
+Parse bocage grammars are described at length
+in a L<separate document|Marpa::API::Bocage>,
+using an example output from C<show_bocage>.
+
+The optional I<verbosity> argument must be an integer greater
+than or equal to zero.
+For each parse bocage and-production,
+if I<verbosity> is a number greater than zero,
+Marpa shows the LR(0) item corresponding to the and-production's and-node.
+
+If I<verbosity> is less than 2,
+Marpa shows only the and-productions.
+If I<verbosity> is 2 or more,
+Marpa also shows the or-productions.
+Or-productions contain only redundant information,
+but the parse bocage grammar is
+not formally complete without them.
+
+=head1 CONTEXT-AWARE STATIC METHODS
+
+=for Marpa::Display
+name: Marpa::token_location example
+perltidy: '-dcsc -sil=0'
+
+    sub rank_null_a {
+        return ( $MyTest::MAXIMAL ? -1 : 1 )
+            * 10**( 3 - Marpa::token_location() );
+    }
+
+=for Marpa::Display::End
+
+The ranking Perl closures
+that run at node evaluation time have
+available a set of B<context-aware static methods>.
+A closure can use these methods to learn
+about the context in which it is called.
+As of this writing, the context-aware
+static methods are available to the
+ranking Perl closures only -- the semantic Perl
+closures cannot use them.
+This is an arbitrary restriction,
+and may be lifted in the future.
+
+=head2 Marpa::location
+
+Returns the earleme location of the origin (or start) of the rule.
+
+=head2 Marpa::token_location
+
+Returns the earleme location of the token.
+Intended for use in callbacks
+associated with empty rules and nulling symbols.
+
+=head1 NAMED ARGUMENTS
+
+=head2 closure
+
+The Multi-parse Evaluator's
+C<closure> named argument
+is
+a reference to a hash.
+In the key/value pairs of this hash,
+the key must be an action name.
+The hash value
+must be a CODE ref.
+
+Sources of action names include
+
+=over 
+
+=item * The C<action> properties of rules
+
+=item * The C<default_action> named argument of grammars
+
+=item * The C<lhs> properties of rules
+
+=item * The C<ranking_action> properties of rules
+
+=item * The C<ranking_action> properties of symbols
+
+=item * For its C<new> method,
+the C<action_object> named argument of grammars
+
+=back
+
+When an action name is a key in
+the 
+C<closure> named argument,
+the usual action resolution mechanism of the semantics
+is bypassed.
+A common use of
+the C<closure> named argument is to
+allow anonymous
+subroutines to be semantic actions.
+For more details, see L<the document on
+semantics|Marpa::API::Semantics>.
+
+=head2 end
+
+The Multi-parse Evaluator's
+C<end> named argument
+specifies the parse end location.
+The default is for the parse to end where the input did,
+so that the parse returned is of the entire input.
+
+=head2 infinite_rewrite
+
+Marpa handles infinitely ambiguous grammars,
+and allows two strategies for dealing with them.
+If the C<infinite_rewrite> named argument is true,
+when Marpa detects an infinitely ambiguous grammar,
+Marpa will rewrite
+the parse bocage
+to eliminate infinite cycles.
+The rewritten parse bocage will be semantically
+equivalent to the original.
+This rewrite happens in the evaluator setup phase,
+during the call to C<Marpa::Evaluator::new>.
+Rewriting to eliminate infinite cycles is the default behavior.
+
+If the C<infinite_rewrite> named argument is false,
+there will be no rewrite to eliminate infinite cycles.
+Instead, infinite cycles will be dealt with dynamically,
+as they arise
+in the parse setup phase
+during the calls to C<Marpa::Evaluator::value>.
+For more detail, see
+the section on L<infinitely
+ambiguous grammars|/"INFINITELY AMBIGUOUS GRAMMARS">.
+
+=head2 max_parses
+
+The value must be an integer.
+If it is greater than zero, the evaluator will
+return no more than that number of parse results.
+If it is zero, there will be no
+limit on the number of parse results returned.
+The default is for
+there to be no limit.
+
+Marpa allows extremely ambiguous grammars.
+The user may write a highly ambiguous grammar
+by mistake, or as a deliberate choice of parsing strategy
+for an application.
+When the ambiguity is a mistake,
+specifying C<max_parses> is useful to
+limit CPU usage and output length while the
+issue is being debugged.
+When ambiguity is a deliberate strategy,
+it is often the case that 
+the user only wants to see the first few parse results.
+
+=head2 parse_order
+
+The value must be a string:
+either "C<none>" or "C<numeric>".
+When the value is "C<none>", Marpa returns the parse results
+in arbitrary order.
+When the value is "C<numeric>", Marpa allows the user
+to control the order in which parse results are returned by
+specifying ranking actions.
+The default is for parse results to be returned in arbitrary order.
+For details, see L<the section on parse
+order|/"Parse Order">.
+
+=head2 recce
+
+A named argument whose value is the recognizer that the Evaluator is to be
+created from.
+This named argument is required for the L<Marpa::Evaluator::new|/new> call.
+The C<recce> named argument is not allowed for the L<Marpa::Evaluator::set> call.
+
+=head2 recognizer
+
+A synonym for the L</recce> named argument.
+
+=head2 trace_actions
+
+The Multi-parse Evaluator's
+C<trace_actions> named argument
+is a boolean.
+If the boolean value is true, Marpa traces the resolution of action names to
+Perl closures.
+A boolean value of false turns tracing off, which is the default.
+Traces are written to the trace file handle.
+
+=head2 trace_evaluation
+
+The Multi-parse Evaluator's
+C<trace_actions> named argument
+is a boolean.
+If the boolean value is true,
+Marpa prints messages that trace the rewriting
+of the parse bocage
+in the evaluator setup phase.
+A boolean value of false turns tracing off, which is the default.
+Traces are written to the trace file handle.
+
+=head2 trace_file_handle
+
+The value is a file handle.
+Traces and warning messages
+go to the trace file handle.
+By default the trace file handle is inherited
+from the recognizer used to create the evaluator.
+
+=head2 trace_values
+
+The Multi-parse Evaluator's
+C<trace_values> named argument
+is a numeric trace level.
+If the numeric trace level is 1, Marpa
+traces values as they are computed in the evaluation stack.
+A trace level of 0 turns value tracing off,
+which is the default.
+Traces are written to the trace file handle.
+
+=head1 INFINITELY AMBIGUOUS GRAMMARS: THE DETAILS
+
+This section describes the details of parsing with infinitely
+ambiguous grammars.
+Most readers will want to skip this section.
+
+Experts in parsing theory will notice
+that my terminology is non-standard.
+What I am calling a B<potentially infinite cycle>
+or an B<infinite cycle> is usually called just a B<cycle>
+in the literature, because all cycles yield potentially infinite
+parses.
+I use the more verbose terms because
+most readers will not be familiar with parsing theory,
+and might confuse cycles with recursion of the non-pathological
+and non-infinite variety.
+
+By default, Marpa treats an infinitely ambigious grammar as a fatal error.
+This is because infinite ambiguity is usually a mistake,
+and one that is easily fixed.
+To proceed to producing parse results from an infinitely ambiguous grammar,
+the user must set
+L<the grammar's infinite action named
+argument|Marpa::API::Grammar/"infinite_action">
+to a value other than "C<fatal>".
+The other choices are "C<warn>"
+and "C<quiet>".
+
+=head2 Cycle Length
+
+Obviously,
+Marpa cannot evaluate an infinitely long parse,
+and Marpa cannot list all of an infinite number of parse results.
+For grammars with potentially infinite cycles,
+Marpa's Multi-parse Evaluator returns only those parse results
+where the cycle length is 1.
+There will always be a finite number of these parse results.
+
+B<Cycle length> is the number of times a parse derivation goes
+around a potentially infinite cycle.
+L<Above|/"INFINITELY AMBIGUOUS GRAMMARS">,
+a set of parses from an example of an
+infinitely ambiguous grammar was shown.
+Here are those parses again, this time
+labeled with their cycle length.
+
+=for Marpa::Display
+ignore: 1
+
+    Cycle length 1: S -> A -> B -> x
+    Cycle length 2: S -> A -> B -> A -> B -> x
+    Cycle length 3: S -> A -> B -> A -> B -> x -> A -> B -> x
+
+=for Marpa::Display::End
+
+Of the parse results in the above list, Marpa would return a value
+only for the first,
+the one whose cycle length is 1.
+
+When iterating parse results for an infinitely ambiguous grammar, 
+two strategies are available to the user.
+Which is used depends on the setting
+of the B<infinite_rewrite> named argument.
+If the B<infinite_rewrite> named argument is true, the rewrite strategy is used.
+If the B<infinite_rewrite> named argument is false, the dynamic strategy is used.
+The rewrite strategy is the default.
+
+=head3 The Rewrite Strategy
+
+In the rewrite strategy, the parse bocage
+is rewritten
+during the evaluator setup
+phase, 
+in the C<Marpa::Evaluator::new> method.
+Potentially infinite cycles are eliminated in the rewrite,
+but all derivation paths for cycles of length one are preserved.
+This is the most powerful method and it
+works extremely well when the parse only contains a limited
+number of infinite cycles.
+
+A disadvantage of the rewrite strategy is that the rewrite is
+done,
+and its full cost in CPU time incurred,
+before any parses are returned.
+Marpa typically tries to amortize the cost of ambiguity over the
+parse results.
+
+Another disadvantage of the rewrite strategy is that
+there are grammars for which the
+rewrite is so CPU intensive that it
+is simply impractical for
+a parse of any size.
+These cases are probably only theoretical,
+but they are not very hard to create.
+
+The extreme worst cases are B<plex grammars>.
+In a plex grammar, every symbol directly produces
+every other symbol.
+That is, in a plex grammar,
+for every ordered pair of symbols I<X> and I<Y>,
+there is a rule of the form
+
+=for Marpa::Display
+ignore: 1
+
+     X ::= Y
+
+=for Marpa::Display::End
+
+I cannot think that
+anyone will be using plex grammars in a practical application.
+On the other hand, the same thing might be said
+of infinite ambiguity itself.
+
+=head3 The Dynamic Strategy
+
+The rewriting of infinite cycles can be turned off
+by setting the Multi-parse Evaluator's L<C<infinite_rewrite> named
+argument|/"infinite_rewrite"> to false.
+This totally eliminates the cost of the infinite cycle rewrite.
+The disadvantage of the dynamic strategy
+is that, in Marpa's current implementation,
+it skips some parse results which the rewrite strategy includes.
+
+The rewrite strategy includes all the parse results
+that are possible when
+cycle length is limited to 1.
+Where there are multiple, connected cycles,
+the rewrite strategy will iterate every possible way
+of reaching every possible cycle.
+
+When multiple cycles interconnect,
+many parse results will simply be different paths through
+the tangle of cycles.
+The dynamic strategy prunes some of these paths.
+If an application does not need
+a precise enumeration of all possible
+ways of reaching every cycle at every location,
+this pruning may be acceptable or even preferred.
 
 =head1 LICENSE AND COPYRIGHT
 

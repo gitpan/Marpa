@@ -203,22 +203,34 @@ This means that a null node
 cannot be the ancestor of any token nodes.
 In Marpa, null nodes are always leaf nodes.
 
-A null node gets its value at parse setup time from the null
-value of a symbol.
-If the null node is for a nulled symbol,
-the node's value is the null value of the nulled symbol.
-If the null node is for a nulled rule,
-the node's value is the null value of the rule's left
-hand side symbol.
+Null nodes are of two kinds.
+A B<nulling symbol node> corresponds to a nulling symbol.
+A B<nulled rule node> represents a nulled rule.
 
-If no C<null_value> property is defined for a symbol,
-that symbol's null value is
-the default null value for
-the grammar.
-The default null value is a Perl C<undef>.
-A grammar's
-default null value can be changed by defining the
+For every null node there is a B<null node symbol>,
+which is used to the determine
+the value of the null node.
+For a nulled rule node,
+the B<null node symbol> is
+the nulled rule's left hand side symbol.
+For a nulling symbol node,
+the B<null node symbol>
+is the nulling symbol.
+
+The value of a null node is the null value
+of the null node symbol.
+The B<null value of a symbol> comes from
+that symbol's C<null_value> property,
+if one is defined.
+Otherwise, the null value of the symbol
+comes from the grammar's
+default null value, as defined by the grammar's
 L<C<default_null_value> named argument|Marpa::API::Grammar/default_null_value>.
+If neither the symbol C<null_value> property
+or the grammar's
+L<C<default_null_value> named argument|Marpa::API::Grammar/default_null_value>
+is defined,
+a symbol's null value is a Perl C<undef>,
 
 A null subtree is a subtree all of whose nodes are null.
 Marpa prunes

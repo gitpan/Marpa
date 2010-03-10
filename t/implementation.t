@@ -7,7 +7,7 @@ use strict;
 use warnings;
 
 use Fatal qw(open close);
-use Test::More tests => 6;
+use Test::More tests => 7;
 
 use lib 'lib';
 use Marpa::Test;
@@ -42,11 +42,11 @@ $grammar->precompute();
 my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
 
 my @tokens = (
-    [ 'Number', 42 ],
-    [ 'Multiply', ],
-    [ 'Number', 1 ],
-    [ 'Add', ],
-    [ 'Number', 7 ],
+    [ 'Number',   42 ],
+    [ 'Multiply', q{*} ],
+    [ 'Number',   1 ],
+    [ 'Add',      q{+} ],
+    [ 'Number',   7 ],
 );
 
 $recce->tokens( \@tokens );
@@ -193,7 +193,7 @@ S3@0-1 [p=S1@0-0; c=S4@0-1]
 S5@0-1 [p=S1@0-0; c=S3@0-1]
 S2@0-1 [p=S0@0-0; c=S5@0-1]
 Earley Set 2
-S6@0-2 [p=S3@0-1; s=Multiply; t=\undef]
+S6@0-2 [p=S3@0-1; s=Multiply; t=\'*']
 S7@2-2
 Earley Set 3
 S4@2-3 [p=S7@2-2; s=Number; t=\1]
@@ -203,7 +203,7 @@ S3@0-3 [p=S1@0-0; c=S10@0-3]
 S5@0-3 [p=S1@0-0; c=S3@0-3]
 S2@0-3 [p=S0@0-0; c=S5@0-3]
 Earley Set 4
-S8@0-4 [p=S5@0-3; s=Add; t=\undef]
+S8@0-4 [p=S5@0-3; s=Add; t=\'+']
 S9@4-4
 Earley Set 5
 S4@4-5 [p=S9@4-4; s=Number; t=\7]
@@ -231,7 +231,7 @@ Marpa::Test::is( $trace_output,
 Pushed value from S4@0-1L2o12a12: Number = \42
 Popping 1 values to evaluate S4@0-1L2o12a12, rule: 2: Factor -> Number
 Calculated and pushed value: 42
-Pushed value from S6@0-2R4:2o10a10: Multiply = \undef
+Pushed value from S6@0-2R4:2o10a10: Multiply = \'*'
 Pushed value from S4@2-3L2o9a9: Number = \1
 Popping 1 values to evaluate S4@2-3L2o9a9, rule: 2: Factor -> Number
 Calculated and pushed value: 1
@@ -239,7 +239,7 @@ Popping 3 values to evaluate S10@0-3L2o8a8, rule: 4: Factor -> Factor Multiply F
 Calculated and pushed value: 42
 Popping 1 values to evaluate S3@0-3L1o7a7, rule: 1: Term -> Factor
 Calculated and pushed value: 42
-Pushed value from S8@0-4R3:2o5a5: Add = \undef
+Pushed value from S8@0-4R3:2o5a5: Add = \'+'
 Pushed value from S4@4-5L2o4a4: Number = \7
 Popping 1 values to evaluate S4@4-5L2o4a4, rule: 2: Factor -> Number
 Calculated and pushed value: 7
@@ -252,6 +252,80 @@ Calculated and pushed value: 49
 New Virtual Rule: S2@0-5L6o0a0, rule: 5: Expression['] -> Expression
 Symbol count is 1, now 1 rules
 END_TRACE_OUTPUT
+
+# Marpa::Display::End
+
+# Marpa::Display
+# name: Implementation Example Multi-parse Evaluator Call
+
+my $evaler = Marpa::Evaluator->new( { recce => $recce } );
+
+# Marpa::Display::End
+
+# Marpa::Display
+# name: Implementation Example show_bocage Call
+
+my $show_bocage_output = $evaler->show_bocage(2);
+
+# Marpa::Display::End
+
+# Marpa::Display
+# name: Implementation Example show_bocage Output
+# start-after-line: END_BOCAGE
+# end-before-line: '^END_BOCAGE$'
+
+Marpa::Test::is( $show_bocage_output,
+    <<'END_BOCAGE' , 'Implementation Example Bocage' );
+parse count: 0
+S2@0-5L6o0 -> S2@0-5L6o0a0
+S2@0-5L6o0a0 -> S5@0-5L0o1
+    rule 5: Expression['] -> Expression .
+    value_ops
+S5@0-5L0o1 -> S5@0-5L0o1a1
+S5@0-5L0o1a1 -> S12@0-5L1o2
+    rule 0: Expression -> Term .
+    value_ops
+S12@0-5L1o2 -> S12@0-5L1o2a2
+S12@0-5L1o2a2 -> S8@0-4R3:2o5 S3@4-5L1o3
+    rule 3: Term -> Term Add Term .
+    value_ops
+S3@4-5L1o3 -> S3@4-5L1o3a3
+S3@4-5L1o3a3 -> S4@4-5L2o4
+    rule 1: Term -> Factor .
+    value_ops
+S4@4-5L2o4 -> S4@4-5L2o4a4
+S4@4-5L2o4a4 -> \7
+    rule 2: Factor -> Number .
+    value_ops
+S8@0-4R3:2o5 -> S8@0-4R3:2o5a5
+S8@0-4R3:2o5a5 -> S5@0-3R3:1o6 \'+'
+    rule 3: Term -> Term Add . Term
+S5@0-3R3:1o6 -> S5@0-3R3:1o6a6
+S5@0-3R3:1o6a6 -> S3@0-3L1o7
+    rule 3: Term -> Term . Add Term
+S3@0-3L1o7 -> S3@0-3L1o7a7
+S3@0-3L1o7a7 -> S10@0-3L2o8
+    rule 1: Term -> Factor .
+    value_ops
+S10@0-3L2o8 -> S10@0-3L2o8a8
+S10@0-3L2o8a8 -> S6@0-2R4:2o10 S4@2-3L2o9
+    rule 4: Factor -> Factor Multiply Factor .
+    value_ops
+S4@2-3L2o9 -> S4@2-3L2o9a9
+S4@2-3L2o9a9 -> \1
+    rule 2: Factor -> Number .
+    value_ops
+S6@0-2R4:2o10 -> S6@0-2R4:2o10a10
+S6@0-2R4:2o10a10 -> S3@0-1R4:1o11 \'*'
+    rule 4: Factor -> Factor Multiply . Factor
+S3@0-1R4:1o11 -> S3@0-1R4:1o11a11
+S3@0-1R4:1o11a11 -> S4@0-1L2o12
+    rule 4: Factor -> Factor . Multiply Factor
+S4@0-1L2o12 -> S4@0-1L2o12a12
+S4@0-1L2o12a12 -> \42
+    rule 2: Factor -> Number .
+    value_ops
+END_BOCAGE
 
 # Marpa::Display::End
 

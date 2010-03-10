@@ -101,6 +101,32 @@ It may be possible for an exhausted recognizer to produce a valid parse
 when the parse end location is set
 to a location before the end of input.
 
+=head2 Failed Parses
+
+Failed parses do not necessarily show up
+in the recognizer.
+Despite its name,
+Marpa's recognizer
+does not actually indicate
+whether or not it recognized its input.
+Recognition is not decided until an evaluator
+is called.
+There are two reasons for this.
+
+=over
+
+=item * The location of the end of parsing is not known for certain until
+the evaluator is called.
+Whether an input is recognized or not cannot be decided until the parse
+end location is known.
+
+=item * Recognition for its own sake is an academic issue.
+Applications are concerned
+about whether there were any parse results.
+And producing parse results is the job of the evaluators.
+
+=back
+
 =head1 CONSTRUCTOR
 
 =head2 new

@@ -2150,7 +2150,7 @@ sub Marpa::Evaluator::show_and_node {
 
     if ( defined $value_ref ) {
         my $value_as_string =
-            Data::Dumper->new( [ ${$value_ref} ] )->Terse(1)->Dump;
+            Data::Dumper->new( [$value_ref] )->Terse(1)->Dump;
         chomp $value_as_string;
         push @rhs, $value_as_string;
     }    # value
@@ -2162,9 +2162,9 @@ sub Marpa::Evaluator::show_and_node {
             $return_value
                 .= '    rule '
                 . $rule->[Marpa::Internal::Rule::ID] . ': '
-                . Marpa::show_dotted_rule( $rule, $position )
+                . Marpa::show_dotted_rule( $rule, $position + 1 )
                 . "\n    "
-                . Marpa::brief_virtual_rule( $rule, $position ) . "\n";
+                . Marpa::brief_virtual_rule( $rule, $position + 1 ) . "\n";
             last SHOW_RULE;
         } ## end if ( $is_virtual_rule and $verbose >= 2 )
 
@@ -2172,7 +2172,7 @@ sub Marpa::Evaluator::show_and_node {
         $return_value
             .= '    rule '
             . $rule->[Marpa::Internal::Rule::ID] . ': '
-            . Marpa::brief_virtual_rule( $rule, $position ) . "\n";
+            . Marpa::brief_virtual_rule( $rule, $position + 1 ) . "\n";
 
     } ## end SHOW_RULE:
 
@@ -2242,6 +2242,7 @@ sub Marpa::Evaluator::show_bocage {
     return $text;
 } ## end sub Marpa::Evaluator::show_bocage
 
+# This routine is undocumented, pending a design review.
 sub Marpa::Evaluator::show_ambiguity {
     my ( $evaler, $verbose, ) = @_;
     my $and_nodes = $evaler->[Marpa::Internal::Evaluator::AND_NODES];
@@ -2457,7 +2458,7 @@ sub Marpa::Evaluator::set {
         } ## end if ( defined( my $value = $args->{'experimental'} ) )
 
         if ( defined( my $value = $args->{'parse_order'} ) ) {
-            Marpa::exception(q{parse_order must be 'original' or 'none'})
+            Marpa::exception(q{parse_order must be 'numeric' or 'none'})
                 if not $value ~~ [qw(original numeric none)];
             $evaler->[Marpa::Internal::Evaluator::PARSE_ORDER] = $value;
         }

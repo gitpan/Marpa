@@ -39,11 +39,29 @@ use Marpa::Offset qw(
     NODE_DATA
 );
 
+%Marpa::UrHTML::PULL_PARSER_OPTIONS = (
+    start       => q{'S',line,column,offset,offset_end,tagname,attr},
+    end         => q{'E',line,column,offset,offset_end,tagname},
+    text        => q{'T',line,column,offset,offset_end,is_cdata},
+    comment     => q{'C',line,column,offset,offset_end},
+    declaration => q{'D',line,column,offset,offset_end},
+    process     => q{'PI',line,column,offset,offset_end},
+
+    # options that default on
+    unbroken_text => 1,
+);
+
 use Marpa::Offset qw(
     :package=Marpa::UrHTML::Internal::Token
     TYPE
+    LINE
+    COL
+    =COLUMN
     START_OFFSET
     END_OFFSET
+    TAGNAME
+    =IS_CDATA
+    ATTR
 );
 
 use Marpa::UrHTML::Callback;
@@ -381,19 +399,27 @@ sub wrap_user_tdesc_handler {
     };
 } ## end sub wrap_user_tdesc_handler
 
-sub setup_offsets {
-    my ($self)     = @_;
-    my $document   = $self->{document};
-    my @rs_offsets = ();
-    my $rs_offset  = 0;
-    while ( ( $rs_offset = index ${$document}, "\n", $rs_offset ) >= 0 ) {
-        push @rs_offsets, $rs_offset;
-        $rs_offset++;
+sub earleme_to_linecol {
+    my ( $self, $token_offset ) = @_;
+    my $html_parser_tokens = $self->{tokens};
+
+    # Special start of file for undefined offset
+    if ( not defined $token_offset ) {
+        return ( 1, 0 );
     }
-    my %offsets = map { ( $rs_offsets[$_] => $_ ) } ( 0 .. $#rs_offsets );
-    $self->{offset} = \%offsets;
-    return 1;
-} ## end sub setup_offsets
+
+    # Special case needed for a token offset after the last
+    # token.  This happens with the EOF.
+    if ( $token_offset < 0 or $token_offset > $#{$html_parser_tokens} ) {
+        $token_offset = $#{$html_parser_tokens};
+    }
+
+    return @{ $html_parser_tokens->[$token_offset] }[
+        Marpa::UrHTML::Internal::Token::LINE,
+        Marpa::UrHTML::Internal::Token::COLUMN,
+    ];
+
+} ## end sub earleme_to_linecol
 
 sub earleme_to_offset {
 
@@ -402,7 +428,6 @@ sub earleme_to_offset {
 
     # Special start of file for undefined offset
     if ( not defined $token_offset ) {
-        return ( 0, 1 ) if wantarray;
         return 0;
     }
 
@@ -417,31 +442,8 @@ sub earleme_to_offset {
             $html_parser_tokens->[$token_offset]
             ->[Marpa::UrHTML::Internal::Token::END_OFFSET];
     }
-    return $offset if not wantarray;
+    return $offset;
 
-    my $last_rs = rindex ${ $self->{document} }, "\n", $offset;
-
-    # lines are numbered starting at 1
-    my $line;
-    given ($last_rs) {
-        when ( $_ <= 0 ) { $line = 1 }
-
-        # if last_rs is the same as the offset, we are in that line
-        when ($offset) {
-            $line = $self->{offset}->{$last_rs} + 1
-        }
-
-        # If last_rs is different we are in the line after.
-        # So add 2, because the value in the hash is the
-        # 0-based number of the previous line,
-        # and we want the 1-based number of the
-        # current line.
-        default {
-            $line = $self->{offset}->{$last_rs} + 2
-        }
-    } ## end given
-
-    return ( $offset, $line );
 } ## end sub earleme_to_offset
 
 my %ARGS = (
@@ -846,10 +848,11 @@ sub parse {
 
     my %pull_parser_args;
     my $document = $pull_parser_args{doc} = $self->{document} = $document_ref;
-    my $pull_parser = HTML::PullParser->new( %pull_parser_args, %ARGS )
+    my $pull_parser =
+        HTML::PullParser->new( %pull_parser_args,
+        %Marpa::UrHTML::PULL_PARSER_OPTIONS )
         || Carp::croak('Could not create pull parser');
 
-    Marpa::UrHTML::Internal::setup_offsets($self);
     my @tokens = ();
 
     my %terminals = map { $_ => 1 } @Marpa::UrHTML::Internal::CORE_TERMINALS;
@@ -859,7 +862,8 @@ sub parse {
     my @marpa_tokens       = ();
     HTML_PARSER_TOKEN:
     while ( my $html_parser_token = $pull_parser->get_token ) {
-        my ( $token_type, $offset, $offset_end ) = @{$html_parser_token};
+        my ( $token_type, $line, $column, $offset, $offset_end ) =
+            @{$html_parser_token};
 
         # If it's a virtual token from HTML::Parser,
         # pretend it never existed.
@@ -872,7 +876,8 @@ sub parse {
 
         given ($token_type) {
             when ('T') {
-                my $is_cdata = $html_parser_token->[3];
+                my $is_cdata = $html_parser_token
+                    ->[Marpa::UrHTML::Internal::Token::IS_CDATA];
                 push @marpa_tokens,
                     [
                     (   substr(
@@ -886,7 +891,8 @@ sub parse {
                     ];
             } ## end when ('T')
             when ('S') {
-                my $tag_name = $html_parser_token->[3];
+                my $tag_name = $html_parser_token
+                    ->[Marpa::UrHTML::Internal::Token::TAGNAME];
                 $start_tags{$tag_name}++;
                 my $terminal = "S_$tag_name";
                 $terminals{$terminal}++;
@@ -897,7 +903,8 @@ sub parse {
                     ];
             } ## end when ('S')
             when ('E') {
-                my $tag_name = $html_parser_token->[3];
+                my $tag_name = $html_parser_token
+                    ->[Marpa::UrHTML::Internal::Token::TAGNAME];
                 $end_tags{$tag_name}++;
                 my $terminal = "E_$tag_name";
                 $terminals{$terminal}++;
@@ -1308,12 +1315,16 @@ sub parse {
         # They are the real things, hacked up.
         $marpa_token->[0] = 'CRUFT';
         if ($trace_cruft) {
-            my $cruft_earleme = $current_earleme - 1;
-            if ( $cruft_earleme < 0 ) { $cruft_earleme = 0 }
-            my ( $offset, $line ) =
-                earleme_to_offset( $self, $cruft_earleme );
-            $line++;    # The convention is that line numbering starts at 1
-            say {$trace_fh} qq{Cruft at line $line: "},
+            my ( $line, $col ) =
+                earleme_to_linecol( $self, $current_earleme );
+
+            # HTML::Parser uses one-based line numbers,
+            # but zero-based column numbers
+            # The convention (in vi and cut) is that
+            # columns are also one-based.
+            $col++;
+
+            say {$trace_fh} qq{Cruft at line $line, column $col: "},
                 ${ tdesc_list_to_literal( $self, $marpa_token->[1] ) }, q{"}
                 or Carp::croak("Cannot print: $ERRNO");
         } ## end if ($trace_cruft)

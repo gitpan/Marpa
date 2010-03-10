@@ -143,7 +143,8 @@ sub Marpa::UrHTML::descendants {
             when ('token_type') {
                 push @values,
                     ( $child_type eq 'token' )
-                    ? ( $tokens->[$data]->[0] )
+                    ? (
+                    $tokens->[$data]->[Marpa::UrHTML::Internal::Token::TYPE] )
                     : undef;
             } ## end when ('token_type')
             when ('pseudoclass') {
@@ -231,7 +232,7 @@ sub Marpa::UrHTML::attributes {
 
     my $tokens          = $parse_instance->{tokens};
     my $start_tag_token = $tokens->[$start_tag_token_id];
-    return $start_tag_token->[4];
+    return $start_tag_token->[Marpa::UrHTML::Internal::Token::ATTR];
 } ## end sub Marpa::UrHTML::attributes
 
 # This assumes that a start token, if there is one
@@ -251,7 +252,9 @@ sub create_fetch_attribute_closure {
         return if not defined $start_tag_token_id;
         my $tokens          = $parse_instance->{tokens};
         my $start_tag_token = $tokens->[$start_tag_token_id];
-        my $attribute_value = $start_tag_token->[4]->{$attribute};
+        my $attribute_value =
+            $start_tag_token->[Marpa::UrHTML::Internal::Token::ATTR]
+            ->{$attribute};
 
         return defined $attribute_value ? lc $attribute_value : undef;
     };

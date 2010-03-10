@@ -1,0 +1,5 @@
+autom4te.cache/
+/.deps/
+/config.log
+/libmarpa.a
+/marpa.o

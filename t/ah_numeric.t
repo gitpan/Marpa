@@ -18,10 +18,15 @@ BEGIN {
 
 ## no critic (Subroutines::RequireArgUnpacking)
 
+# Marpa::Display
+# name: Marpa::token_location example
+
 sub rank_null_a {
     return ( $MyTest::MAXIMAL ? -1 : 1 )
         * 10**( 3 - Marpa::token_location() );
 }
+
+# Marpa::Display::End
 
 sub default_action {
     shift;

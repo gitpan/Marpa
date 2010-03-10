@@ -107,28 +107,28 @@ my $show_rules_output = $grammar->show_rules();
 
 Marpa::Test::is( $show_rules_output, <<'END_RULES', 'Rewritten Rules' );
 0: statement -> optional_whitespace expression optional_whitespace optional_modifier optional_whitespace /* !used */
-1: statements -> statement[Seq:1-*][Sep:comma][x9] /* vrhs discard_sep real=0 */
-2: statements -> statement[Seq:1-*][Sep:comma][x9] comma /* vrhs discard_sep real=1 */
-3: statement[Seq:1-*][Sep:comma][x9] -> statement /* vlhs real=1 */
-4: statement[Seq:1-*][Sep:comma][x9] -> statement[Seq:1-*][Sep:comma][x9] comma statement /* vlhs vrhs real=2 */
+1: statements -> statement[Seq:1-*][Sep:comma] /* vrhs discard_sep real=0 */
+2: statements -> statement[Seq:1-*][Sep:comma] comma /* vrhs discard_sep real=1 */
+3: statement[Seq:1-*][Sep:comma] -> statement /* vlhs real=1 */
+4: statement[Seq:1-*][Sep:comma] -> statement[Seq:1-*][Sep:comma] comma statement /* vlhs vrhs real=2 */
 5: block -> /* empty !used nullable */
-6: block -> statements[Seq:1-*][xa] /* vrhs real=0 */
-7: statements[Seq:1-*][xa] -> statements /* vlhs real=1 */
-8: statements[Seq:1-*][xa] -> statements[Seq:1-*][xa] statements /* vlhs vrhs real=1 */
+6: block -> statements[Seq:1-*] /* vrhs real=0 */
+7: statements[Seq:1-*] -> statements /* vlhs real=1 */
+8: statements[Seq:1-*] -> statements[Seq:1-*] statements /* vlhs vrhs real=1 */
 9: optional_whitespace -> whitespace
 10: optional_whitespace -> /* empty !used nullable */
 11: optional_modifier -> modifier
 12: optional_modifier -> /* empty !used nullable */
-13: statement -> optional_whitespace expression statement[R0:2][xe] /* vrhs real=2 */
+13: statement -> optional_whitespace expression statement[R0:2] /* vrhs real=2 */
 14: statement -> optional_whitespace expression optional_whitespace[] optional_modifier[] optional_whitespace[]
-15: statement -> optional_whitespace[] expression statement[R0:2][xe] /* vrhs real=2 */
+15: statement -> optional_whitespace[] expression statement[R0:2] /* vrhs real=2 */
 16: statement -> optional_whitespace[] expression optional_whitespace[] optional_modifier[] optional_whitespace[]
-17: statement[R0:2][xe] -> optional_whitespace statement[R0:3][xf] /* vlhs vrhs real=1 */
-18: statement[R0:2][xe] -> optional_whitespace optional_modifier[] optional_whitespace[] /* vlhs real=3 */
-19: statement[R0:2][xe] -> optional_whitespace[] statement[R0:3][xf] /* vlhs vrhs real=1 */
-20: statement[R0:3][xf] -> optional_modifier optional_whitespace /* vlhs real=2 */
-21: statement[R0:3][xf] -> optional_modifier optional_whitespace[] /* vlhs real=2 */
-22: statement[R0:3][xf] -> optional_modifier[] optional_whitespace /* vlhs real=2 */
+17: statement[R0:2] -> optional_whitespace statement[R0:3] /* vlhs vrhs real=1 */
+18: statement[R0:2] -> optional_whitespace optional_modifier[] optional_whitespace[] /* vlhs real=3 */
+19: statement[R0:2] -> optional_whitespace[] statement[R0:3] /* vlhs vrhs real=1 */
+20: statement[R0:3] -> optional_modifier optional_whitespace /* vlhs real=2 */
+21: statement[R0:3] -> optional_modifier optional_whitespace[] /* vlhs real=2 */
+22: statement[R0:3] -> optional_modifier[] optional_whitespace /* vlhs real=2 */
 23: block['] -> block /* vlhs real=1 */
 24: block['][] -> /* empty nullable vlhs real=1 */
 END_RULES
