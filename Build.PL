@@ -8,7 +8,7 @@ use Fatal qw(open close);
 
 use Module::Build;
 
-my $marpa_version = '0.011_000';
+my $marpa_version = '0.011_001';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -79,8 +79,9 @@ my $build = $class->new(
         resources =>
             { repository => 'git://github.com/jeffreykegler/Marpa.git', },
         no_index => {
-            directory =>
-                [qw( inc t author.t save lib/Marpa/Doc/Not_Updated )],
+            directory => [
+                qw( inc xs libmarpa t author.t save lib/Marpa/Doc/Not_Updated )
+            ],
             namespace => [
                 'Marpa::Internal',          'Marpa::MDL::Internal',
                 'Marpa::MDLex::Internal',   'Marpa::UrHTML::Internal',

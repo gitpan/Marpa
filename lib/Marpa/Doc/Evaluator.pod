@@ -23,7 +23,7 @@ normalize-whitespace: 1
 =head1 DESCRIPTION
 
 
-Marpa::Evaluator objects implement Marpa's Multi-parse
+C<Marpa::Evaluator> objects implement Marpa's Multi-parse
 Evaluator.
 Marpa has another Evaluator, its Single Parse Evaluator,
 which can handle all unambiguous and many ambiguous parses,
@@ -38,11 +38,11 @@ L<Marpa::Evaluator::value|/value> method.
 
 =head2 Parse Order
 
-The Multi-parse evaluator will produce all the parse results
+The Multi-parse Evaluator will produce all the parse results
 for a given parse, and allows the user to control the parse order.
 The method used to order parse results
 is specified with
-L<Marpa::Evaluator>'s L</parse_order> named argument.
+C<Marpa::Evaluator>'s L</parse_order> named argument.
 As of this writing, two values are supported for the 
 L</parse_order> named argument:
 C<none> and C<numeric>.
@@ -70,7 +70,7 @@ highest rank is made, unless that choice would violate Rule 2.
 =head3 "none"
 
 When the parse order is "none",
-the node rank is arbitrary.
+the node rank is arbitrary
 and the parse results will be iterated in
 arbitrary order.
 This is the most efficient alternative,
@@ -78,14 +78,15 @@ and is the default.
 
 =head3 "numeric"
 
-"C<numeric>" is
-the L</parse_order> value which allows user control
+The "C<numeric>" parse order
+allows user control
 of the order in which the L<value method|/"value">
 iterates through the parse results.
-The numeric parse order method
+Numeric parse order
 assigns a Perl numeric value to each
 leaf node and rule node of the parse.
 This numeric value becomes the node's rank.
+Negative values are allowed.
 The highest numeric value is the highest rank,
 the lowest numeric value is the lowest rank,
 and so forth.
@@ -459,7 +460,7 @@ order|/"Parse Order">.
 A named argument whose value is the recognizer that the Evaluator is to be
 created from.
 This named argument is required for the L<Marpa::Evaluator::new|/new> call.
-The C<recce> named argument is not allowed for the L<Marpa::Evaluator::set> call.
+The C<recce> named argument is not allowed for the L<Marpa::Evaluator::set|/set> call.
 
 =head2 recognizer
 
@@ -516,12 +517,22 @@ Experts in parsing theory will notice
 that my terminology is non-standard.
 What I am calling a B<potentially infinite cycle>
 or an B<infinite cycle> is usually called just a B<cycle>
-in the literature, because all cycles yield potentially infinite
-parses.
+in the literature, because all cycles allow a
+potentially infinite number of
+parse results from a single input.
 I use the more verbose terms because
 most readers will not be familiar with parsing theory,
-and might confuse cycles with recursion of the non-pathological
-and non-infinite variety.
+and might confuse cycles with ordinary recursion.
+Cycles result in infinite ambiguity,
+and to date have not found use in grammars
+which are of practical interest.
+Ordinary non-cyclical recursions,
+on the other hand,
+occur frequently in grammars
+of practical interest,
+do not result in infinite ambiguity,
+and are handled by Marpa without the need to take
+special measures.
 
 By default, Marpa treats an infinitely ambigious grammar as a fatal error.
 This is because infinite ambiguity is usually a mistake,

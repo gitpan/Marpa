@@ -98,7 +98,7 @@ The parse criteria are
 the start and end earlemes of the parse,
 and the parse's top symbol.
 
-The default values
+Default values
 are usually used for the evaluator's parse criteria.
 The default start earleme is earleme 0.
 The default end earleme
@@ -114,18 +114,23 @@ evaluator's parse criteria.
 In other general parsers,
 a parse forest has been used to store ambiguous parses.
 Marpa's parse bocage is an adaptation of a parse forest.
-Parse bocages differ from parse forests in three ways:
-parse bocages may contain cycles;
-and-nodes and or-nodes strictly alternate in a parse bocage;
-and
-in parse bocages
-and-nodes are limited to two rhs symbols.
-
 Parse forests and parse bocages both 
 consist of and-nodes and or-nodes.
 In both parse forests and parse bocages,
 and-nodes contain pieces of parse trees,
 while or-nodes represent choices among the pieces.
+
+Parse bocages differ from parse forests in three ways:
+
+=over
+
+=item * A parse bocage may contain cycles.
+
+=item * And-nodes and or-nodes strictly alternate in a parse bocage.
+
+=item * In a parse bocage, and-nodes are limited to two rhs symbols.
+
+=back
 
 =head2 Marpa Bocage Form
 
@@ -143,19 +148,22 @@ two symbols on the rhs.
 In restricting the rhs to at most two symbols,
 MBF is very similar to Chomsky Normal Form (CNF).
 
-Marpa uses MBF for four reasons.
-First, MBF can handle parses with cycles.
+Marpa uses MBF because
 
-Second, MBF is essentially the form in which the grammar
+=over
+
+=item * MBF can handle parses with cycles.
+
+=item * MBF is essentially the form in which the grammar
 is found in the Earley items.
 Every source choice of an Earley item contains at most two links.
-These links can be treated as symbols on the rhs of a production.
-So the parse as found in the Earley items is
-in a form with at most two symbols on the right hand side.
+Each of these links can be translated to a symbol on the rhs of a production.
 
-Third, MBF easily produces binary trees.
+=item * MBF easily produces binary trees.
 Binary trees are fast and easy
 to traverse and manipulate.
+
+=back
 
 =head2 Or-Nodes and And-Nodes
 
@@ -218,7 +226,7 @@ no complete or-nodes can represent a point at the beginning of a rule.
 And incomplete or-nodes are not created for the dot position at the beginning of
 a rule.
 
-The symbol before the dot position in an incomplete or-node's rule
+The symbol before the dot position in an or-node's rule
 is the or-node's B<pre-dot symbol>.
 The symbol after the dot position in an incomplete or-nodes's rule
 is the or-node's B<post-dot symbol>.
@@ -234,19 +242,18 @@ Every other incomplete or-node,
 and every complete or-node,
 is a B<brick or-node>.
 
-Marpa's Earley set contain
+Marpa's Earley sets contain
 no LR(0) items with nulling post-dot symbols.
 Marpa's parse bocage data structure,
 on the other hand,
-needs there to be,
-for every rule that might be
-used in any possible parse,
-an or-node
-with a dot position at every symbol position
-except the first.
+needs there to be an or-node
+at every dot position except the first,
+regardless of whether the post-dot symbol is nulling
+or non-nulling.
 This is why mortar or-nodes are created.
-The idea behind mortar or-nodes is that
-they fill the cracks in between brick or-nodes.
+The idea is that brick or-nodes correspond directly to Marpa LR(0)
+items, while mortar or-nodes
+fill in the cracks.
 
 For brick incomplete or-nodes
 the QDFA state of the corresponding Earley item will have an
@@ -371,13 +378,12 @@ with a dot position one symbol position earlier than
 the dot position in the and-node child.
 
 If the and-node's pre-dot symbol is nulling,
-the and-node is created with a token
-and a predecessor grandchild.
+the and-node is created with a token.
 The value of the token is the null value of the pre-dot symbol.
 
 If the and-node's pre-dot symbol is nulling,
 and it is not the first symbol in its rule,
-a predecessor grandchild is created.
+a predecessor grandchild is also created.
 The predecessor grandchild will be a mortar or-node.
 The corresponding Earley item of the predecessor grandchild
 will be the Earley item of the parent or-node.
@@ -402,7 +408,7 @@ Even when the parse is infinitely ambiguous, Marpa is guaranteed to reach
 a point were there are no more or-nodes on the list of unprocessed or-nodes.
 Token and-nodes without predecessors are called B<leaf and-nodes>.
 Leaf and-nodes do not have any child nodes.
-Eventually every recursion through the Earley sets reaches a leaf and-node.
+Eventually every recursive path through the Earley sets reaches a leaf and-node.
 At this point, the parse bocage has been successfully created.
 
 =head2 Naming Or-Nodes
@@ -456,9 +462,8 @@ The and-node's ID tag consists of the lower-case
 letter 'a' followed by the and-node ID.
 The and-node ID
 is a unique numeric identifier.
-
-For example, S8@0-4R3:2o5a5
-is the first (and only) child
+For example, the and-node S8@0-4R3:2o5a5
+is the only child
 of the or-node named
 S8@0-4R3:2o5.
 
@@ -506,8 +511,8 @@ which is its first and only child.
 It always has and-node ID 0.
 
 Or-nodes appear in the PBG as one or more or-productions.
-Each or-production has the name of an or-node as its lhs.
-Also, each or-production has the name 
+Each or-production has the name of the or-node as its lhs.
+The or-production will have the name 
 of one of the or-node's child and-nodes
 as the only symbol on its rhs.
 
@@ -534,24 +539,21 @@ given an and-production.
 
 =item *
 For every and-node on the lhs of an and-production,
-there will be always be an or-production for that and-node's
-parent.
-(This or-production is not
-necessarily unique -- two and-nodes may have the same parent
-or-node.)
+there will be be an or-production.
 
 =item *
-The name of the left hand side of the or-production
-will be the name of the and-node's left hand side,
-shortened by removed the and-node ID tag at the end.
+The or-node on the left hand side of the or-production
+will have the same name as the and-node,
+except that the and-node ID tag at the end will be removed.
 
 =item *
-There will be only one rhs symbol,
-and that will be the and-node itself.
+The or-production will have only one rhs symbol.
+That rhs symbol will be the and-node.
 
 =back
 
-Here is the and-production which is the start or-node's only child:
+Here again is the start or-node,
+this time with the and-production which is the start or-node's only child:
 
 =for Marpa::Display
 name: Implementation Example show_bocage Output
@@ -573,7 +575,7 @@ incomplete or-node.
 If an incomplete or-node is present,
 its name is always the first symbol on the rhs.
 
-In this example, the only symbol on the rhs is
+In the above example, the only symbol on the rhs is
 a complete or-node: S5@0-5L0o1.
 The next line contains a dotted rule: the rule
 for this and-node and
@@ -607,7 +609,7 @@ The incomplete or-node (S3@0-1R4:1o11)
 points to the part of the bocage which
 derives the symbols
 before the pre-dot symbol
-in rule 0.
+in rule 4.
 In this case there is only one symbol
 ("C<Factor>")
 before the pre-dot symbol.
@@ -636,7 +638,7 @@ Applicable rules
 will be found in QDFA state 4,
 and must be completed rules with
 symbol number 2 on the lhs.
-Symbol number 0 is C<Factor>.
+Symbol number 2 is C<Factor>.
 There is only one
 LR(0) item in QDFA state 4,
 but it is, as required, a completed rule

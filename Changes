@@ -1,7 +1,10 @@
 Revision history for Marpa
 
+0.011_001 Wed Mar 10 18:51:12 2010
 0.011_000 Sun Mar  7 16:41:50 2010
-First in a series of development releases.
+A series of development releases.
+Official Release will have
+Marpa::API::Evaluator and Marpa::API::Bocage documents added.
 
 0.010000 Sun Mar  7 16:14:24 2010
 Fixes issue with missing requirement: HTML::PullParser.

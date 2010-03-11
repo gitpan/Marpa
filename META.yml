@@ -16,6 +16,8 @@ name: Marpa
 no_index:
   directory:
     - inc
+    - xs
+    - libmarpa
     - t
     - author.t
     - save
@@ -40,14 +42,14 @@ no_index:
 provides:
   Marpa:
     file: lib/Marpa.pm
-    version: 0.011_000
+    version: 0.011_001
   Marpa::UrHTML:
     file: lib/Marpa/UrHTML.pm
-    version: 0.011_000
+    version: 0.011_001
 requires:
   HTML::Parser: 3.64
   HTML::PullParser: 3.57
 resources:
   license: http://dev.perl.org/licenses/
   repository: git://github.com/jeffreykegler/Marpa.git
-version: 0.011_000
+version: 0.011_001
