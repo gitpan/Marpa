@@ -1,6 +1,6 @@
 =head1 NAME
 
-Marpa::API::Implementation - Marpa Implementation
+Marpa::Implementation - Marpa Implementation
 
 =head1 OVERVIEW
 
@@ -359,7 +359,7 @@ and in those models the term B<earleme> can take on
 other meanings.
 User interested in the alternative input models
 should look at
-L<Marpa::API::Models>.
+L<Marpa::Models>.
 
 In addition to its B<current earleme>,
 each Earley item has a B<QDFA state>, and an B<origin>.
@@ -693,7 +693,7 @@ a token length of 1 is the B<only> token length possible.
 When other, non-standard, input models are used, tokens
 can be variable length.
 For details on alternative input models,
-see L<Marpa::API::Models>.
+see L<Marpa::Models>.
 
 =head2 Prediction
 

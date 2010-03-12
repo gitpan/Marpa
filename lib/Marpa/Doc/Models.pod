@@ -1,6 +1,6 @@
 =head1 NAME
 
-Marpa::API::Models - Alternative Input Models
+Marpa::Models - Alternative Input Models
 
 =head1 DESCRIPTION
 

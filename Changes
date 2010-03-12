@@ -1,5 +1,11 @@
 Revision history for Marpa
 
+0.013_000 Thu Mar 11 17:46:34 2010
+A series of development releases.
+Marpa::HTML is now a separate module.  Release number 0.012000 (not an
+actual release) is the dividing point between releases that include the
+HTML parser and releases that do not.
+
 0.011_001 Wed Mar 10 18:51:12 2010
 0.011_000 Sun Mar  7 16:41:50 2010
 A series of development releases.

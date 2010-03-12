@@ -18,10 +18,10 @@ no_index:
     - inc
     - xs
     - libmarpa
+    - lib/Marpa/UrHTML
     - t
     - author.t
     - save
-    - lib/Marpa/Doc/Not_Updated
   namespace:
     - Marpa::Internal
     - Marpa::MDL::Internal
@@ -38,18 +38,16 @@ no_index:
     - Marpa::Display
     - Marpa::MDL
     - Marpa::MDLex
+    - Marpa::UrHTML
     - Marpa::Internal
 provides:
   Marpa:
     file: lib/Marpa.pm
-    version: 0.011_001
-  Marpa::UrHTML:
-    file: lib/Marpa/UrHTML.pm
-    version: 0.011_001
+    version: 0.013_000
 requires:
   HTML::Parser: 3.64
   HTML::PullParser: 3.57
 resources:
   license: http://dev.perl.org/licenses/
   repository: git://github.com/jeffreykegler/Marpa.git
-version: 0.011_001
+version: 0.013_000

@@ -1,6 +1,6 @@
 =head1 NAME
 
-Marpa::API::Semantics - How Marpa Evaluates Parses
+Marpa::Semantics - How Marpa Evaluates Parses
 
 =head1 SYNOPSIS
 
@@ -156,7 +156,7 @@ a Perl C<undef>.
 
 =head2 Sequence Rule Nodes
 
-Some rules are L<sequence rules|Marpa::API::Grammar/"Sequence Rules">.
+Some rules are L<sequence rules|Marpa::Grammar/"Sequence Rules">.
 Everything said above about rule nodes,
 also applies to sequence rule nodes.
 Specifically,
@@ -225,10 +225,10 @@ if one is defined.
 Otherwise, the null value of the symbol
 comes from the grammar's
 default null value, as defined by the grammar's
-L<C<default_null_value> named argument|Marpa::API::Grammar/default_null_value>.
+L<C<default_null_value> named argument|Marpa::Grammar/default_null_value>.
 If neither the symbol C<null_value> property
 or the grammar's
-L<C<default_null_value> named argument|Marpa::API::Grammar/default_null_value>
+L<C<default_null_value> named argument|Marpa::Grammar/default_null_value>
 is defined,
 a symbol's null value is a Perl C<undef>,
 

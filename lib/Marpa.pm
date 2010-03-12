@@ -5,7 +5,7 @@ use warnings;
 use strict;
 
 BEGIN {
-    our $VERSION = '0.011_001';
+    our $VERSION = '0.013_000';
 }
 
 use Marpa::Internal;
@@ -13,5 +13,7 @@ use Marpa::Grammar;
 use Marpa::Recognizer;
 use Marpa::Evaluator;
 use Marpa::Recce_Value;
+
+sub Marpa::compatible { return 1; }
 
 1;

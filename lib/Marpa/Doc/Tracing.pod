@@ -1,6 +1,6 @@
 =head1 NAME
 
-Marpa::API::Tracing - Tracing Your Grammar
+Marpa::Tracing - Tracing Your Grammar
 
 =head1 DESCRIPTION
 
@@ -43,7 +43,7 @@ You should turn off Marpa's C<strip> named argument to the grammar.
 Grammar stripping is on by default.
 If you are
 using the
-L<recognizer's C<strip> method|Marpa::API::Recognizer/"strip">
+L<recognizer's C<strip> method|Marpa::Recognizer/"strip">
 to strip the recognizer,
 stop doing that.
 
@@ -85,12 +85,12 @@ but it is usually best to wait until input to the recognizer
 is finished.
 At that point call
 L<C<Marpa::Recognizer::show_earley_sets>
-|Marpa::API::Recognizer/"show_earley_sets">.
+|Marpa::Recognizer/"show_earley_sets">.
 Since the items in the earley sets use QDFA states,
 you usually will want to call
 L<C<Marpa::Grammar::show_QDFA>
-|Marpa::API::Grammar/"show_QDFA"> as well.
-The L<implementation document|Marpa::API::Implementation>
+|Marpa::Grammar/"show_QDFA"> as well.
+The L<implementation document|Marpa::Implementation>
 has example outputs from
 the
 C<show_earley_sets> and

@@ -1,6 +1,6 @@
 =head1 NAME
 
-Marpa::API::Evaluator - Marpa Evaluator Objects
+Marpa::Evaluator - Marpa Evaluator Objects
 
 =head1 SYNOPSIS
 
@@ -29,7 +29,7 @@ Marpa has another Evaluator, its Single Parse Evaluator,
 which can handle all unambiguous and many ambiguous parses,
 and is simpler and faster.
 If you're not sure which to use, see 
-L<Marpa::API/"THE SINGLE PARSE EVALUATOR">.
+L<Marpa/"THE SINGLE PARSE EVALUATOR">.
 
 A Multi-parse Evaluator is created with the L<Marpa::Evaluator::new|/new> method.
 The user can then iterate through the parse results,
@@ -114,19 +114,19 @@ using the rule's C<ranking_action> property.
 For the rank of a node to be calculated, the ranking action
 must first be resolved to a ranking Perl closure. 
 Ranking actions are resolved to ranking Perl closures
-in the L<evaluator setup phase|Marpa::API::Semantics/"Evaluator Setup Phase">,
+in the L<evaluator setup phase|Marpa::Semantics/"Evaluator Setup Phase">,
 using the same logic that resolves semantics actions to 
 Perl semantic closures.
 The logic that resolves action names to closures is described in
 detail in
-L<the semantics document|Marpa::API::Semantics/"RESOLVING ACTION NAMES">.
+L<the semantics document|Marpa::Semantics/"RESOLVING ACTION NAMES">.
 
 The ranking closures for token leaf nodes
 and the ranking closures for nulled leaf nodes
 are called
-in the L<bocage setup phase|Marpa::API::Semantics/"Bocage Setup Phase">.
+in the L<bocage setup phase|Marpa::Semantics/"Bocage Setup Phase">.
 The ranking closures for rule nodes are called
-during the L<parse setup phase|Marpa::API::Semantics/"Parse Setup Phase">.
+during the L<parse setup phase|Marpa::Semantics/"Parse Setup Phase">.
 
 =head2 Infinitely Ambiguous Grammars
 
@@ -291,7 +291,7 @@ listed in pre-order.
 Parse bocage grammars are similar to
 parse forest grammars.
 Parse bocage grammars are described at length
-in a L<separate document|Marpa::API::Bocage>,
+in a L<separate document|Marpa::Bocage>,
 using an example output from C<show_bocage>.
 
 The optional I<verbosity> argument must be an integer greater
@@ -385,7 +385,7 @@ the C<closure> named argument is to
 allow anonymous
 subroutines to be semantic actions.
 For more details, see L<the document on
-semantics|Marpa::API::Semantics>.
+semantics|Marpa::Semantics>.
 
 =head2 end
 
@@ -540,7 +540,7 @@ and one that is easily fixed.
 To proceed to producing parse results from an infinitely ambiguous grammar,
 the user must set
 L<the grammar's infinite action named
-argument|Marpa::API::Grammar/"infinite_action">
+argument|Marpa::Grammar/"infinite_action">
 to a value other than "C<fatal>".
 The other choices are "C<warn>"
 and "C<quiet>".

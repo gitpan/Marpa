@@ -26,7 +26,6 @@ libmarpa/configure.in
 libmarpa/depcomp
 lib/Marpa/Display.pm
 lib/Marpa/Doc/Algorithm.pod
-lib/Marpa/Doc/API.pod
 lib/Marpa/Doc/Bibliography.pod
 lib/Marpa/Doc/Bocage.pod
 lib/Marpa/Doc/Evaluator.pod

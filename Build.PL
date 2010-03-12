@@ -8,7 +8,7 @@ use Fatal qw(open close);
 
 use Module::Build;
 
-my $marpa_version = '0.011_001';
+my $marpa_version = '0.013_000';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -58,11 +58,7 @@ my $build = $class->new(
         # Scalar::Util::weaken no longer required
         'Test::More' => 0.94,
     },
-    PL_files     => {},    # workaround Module::Build bug
-    script_files => [
-        'lib/Marpa/UrHTML/script/urhtml_fmt',
-        'lib/Marpa/UrHTML/script/urhtml_score',
-    ],
+    PL_files  => {},    # workaround Module::Build bug
     pod_files => {
         'lib/Marpa/Doc/Bibliography.pod'   => 'lib/Marpa/Bibliography.pod',
         'lib/Marpa/Doc/Bocage.pod'         => 'lib/Marpa/Bocage.pod',
@@ -73,15 +69,13 @@ my $build = $class->new(
         'lib/Marpa/Doc/Parse_Terms.pod'    => 'lib/Marpa/Parse_Terms.pod',
         'lib/Marpa/Doc/Recognizer.pod'     => 'lib/Marpa/Recognizer.pod',
         'lib/Marpa/Doc/Support.pod'        => 'lib/Marpa/Support.pod',
-        'lib/Marpa/UrHTML/Doc/UrHTML.pod'  => 'lib/Marpa/UrHTML.pod',
     },
     meta_merge => {
         resources =>
             { repository => 'git://github.com/jeffreykegler/Marpa.git', },
         no_index => {
-            directory => [
-                qw( inc xs libmarpa t author.t save lib/Marpa/Doc/Not_Updated )
-            ],
+            directory =>
+                [qw( inc xs libmarpa lib/Marpa/UrHTML t author.t save )],
             namespace => [
                 'Marpa::Internal',          'Marpa::MDL::Internal',
                 'Marpa::MDLex::Internal',   'Marpa::UrHTML::Internal',
@@ -97,6 +91,9 @@ my $build = $class->new(
                 # permanently on the noindex list, as they are EOL'd
                 # and will not be documented
                 qw( Marpa::MDL Marpa::MDLex ),
+
+                # moved elsewhere
+                qw( Marpa::UrHTML ),
 
                 # never intended to see the light of day
                 qw(Marpa::Internal),
@@ -115,18 +112,13 @@ my $build = $class->new(
                 file    => 'lib/Marpa.pm',
                 version => $marpa_version,
             },
-            'Marpa::UrHTML' => {
-                file    => 'lib/Marpa/UrHTML.pm',
-                version => $marpa_version,
-            },
         },
     },
     license            => 'perl',
     create_license     => 1,
     create_readme      => 0,
     create_makefile_pl => 'small',
-    test_files =>
-        [ map { glob $_ } qw(t/*.t t/*/*.t lib/Marpa/UrHTML/t/*.t) ],
+    test_files         => [ map { glob $_ } qw(t/*.t t/*/*.t) ],
 );
 
 $build->create_build_script;

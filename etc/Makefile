@@ -15,3 +15,7 @@ update:
 	(cd ..;./Build distmeta)
 	(cd ..;./Build dist)
 	(cd ..;perl Build.PL)
+
+devlib:
+	(cd ..;perl Build.PL)
+	(cd ..;./Build install --install_base ../devlib)

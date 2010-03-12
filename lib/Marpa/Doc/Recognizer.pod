@@ -1,6 +1,6 @@
 =head1 NAME
 
-Marpa::API::Recognizer - Marpa Recognizer Objects
+Marpa::Recognizer - Marpa Recognizer Objects
 
 =head1 SYNOPSIS
 
@@ -36,11 +36,11 @@ Recognition is determining whether there is a parse.
 Evaluation is determining the value of a parse.
 In practice the two are usually intertwined.
 A lot of what
-L<Marpa::API::Recognizer> does can be
+L<Marpa::Recognizer> does can be
 regarded as "evaluation".
 
 In particular,
-L<Marpa::API::Recognizer> has a built-in
+L<Marpa::Recognizer> has a built-in
 L<Single Parse Evaluator|/"SINGLE PARSE EVALUATOR">,
 which works on unambiguous grammars.
 The Single Parse Evaluator also works for
@@ -68,7 +68,7 @@ model of the input,
 unless it states otherwise.
 Marpa supports other input models,
 which are discussed in L<a separate
-document|Marpa::API::Models>.
+document|Marpa::Models>.
 
 The B<current parse location>, or B<current earleme>,
 is the location at which the next input is expected.
@@ -77,7 +77,7 @@ the recognizer's current position.
 Alternative input models,
 and the reasons for the term I<earleme> itself,
 are presented in L<the
-document on alternative input models|Marpa::API::Models>.
+document on alternative input models|Marpa::Models>.
 
 =head2 Exhaustion
 
@@ -223,7 +223,7 @@ The elements in each token descriptor are, in order:
 
 Required.
 Must be the name of a valid terminal symbol.
-For details about terminal symbols, see L<Marpa::API::Grammar/"Terminals">.
+For details about terminal symbols, see L<Marpa::Grammar/"Terminals">.
 
 =item * Token value
 
@@ -237,7 +237,7 @@ Optional, and
 not used in the traditional, token-stream, model of the input.
 Token length is
 described in L<the document on alternative input
-models|Marpa::API::Models>.
+models|Marpa::Models>.
 
 =item * Token offset
 
@@ -245,7 +245,7 @@ Optional, and
 not used in the traditional, token-stream, model of the input.
 Token offset is
 described in L<the document on alternative input
-models|Marpa::API::Models>.
+models|Marpa::Models>.
 
 =back
 
@@ -360,7 +360,7 @@ If the earley item warning threshold is set to 0,
 warnings about large earley sets are turned off.
 For details about earley sets,
 see
-L<the implementation document|Marpa::API::Implementation>.
+L<the implementation document|Marpa::Implementation>.
 
 =head2 trace_earley_sets
 
@@ -369,7 +369,7 @@ If true, causes each earley set to be written
 to the trace file handle as it is completed.
 For details about earley sets,
 see
-L<the implementation document|Marpa::API::Implementation>.
+L<the implementation document|Marpa::Implementation>.
 
 =head2 trace_file_handle
 
@@ -617,7 +617,7 @@ the C<closure> named argument is to
 allow anonymous
 subroutines to be semantic actions.
 For more details, see L<the document on
-semantics|Marpa::API::Semantics>.
+semantics|Marpa::Semantics>.
 
 =head2 trace_actions
 
