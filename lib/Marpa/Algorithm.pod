@@ -258,7 +258,7 @@ Marpa uses to store parses.
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2007-2009 Jeffrey Kegler, all rights reserved.
+Copyright 2007-2010 Jeffrey Kegler, all rights reserved.
 Marpa is free software under the Perl license.
 For details see the LICENSE file in the Marpa distribution.
 

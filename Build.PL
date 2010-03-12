@@ -8,7 +8,7 @@ use Fatal qw(open close);
 
 use Module::Build;
 
-my $marpa_version = '0.013_000';
+my $marpa_version = '0.013_001';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -58,18 +58,7 @@ my $build = $class->new(
         # Scalar::Util::weaken no longer required
         'Test::More' => 0.94,
     },
-    PL_files  => {},    # workaround Module::Build bug
-    pod_files => {
-        'lib/Marpa/Doc/Bibliography.pod'   => 'lib/Marpa/Bibliography.pod',
-        'lib/Marpa/Doc/Bocage.pod'         => 'lib/Marpa/Bocage.pod',
-        'lib/Marpa/Doc/Evaluator.pod'      => 'lib/Marpa/Evaluator.pod',
-        'lib/Marpa/Doc/Grammar.pod'        => 'lib/Marpa/Grammar.pod',
-        'lib/Marpa/Doc/Implementation.pod' => 'lib/Marpa/Implementation.pod',
-        'lib/Marpa/Doc/Marpa.pod'          => 'lib/Marpa.pod',
-        'lib/Marpa/Doc/Parse_Terms.pod'    => 'lib/Marpa/Parse_Terms.pod',
-        'lib/Marpa/Doc/Recognizer.pod'     => 'lib/Marpa/Recognizer.pod',
-        'lib/Marpa/Doc/Support.pod'        => 'lib/Marpa/Support.pod',
-    },
+    PL_files   => {},    # workaround Module::Build bug
     meta_merge => {
         resources =>
             { repository => 'git://github.com/jeffreykegler/Marpa.git', },
