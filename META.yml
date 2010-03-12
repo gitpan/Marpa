@@ -29,10 +29,10 @@ no_index:
     - Marpa::UrHTML::Internal
     - Marpa::Display::Internal
     - Marpa::Test
-  package:
-    - Marpa::Grammar
     - Marpa::Recognizer
     - Marpa::Evaluator
+    - Marpa::Grammar
+  package:
     - Marpa::Offset
     - Marpa::Test
     - Marpa::Display
@@ -43,11 +43,11 @@ no_index:
 provides:
   Marpa:
     file: lib/Marpa.pm
-    version: 0.013_002
+    version: 0.013_003
 requires:
   HTML::Parser: 3.64
   HTML::PullParser: 3.57
 resources:
   license: http://dev.perl.org/licenses/
   repository: git://github.com/jeffreykegler/Marpa.git
-version: 0.013_002
+version: 0.013_003

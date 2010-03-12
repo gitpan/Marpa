@@ -8,7 +8,7 @@ use Fatal qw(open close);
 
 use Module::Build;
 
-my $marpa_version = '0.013_002';
+my $marpa_version = '0.013_003';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -80,10 +80,10 @@ my $build = $class->new(
                 'Marpa::Internal',          'Marpa::MDL::Internal',
                 'Marpa::MDLex::Internal',   'Marpa::UrHTML::Internal',
                 'Marpa::Display::Internal', 'Marpa::Test',
+                'Marpa::Recognizer',        'Marpa::Evaluator',
+                'Marpa::Grammar',
             ],
             package => [
-
-                qw( Marpa::Grammar Marpa::Recognizer Marpa::Evaluator ),
 
                 # not public, at least for now
                 qw(Marpa::Offset Marpa::Test Marpa::Display ),
