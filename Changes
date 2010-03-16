@@ -1,19 +1,12 @@
 Revision history for Marpa
 
-0.013_003 Fri Mar 12 12:37:36 2010
-0.013_002 Fri Mar 12 08:23:54 2010
-0.013_001 Thu Mar 11 21:23:00 2010
-0.013_000 Thu Mar 11 17:46:34 2010
-A series of development releases.
-Marpa::HTML is now a separate module.  Release number 0.012000 (not an
-actual release) is the dividing point between releases that include the
-HTML parser and releases that do not.
+0.100000 Mon Mar 15 16:56:57 2010
 
-0.011_001 Wed Mar 10 18:51:12 2010
-0.011_000 Sun Mar  7 16:41:50 2010
-A series of development releases.
-Official Release will have
-Marpa::API::Evaluator and Marpa::API::Bocage documents added.
+    * Marpa::HTML is now a separate module.  Release number 0.012000
+    (not an actual release) is the dividing point between releases that
+    include the HTML parser and releases that do not.
+
+    * Marpa::API::Evaluator and Marpa::API::Bocage documents added.
 
 0.010000 Sun Mar  7 16:14:24 2010
 Fixes issue with missing requirement: HTML::PullParser.
