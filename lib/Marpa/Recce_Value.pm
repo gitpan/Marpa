@@ -101,7 +101,7 @@ sub Marpa::Recognizer::value {
 
     EARLEY_ITEM: for my $item ( @{$earley_set} ) {
         $start_state = $item->[Marpa::Internal::Earley_Item::STATE];
-        $start_rule  = $start_state->[Marpa::Internal::QDFA::START_RULE];
+        $start_rule  = $start_state->[Marpa::Internal::AHFA::START_RULE];
         next EARLEY_ITEM if not $start_rule;
         $start_item = $item;
         last EARLEY_ITEM;
@@ -214,30 +214,101 @@ sub Marpa::Recognizer::value {
 
         my $sapling_name = $or_sapling->[Marpa::Internal::Or_Sapling::NAME];
         my $item         = $or_sapling->[Marpa::Internal::Or_Sapling::ITEM];
+        my $or_sapling_set = $item->[Marpa::Internal::Earley_Item::SET];
+        my $earley_set = $earley_sets->[$or_sapling_set];
+
+        my $leo_links = $item->[Marpa::Internal::Earley_Item::LEO_LINKS] // [];
+
+        # If this is a Leo completion, translate the Leo links
+        for my $leo_link (@{$leo_links})
+        {
+
+            my ( $leo_item, $cause, $token_name, $token_value ) =
+                @{$leo_link};
+            my ( $next_leo_item, $leo_base_item ) =
+                @{ $leo_item->[Marpa::Internal::Earley_Item::LINKS]->[0] };
+
+            my $next_tokens = [];
+            if ($token_name) {
+                push @{$next_tokens},
+                    [ $leo_base_item, $token_name, $token_value ];
+            }
+            my $next_links = [];
+            if ($cause) {
+                push @{$next_links}, [ $leo_base_item, $cause ];
+            }
+
+            LEO_ITEM: for ( ;; ) {
+
+                if ( not $next_leo_item ) {
+
+                    push @{ $item->[Marpa::Internal::Earley_Item::LINKS] },
+                        @{$next_links};
+                    push @{ $item->[Marpa::Internal::Earley_Item::TOKENS] },
+                        @{$next_tokens};
+
+                    # Now that the Leo links are translated, remove them
+                    $item->[Marpa::Internal::Earley_Item::LEO_LINKS] = undef;
+                    last LEO_ITEM;
+
+                } ## end if ( not $leo_item )
+
+                $leo_item = $next_leo_item;
+
+                my $new_earley_item = [];
+                my $state =
+                    $new_earley_item->[Marpa::Internal::Earley_Item::STATE] =
+                    $leo_item->[Marpa::Internal::Earley_Item::STATE];
+                $new_earley_item->[Marpa::Internal::Earley_Item::TOKENS] =
+                    $next_tokens;
+                $new_earley_item->[Marpa::Internal::Earley_Item::LINKS] =
+                    $next_links;
+                my $origin =
+                    $new_earley_item->[Marpa::Internal::Earley_Item::PARENT] =
+                    $leo_item->[Marpa::Internal::Earley_Item::SET];
+                $new_earley_item->[Marpa::Internal::Earley_Item::SET] =
+                    $or_sapling_set;
+                $new_earley_item->[Marpa::Internal::Earley_Item::NAME] =
+                    sprintf
+                    ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+                    'S%d@%d-%d',
+                    ## use critic
+                    $state->[Marpa::Internal::AHFA::ID],
+                    $origin,
+                    $or_sapling_set;
+                push @{$earley_set}, $new_earley_item;
+
+                ( $next_leo_item, $leo_base_item ) =
+                    @{ $leo_item->[Marpa::Internal::Earley_Item::LINKS]->[0] };
+
+                $next_tokens = [];
+                $next_links = [ [ $leo_base_item, $new_earley_item ] ];
+
+            } ## end for ( ;; )
+        } ## end if ( my $leo_item = $item->[...])
+
+
         my $child_lhs_symbol =
             $or_sapling->[Marpa::Internal::Or_Sapling::CHILD_LHS_SYMBOL];
-        my $rule     = $or_sapling->[Marpa::Internal::Or_Sapling::RULE];
-        my $position = $or_sapling->[Marpa::Internal::Or_Sapling::POSITION];
+        my $rule = $or_sapling->[Marpa::Internal::Or_Sapling::RULE];
+        my $sapling_position =
+            $or_sapling->[Marpa::Internal::Or_Sapling::POSITION];
 
         # If we don't have a current rule, we need to get one or
         # more rules, and deduce the position and a new symbol from
         # them.
-        my $is_kernel_or_node = defined $position;
         my $sapling_rule;
-        my $sapling_position;
         my $symbol;
         my $value_processing;
 
-        if ( defined $position ) {
+        if ( defined $sapling_position ) {
 
             # Kernel or-node: We have a rule and a position.
             # get the current symbol
 
-            $position--;
-            $symbol = $rule->[Marpa::Internal::Rule::RHS]->[$position];
-
+            $sapling_position--;
+            $symbol = $rule->[Marpa::Internal::Rule::RHS]->[$sapling_position];
             $sapling_rule     = $rule;
-            $sapling_position = $position;
 
         } ## end if ( defined $position )
         else {    # Closure or-node.
@@ -251,10 +322,10 @@ sub Marpa::Recognizer::value {
             # ================
             #
             # Arbitarily picks the first complete rule for
-            # the QDFA state.
+            # the AHFA state.
 
             $sapling_rule =
-                $state->[Marpa::Internal::QDFA::COMPLETE_RULES]
+                $state->[Marpa::Internal::AHFA::COMPLETE_RULES]
                 ->[$child_lhs_id]->[0];
 
             my $rhs = $sapling_rule->[Marpa::Internal::Rule::RHS];
@@ -271,17 +342,15 @@ sub Marpa::Recognizer::value {
         my $end_earleme   = $item->[Marpa::Internal::Earley_Item::SET];
 
         my $rule_id     = $sapling_rule->[Marpa::Internal::Rule::ID];
-        my $rhs         = $sapling_rule->[Marpa::Internal::Rule::RHS];
-        my $rule_length = @{$rhs};
 
-        my ( $predecessor, $cause, $token, $value_ref );
+        my ( $predecessor, $cause, $token_name, $value_ref );
 
         FIND_OR_BUDS: {
             if ( $symbol->[Marpa::Internal::Symbol::NULLING] ) {
                 my $nulling_symbol_id =
                     $symbol->[Marpa::Internal::Symbol::ID];
                 $value_ref   = \$null_values->[$nulling_symbol_id];
-                $token       = $symbol;
+                $token_name       = $symbol->[Marpa::Internal::Symbol::NAME];
                 $predecessor = $item;
                 last FIND_OR_BUDS;
             } ## end if ( $symbol->[Marpa::Internal::Symbol::NULLING] )
@@ -293,7 +362,7 @@ sub Marpa::Recognizer::value {
             my $token_choice =
                 $item->[Marpa::Internal::Earley_Item::TOKENS]->[0];
             if ( defined $token_choice ) {
-                ( $predecessor, $token, $value_ref ) = @{$token_choice};
+                ( $predecessor, $token_name, $value_ref ) = @{$token_choice};
                 last FIND_OR_BUDS;
             }
 
@@ -351,7 +420,7 @@ sub Marpa::Recognizer::value {
         my $and_node = [];
         $#{$and_node} = Marpa::Internal::And_Node::LAST_FIELD;
 
-        $and_node->[Marpa::Internal::And_Node::TOKEN]     = $token;
+        $and_node->[Marpa::Internal::And_Node::TOKEN_NAME]     = $token_name;
         $and_node->[Marpa::Internal::And_Node::VALUE_REF] = $value_ref;
         $and_node->[Marpa::Internal::And_Node::RULE_ID]   = $rule_id;
 
@@ -362,7 +431,7 @@ sub Marpa::Recognizer::value {
             $start_earleme;
         $and_node->[Marpa::Internal::And_Node::CAUSE_EARLEME] =
               $predecessor
-            ? $item->[Marpa::Internal::Earley_Item::SET]
+            ? $predecessor->[Marpa::Internal::Earley_Item::SET]
             : $start_earleme;
         $and_node->[Marpa::Internal::And_Node::END_EARLEME] = $end_earleme;
         my $id = $and_node->[Marpa::Internal::And_Node::ID] = scalar @stack;

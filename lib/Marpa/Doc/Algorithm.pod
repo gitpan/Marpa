@@ -135,6 +135,60 @@ With CHAF, the theoretical worst
 behavior is linear, and in those difficult cases likely to arise
 in practice the multiplier is much smaller.
 
+=head2 An Algorithm to Construct the Split E<epsilon>-DFA.
+
+Aycock and Horspool do not give an algorithm for constructing
+the split E<epsilon>-DFA.
+They give hints on pages 624-627.
+Reconstructing an algorithm from these hints proved
+non-trivial.
+
+Based on what is stated in the first paragraph of page 626,
+the original Aycock-Horspool
+split E<epsilon>-DFA construction algorithm
+only works on grammars that have been
+rewritten into the NNF form that Aycock and Horspool describe.
+Aycock and Horspool describe the 
+split E<epsilon>-DFA algorithm construction in these stages:
+
+=over
+
+=item * Construct an LR(0) DFA from the LR(0) NFA.
+
+=item * Construct an E<epsilon>-DFA from the LR(0) DFA.
+
+=item * Construct a split E<epsilon>-DFA from the 
+E<epsilon>-DFA.
+
+=back
+
+It is not clear if the stages
+in the article describe Aycock and Horspool's
+actual algorithm.
+While the multiple stages are 
+useful as a presentation device,
+actual implementation using
+those successive stages would be cumbersome.
+
+The Marpa algorithm for creating the 
+the split E<epsilon>-DFA states
+works in a single
+pass, directly from
+the NFA states.
+The Marpa algorithm
+requires that the grammar first
+be rewritten into CHAF form.
+
+Its construction aside,
+the split E<epsilon>-DFA contains several vital
+insights,
+and without these Marpa could not have been written.
+I find the term split E<epsilon>-DFA unwieldy,
+and prefer to take the opportunity to give credit where it is due.
+What Aycock and Horspool call their
+split E<epsilon>-DFA states,
+I call Aycock-Horspool states.
+
 =head2 Iterating Aycock-Horspool Parses
 
 Aycock and Horspool give an algorithm for constructing a rightmost derivation

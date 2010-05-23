@@ -107,19 +107,19 @@ END_RULES
 
 # Marpa::Display::End
 
-my $show_QDFA_output = $grammar->show_QDFA();
+my $show_AHFA_output = $grammar->show_AHFA();
 
 # Marpa::Display
-# name: Implementation Example show_QDFA Output
-# start-after-line: END_QDFA
-# end-before-line: '^END_QDFA$'
+# name: Implementation Example show_AHFA Output
+# start-after-line: END_AHFA
+# end-before-line: '^END_AHFA$'
 
-Marpa::Test::is( $show_QDFA_output,
-    <<'END_QDFA', 'Implementation Example QDFA' );
+Marpa::Test::is( $show_AHFA_output,
+    <<'END_AHFA', 'Implementation Example AHFA' );
 Start States: S0; S1
 S0: 15
 Expression['] -> . Expression
- <Expression> => S2
+ <Expression> => S2; leo(Expression['])
 S1: predict; 1,3,5,7,11
 Expression -> . Term
 Term -> . Factor
@@ -129,7 +129,7 @@ Factor -> . Factor Multiply Factor
  <Factor> => S3
  <Number> => S4
  <Term> => S5
-S2: 16
+S2: leo-c; 16
 Expression['] -> Expression .
 S3: 4,12
 Term -> Factor .
@@ -143,7 +143,7 @@ Term -> Term . Add Term
  <Add> => S8; S9
 S6: 13
 Factor -> Factor Multiply . Factor
- <Factor> => S10
+ <Factor> => S10; leo(Factor)
 S7: predict; 5,11
 Factor -> . Number
 Factor -> . Factor Multiply Factor
@@ -151,7 +151,7 @@ Factor -> . Factor Multiply Factor
  <Number> => S4
 S8: 9
 Term -> Term Add . Term
- <Term> => S12
+ <Term> => S12; leo(Term)
 S9: predict; 3,5,7,11
 Term -> . Factor
 Factor -> . Number
@@ -160,17 +160,17 @@ Factor -> . Factor Multiply Factor
  <Factor> => S3
  <Number> => S4
  <Term> => S13
-S10: 14
+S10: leo-c; 14
 Factor -> Factor Multiply Factor .
 S11: 12
 Factor -> Factor . Multiply Factor
  <Multiply> => S6; S7
-S12: 10
+S12: leo-c; 10
 Term -> Term Add Term .
 S13: 8
 Term -> Term . Add Term
  <Add> => S8; S9
-END_QDFA
+END_AHFA
 
 # Marpa::Display::End
 

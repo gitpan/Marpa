@@ -110,7 +110,7 @@ S16: T -> ( E . )
 S17: T -> ( E ) .
 EOS
 
-Marpa::Test::is( $g->show_QDFA, <<'EOS', 'Grune/Jacobs QDFA' );
+Marpa::Test::is( $g->show_AHFA, <<'EOS', 'Grune/Jacobs AHFA' );
 Start States: S0; S1
 S0: 1
 S' -> . S $
@@ -123,7 +123,7 @@ T -> . n
 T -> . ( E )
  <(> => S3; S4
  <E> => S5
- <T> => S6
+ <T> => S6; leo(E)
  <n> => S7
 S2: 2
 S' -> S . $
@@ -138,13 +138,13 @@ T -> . n
 T -> . ( E )
  <(> => S3; S4
  <E> => S10
- <T> => S6
+ <T> => S6; leo(E)
  <n> => S7
 S5: 5,7
 S -> E .
 E -> E . - T
  <-> => S11; S12
-S6: 11
+S6: leo-c; 11
 E -> T .
 S7: 13
 T -> n .
@@ -158,7 +158,7 @@ E -> E . - T
  <-> => S11; S12
 S11: 8
 E -> E - . T
- <T> => S14
+ <T> => S14; leo(E)
 S12: predict; 12,14
 T -> . n
 T -> . ( E )
@@ -166,7 +166,7 @@ T -> . ( E )
  <n> => S7
 S13: 17
 T -> ( E ) .
-S14: 9
+S14: leo-c; 9
 E -> E - T .
 EOS
 

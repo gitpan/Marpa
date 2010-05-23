@@ -123,13 +123,14 @@ is in the recognizer's tables.
 
 =head2 Evaluating Parses
 
-Marpa's evaluators find the parses in the recognizer's tables.
+Marpa's evaluators find the parse results
+in the recognizer's tables.
 If the input did not match the grammar,
-the tables will contain no parses,
+the tables will contain no parse results,
 and the evaluators will indicate that.
 If the input did match the grammar,
-the tables will contain one or more parses.
-There may be more than one parse,
+the tables will contain one or more parse results.
+There may be more than one parse result,
 because Marpa allows ambiguous grammars.
 
 Marpa has two evaluators:
@@ -137,7 +138,7 @@ a Single Parse Evaluator,
 and a Multi-parse Evaluator.
 The Single Parse Evaluator
 returns the value of only
-one of the parses.
+one of the parse results.
 The Multi-parse Evaluator allows the application
 to iterate parse trees.
 
@@ -151,7 +152,7 @@ a Perl scalar to be the token's value.
 The Marpa evaluators apply these semantics recursively to
 the parse trees.
 The value of the root node of a parse tree
-becomes the value of the parse
+becomes the value of the parse result
 and is returned to the user.
 
 =head1 EXAMPLE 1: A SIMPLE CALCULATOR
@@ -412,9 +413,9 @@ normalize-whitespace: 1
 =for Marpa::Display::End
 
 The C<Marpa::Recognizer::value> method returns
-a reference to the parse's value,
-if there was a parse.
-If there was no parse,
+a reference to the parse result's value,
+if there was a parse result.
+If there was no parse result,
 C<Marpa::Recognizer::value>
 returns
 C<undef>.
@@ -560,9 +561,9 @@ normalize-whitespace: 1
 The semantic Perl closures are callbacks,
 called when each node in a parse tree is evaluated.
 The callbacks receive one or more arguments.
-The first argument to a semantic Perl closure is always a per-parse
+The first argument to a semantic Perl closure is always a per-parse-result
 object, which the callbacks can use as a scratchpad.
-In these examples, the per-parse object is not used.
+In these examples, the per-parse-result object is not used.
 
 For a non-empty rule,
 the second and any subsequent arguments to the callback are
@@ -571,7 +572,7 @@ in lexical order,
 of the symbols on the right hand side of
 the rule.
 If the semantic Perl closure is for an empty rule,
-the per-parse object will be its only argument.
+the per-parse-result object will be its only argument.
 
 Every semantic Perl closure is expected to return a value.
 With one exception,
@@ -579,7 +580,7 @@ this value is passed up to a parent node
 as an argument.
 The exception is the value for the start rule.
 The return value for the start rule
-becomes the value of the parse.
+becomes the value of the parse result.
 
 The C<default_action> named argument is optional.
 When there is no default action for a grammar,
@@ -588,8 +589,8 @@ rules without an explicit semantics return a Perl C<undef>.
 =head1 THE SINGLE PARSE EVALUATOR
 
 In most cases
-you can produce the parse's value with
-Marpa's Single Parse Evaluator.
+the parse result returned by
+Marpa's Single Parse Evaluator is all that is wanted.
 The Single Parse Evaluator is not a separate package.
 It is implemented
 as the
@@ -604,16 +605,17 @@ limitations.
 =item * The L</"Marpa::Recognizer::value"> method cannot be used if
 your grammar is infinitely ambiguous.
 A grammar is infinitely ambiguous if there is some input
-for which you could, without duplication,
-list the parses forever.
+for which you could
+list the parse results forever,
+with none of the parse results being duplicates.
 
 =item * The L</"Marpa::Recognizer::value"> method cannot be used if
 your parse is ambiguous B<and>
-you want to see B<two or more> of the possible parses.
+you want to see B<two or more> of the possible parse results.
 
 =item * The L</"Marpa::Recognizer::value"> method cannot be used if
 your parse is ambiguous B<and>
-you want to be able to B<choose which parse> you see.
+you want to be able to B<choose which of the parse results> you see.
 
 =back
 
@@ -628,13 +630,13 @@ in which you cannot use Marpa's Single Parse Evaluator.
 The Multi-parse Evaluator handles all possible parses --
 every possible input to any BNF-expressible grammar.
 For unambiguous and finitely ambiguous grammars,
-the Multi-parse Evaluator will iterate all the parses.
+the Multi-parse Evaluator will iterate all the parse results.
 The Multi-parse Evaluator also
 allows the application to
-control the order in which parses are produced.
+control the order in which parse results are produced.
 
 For infinitely ambiguous grammars,
-the Multi-parse Evaluator will iterate all the non-cyclical parses.
+the Multi-parse Evaluator will iterate all the non-cyclical parse results.
 Few users will need or want to work with infinitely
 ambiguous grammars.
 Those interested in more on this topic can look
@@ -649,7 +651,7 @@ because few parsers were capable of handling them.
 The Single Parse Evaluator will evaluate parses
 from finitely ambiguous grammars.
 But the Single Parse Evaluator
-is limited to returning one parse, chosen arbitrarily.
+is limited to returning one parse result, chosen arbitrarily.
 That is sufficient for
 a lot of work with ambiguous grammars.
 When it's not sufficient,
@@ -669,10 +671,10 @@ and the C<@tokens> array remain
 the same as before.
 
 Eliminating precedence makes the grammar shorter,
-but it also means there can be multiple parses,
-and the different parses can have different values.
+but it also means there can be multiple parse results,
+and the different parse results can have different values.
 In this application we decide, for each input,
-to return the value for every one of the parses.
+to return the value for every one of the parse results.
 The Single Parse Evaluator will not do this,
 so we use the Multi-parse Evaluator.
 
@@ -751,10 +753,10 @@ The arguments to this constructor are references to hashes of named arguments.
 In this example, the only named argument is "C<recce>".
 The C<recce> named argument is required.
 It must be the name of the recognizer in whose tables
-the evaluator will find its parses.
+the evaluator will find its parse results.
 
 It is possible that C<Marpa::Evaluator::new> will be able to see
-immediately that there are no parses in the recognizer's tables.
+immediately that there are no parse results in the recognizer's tables.
 In that case
 C<Marpa::Evaluator::new>
 returns a Perl C<undef>.
@@ -776,12 +778,12 @@ normalize-whitespace: 1
 =for Marpa::Display::End
 
 The 
-C<Marpa::Evaluator::value> method iterates through the parses.
-It returns a reference to the value of the current parse.
+C<Marpa::Evaluator::value> method iterates through the parse results.
+It returns a reference to the value of the current parse result.
 At the end of the iteration, after
-all parses have been returned,
+all parse results have been returned,
 C<Marpa::Evaluator::value> returns C<undef>.
-If there were no parses,
+If there were no parse results,
 C<Marpa::Evaluator::value> returns C<undef> the first
 time that it is called.
 
@@ -848,37 +850,10 @@ itself to producing Tibetan versions of Buddhism's Sanskrit scriptures.
 Marpa became the greatest of them,
 and today is known as Marpa Lotsawa: "Marpa the Translator".
 
-Translation in the 11th century was not a job for the indoors type.
-A translator needed to study in India,
-with the teachers who had the
-texts and could explain them.
-From Marpa's home in Tibet's
-Lhotrak Valley,
-the best way across the Himalayas was over
-the Khala Chela Pass.
-To reach the Khala Chela's
-three-mile high summit,
-Marpa had to cross two hundred lawless miles of Tibet.
-Once a pilgrim crested the Himalayas,
-Nalanda University was downhill, four
-hundred miles beyond.
-
-Marpa spent three years in Nepal,
-acclimatizing himself in the foothills.
-Tibetans
-had learned
-the hard way
-not to march straight on to Nalanda.
-Almost no germs live in the cold, thin air of Tibet.
-Tibetans arriving
-directly in the lowlands had no immunities.
-Whole expeditions had perished
-within weeks of arrival on the hot plains.
-
 =head2 Blatant Plug
 
-There's more about Marpa in my novel, B<The God Proof>, in which
-his studies, travels and adventures are a subplot.  B<The God
+Marpa is a character in my novel, B<The God Proof>.
+B<The God
 Proof> centers around Kurt GE<ouml>del's proof of God's existence.
 Yes, I<that> Kurt GE<ouml>del, and yes, he really did work out a
 God Proof (it's in his I<Collected Works>, Vol. 3, pp. 403-404).

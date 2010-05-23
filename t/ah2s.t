@@ -23,7 +23,7 @@ sub default_action {
     my $v_count = scalar @_;
     return q{}   if $v_count <= 0;
     return $_[0] if $v_count == 1;
-    return '(' . join( q{;}, @_ ) . ')';
+    return '(' . join( q{}, @_ ) . ')';
 } ## end sub default_action
 
 ## use critic
@@ -337,43 +337,24 @@ EARLEME: for my $earleme ( 0 .. $input_length + 1 ) {
     } ## end given
 } ## end for my $earleme ( 0 .. $input_length + 1 )
 
-my @expected = (q{});
-$expected[1] = join("\n", qw(
-    (a;;;)
-    (;a;;)
-    (;;a;)
-    (;;;a)
-));
-$expected[2] = join("\n", qw(
-    (a;a;;)
-    (a;;a;)
-    (a;;;a)
-    (;a;a;)
-    (;a;;a)
-    (;;a;a)
-));
-$expected[3] = join("\n", qw(
-    (a;a;a;)
-    (a;a;;a)
-    (a;;a;a)
-    (;a;a;a)
-));
-$expected[4] = '(a;a;a;a)';
+my @expected = (
+    q{}, qw[
+        (a)
+        (aa)
+        (aaa)
+        (aaaa)
+        ]
+);
 
 for my $i ( 0 .. $input_length ) {
-    my $evaler = Marpa::Evaluator->new(
-        {   recce       => $recce,
+
+    my $value_ref = $recce->value(
+        {
             end         => $i,
-            max_parses  => 20,
-            parse_order => 'original',
         }
     );
-    my @result;
-    while (my $result = $evaler->value()) {
-        push(@result, ${$result});
-    }
-    my $all_results = (join "\n", @result);
-    Test::More::is( $all_results, $expected[$i], "parse permutation $i" );
+    my $value = $value_ref ? ${$value_ref} : 'No Parse';
+    Test::More::is( $value, $expected[$i], "ah2 length $i" );
 
 } ## end for my $i ( 0 .. $input_length )
 

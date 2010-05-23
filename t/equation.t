@@ -153,24 +153,24 @@ END_NFA
 $actual_ref = save_stdout();
 
 # Marpa::Display
-# name: show_QDFA Synopsis
+# name: show_AHFA Synopsis
 
-print $grammar->show_QDFA()
+print $grammar->show_AHFA()
     or Carp::croak "print failed: $OS_ERROR";
 
 # Marpa::Display::End
 
-Marpa::Test::is( ${$actual_ref}, <<'END_QDFA', 'Ambiguous Equation QDFA' );
+Marpa::Test::is( ${$actual_ref}, <<'END_AHFA', 'Ambiguous Equation AHFA' );
 Start States: S0; S1
 S0: 7
 E['] -> . E
- <E> => S2
+ <E> => S2; leo(E['])
 S1: predict; 1,5
 E -> . E Op E
 E -> . Number
  <E> => S3
  <Number> => S4
-S2: 8
+S2: leo-c; 8
 E['] -> E .
 S3: 2
 E -> E . Op E
@@ -179,10 +179,10 @@ S4: 6
 E -> Number .
 S5: 3
 E -> E Op . E
- <E> => S6
-S6: 4
+ <E> => S6; leo(E)
+S6: leo-c; 4
 E -> E Op E .
-END_QDFA
+END_AHFA
 
 $actual_ref = save_stdout();
 

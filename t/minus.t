@@ -128,11 +128,11 @@ Marpa::Test::is( $grammar->show_rules,
 5: E['] -> E /* vlhs real=1 */
 END_RULES
 
-Marpa::Test::is( $grammar->show_QDFA, <<'END_QDFA', 'Minuses Equation QDFA' );
+Marpa::Test::is( $grammar->show_AHFA, <<'END_AHFA', 'Minuses Equation AHFA' );
 Start States: S0; S1
 S0: 16
 E['] -> . E
- <E> => S2
+ <E> => S2; leo(E['])
 S1: predict; 1,5,8,11,14
 E -> . E Minus E
 E -> . E MinusMinus
@@ -143,7 +143,7 @@ E -> . Number
  <Minus> => S1; S4
  <MinusMinus> => S1; S5
  <Number> => S6
-S2: 17
+S2: leo-c; 17
 E['] -> E .
 S3: 2,6
 E -> E . Minus E
@@ -152,24 +152,24 @@ E -> E . MinusMinus
  <MinusMinus> => S8
 S4: 12
 E -> Minus . E
- <E> => S9
+ <E> => S9; leo(E)
 S5: 9
 E -> MinusMinus . E
- <E> => S10
+ <E> => S10; leo(E)
 S6: 15
 E -> Number .
 S7: 3
 E -> E Minus . E
- <E> => S11
+ <E> => S11; leo(E)
 S8: 7
 E -> E MinusMinus .
-S9: 13
+S9: leo-c; 13
 E -> Minus E .
-S10: 10
+S10: leo-c; 10
 E -> MinusMinus E .
-S11: 4
+S11: leo-c; 4
 E -> E Minus E .
-END_QDFA
+END_AHFA
 
 my @expected_values = (
     #<<< no perltidy

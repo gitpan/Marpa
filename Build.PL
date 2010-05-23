@@ -8,7 +8,7 @@ use Fatal qw(open close);
 
 use Module::Build;
 
-my $marpa_version = '0.100000';
+my $marpa_version = '0.101_000';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -103,11 +103,7 @@ my $build = $class->new(
     },
     meta_add => {
         distribution_type => 'module',
-        requires          => {
-            'HTML::Parser'     => '3.64',
-            'HTML::PullParser' => '3.57'
-        },
-        provides => {
+        provides          => {
             'Marpa' => {
                 file    => 'lib/Marpa.pm',
                 version => $marpa_version,

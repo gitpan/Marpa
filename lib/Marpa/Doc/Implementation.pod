@@ -362,7 +362,7 @@ should look at
 L<Marpa::Models>.
 
 In addition to its B<current earleme>,
-each Earley item has a B<QDFA state>, and an B<origin>.
+each Earley item has a B<AHFA state>, and an B<origin>.
 The origin of an Earley item can also be called its B<start location>.
 Here's a representation of an Earley item, as you might see it in
 debugging output from Marpa:
@@ -376,7 +376,7 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-This Earley item is for QDFA state 4 (that is the "C<S4>" part).
+This Earley item is for AHFA state 4 (that is the "C<S4>" part).
 The "C<@2-3>" part says that this Earley item
 originates at earleme 2, and is current at earleme 3.
 The number of an Earley item's current earleme
@@ -386,16 +386,16 @@ the same as number of the Earley set that contains the item.
 (Note to experts:
 Those familiar with Earley parsing will note that C<S4@2-3> does not look like
 a traditional Earley item.
-QDFA states are not traditional --
+AHFA states are not traditional --
 they come from Aycock and Horspool.
 The use of the at-sign as punctuation is from
 L<Grune and Jacobs|Marpa::Bibliography/"Grune and Jacobs 2008">.
 And I have added the current earleme to the notation.)
 
-=head1 QDFA STATES
+=head1 AHFA STATES
 
 To understand what is going on in the Earley items,
-it will be necessary to understand QDFA's (Quasi-Deterministic Finite Automata).
+it will be necessary to understand AHFA's (Aycock-Horspool Finite Automata).
 Let's look at an Earley item:
 
 =for Marpa::Display
@@ -407,22 +407,22 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-This states that this item is for QDFA state 5;
+This states that this item is for AHFA state 5;
 that it originates at earleme 0;
 and that it is currently at
 (or has its dot position at)
 earleme 3.
-We can get a description of the QDFA states with the C<show_QDFA> method.
+We can get a description of the AHFA states with the C<show_AHFA> method.
 (For those who like the big picture,
-the entire C<show_QDFA> output,
+the entire C<show_AHFA> output,
 along with the other
 trace and debugging outputs for this example,
 is in the appendices.)
 
-Here's what C<show_QDFA> says about QDFA state 5:
+Here's what C<show_AHFA> says about AHFA state 5:
 
 =for Marpa::Display
-name: Implementation Example show_QDFA Output
+name: Implementation Example show_AHFA Output
 partial: 1
 normalize-whitespace: 1
 
@@ -433,19 +433,27 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-The first line of C<show_QDFA>'s description
-of QDFA state 5 begins with its name: C<S5>.
+The first line of C<show_AHFA>'s description
+of AHFA state 5 begins with its name: C<S5>.
 The two numbers on the first line 
-after the QDFA state name
-are the numbers of the NFA
-(Non-deterministic Finite Automata)
-states from which this QDFA state
-was formed.
-The NFA state numbers may be ignored.
-They will not be mentioned again in this document.
+after the AHFA state name
+are the numbers of the LR(0) NFA states
+from which this AHFA state was formed.
 
-Marpa uses QDFA states to track the parse.
-Every QDFA state has one or more LR(0) items.
+The LR(0) NFA state numbers may be ignored.
+LR(0) automata are described in many of
+the L<standard parsing
+texts|Marpa::Bibliography/"Grune and Jacobs 2008">.
+The Aycock-Horspool Finite Automata (AHFA) is
+built from the LR(0) NFA (Non-deterministic Finite Automata),
+by a process that is described
+in L<the Aycock-Horspool
+paper|Marpa::Bibliography/"Aycock and Horspool 2002">.
+LR(0) automata and LR(0) state numbers
+will not be mentioned again in this document.
+
+Marpa uses AHFA states to track the parse.
+Every AHFA state has one or more LR(0) items.
 In the above display,
 the second and third lines are LR(0) items.
 B<LR(0) items> are rules with a dot added to indicate
@@ -466,15 +474,15 @@ The symbol after the dot position in an LR(0) item is called the B<post-dot symb
 
 The last line in the above display shows transitions.
 It says that, when Marpa sees an C<Add> token,
-it will transition both to QDFA state S8
-and to QDFA state S9.
+it will transition both to AHFA state S8
+and to AHFA state S9.
 We will use both transitions in our examples.
 
 It's important not to confuse Earley items with LR(0) items.
 Earley items are built from one or more LR(0) items.
 In traditional Earley parsing, each Earley item contained one and only one LR(0) item.
 This made the internals simpler, but was not as efficient.
-Marpa combines LR(0) items into QDFA states
+Marpa combines LR(0) items into AHFA states
 based on the ideas in L<Aycock and Horspool 2002|Marpa::Bibliography/"Aycock and Horspool 2002">.
 
 Marpa places an important restriction on LR(0) items.
@@ -507,11 +515,11 @@ When an LR(0) item is not a completed rule,
 it is called an B<incomplete> LR(0) item,
 or an B<incomplete rule>.
 
-Every QDFA state contains one or more LR(0) items.
-This means that every QDFA state
+Every AHFA state contains one or more LR(0) items.
+This means that every AHFA state
 is a set of statements about rule recognition.
 An Earley item is present in the Earley sets if and only if
-every rule in every LR(0) item in the QDFA state of the Earley item has
+every rule in every LR(0) item in the AHFA state of the Earley item has
 been recognized as far as its dot position.
 The origin of each LR(0) item corresponds to the origin of the Earley item,
 and the dot position of each LR(0) item corresponds
@@ -548,12 +556,12 @@ Look again at Earley item S5@0-3.
 The current earleme for 
 S5@0-3 is earleme 3.
 Here, again, is the information for
-QDFA state S5,
-the QDFA state
+AHFA state S5,
+the AHFA state
 in Earley item S5@0-3.
 
 =for Marpa::Display
-name: Implementation Example show_QDFA Output
+name: Implementation Example show_AHFA Output
 partial: 1
 normalize-whitespace: 1
 
@@ -565,7 +573,7 @@ normalize-whitespace: 1
 =for Marpa::Display::End
 
 Marpa knows that it can instruct the lexer to look for a C<Add> token at earleme 3,
-because in QDFA state S5,
+because in AHFA state S5,
 there is a transition on an C<Add> token.
 In this example, an C<Add> token corresponds to a plus sign ("C<+>").
 
@@ -573,33 +581,33 @@ Marpa's state machine is
 not fully deterministic, it is quasi-deterministic.
 That is, Marpa's state machine is not a DFA
 (Deterministic Finite Automata),
-it is a QDFA.
+it is a AHFA.
 A DFA state,
 for any given token,
 has at most one transition.
-A QDFA state,
+A AHFA state,
 for any given token,
 can have up to two transitions.
-In the case of QDFA state S5,
+In the case of AHFA state S5,
 on an C<Add> token
 there are two transitions:
-one to QDFA state S8
-and one to QDFA state S9.
+one to AHFA state S8
+and one to AHFA state S9.
 We will use both transitions in our examples.
 
 The transition to
-QDFA state S9 is
+AHFA state S9 is
 an example of adding a B<predicted Earley item>
 to an Earley set.
 The transition to
-QDFA state S8 is
+AHFA state S8 is
 an example of adding a B<scanned Earley item>
 to an Earley set.
-Let's look at scanning, and the transition to QDFA state 8,
+Let's look at scanning, and the transition to AHFA state 8,
 first.
 
 =for Marpa::Display:
-name: Implementation Example show_QDFA Output
+name: Implementation Example show_AHFA Output
 partial: 1
 normalize-whitespace: 1
 
@@ -609,7 +617,7 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-Which earley set does the new earley item for QDFA state S8 go into?
+Which earley set does the new earley item for AHFA state S8 go into?
 In this example, the C<Add> token has a length
 (in earlemes) of 1.
 The current earleme for S5@0-3 is earleme 3.
@@ -628,7 +636,7 @@ as the origin of its predecessor.
 Collecting what
 we've determined so far, the new, scanned, Earley item
 will have its dot location at earleme 4,
-will have QDFA state S8,
+will have AHFA state S8,
 and will have its origin at earleme 0.
 This means that the new, scanned, Earley item will be S8@0-4.
 
@@ -641,7 +649,7 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-Any item which is added to an Earley set based on a QDFA state transition
+Any item which is added to an Earley set based on a AHFA state transition
 from a predecessor,
 is called that predecessor's B<successor>.
 In this example, S8@0-4 is the successor of S5@0-3.
@@ -698,14 +706,14 @@ see L<Marpa::Models>.
 =head2 Prediction
 
 In the previous section, we looked at one of
-the two transitions from QDFA state S5 at earleme 3
+the two transitions from AHFA state S5 at earleme 3
 on an C<Add> token.
-The transition we looked at was to QDFA state S8.
-Now we will look at the other transition, to QDFA state S9.
-Here is QDFA state S9:
+The transition we looked at was to AHFA state S8.
+Now we will look at the other transition, to AHFA state S9.
+Here is AHFA state S9:
 
 =for Marpa::Display
-name: Implementation Example show_QDFA Output
+name: Implementation Example show_AHFA Output
 partial: 1
 normalize-whitespace: 1
 
@@ -720,7 +728,7 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-In the first line of the C<show_QDFA> output for QDFA state S9,
+In the first line of the C<show_AHFA> output for AHFA state S9,
 immediately after the name of the state, comes the string C<"predict">.
 This means that S9 is a prediction state,
 and that the new Earley item we add as a result of the transition
@@ -744,7 +752,7 @@ its current location.
 So the origin of this new,
 predicted, Earley item will be 4.
 
-Now that we know its QDFA state, current location and origin,
+Now that we know its AHFA state, current location and origin,
 we are in a position to add the predicted Earley item.
 It goes into Earley set 4, and looks like this:
 
@@ -782,19 +790,19 @@ it may cause further rule initializations to be expected
 at the same location.
 In other words, rule initializations recurse.
 
-The QDFA states invented by
+The AHFA states invented by
 L<Aycock and Horspool
 |Marpa::Bibliography/"Aycock and Horspool 2002">
 handle these recursive rule initializations
 efficiently.
-Above we looked at QDFA states S8 and S9.
+Above we looked at AHFA states S8 and S9.
 In the following paragraphs,
 we'll examine the recursive sequence of rule
 initializations as it
 originates in S8
 and is collected in S9.
 
-The QDFA's invented by
+The AHFA's invented by
 Aycock and Horspool pair
 every transition to a prediction state with the
 transition to a kernel (or non-prediction) state.
@@ -803,7 +811,7 @@ where S8 is the kernel state.
 S8 contains only one LR(0) item:
 
 =for Marpa::Display:
-name: Implementation Example show_QDFA Output
+name: Implementation Example show_AHFA Output
 partial: 1
 normalize-whitespace: 1
 
@@ -812,8 +820,8 @@ normalize-whitespace: 1
 =for Marpa::Display::End
 
 In this LR(0) item the post-dot symbol is C<Term>.
-S9, the prediction QDFA state
-paired with kernel QDFA state S8,
+S9, the prediction AHFA state
+paired with kernel AHFA state S8,
 will contain
 all the rule initializations
 caused by the expectation
@@ -823,7 +831,7 @@ C<Term> on their left hand side.
 Their rule initializations are
 
 =for Marpa::Display:
-name: Implementation Example show_QDFA Output
+name: Implementation Example show_AHFA Output
 partial: 1
 normalize-whitespace: 1
 
@@ -832,7 +840,7 @@ normalize-whitespace: 1
 =for Marpa::Display::End
 
 =for Marpa::Display:
-name: Implementation Example show_QDFA Output
+name: Implementation Example show_AHFA Output
 partial: 1
 normalize-whitespace: 1
 
@@ -855,7 +863,7 @@ There are two such rules.
 Here are their rule initializations:
 
 =for Marpa::Display:
-name: Implementation Example show_QDFA Output
+name: Implementation Example show_AHFA Output
 partial: 1
 normalize-whitespace: 1
 
@@ -864,7 +872,7 @@ normalize-whitespace: 1
 =for Marpa::Display::End
 
 =for Marpa::Display:
-name: Implementation Example show_QDFA Output
+name: Implementation Example show_AHFA Output
 partial: 1
 normalize-whitespace: 1
 
@@ -887,13 +895,13 @@ step.
 That means there will be no more new rule initializations,
 and therefore no more new expected symbols.
 
-Starting with the expected symbol in QDFA state S8,
+Starting with the expected symbol in AHFA state S8,
 we found four rule initializations.
 The prediction state paired with S8 is S9.
 Let's look at it again:
 
 =for Marpa::Display
-name: Implementation Example show_QDFA Output
+name: Implementation Example show_AHFA Output
 partial: 1
 normalize-whitespace: 1
 
@@ -940,10 +948,10 @@ to the Earley sets.
 Let's look at one example.
 S4@2-3, in Earley set 3,
 contains a completed symbol.
-Here is what QDFA state 4 looks like:
+Here is what AHFA state 4 looks like:
 
 =for Marpa::Display
-name: Implementation Example show_QDFA Output
+name: Implementation Example show_AHFA Output
 partial: 1
 normalize-whitespace: 1
 
@@ -1000,10 +1008,10 @@ We'll look only at the completion effect
 that has
 S6@0-2 as its
 matching predecessor.
-Here is QDFA state 6.
+Here is AHFA state 6.
 
 =for Marpa::Display
-name: Implementation Example show_QDFA Output
+name: Implementation Example show_AHFA Output
 partial: 1
 normalize-whitespace: 1
 
@@ -1013,16 +1021,16 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-The transition for C<Factor> in QDFA state S6
+The transition for C<Factor> in AHFA state S6
 is to S10, so the new completion effect will have
-QDFA state S10.
+AHFA state S10.
 A completion effect always has the same current earleme
 as its completion cause (in this case S4@2-3).
 The origin of a completion effect is always the
 same as the origin of its matching predecessor (in this case S6@0-2).
 The means our new 
 new completion effect
-will have QDFA state S10, origin 0 and current earleme 3.
+will have AHFA state S10, origin 0 and current earleme 3.
 Here it is:
 
 =for Marpa::Display
@@ -1060,11 +1068,11 @@ then it is also a completion cause.
 The completion effect that we just added (S10@0-3)
 is a completion cause as well.
 It is a step in a recursive sequence of completions.
-Earley item S10@0-3 has QDFA state S10.
-QDFA state S10 contains a completed rule:
+Earley item S10@0-3 has AHFA state S10.
+AHFA state S10 contains a completed rule:
 
 =for Marpa::Display
-name: Implementation Example show_QDFA Output
+name: Implementation Example show_AHFA Output
 partial: 1
 normalize-whitespace: 1
 
@@ -1079,10 +1087,10 @@ Looking for
 matching predecessors at earleme 0,
 we find one:
 S1@0-0.
-Here is what QDFA state 1 looks like:
+Here is what AHFA state 1 looks like:
 
 =for Marpa::Display
-name: Implementation Example show_QDFA Output
+name: Implementation Example show_AHFA Output
 partial: 1
 normalize-whitespace: 1
 
@@ -1116,10 +1124,10 @@ One more step in the sequence of completions
 and we will see
 S5@0-3 again.
 The origin of S3@0-3 is at earleme 0.
-C<Term> is only the completed symbol in QDFA state 3.
+C<Term> is only the completed symbol in AHFA state 3.
 
 =for Marpa::Display
-name: Implementation Example show_QDFA Output
+name: Implementation Example show_AHFA Output
 partial: 1
 normalize-whitespace: 1
 
@@ -1133,8 +1141,8 @@ normalize-whitespace: 1
 S1@0-0 contains an LR(0) item
 which has C<Term> as the post-dot
 symbol.
-In QDFA state S1, the transition on C<Term>
-is to QDFA state S5.
+In AHFA state S1, the transition on C<Term>
+is to AHFA state S5.
 This means S5@0-3 will be
 added to earley set 3 as a completion effect,
 with S3@0-3 as the cause and S1@0-0 as the matching predecessor:
@@ -1176,8 +1184,8 @@ normalize-whitespace: 1
 =for Marpa::Display::End
 
 S0@0-0 will always be present in Earley set 0.
-QDFA state 0 contains the start rules, with the dot pointer at the beginning.
-Only Earley set 0 will contain an Earley item for QDFA state 0.
+AHFA state 0 contains the start rules, with the dot pointer at the beginning.
+Only Earley set 0 will contain an Earley item for AHFA state 0.
 
 S1@0-0 contains the rules predicted by S0@0-0.
 For some very simple grammars S1@0-0 is not necessary.
@@ -1186,7 +1194,7 @@ For some very simple grammars S1@0-0 is not necessary.
 
 =head2 Choosing LR(0) Items
 
-As we have seen, Marpa uses QDFA states in its Earley items,
+As we have seen, Marpa uses AHFA states in its Earley items,
 and these can contain multiple LR(0) items.
 To produce an actual parse result, Marpa must, for every Earley
 item, choose exactly one of the LR(0) items.
@@ -1234,7 +1242,7 @@ except when Marpa attempts to add the same
 Earley item twice.
 
 Two Earley items are considered "the same"
-if they have the same QDFA state,
+if they have the same AHFA state,
 the same origin
 and the same current earleme.
 Marpa will never add the same Earley item twice.
@@ -1355,7 +1363,7 @@ there is
 an Earley item for a completed start rule state
 in the Earley set at
 the end of parsing.
-A B<completed start rule state> is a QDFA state containing a completed start rule.
+A B<completed start rule state> is a AHFA state containing a completed start rule.
 A completed start rule is an LR(0) item for a start rule
 with a dot position at the end of the rule.
 
@@ -1378,17 +1386,17 @@ that Marpa grammar allows the null parse.
 as saying that a grammar recognizes the zero-length,
 or empty, token string.)
 In grammars which allow a null parse,
-the start state, QDFA state 0,
+the start state, AHFA state 0,
 is the empty completed start rule state.
 
 The non-empty start rule is the rule with Marpa's internal start symbol
 on its left hand side and exactly one symbol on its right hand side --
 the grammar's original start symbol.
-QDFA state S2 is the non-empty completed start rule state
+AHFA state S2 is the non-empty completed start rule state
 for our example parse:
 
 =for Marpa::Display
-name: Implementation Example show_QDFA Output
+name: Implementation Example show_AHFA Output
 partial: 1
 normalize-whitespace: 1
 
@@ -1524,10 +1532,10 @@ remove-blank-last-line: 1
 
 =for Marpa::Display::End
 
-=head2 C<show_QDFA> Output
+=head2 C<show_AHFA> Output
 
 =for Marpa::Display:
-name: Implementation Example show_QDFA Output
+name: Implementation Example show_AHFA Output
 remove-display-indent: 1
 remove-blank-last-line: 1
 

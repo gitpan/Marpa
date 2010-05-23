@@ -46,7 +46,7 @@ use Marpa::Offset qw(
     TAG ID
     PREDECESSOR_ID
     CAUSE_ID
-    TOKEN VALUE_REF
+    TOKEN_NAME VALUE_REF
     TREE_OPS
     VALUE_OPS
     START_EARLEME
@@ -633,7 +633,7 @@ sub clone_and_node {
 
     for my $field (
         Marpa::Internal::And_Node::VALUE_REF,
-        Marpa::Internal::And_Node::TOKEN,
+        Marpa::Internal::And_Node::TOKEN_NAME,
         Marpa::Internal::And_Node::TREE_OPS,
         Marpa::Internal::And_Node::VALUE_OPS,
         Marpa::Internal::And_Node::START_EARLEME,
@@ -773,7 +773,7 @@ sub delete_nodes {
                 Marpa::Internal::And_Node::CAUSE_ID,
                 Marpa::Internal::And_Node::PREDECESSOR_ID,
                 Marpa::Internal::And_Node::VALUE_REF,
-                Marpa::Internal::And_Node::TOKEN,
+                Marpa::Internal::And_Node::TOKEN_NAME,
                 )
             {
                 $delete_and_node->[$field] = undef;
@@ -1244,14 +1244,14 @@ sub delete_duplicate_nodes {
     my @and_base_signatures;
     for my $and_node ( @{$and_nodes} ) {
         my $and_node_id = $and_node->[Marpa::Internal::And_Node::ID];
-        my $token       = $and_node->[Marpa::Internal::And_Node::TOKEN];
+        my $token_name  = $and_node->[Marpa::Internal::And_Node::TOKEN_NAME];
         $and_base_signatures[$and_node_id] =
             join q{,},
             $and_node->[Marpa::Internal::And_Node::RULE_ID],
             $and_node->[Marpa::Internal::And_Node::POSITION],
             $and_node->[Marpa::Internal::And_Node::START_EARLEME],
             $and_node->[Marpa::Internal::And_Node::END_EARLEME],
-            ( defined $token ? $token->[Marpa::Internal::Symbol::ID] : -1 );
+            ( $token_name // q{} );
     } ## end for my $and_node ( @{$and_nodes} )
 
     # As long as duplicates are found, we continue to loop
@@ -1512,7 +1512,7 @@ sub Marpa::Evaluator::new {
 
     EARLEY_ITEM: for my $item ( @{$earley_set} ) {
         $start_state = $item->[Marpa::Internal::Earley_Item::STATE];
-        $start_rule  = $start_state->[Marpa::Internal::QDFA::START_RULE];
+        $start_rule  = $start_state->[Marpa::Internal::AHFA::START_RULE];
         next EARLEY_ITEM if not $start_rule;
         $start_item = $item;
         last EARLEY_ITEM;
@@ -1530,8 +1530,7 @@ sub Marpa::Evaluator::new {
 
     # Set up rank closures by symbol
     my $ranking_closures_by_symbol =
-        $self->[Marpa::Internal::Evaluator::RANKING_CLOSURES_BY_SYMBOL] = [];
-    $#{$ranking_closures_by_symbol} = $#{$symbols};
+        $self->[Marpa::Internal::Evaluator::RANKING_CLOSURES_BY_SYMBOL] = {};
     SYMBOL: for my $symbol ( @{$symbols} ) {
         my $ranking_action =
             $symbol->[Marpa::Internal::Symbol::RANKING_ACTION];
@@ -1541,8 +1540,8 @@ sub Marpa::Evaluator::new {
             $ranking_action );
         Marpa::exception("Ranking closure '$ranking_action' not found")
             if not defined $ranking_closure;
-        $ranking_closures_by_symbol->[ $symbol->[Marpa::Internal::Symbol::ID]
-        ] = $ranking_closure;
+        $ranking_closures_by_symbol
+            ->{ $symbol->[Marpa::Internal::Symbol::NAME] } = $ranking_closure;
     } ## end for my $symbol ( @{$symbols} )
 
     my $evaluator_rules =
@@ -1566,9 +1565,9 @@ sub Marpa::Evaluator::new {
             Marpa::exception("Ranking closure '$ranking_action' not found")
                 if not defined $ranking_closure;
 
-            $ranking_closures_by_symbol->[ $rule->[Marpa::Internal::Rule::LHS]
+            $ranking_closures_by_symbol->{ $rule->[Marpa::Internal::Rule::LHS]
                 ->[Marpa::Internal::Symbol::NULL_ALIAS]
-                ->[Marpa::Internal::Symbol::ID] ] = $ranking_closure;
+                ->[Marpa::Internal::Symbol::NAME] } = $ranking_closure;
         } ## end if ( not scalar @{ $rule->[Marpa::Internal::Rule::RHS...]})
 
         next RULE if not $rule->[Marpa::Internal::Rule::USED];
@@ -1679,29 +1678,100 @@ sub Marpa::Evaluator::new {
 
         my $sapling_name = $or_sapling->[Marpa::Internal::Or_Sapling::NAME];
         my $item         = $or_sapling->[Marpa::Internal::Or_Sapling::ITEM];
+        my $or_sapling_set = $item->[Marpa::Internal::Earley_Item::SET];
+        my $earley_set = $earley_sets->[$or_sapling_set];
+
+        my $leo_links = $item->[Marpa::Internal::Earley_Item::LEO_LINKS] // [];
+
+        # If this is a Leo completion, translate the Leo links
+        for my $leo_link (@{$leo_links})
+        {
+
+            my ( $leo_item, $cause, $token_name, $token_value ) =
+                @{$leo_link};
+            my ( $next_leo_item, $leo_base_item ) =
+                @{ $leo_item->[Marpa::Internal::Earley_Item::LINKS]->[0] };
+
+            my $next_tokens = [];
+            if ($token_name) {
+                push @{$next_tokens},
+                    [ $leo_base_item, $token_name, $token_value ];
+            }
+            my $next_links = [];
+            if ($cause) {
+                push @{$next_links}, [ $leo_base_item, $cause ];
+            }
+
+            LEO_ITEM: for ( ;; ) {
+
+                if ( not $next_leo_item ) {
+
+                    push @{ $item->[Marpa::Internal::Earley_Item::LINKS] },
+                        @{$next_links};
+                    push @{ $item->[Marpa::Internal::Earley_Item::TOKENS] },
+                        @{$next_tokens};
+
+                    # Now that the Leo links are translated, remove them
+                    $item->[Marpa::Internal::Earley_Item::LEO_LINKS] = undef;
+                    last LEO_ITEM;
+
+                } ## end if ( not $leo_item )
+
+                $leo_item = $next_leo_item;
+
+                my $new_earley_item = [];
+                my $state =
+                    $new_earley_item->[Marpa::Internal::Earley_Item::STATE] =
+                    $leo_item->[Marpa::Internal::Earley_Item::STATE];
+                $new_earley_item->[Marpa::Internal::Earley_Item::TOKENS] =
+                    $next_tokens;
+                $new_earley_item->[Marpa::Internal::Earley_Item::LINKS] =
+                    $next_links;
+                my $origin =
+                    $new_earley_item->[Marpa::Internal::Earley_Item::PARENT] =
+                    $leo_item->[Marpa::Internal::Earley_Item::SET];
+                $new_earley_item->[Marpa::Internal::Earley_Item::SET] =
+                    $or_sapling_set;
+                $new_earley_item->[Marpa::Internal::Earley_Item::NAME] =
+                    sprintf
+                    ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+                    'S%d@%d-%d',
+                    ## use critic
+                    $state->[Marpa::Internal::AHFA::ID],
+                    $origin,
+                    $or_sapling_set;
+                push @{$earley_set}, $new_earley_item;
+
+                ( $next_leo_item, $leo_base_item ) =
+                    @{ $leo_item->[Marpa::Internal::Earley_Item::LINKS]->[0] };
+
+                $next_tokens = [];
+                $next_links = [ [ $leo_base_item, $new_earley_item ] ];
+
+            } ## end for ( ;; )
+        } ## end if ( my $leo_item = $item->[...])
+
         my $child_lhs_symbol =
             $or_sapling->[Marpa::Internal::Or_Sapling::CHILD_LHS_SYMBOL];
         my $rule     = $or_sapling->[Marpa::Internal::Or_Sapling::RULE];
-        my $position = $or_sapling->[Marpa::Internal::Or_Sapling::POSITION];
+        my $or_sapling_position = $or_sapling->[Marpa::Internal::Or_Sapling::POSITION];
 
         # If we don't have a current rule, we need to get one or
         # more rules, and deduce the position and a new symbol from
         # them.
         my @and_saplings;
 
-        my $is_kernel_or_node = defined $position;
 
-        if ($is_kernel_or_node) {
+        if ( defined $or_sapling_position ) {
 
             # Kernel or-node: We have a rule and a position.
             # get the current symbol
 
-            $position--;
-            my $symbol = $rule->[Marpa::Internal::Rule::RHS]->[$position];
-            push @and_saplings, [ $rule, $position, $symbol ];
+            $or_sapling_position--;
+            my $symbol = $rule->[Marpa::Internal::Rule::RHS]->[$or_sapling_position];
+            push @and_saplings, [ $rule, $or_sapling_position, $symbol ];
 
-        } ## end if ($is_kernel_or_node)
-        else {
+        } else {
 
             # Closure or-node.
 
@@ -1709,7 +1779,7 @@ sub Marpa::Evaluator::new {
                 $child_lhs_symbol->[Marpa::Internal::Symbol::ID];
             my $state = $item->[Marpa::Internal::Earley_Item::STATE];
             for my $rule (
-                @{  $state->[Marpa::Internal::QDFA::COMPLETE_RULES]
+                @{  $state->[Marpa::Internal::AHFA::COMPLETE_RULES]
                         ->[$child_lhs_id];
                 }
                 )
@@ -1739,20 +1809,23 @@ sub Marpa::Evaluator::new {
 
         for my $and_sapling (@and_saplings) {
 
-            my ($sapling_rule, $sapling_position,
+            my ($and_sapling_rule, $and_sapling_position,
                 $symbol,       $value_processing
             ) = @{$and_sapling};
 
-            my $rule_id     = $sapling_rule->[Marpa::Internal::Rule::ID];
-            my $rhs         = $sapling_rule->[Marpa::Internal::Rule::RHS];
+            my $rule_id     = $and_sapling_rule->[Marpa::Internal::Rule::ID];
+            my $rhs         = $and_sapling_rule->[Marpa::Internal::Rule::RHS];
             my $rule_length = @{$rhs};
 
             my @or_bud_list;
             if ( $symbol->[Marpa::Internal::Symbol::NULLING] ) {
                 my $nulling_symbol_id =
                     $symbol->[Marpa::Internal::Symbol::ID];
+                my $nulling_symbol_name =
+                    $symbol->[Marpa::Internal::Symbol::NAME];
                 my $null_value = $null_values->[$nulling_symbol_id];
-                @or_bud_list = ( [ $item, undef, $symbol, \$null_value, ] );
+                @or_bud_list =
+                    ( [ $item, undef, $nulling_symbol_name, \$null_value, ] );
             } ## end if ( $symbol->[Marpa::Internal::Symbol::NULLING] )
             else {
                 @or_bud_list = (
@@ -1767,15 +1840,16 @@ sub Marpa::Evaluator::new {
 
             for my $or_bud (@or_bud_list) {
 
-                my ( $predecessor, $cause, $token, $value_ref ) = @{$or_bud};
+                my ( $predecessor, $cause, $token_name, $value_ref ) =
+                    @{$or_bud};
 
                 my $predecessor_name;
 
-                if ( $sapling_position > 0 ) {
+                if ( $and_sapling_position > 0 ) {
 
                     $predecessor_name =
                         $predecessor->[Marpa::Internal::Earley_Item::NAME]
-                        . "R$rule_id:$sapling_position";
+                        . "R$rule_id:$and_sapling_position";
 
                     # We check that the predecessor has not already been
                     # processed so that cycles don't put us into a loop
@@ -1791,15 +1865,15 @@ sub Marpa::Evaluator::new {
                             Marpa::Internal::Or_Sapling::ITEM,
                             ]
                             = (
-                            $predecessor_name, $sapling_rule,
-                            $sapling_position, $predecessor,
+                            $predecessor_name, $and_sapling_rule,
+                            $and_sapling_position, $predecessor,
                             );
 
                         push @or_saplings, $sapling;
 
                     }    # $predecessor_name ~~ %or_node_by_name
 
-                }    # if sapling_position > 0
+                }    # if and_sapling_position > 0
 
                 my $cause_name;
 
@@ -1842,19 +1916,20 @@ sub Marpa::Evaluator::new {
                 $and_node->[Marpa::Internal::And_Node::CAUSE_ID] =
                     $cause_name;
 
-                $and_node->[Marpa::Internal::And_Node::TOKEN] = $token;
+                $and_node->[Marpa::Internal::And_Node::TOKEN_NAME] =
+                    $token_name;
                 $and_node->[Marpa::Internal::And_Node::VALUE_REF] =
                     $value_ref;
                 $and_node->[Marpa::Internal::And_Node::RULE_ID] = $rule_id;
 
                 # Right now tree processing is only done on
                 # closure and-nodes.
-                if ( $sapling_position
-                    == $#{ $sapling_rule->[Marpa::Internal::Rule::RHS] } )
+                if ( $and_sapling_position
+                    == $#{ $and_sapling_rule->[Marpa::Internal::Rule::RHS] } )
                 {
                     $and_node->[Marpa::Internal::And_Node::TREE_OPS] =
                         $tree_rules[$rule_id];
-                } ## end if ( $sapling_position == $#{ $sapling_rule->[...]})
+                } ## end if ( $and_sapling_position == $#{ $and_sapling_rule->[...]})
                 $and_node->[Marpa::Internal::And_Node::VALUE_OPS] =
                     $value_processing;
                 given ($parse_order) {
@@ -1869,12 +1944,12 @@ sub Marpa::Evaluator::new {
                 } ## end given
 
                 $and_node->[Marpa::Internal::And_Node::POSITION] =
-                    $sapling_position;
+                    $and_sapling_position;
                 $and_node->[Marpa::Internal::And_Node::START_EARLEME] =
                     $start_earleme;
                 $and_node->[Marpa::Internal::And_Node::CAUSE_EARLEME] =
                       $predecessor
-                    ? $item->[Marpa::Internal::Earley_Item::SET]
+                    ? $predecessor->[Marpa::Internal::Earley_Item::SET]
                     : $start_earleme;
                 $and_node->[Marpa::Internal::And_Node::END_EARLEME] =
                     $end_earleme;
@@ -2248,7 +2323,7 @@ sub Marpa::Evaluator::show_ambiguity {
     my $and_nodes = $evaler->[Marpa::Internal::Evaluator::AND_NODES];
     my $or_nodes  = $evaler->[Marpa::Internal::Evaluator::OR_NODES];
     my $grammar   = $evaler->[Marpa::Internal::Evaluator::GRAMMAR];
-    my $QDFA      = $grammar->[Marpa::Internal::Grammar::QDFA];
+    my $AHFA      = $grammar->[Marpa::Internal::Grammar::AHFA];
     $verbose //= 0;
     my $text = q{};
 
@@ -2277,7 +2352,7 @@ sub Marpa::Evaluator::show_ambiguity {
                 my ($state) = ( $grandchild_tag =~ /\A S (\d+) [@]/xms );
                 $text .= " $grandchild_tag";
                 $detail_text
-                    .= Marpa::show_QDFA_state( $QDFA->[ $state + 0 ], 0 );
+                    .= Marpa::show_AHFA_state( $AHFA->[ $state + 0 ], 0 );
             } ## end if ( defined( my $predecessor_id = $and_node->[...]))
             if (defined(
                     my $cause_id =
@@ -2291,7 +2366,7 @@ sub Marpa::Evaluator::show_ambiguity {
                 my ($state) = ( $grandchild_tag =~ /\A S (\d+) [@]/xms );
                 $text .= " $grandchild_tag";
                 $detail_text
-                    .= Marpa::show_QDFA_state( $QDFA->[ $state + 0 ], 0 );
+                    .= Marpa::show_AHFA_state( $AHFA->[ $state + 0 ], 0 );
             } ## end if ( defined( my $cause_id = $and_node->[...]))
             if (defined(
                     my $value_ref =
@@ -2515,15 +2590,12 @@ sub evaluate {
             push @evaluation_stack, $value_ref;
 
             if ($trace_values) {
-                my $token = $and_node->[Marpa::Internal::And_Node::TOKEN];
+                my $token_name =
+                    $and_node->[Marpa::Internal::And_Node::TOKEN_NAME];
                 print {$Marpa::Internal::TRACE_FH}
                     'Pushed value from ',
                     $and_node->[Marpa::Internal::And_Node::TAG], ': ',
-                    (
-                    $token
-                    ? ( $token->[Marpa::Internal::Symbol::NAME] . q{ = } )
-                    : q{}
-                    ),
+                    ( $token_name ? qq{$token_name = } : q{} ),
                     Data::Dumper->new( [$value_ref] )->Terse(1)->Dump
                     or Marpa::exception('print to trace handle failed');
             } ## end if ($trace_values)
@@ -2754,8 +2826,10 @@ sub Marpa::Evaluator::value {
     local $Marpa::Internal::TRACE_FH =
         $evaler->[Marpa::Internal::Evaluator::TRACE_FILE_HANDLE];
 
-    my $grammar = $evaler->[Marpa::Internal::Evaluator::GRAMMAR];
-    my $rules   = $grammar->[Marpa::Internal::Grammar::RULES];
+    my $grammar     = $evaler->[Marpa::Internal::Evaluator::GRAMMAR];
+    my $rules       = $grammar->[Marpa::Internal::Grammar::RULES];
+    my $symbol_hash = $grammar->[Marpa::Internal::Grammar::SYMBOL_HASH];
+    my $symbols     = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
 
     my $parse_order = $evaler->[Marpa::Internal::Evaluator::PARSE_ORDER];
 
@@ -2787,12 +2861,12 @@ sub Marpa::Evaluator::value {
         if ( $parse_order eq 'numeric' ) {
             AND_NODE: for my $and_node ( @{$and_nodes} ) {
                 next AND_NODE
-                    if not my $token =
-                        $and_node->[Marpa::Internal::And_Node::TOKEN];
+                    if not my $token_name =
+                        $and_node->[Marpa::Internal::And_Node::TOKEN_NAME];
 
                 next AND_NODE
-                    if not my $ranking_closure = $ranking_closures_by_symbol
-                        ->[ $token->[Marpa::Internal::Symbol::ID] ];
+                    if not my $ranking_closure =
+                        $ranking_closures_by_symbol->{$token_name};
 
                 my $rank;
                 my @warnings;
@@ -2807,13 +2881,12 @@ sub Marpa::Evaluator::value {
 
                 if ( not $eval_ok or @warnings ) {
                     my $fatal_error = $EVAL_ERROR;
-                    my $symbol_name = $token->[Marpa::Internal::Symbol::NAME];
                     Marpa::Internal::code_problems(
                         {   fatal_error => $fatal_error,
                             grammar     => $grammar,
                             eval_ok     => $eval_ok,
                             warnings    => \@warnings,
-                            where       => "ranking symbol $symbol_name",
+                            where       => "ranking symbol $token_name",
                         }
                     );
                 } ## end if ( not $eval_ok or @warnings )
@@ -3109,7 +3182,8 @@ sub Marpa::Evaluator::value {
                         ->[Marpa::Internal::And_Iteration::RANKING_DATA];
                 } ## end if ( defined $predecessor_and_node_choice )
 
-                my $token = $and_node->[Marpa::Internal::And_Node::TOKEN];
+                my $token_name =
+                    $and_node->[Marpa::Internal::And_Node::TOKEN_NAME];
 
                 if ( $parse_order eq 'numeric' ) {
                     my $ranking_closure = $and_node
@@ -3251,7 +3325,9 @@ sub Marpa::Evaluator::value {
                 } ## end if ( defined $predecessor_ranking_data )
 
                 PROCESS_TOKEN: {
-                    last PROCESS_TOKEN if not defined $token;
+                    last PROCESS_TOKEN if not defined $token_name;
+                    my $token_id = $symbol_hash->{$token_name};
+                    my $token = $symbols->[$token_id];
 
                     if ( $token->[Marpa::Internal::Symbol::NULLABLE] ) {
                         $trailing_nulls += 1;

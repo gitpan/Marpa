@@ -270,19 +270,19 @@ the easiest way to determine if a symbol is a terminal.
 
 =head1 TRACE ACCESSORS
 
-=head2 show_QDFA
+=head2 show_AHFA
 
 =for Marpa::Display
-name: show_QDFA Synopsis
+name: show_AHFA Synopsis
 perltidy: '-dcsc -sil=0'
 
-    print $grammar->show_QDFA()
+    print $grammar->show_AHFA()
         or Carp::croak "print failed: $OS_ERROR";
 
 =for Marpa::Display::End
 
-Returns a multi-line string listing the states of the QDFA
-with the LR(0) items, NFA states, and transitions for each.
+Returns a multi-line string listing the states of the AHFA
+with the LR(0) items, LR(0) NFA states, and transitions for each.
 Not useful before the grammar is precomputed.
 Useful in debugging, but requires knowledge of Marpa internals.
 

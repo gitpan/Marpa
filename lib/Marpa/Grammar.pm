@@ -8,6 +8,7 @@ use strict;
 
 # It's all integers, except for the version number
 use integer;
+use utf8;
 
 use Marpa::Internal;
 
@@ -119,7 +120,7 @@ use Marpa::Offset qw(
 
 use Marpa::Offset qw(
 
-    :package=Marpa::Internal::QDFA
+    :package=Marpa::Internal::AHFA
 
     ID
     NAME
@@ -134,7 +135,7 @@ use Marpa::Offset qw(
 
     TRANSITION { the transitions, as a hash
     from symbol name to references to arrays
-    of QDFA states }
+    of AHFA states }
 
     COMPLETE_LHS { an array of the lhs's of complete rules }
 
@@ -142,7 +143,9 @@ use Marpa::Offset qw(
 
     =LAST_RECOGNIZER_FIELD
 
-    NFA_STATES { in an QDFA: an array of NFA states }
+    LEO_COMPLETION { Is this a Leo completion state? }
+
+    NFA_STATES { in an AHFA: an array of NFA states }
 
     =LAST_FIELD
 );
@@ -162,7 +165,7 @@ use Marpa::Offset qw(
 
     RULES { array of rule refs }
     SYMBOLS { array of symbol refs }
-    QDFA { array of states }
+    AHFA { array of states }
     PHASE { the grammar's phase }
     ACTIONS { Default package in which to find actions }
     DEFAULT_ACTION { Action for rules without one }
@@ -176,7 +179,8 @@ use Marpa::Offset qw(
 
     { === Evaluator Fields === }
 
-    SYMBOL_HASH { hash by name of symbol refs }
+    TERMINAL_NAMES { hash of terminal symbols, by name }
+    SYMBOL_HASH { hash to symbol ID by name of symbol refs }
     RULE_HASH { hash by name of rule refs }
     DEFAULT_NULL_VALUE { default value for nulled symbols }
     ACTION_OBJECT
@@ -188,7 +192,7 @@ use Marpa::Offset qw(
     PROBLEMS { fatal problems }
     START_STATES { ref to array of the start states }
     ACADEMIC { true if this is a textbook grammar,
-    for checking the NFA and QDFA, and NOT
+    for checking the NFA and AHFA, and NOT
     for actual Earley parsing }
 
     =LAST_RECOGNIZER_FIELD
@@ -197,7 +201,7 @@ use Marpa::Offset qw(
     START { ref to start symbol }
     START_NAME { name of original symbol }
     NFA { array of states }
-    QDFA_BY_NAME { hash from QDFA name to QDFA reference }
+    AHFA_BY_NAME { hash from AHFA name to AHFA reference }
     NULLABLE_SYMBOL { array of refs of the nullable symbols }
     INACCESSIBLE_OK
     UNPRODUCTIVE_OK
@@ -357,7 +361,7 @@ sub Marpa::Grammar::new {
     $grammar->[Marpa::Internal::Grammar::RULE_HASH]           = {};
     $grammar->[Marpa::Internal::Grammar::RULES]               = [];
     $grammar->[Marpa::Internal::Grammar::RULE_SIGNATURE_HASH] = {};
-    $grammar->[Marpa::Internal::Grammar::QDFA_BY_NAME]        = {};
+    $grammar->[Marpa::Internal::Grammar::AHFA_BY_NAME]        = {};
     $grammar->[Marpa::Internal::Grammar::PHASE] = Marpa::Internal::Phase::NEW;
 
     $grammar->set(@arg_hashes);
@@ -737,7 +741,14 @@ sub Marpa::Grammar::precompute {
         detect_infinite($grammar);
     }
     create_NFA($grammar);
-    create_QDFA($grammar);
+    create_AHFA($grammar);
+    mark_leo_states($grammar);
+
+    $grammar->[Marpa::Internal::Grammar::TERMINAL_NAMES] = {
+        map { ( $_->[Marpa::Internal::Symbol::NAME] => 1 ) }
+            grep { $_->[Marpa::Internal::Symbol::TERMINAL] }
+            @{ $grammar->[Marpa::Internal::Grammar::SYMBOLS] }
+    };
 
     if ( $grammar->[Marpa::Internal::Grammar::WARNINGS]
         and
@@ -815,8 +826,8 @@ sub Marpa::Grammar::precompute {
             $#{$rule} = Marpa::Internal::Rule::LAST_RECOGNIZER_FIELD;
         }
 
-        for my $QDFA ( @{ $grammar->[Marpa::Internal::Grammar::QDFA] } ) {
-            $#{$QDFA} = Marpa::Internal::QDFA::LAST_RECOGNIZER_FIELD;
+        for my $AHFA ( @{ $grammar->[Marpa::Internal::Grammar::AHFA] } ) {
+            $#{$AHFA} = Marpa::Internal::AHFA::LAST_RECOGNIZER_FIELD;
         }
 
     } ## end if ( $grammar->[Marpa::Internal::Grammar::STRIP] )
@@ -1288,71 +1299,78 @@ sub Marpa::Grammar::show_NFA {
     return $text;
 } ## end sub Marpa::Grammar::show_NFA
 
-sub Marpa::brief_QDFA_state {
+sub Marpa::brief_AHFA_state {
     my ($state) = @_;
-    return 'S' . $state->[Marpa::Internal::QDFA::ID];
+    return 'S' . $state->[Marpa::Internal::AHFA::ID];
 }
 
-sub Marpa::show_QDFA_state {
+sub Marpa::show_AHFA_state {
     my ( $state, $verbose ) = @_;
     $verbose //= 1;    # legacy is to be verbose, so default to it
 
     my $text     = q{};
-    my $stripped = $#{$state} < Marpa::Internal::QDFA::LAST_FIELD;
+    my $stripped = $#{$state} < Marpa::Internal::AHFA::LAST_FIELD;
 
-    $text .= Marpa::brief_QDFA_state($state) . ': ';
+    $text .= Marpa::brief_AHFA_state($state) . ': ';
 
-    if ( $state->[Marpa::Internal::QDFA::RESET_ORIGIN] ) {
+    if ( $state->[Marpa::Internal::AHFA::LEO_COMPLETION] ) {
+        $text .= 'leo-c; ';
+    }
+    if ( $state->[Marpa::Internal::AHFA::RESET_ORIGIN] ) {
         $text .= 'predict; ';
     }
 
-    $text .= $state->[Marpa::Internal::QDFA::NAME] . "\n";
+    $text .= $state->[Marpa::Internal::AHFA::NAME] . "\n";
 
-    if ( exists $state->[Marpa::Internal::QDFA::NFA_STATES] ) {
-        my $NFA_states = $state->[Marpa::Internal::QDFA::NFA_STATES];
+    if ( exists $state->[Marpa::Internal::AHFA::NFA_STATES] ) {
+        my $NFA_states = $state->[Marpa::Internal::AHFA::NFA_STATES];
         for my $NFA_state ( @{$NFA_states} ) {
             my $item = $NFA_state->[Marpa::Internal::NFA::ITEM];
             $text .= Marpa::show_item($item) . "\n";
         }
-    } ## end if ( exists $state->[Marpa::Internal::QDFA::NFA_STATES...])
+    } ## end if ( exists $state->[Marpa::Internal::AHFA::NFA_STATES...])
 
     if ($stripped) { $text .= "stripped\n" }
 
     return $text if not $verbose;
 
-    if ( exists $state->[Marpa::Internal::QDFA::TRANSITION] ) {
-        my $transition = $state->[Marpa::Internal::QDFA::TRANSITION];
+    if ( exists $state->[Marpa::Internal::AHFA::TRANSITION] ) {
+        my $transition = $state->[Marpa::Internal::AHFA::TRANSITION];
         for my $symbol_name ( sort keys %{$transition} ) {
             $text .= ' <' . $symbol_name . '> => ';
-            my @qdfa_labels;
-            for my $to_state ( @{ $transition->{$symbol_name} } ) {
-                my $to_name = $to_state->[Marpa::Internal::QDFA::NAME];
-                push @qdfa_labels, Marpa::brief_QDFA_state($to_state);
+            my @ahfa_labels;
+            TO_STATE: for my $to_state ( @{ $transition->{$symbol_name} } ) {
+                if (not ref $to_state) {
+                    push @ahfa_labels, qq{leo($to_state)};
+                    next TO_STATE;
+                }
+                my $to_name = $to_state->[Marpa::Internal::AHFA::NAME];
+                push @ahfa_labels, Marpa::brief_AHFA_state($to_state);
             }    # for my $to_state
-            $text .= join '; ', sort @qdfa_labels;
+            $text .= join '; ', sort @ahfa_labels;
             $text .= "\n";
         } ## end for my $symbol_name ( sort keys %{$transition} )
-    } ## end if ( exists $state->[Marpa::Internal::QDFA::TRANSITION...])
+    } ## end if ( exists $state->[Marpa::Internal::AHFA::TRANSITION...])
 
     return $text;
-} ## end sub Marpa::show_QDFA_state
+} ## end sub Marpa::show_AHFA_state
 
-sub Marpa::Grammar::show_QDFA {
+sub Marpa::Grammar::show_AHFA {
     my ($grammar) = @_;
 
     my $text         = q{};
-    my $QDFA         = $grammar->[Marpa::Internal::Grammar::QDFA];
+    my $AHFA         = $grammar->[Marpa::Internal::Grammar::AHFA];
     my $start_states = $grammar->[Marpa::Internal::Grammar::START_STATES];
     $text .= 'Start States: ';
     $text .= join '; ',
-        sort map { Marpa::brief_QDFA_state($_) } @{$start_states};
+        sort map { Marpa::brief_AHFA_state($_) } @{$start_states};
     $text .= "\n";
 
-    for my $state ( @{$QDFA} ) {
-        $text .= Marpa::show_QDFA_state($state);
+    for my $state ( @{$AHFA} ) {
+        $text .= Marpa::show_AHFA_state($state);
     }
     return $text;
-} ## end sub Marpa::Grammar::show_QDFA
+} ## end sub Marpa::Grammar::show_AHFA
 
 # Used by lexers to check that symbol is a terminal
 sub Marpa::Grammar::check_terminal {
@@ -2481,18 +2499,18 @@ sub create_NFA {
 } ## end sub create_NFA
 
 # take a list of kernel NFA states, possibly with duplicates, and return
-# a reference to an array of the fully built quasi-DFA (QDFA) states.
+# a reference to an array of the fully built Aycock-Horspool (AHFA) states.
 # as necessary.  The build is complete, except for transitions, which are
 # left to be set up later.
-sub assign_QDFA_state_set {
+sub assign_AHFA_state_set {
     my $grammar       = shift;
     my $kernel_states = shift;
 
-    my ( $symbols, $NFA_states, $QDFA_by_name, $QDFA ) = @{$grammar}[
+    my ( $symbols, $NFA_states, $AHFA_by_name, $AHFA ) = @{$grammar}[
         Marpa::Internal::Grammar::SYMBOLS,
         Marpa::Internal::Grammar::NFA,
-        Marpa::Internal::Grammar::QDFA_BY_NAME,
-        Marpa::Internal::Grammar::QDFA
+        Marpa::Internal::Grammar::AHFA_BY_NAME,
+        Marpa::Internal::Grammar::AHFA
     ];
 
     # Track if a state has been seen in @NFA_state_seen.
@@ -2528,8 +2546,8 @@ sub assign_QDFA_state_set {
         my $transition = $NFA_state->[Marpa::Internal::NFA::TRANSITION];
 
         # if we are at a nulling symbol, this NFA state does NOT go into the
-        # result, but all transitions go into the work list.  There should be
-        # empty transition.
+        # result, but all transitions go into the work list.  All the transitions
+        # are assumed to be (and should be) empty transitions.
         if ( $NFA_state->[Marpa::Internal::NFA::AT_NULLING] ) {
             push @work_list, map { [ $_, $reset ] }
                 map { @{$_} } values %{$transition};
@@ -2549,7 +2567,7 @@ sub assign_QDFA_state_set {
 
     }    # WORK_ITEM
 
-    # this will hold the QDFA state set,
+    # this will hold the AHFA state set,
     # which is the result
     my @result_states = ();
 
@@ -2563,21 +2581,21 @@ sub assign_QDFA_state_set {
         next RESET if not scalar @NFA_ids;
 
         my $name = join q{,}, @NFA_ids;
-        my $QDFA_state = $QDFA_by_name->{$name};
+        my $AHFA_state = $AHFA_by_name->{$name};
 
-        # this is a new QDFA state -- create it
-        if ( not $QDFA_state ) {
-            my $id = scalar @{$QDFA};
+        # this is a new AHFA state -- create it
+        if ( not $AHFA_state ) {
+            my $id = scalar @{$AHFA};
 
             my $start_rule;
             my $lhs_list       = [];
             my $complete_rules = [];
-            my $QDFA_complete  = 0;
+            my $AHFA_complete  = 0;
             my $NFA_state_list = [ @{$NFA_states}[@NFA_ids] ];
             NFA_STATE: for my $NFA_state ( @{$NFA_state_list} ) {
                 next NFA_STATE
                     if not $NFA_state->[Marpa::Internal::NFA::COMPLETE];
-                $QDFA_complete = 1;
+                $AHFA_complete = 1;
                 my $item = $NFA_state->[Marpa::Internal::NFA::ITEM];
                 my $rule = $item->[Marpa::Internal::LR0_item::RULE];
                 my $lhs  = $rule->[Marpa::Internal::Rule::LHS];
@@ -2593,32 +2611,32 @@ sub assign_QDFA_state_set {
                 }
             } ## end for my $NFA_state ( @{$NFA_state_list} )
 
-            $QDFA_state->[Marpa::Internal::QDFA::ID]   = $id;
-            $QDFA_state->[Marpa::Internal::QDFA::NAME] = $name;
-            $QDFA_state->[Marpa::Internal::QDFA::NFA_STATES] =
+            $AHFA_state->[Marpa::Internal::AHFA::ID]   = $id;
+            $AHFA_state->[Marpa::Internal::AHFA::NAME] = $name;
+            $AHFA_state->[Marpa::Internal::AHFA::NFA_STATES] =
                 $NFA_state_list;
-            $QDFA_state->[Marpa::Internal::QDFA::RESET_ORIGIN] = $reset;
-            $QDFA_state->[Marpa::Internal::QDFA::START_RULE]   = $start_rule;
-            $QDFA_state->[Marpa::Internal::QDFA::COMPLETE_RULES] =
+            $AHFA_state->[Marpa::Internal::AHFA::RESET_ORIGIN] = $reset;
+            $AHFA_state->[Marpa::Internal::AHFA::START_RULE]   = $start_rule;
+            $AHFA_state->[Marpa::Internal::AHFA::COMPLETE_RULES] =
                 $complete_rules;
 
-            $QDFA_state->[Marpa::Internal::QDFA::COMPLETE_LHS] =
+            $AHFA_state->[Marpa::Internal::AHFA::COMPLETE_LHS] =
                 [ map { $_->[Marpa::Internal::Symbol::NAME] }
                     @{$symbols}[ grep { $lhs_list->[$_] }
                     ( 0 .. $#{$lhs_list} ) ] ];
 
-            push @{$QDFA}, $QDFA_state;
-            $QDFA_by_name->{$name} = $QDFA_state;
-        } ## end if ( not $QDFA_state )
+            push @{$AHFA}, $AHFA_state;
+            $AHFA_by_name->{$name} = $AHFA_state;
+        } ## end if ( not $AHFA_state )
 
-        push @result_states, $QDFA_state;
+        push @result_states, $AHFA_state;
 
     } ## end for my $reset ( 0, 1 )
 
     return \@result_states;
-} ## end sub assign_QDFA_state_set
+} ## end sub assign_AHFA_state_set
 
-sub create_QDFA {
+sub create_AHFA {
     my $grammar = shift;
     my ( $symbols, $NFA, $tracing ) = @{$grammar}[
         Marpa::Internal::Grammar::SYMBOLS, Marpa::Internal::Grammar::NFA,
@@ -2630,38 +2648,38 @@ sub create_QDFA {
         $trace_fh = $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE];
     }
 
-    my $QDFA = $grammar->[Marpa::Internal::Grammar::QDFA] = [];
+    my $AHFA = $grammar->[Marpa::Internal::Grammar::AHFA] = [];
     my $NFA_s0 = $NFA->[0];
 
-    # next QDFA state to compute transitions for
+    # next AHFA state to compute transitions for
     my $next_state_id = 0;
 
     my $initial_NFA_states =
         $NFA_s0->[Marpa::Internal::NFA::TRANSITION]->{q{}};
     if ( not defined $initial_NFA_states ) {
-        Marpa::exception('Empty NFA, cannot create QDFA');
+        Marpa::exception('Empty NFA, cannot create AHFA');
     }
     $grammar->[Marpa::Internal::Grammar::START_STATES] =
-        assign_QDFA_state_set( $grammar, $initial_NFA_states );
+        assign_AHFA_state_set( $grammar, $initial_NFA_states );
 
-    # assign_QDFA_state_set extends this array, which we are
+    # assign_AHFA_state_set extends this array, which we are
     # simultaneously going through and adding transitions.
     # There is no problem with the process of adding transitions
-    # overtaking assign_QDFA_state_set: if we reach a point where
-    # all transitions have been added, and we are at the end of @$QDFA
+    # overtaking assign_AHFA_state_set: if we reach a point where
+    # all transitions have been added, and we are at the end of @$AHFA
     # we are finished.
-    while ( $next_state_id < scalar @{$QDFA} ) {
+    while ( $next_state_id < scalar @{$AHFA} ) {
 
-        # compute the QDFA state transitions from the transitions
+        # compute the AHFA state transitions from the transitions
         # of the NFA states of which it is composed
         my $NFA_to_states_by_symbol = {};
 
-        my $QDFA_state = $QDFA->[ $next_state_id++ ];
+        my $AHFA_state = $AHFA->[ $next_state_id++ ];
 
-        # aggregrate the transitions, by symbol, for every NFA state in this QDFA
+        # aggregrate the transitions, by symbol, for every NFA state in this AHFA
         # state
         for my $NFA_state (
-            @{ $QDFA_state->[Marpa::Internal::QDFA::NFA_STATES] } )
+            @{ $AHFA_state->[Marpa::Internal::AHFA::NFA_STATES] } )
         {
             my $transition = $NFA_state->[Marpa::Internal::NFA::TRANSITION];
             NFA_TRANSITION:
@@ -2672,17 +2690,124 @@ sub create_QDFA {
             }
         }    # $NFA_state
 
-        # for each transition symbol, create the transition to the QDFA kernel state
+        # for each transition symbol, create the transition to the AHFA kernel state
         for my $symbol ( sort keys %{$NFA_to_states_by_symbol} ) {
-            my $to_states = $NFA_to_states_by_symbol->{$symbol};
-            $QDFA_state->[Marpa::Internal::QDFA::TRANSITION]->{$symbol} =
-                assign_QDFA_state_set( $grammar, $to_states );
+            my $to_states_by_symbol = $NFA_to_states_by_symbol->{$symbol};
+            $AHFA_state->[Marpa::Internal::AHFA::TRANSITION]->{$symbol} =
+                assign_AHFA_state_set( $grammar, $to_states_by_symbol );
         }
-    } ## end while ( $next_state_id < scalar @{$QDFA} )
+    } ## end while ( $next_state_id < scalar @{$AHFA} )
 
     return;
 
-} ## end sub create_QDFA
+} ## end sub create_AHFA
+
+# To the reader:
+# You are not expected to understand the following.  It is
+# notes toward a proof.  This is useful, along with testing,
+# to increase confidence
+# that Marpa correctly incorporates Leo Joop's algorithm.
+#
+# Theorem: In Marpa,
+# all Leo completion states are in their own LR(0) state.
+#
+# Proof: Every Marpa LR(0) item has its own NFA state.
+# (By definition, no Marpa LR(0) item will have
+# a nulling post-dot symbol.)
+# The Leo completion LR(0) item will have a non-nulling symbol,
+# by its definiton.
+# Call the Leo completion item's final non-nulling symbol,
+# symbol S.
+# Suppose, for reduction to absurdity,
+# that another LR(0) item is combined with
+# the Leo completion item in creating the LR(0) DFA.
+# Call that other LR(0) item, item X.
+# If so,
+# there must be a Leo kernel LR(0) state where two of the
+# LR(0) items, after a transition on symbol S,
+# produce both item X and the Leo completion item.
+# That means that in the Leo kernel LR(0) state, there
+# are two LR(0) items with S as the postdot symbol.
+# Therefore the parent Earley set (which contains the
+# Leo kernel LR(0) DFA state) will have multiple
+# LR(0) items with S as the postdot symbol.
+# But by Leo's definitions, the LR(0) item with S as
+# the postdot symbol must be unique.
+# So the assumption that another LR(0) item will be
+# combined with a Leo completion LR(0) item in producing
+# a DFA state must be false.
+# QED
+#
+# Theorem: All Leo completion states are in their own AHFA state.
+# Proof: By the theorem above, all Leo completion states are in
+# their own state in the LR(0) DFA.
+# The conversion to an epsilion-DFA will not add any items to this
+# state, because the only item in it is a completion item.
+# And conversion to a split epsilon-DFA will not add items.
+# So the Leo completion item will remain in its own AHFA state.
+# QED.
+
+# Mark the Leo kernel and completion states
+sub mark_leo_states {
+    my $grammar = shift;
+    my $AHFA = $grammar->[Marpa::Internal::Grammar::AHFA];
+
+    # An Leo completion state will have only one NFA state,
+    # and will contain a completion.
+    STATE: for my $state ( @{$AHFA} ) {
+        my $NFA_states = $state->[Marpa::Internal::AHFA::NFA_STATES];
+        next STATE if scalar @{$NFA_states} != 1;
+        my $left_hand_sides = $state->[Marpa::Internal::AHFA::COMPLETE_LHS];
+        next STATE if not scalar @{$left_hand_sides};
+        my $LR0_item    = $NFA_states->[0]->[Marpa::Internal::NFA::ITEM];
+        my $rule        = $LR0_item->[Marpa::Internal::LR0_item::RULE];
+        my $rhs = $rule->[Marpa::Internal::Rule::RHS];
+        my $non_nulling = (
+            List::Util::first { not $_->[Marpa::Internal::Symbol::NULLING] }
+            reverse @{ $rhs }
+        );
+
+        # In the null parse rules, there will be no non-nulling symbol
+        next STATE if not defined $non_nulling;
+
+        # Not a Leo completion unless the next non-nulling symbol is on at least
+        # one left hand side.
+        next STATE
+            if not scalar @{ $non_nulling->[Marpa::Internal::Symbol::LH_RULE_IDS] };
+        $state->[Marpa::Internal::AHFA::LEO_COMPLETION] = $rule->[Marpa::Internal::Rule::LHS];
+    } ## end for my $state ( @{$AHFA} )
+
+    AHFA_STATE: for my $AHFA_state ( @{$AHFA} ) {
+        my %symbol_count = ();
+        LR0_ITEM:
+        for my $LR0_item ( map { $_->[Marpa::Internal::NFA::ITEM] }
+            @{ $AHFA_state->[Marpa::Internal::AHFA::NFA_STATES] } )
+        {
+            my $rule     = $LR0_item->[Marpa::Internal::LR0_item::RULE];
+            my $position = $LR0_item->[Marpa::Internal::LR0_item::POSITION];
+            my $symbol   = $rule->[Marpa::Internal::Rule::RHS]->[$position];
+            next LR0_ITEM if not defined $symbol;
+            $symbol_count{ $symbol->[Marpa::Internal::Symbol::NAME] }++;
+        } ## end for my $LR0_item ( map { $_->[Marpa::Internal::NFA::ITEM...]})
+        my $transitions = $AHFA_state->[Marpa::Internal::AHFA::TRANSITION];
+        SYMBOL:
+        for my $symbol_name (
+            grep { $symbol_count{$_} == 1 }
+            keys %symbol_count
+            )
+        {
+            my $to_states = $transitions->{$symbol_name};
+            my @leo_lhs =
+                map  { $_->[Marpa::Internal::Symbol::NAME] }
+                grep {defined}
+                map  { $_->[Marpa::Internal::AHFA::LEO_COMPLETION] }
+                @{$to_states};
+            $transitions->{$symbol_name} = [ @leo_lhs, @{$to_states} ];
+        } ## end for my $symbol_name ( grep { $symbol_count{$_} == 1 }...)
+    } ## end for my $AHFA_state ( @{$AHFA} )
+
+    return;
+}
 
 sub setup_academic_grammar {
     my $grammar = shift;

@@ -256,12 +256,12 @@ items, while mortar or-nodes
 fill in the cracks.
 
 For brick incomplete or-nodes
-the QDFA state of the corresponding Earley item will have an
+the AHFA state of the corresponding Earley item will have an
 LR(0) item with a rule and dot position
 which exactly match the rule and dot position of the incomplete
 or-node's child criteria.
 For mortar or-nodes,
-the QDFA state of the corresponding Earley item will have an
+the AHFA state of the corresponding Earley item will have an
 LR(0) item with a rule which is the same as the rule
 in the or-node's child criteria,
 and the only symbols between the dot position
@@ -281,10 +281,10 @@ which matches the parse criteria:
 
 =over
 
-=item * The QDFA state of the Earley item contains
+=item * The AHFA state of the Earley item contains
 a completed rule with the parse's top symbol on its lhs.
 Normally the parse's top symbol will be the grammar's start symbol,
-and the QDFA state will be a completed start rule state.
+and the AHFA state will be a completed start rule state.
 
 =item * The origin of the Earley item is the start of parsing.
 Normally this will be earleme 0.
@@ -322,10 +322,10 @@ An and-node child may have a B<predecessor grandchild> and a B<cause grandchild>
 For every or-node there is a set of B<applicable rules>,
 which are determined by the or-node's Earley item and its child criteria.
 For incomplete or-nodes there is only one applicable rule, the rule in the child criteria.
-For complete or-nodes, the applicable rules are taken from the QDFA state of the corresponding
+For complete or-nodes, the applicable rules are taken from the AHFA state of the corresponding
 Earley item.
 A rule is applicable if it is a rule in a completed LR(0) item
-in the QDFA state of the corresponding Earley item,
+in the AHFA state of the corresponding Earley item,
 and if the rule's lhs is the
 same as the child lhs symbol of the or-node's child criteria.
 There is always at least one applicable rule.
@@ -497,7 +497,7 @@ The above is the start production for our example.
 The left hand side is an or-node which matches
 a start rule completion item.
 The completion start rule state in our example is
-QDFA state 2 and the input in our example was
+AHFA state 2 and the input in our example was
 5 earlemes long.
 So the start Earley item is S2@0-5.
 The start symbol is C<Expression[']>,
@@ -635,12 +635,12 @@ S4@0-1L2o12a12
 is a complete or-node with "C<L2>" as its child
 criteria.
 Applicable rules
-will be found in QDFA state 4,
+will be found in AHFA state 4,
 and must be completed rules with
 symbol number 2 on the lhs.
 Symbol number 2 is C<Factor>.
 There is only one
-LR(0) item in QDFA state 4,
+LR(0) item in AHFA state 4,
 but it is, as required, a completed rule
 with C<Factor> as its lhs.
 

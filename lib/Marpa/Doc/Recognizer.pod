@@ -577,10 +577,10 @@ specifies the parse end location.
 The default is for the parse to end where the input did,
 so that the parse returned is of the entire input.
 
-=head2 closure
+=head2 closures
 
 The C<value> method's
-C<closure> named argument
+C<closures> named argument
 is
 a reference to a hash.
 In the key/value pairs of this hash,
@@ -609,11 +609,11 @@ the C<action_object> named argument of grammars
 
 When an action name is a key in
 the 
-C<closure> named argument,
+C<closures> named argument,
 the usual action resolution mechanism of the semantics
 is bypassed.
 A common use of
-the C<closure> named argument is to
+the C<closures> named argument is to
 allow anonymous
 subroutines to be semantic actions.
 For more details, see L<the document on

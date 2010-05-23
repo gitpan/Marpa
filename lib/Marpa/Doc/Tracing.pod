@@ -86,15 +86,15 @@ is finished.
 At that point call
 L<C<Marpa::Recognizer::show_earley_sets>
 |Marpa::Recognizer/"show_earley_sets">.
-Since the items in the earley sets use QDFA states,
+Since the items in the earley sets use AHFA states,
 you usually will want to call
-L<C<Marpa::Grammar::show_QDFA>
-|Marpa::Grammar/"show_QDFA"> as well.
+L<C<Marpa::Grammar::show_AHFA>
+|Marpa::Grammar/"show_AHFA"> as well.
 The L<implementation document|Marpa::Implementation>
 has example outputs from
 the
 C<show_earley_sets> and
-C<show_QDFA>
+C<show_AHFA>
 methods,
 and explains how to read them.
 
@@ -123,7 +123,7 @@ includes the following:
 
 =item * Run C<show_earley_sets> on the recognizer.
 
-=item * Run C<show_QDFA> on the precomputed grammar.
+=item * Run C<show_AHFA> on the precomputed grammar.
 
 =back
 

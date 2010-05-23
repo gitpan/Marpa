@@ -103,7 +103,7 @@ S14: A -> a . b
 S15: A -> a b .
 EOS
 
-Marpa::Test::is( $g->show_QDFA, <<'EOS', 'Hopcroft/Ullman QDFA' );
+Marpa::Test::is( $g->show_AHFA, <<'EOS', 'Hopcroft/Ullman AHFA' );
 Start States: S0; S1
 S0: 1
 S' -> . S c
@@ -113,17 +113,17 @@ S -> . S A
 S -> . A
 A -> . a S b
 A -> . a b
- <A> => S3
+ <A> => S3; leo(S)
  <S> => S4; S5
  <a> => S1; S6
 S2: 2
 S' -> S . c
  <c> => S7
-S3: 8
+S3: leo-c; 8
 S -> A .
 S4: 5
 S -> S . A
- <A> => S8
+ <A> => S8; leo(S)
 S5: predict; 9,13
 A -> . a S b
 A -> . a b
@@ -135,7 +135,7 @@ A -> a . b
  <b> => S10
 S7: 3
 S' -> S c .
-S8: 6
+S8: leo-c; 6
 S -> S A .
 S9: 11
 A -> a S . b

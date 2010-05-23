@@ -2,7 +2,135 @@
 
 Marpa::Models - Alternative Input Models
 
+=head1 ABOUT THIS DOCUMENT
+
+The alternative input models desribed in this document are a
+very advanced technique.
+This document may safely be ignored by ordinary Marpa users.
+
 =head1 DESCRIPTION
+
+=head2 Token Streams
+
+Marpa's default input model is the traditional one --
+a token stream.
+Token streams are so standard in parsing applications
+that most texts and documentation do not take the trouble
+of defining it.
+A B<token stream> is input structured as
+a sequence of tokens,
+where token occupy successive locations and
+are of the same length.
+Conventionally, all tokens are of length 1,
+and the token stream starts at location 0.
+Following this convention,
+the I<N>th token would start at
+location I<N-1> and end
+at location I<N>.
+For example,
+the first token would start at location 0 and end at location 1.
+The second token would start at location 1 and end at location 2.
+
+=head2 Earlemes
+
+The basic idea of location in Marpa is the B<earleme>.
+Earlemes are named after Jay Earley.
+Internally,
+each earleme corresponds exactly and directly to an Earley set.
+Every token has a start earleme and an end earleme.
+A token is said to be B<at an earleme>, if that earleme is its
+start earleme.
+
+The token stream model may also be called the token-per-earleme
+model.
+The I<N>th token starts
+at earleme I<N-1> and ends at earleme I<N>.
+The first token starts at earleme 0 and ends at earleme 1.
+and therefore is said to be at earleme 0.
+The second token is at earleme 1 and ends at earleme 2.
+
+In the token stream model,
+token location and earleme location
+directly correspond on an one-to-one basis.
+It can be useful to have the structure of the input relate to
+earleme location in other ways.
+One such alternative, which is useful and been tested,
+is the character-per-earleme model, L<discussed
+below|/"THE CHARACTER-PER-EARLEME MODEL">.
+
+=head1 INTERFACE
+
+Alternative models are implemented
+using the optional third
+and fourth parameters of the token descriptors.
+The array of token descriptors is an argument to the L<Marpa Recognizer's tokens
+method|Marpa::Recognizer/"tokens">.
+
+=head2 Token Length
+
+Token length is the optional third element of the token descriptor.
+By default, it is 1, which is the correct value for the token stream
+model.
+Its value can be any integer B<greater> than zero.
+Marpa does not allow zero length tokens in any input model.
+
+=head2 Token Offset
+
+The token offset
+is the fourth element of each token's descriptor.
+It controls the B<current earleme location>.
+The B<current earleme location> is the earleme which
+will be the start earleme of the
+next token to be added.
+When parsing begins, the B<current earleme location> is
+earleme 0.
+
+When token offset is left undefined,
+it defaults to 1.
+This is the correct value for the token
+stream model.
+Negative token offsets are not allowed.
+
+Zero token offset are allowed,
+and will cause 
+multiple tokens to start at the same location.
+This in turn will cause lexing to be ambiguous.
+Marpa supports ambiguous lexing.
+
+=head1 AMBIGUOUS LEXING
+
+Ambiguous lexing occurs when several different sequences
+of tokens are possible.
+Potentially ambiguous lexing occurs in any parse where multiple
+tokens start at a single earleme.
+If only one of the potential token choices is consistent with
+the grammar and the rest of input, there is no actual ambiguity
+and the one token choice which is
+consistent is the one that will be used.
+
+If more than one of these potential alternative lexings is consistent
+with the grammar and the rest of the input,
+then lexing is B<actually ambiguous>.
+If the lexing in a parse is actually ambiguous,
+the parse will be
+ambiguous,
+even if the grammar is not.
+
+Marpa deals with ambiguity due to lexing in the
+same way that it deals with
+grammatical ambiguity.
+When the Single Parse Evaluator is used,
+Marpa arbitrarily chooses one of the possible
+token choices.
+When the Multi-parse Evaluator is used,
+Marpa allows the user to iterate through alternative
+lexings.
+
+=head1 THE CHARACTER-PER-EARLEME MODEL
+
+Not yet written.
+
+=head1 OTHER INPUT MODELS
 
 Not yet written.
 
