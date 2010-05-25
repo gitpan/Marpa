@@ -26,23 +26,22 @@ sub generate_action {
         my $v_count = scalar @_;
         return q{} if $v_count <= 0;
         my @vals = map { $_ // q{-} } @_;
-        return $lhs . '(' . (join q{;}, @vals ) . ')';
+        return $lhs . '(' . ( join q{;}, @vals ) . ')';
         }
 } ## end sub generate_action
 
-my $C_action = generate_action('C');
-my $S_action = generate_action('S');
-my $default_action = generate_action('?');
+my $C_action       = generate_action('C');
+my $S_action       = generate_action('S');
+my $default_action = generate_action(q{?});
 
 ## use critic
 
-
 my $grammar = Marpa::Grammar->new(
-    {   start   => 'S',
-        strip   => 0,
+    {   start => 'S',
+        strip => 0,
         rules => [
-            [ 'S', [qw/a S/], 'S_action', ],
-            [ 'S', [qw/C/], 'S_action', ],
+            [ 'S', [qw/a S/],   'S_action', ],
+            [ 'S', [qw/C/],     'S_action', ],
             [ 'C', [qw(a C b)], 'C_action', ],
             [ 'C', [], ],
         ],
@@ -65,8 +64,7 @@ Marpa::Test::is( $grammar->show_symbols(),
 7: S['][], lhs=[10] rhs=[] nullable=1 nulling
 END_OF_STRING
 
-Marpa::Test::is( $grammar->show_rules,
-    <<'END_OF_STRING', 'Leo168 Rules' );
+Marpa::Test::is( $grammar->show_rules, <<'END_OF_STRING', 'Leo168 Rules' );
 0: S -> a S /* !used */
 1: S -> C /* !used nullable */
 2: C -> a C b /* !used */
@@ -80,8 +78,7 @@ Marpa::Test::is( $grammar->show_rules,
 10: S['][] -> /* empty nullable vlhs real=1 */
 END_OF_STRING
 
-Marpa::Test::is( $grammar->show_AHFA,
-    <<'END_OF_STRING', 'Leo168 AHFA' );
+Marpa::Test::is( $grammar->show_AHFA, <<'END_OF_STRING', 'Leo168 AHFA' );
 Start States: S0; S1
 S0: 17,19
 S['] -> . S
@@ -121,20 +118,20 @@ END_OF_STRING
 my $a_token = [ 'a', 'a' ];
 my $b_token = [ 'b', 'b' ];
 my %expected = (
-    "a"        => q{S(a;-)},
-    "ab"       => q{S(C(a;-;b))},
-    "aa"       => q{S(a;S(a;-))},
-    "aab"      => q{S(a;S(C(a;-;b)))},
-    "aabb"     => q{S(C(a;C(a;-;b);b))},
-    "aaa"      => q{S(a;S(a;S(a;-)))},
-    "aaab"     => q{S(a;S(a;S(C(a;-;b))))},
-    "aaabb"    => q{S(a;S(C(a;C(a;-;b);b)))},
-    "aaabbb"   => q{S(C(a;C(a;C(a;-;b);b);b))},
-    "aaaa"     => q{S(a;S(a;S(a;S(a;-))))},
-    "aaaab"    => q{S(a;S(a;S(a;S(C(a;-;b)))))},
-    "aaaabb"   => q{S(a;S(a;S(C(a;C(a;-;b);b))))},
-    "aaaabbb"  => q{S(a;S(C(a;C(a;C(a;-;b);b);b)))},
-    "aaaabbbb" => q{S(C(a;C(a;C(a;C(a;-;b);b);b);b))},
+    'a'        => q{S(a;-)},
+    'ab'       => q{S(C(a;-;b))},
+    'aa'       => q{S(a;S(a;-))},
+    'aab'      => q{S(a;S(C(a;-;b)))},
+    'aabb'     => q{S(C(a;C(a;-;b);b))},
+    'aaa'      => q{S(a;S(a;S(a;-)))},
+    'aaab'     => q{S(a;S(a;S(C(a;-;b))))},
+    'aaabb'    => q{S(a;S(C(a;C(a;-;b);b)))},
+    'aaabbb'   => q{S(C(a;C(a;C(a;-;b);b);b))},
+    'aaaa'     => q{S(a;S(a;S(a;S(a;-))))},
+    'aaaab'    => q{S(a;S(a;S(a;S(C(a;-;b)))))},
+    'aaaabb'   => q{S(a;S(a;S(C(a;C(a;-;b);b))))},
+    'aaaabbb'  => q{S(a;S(C(a;C(a;C(a;-;b);b);b)))},
+    'aaaabbbb' => q{S(C(a;C(a;C(a;C(a;-;b);b);b);b))},
 );
 
 for my $a_length ( 1 .. 4 ) {
@@ -159,7 +156,7 @@ for my $a_length ( 1 .. 4 ) {
         Marpa::Test::is( $value, $expected{$string}, "Parse of $string" );
 
     } ## end for my $b_length ( 0 .. $a_length )
-} ## end for my $a_length ( 1 .. 6 )
+} ## end for my $a_length ( 1 .. 4 )
 
 # Local Variables:
 #   mode: cperl

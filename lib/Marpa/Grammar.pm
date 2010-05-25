@@ -1340,7 +1340,7 @@ sub Marpa::show_AHFA_state {
             $text .= ' <' . $symbol_name . '> => ';
             my @ahfa_labels;
             TO_STATE: for my $to_state ( @{ $transition->{$symbol_name} } ) {
-                if (not ref $to_state) {
+                if ( not ref $to_state ) {
                     push @ahfa_labels, qq{leo($to_state)};
                     next TO_STATE;
                 }
@@ -2750,7 +2750,7 @@ sub create_AHFA {
 # Mark the Leo kernel and completion states
 sub mark_leo_states {
     my $grammar = shift;
-    my $AHFA = $grammar->[Marpa::Internal::Grammar::AHFA];
+    my $AHFA    = $grammar->[Marpa::Internal::Grammar::AHFA];
 
     # An Leo completion state will have only one NFA state,
     # and will contain a completion.
@@ -2761,10 +2761,10 @@ sub mark_leo_states {
         next STATE if not scalar @{$left_hand_sides};
         my $LR0_item    = $NFA_states->[0]->[Marpa::Internal::NFA::ITEM];
         my $rule        = $LR0_item->[Marpa::Internal::LR0_item::RULE];
-        my $rhs = $rule->[Marpa::Internal::Rule::RHS];
+        my $rhs         = $rule->[Marpa::Internal::Rule::RHS];
         my $non_nulling = (
             List::Util::first { not $_->[Marpa::Internal::Symbol::NULLING] }
-            reverse @{ $rhs }
+            reverse @{$rhs}
         );
 
         # In the null parse rules, there will be no non-nulling symbol
@@ -2773,8 +2773,11 @@ sub mark_leo_states {
         # Not a Leo completion unless the next non-nulling symbol is on at least
         # one left hand side.
         next STATE
-            if not scalar @{ $non_nulling->[Marpa::Internal::Symbol::LH_RULE_IDS] };
-        $state->[Marpa::Internal::AHFA::LEO_COMPLETION] = $rule->[Marpa::Internal::Rule::LHS];
+            if not
+                scalar @{ $non_nulling->[Marpa::Internal::Symbol::LH_RULE_IDS]
+                };
+        $state->[Marpa::Internal::AHFA::LEO_COMPLETION] =
+            $rule->[Marpa::Internal::Rule::LHS];
     } ## end for my $state ( @{$AHFA} )
 
     AHFA_STATE: for my $AHFA_state ( @{$AHFA} ) {
@@ -2797,6 +2800,11 @@ sub mark_leo_states {
             )
         {
             my $to_states = $transitions->{$symbol_name};
+
+            # Since there is only one to-state, @leo_lhs
+            # will have only one entry -- this will be the
+            # lhs of the only rule in the Leo completion
+            # item
             my @leo_lhs =
                 map  { $_->[Marpa::Internal::Symbol::NAME] }
                 grep {defined}
@@ -2807,7 +2815,7 @@ sub mark_leo_states {
     } ## end for my $AHFA_state ( @{$AHFA} )
 
     return;
-}
+} ## end sub mark_leo_states
 
 sub setup_academic_grammar {
     my $grammar = shift;

@@ -142,7 +142,7 @@ for my $input_length ( 1 .. 4 ) {
         }
     );
     my $value = $evaler->value();
-    Marpa::Test::is( ( $value ? ${$value} : "No parse" ),
+    Marpa::Test::is( ( $value ? ${$value} : 'No parse' ),
         $results[$input_length],
         "final nonnulling, input length=$input_length" );
 } ## end for my $input_length ( 1 .. 4 )

@@ -23,7 +23,7 @@ sub default_action {
     my $v_count = scalar @_;
     return q{}   if $v_count <= 0;
     return $_[0] if $v_count == 1;
-    return '(' . join( q{;}, @_ ) . ')';
+    return '(' . ( join q{;}, @_ ) . ')';
 } ## end sub default_action
 
 ## use critic
@@ -282,6 +282,7 @@ S4@1-1
 S2@0-1 [p=S0@0-0; c=S3@0-1] [p=S0@0-0; c=S5@0-1]
 S5@0-1 [p=S1@0-0; c=S3@0-1] [p=S1@0-0; c=S6@0-1]
 S6@0-1 [p=S1@0-0; c=S3@0-1]
+L9@0-1; actual="S[R0:1]"->9; [c=S3@0-1]
 END_OF_SET1
 Earley Set 2
 S7@1-2 [p=S4@1-1; s=a; t=\'a']
@@ -289,11 +290,12 @@ S8@0-2 [p=S3@0-1; c=S7@1-2]
 S11@1-2 [p=S4@1-1; c=S7@1-2]
 S12@2-2
 S6@0-2 [p=S1@0-0; c=S8@0-2]
-S9@0-2 [p=S3@0-1; c=S11@1-2] [p=S3@0-1; c=S6@1-2]
+S9@0-2 [l=L9@0-1; c=S11@1-2] [l=L9@0-1; c=S6@1-2]
 S10@0-2 [p=S3@0-1; c=S11@1-2]
 S6@1-2 [p=S4@1-1; c=S11@1-2]
 S5@0-2 [p=S1@0-0; c=S6@0-2] [p=S1@0-0; c=S10@0-2]
 S2@0-2 [p=S0@0-0; c=S9@0-2] [p=S0@0-0; c=S5@0-2]
+L9@0-2; actual="S[R0:2]"->10; [p=L9@0-1; c=S11@1-2]
 END_OF_SET2
 Earley Set 3
 S7@2-3 [p=S12@2-2; s=a; t=\'a']
@@ -302,16 +304,14 @@ S13@2-3 [p=S12@2-2; c=S7@2-3]
 S14@3-3
 S10@0-3 [p=S3@0-1; c=S8@1-3]
 S6@1-3 [p=S4@1-1; c=S8@1-3]
-S10@1-3 [p=S11@1-2; c=S13@2-3]
+S9@0-3 [l=L9@0-2; c=S13@2-3] [l=L9@0-1; c=S6@1-3]
 S5@0-3 [p=S1@0-0; c=S10@0-3]
-S9@0-3 [p=S3@0-1; c=S6@1-3] [p=S3@0-1; c=S10@1-3]
-S2@0-3 [p=S0@0-0; c=S5@0-3] [p=S0@0-0; c=S9@0-3]
+S2@0-3 [p=S0@0-0; c=S9@0-3] [p=S0@0-0; c=S5@0-3]
+L9@0-3; actual="A"->8; [p=L9@0-2; c=S13@2-3]
 END_OF_SET3
 Earley Set 4
 S7@3-4 [p=S14@3-3; s=a; t=\'a']
-S8@2-4 [p=S13@2-3; c=S7@3-4]
-S10@1-4 [p=S11@1-2; c=S8@2-4]
-S9@0-4 [p=S3@0-1; c=S10@1-4]
+S9@0-4 [l=L9@0-3; c=S7@3-4]
 S2@0-4 [p=S0@0-0; c=S9@0-4]
 END_OF_SET4
 
@@ -322,7 +322,7 @@ EARLEME: for my $earleme ( 0 .. $input_length + 1 ) {
     Marpa::Test::is(
         $recce->show_earley_sets(1),
         "Last Completed: $last_completed; Furthest: $furthest\n"
-            . join( q{}, @set[ 0 .. $furthest ] ),
+            . ( join q{}, @set[ 0 .. $furthest ] ),
         "Aycock/Horspool Parse Status at earleme $earleme"
     );
     given ($earleme) {
@@ -338,26 +338,26 @@ EARLEME: for my $earleme ( 0 .. $input_length + 1 ) {
 } ## end for my $earleme ( 0 .. $input_length + 1 )
 
 my @expected = (q{});
-$expected[1] = join("\n", qw(
+$expected[1] = join "\n", qw(
     (a;;;)
     (;a;;)
     (;;a;)
     (;;;a)
-));
-$expected[2] = join("\n", qw(
+);
+$expected[2] = join "\n", qw(
     (a;a;;)
     (a;;a;)
     (a;;;a)
     (;a;a;)
     (;a;;a)
     (;;a;a)
-));
-$expected[3] = join("\n", qw(
+);
+$expected[3] = join "\n", qw(
     (a;a;a;)
     (a;a;;a)
     (a;;a;a)
     (;a;a;a)
-));
+);
 $expected[4] = '(a;a;a;a)';
 
 for my $i ( 0 .. $input_length ) {
@@ -369,10 +369,10 @@ for my $i ( 0 .. $input_length ) {
         }
     );
     my @result;
-    while (my $result = $evaler->value()) {
-        push(@result, ${$result});
+    while ( my $result = $evaler->value() ) {
+        push @result, ${$result};
     }
-    my $all_results = (join "\n", @result);
+    my $all_results = ( join "\n", @result );
     Test::More::is( $all_results, $expected[$i], "parse permutation $i" );
 
 } ## end for my $i ( 0 .. $input_length )
