@@ -1,6 +1,6 @@
 =head1 NAME
 
-Marpa::Models - Alternative Input Models
+Marpa::Models - Other Input Models (Advanced)
 
 =head1 ABOUT THIS DOCUMENT
 
@@ -14,13 +14,17 @@ This document may safely be ignored by ordinary Marpa users.
 
 Marpa's default input model is the traditional one --
 a token stream.
-Token streams are so standard in parsing applications
-that most texts and documentation do not take the trouble
-of defining it.
+Token streams are very standard in parsing applications --
+so much so
+that most texts do not take the trouble
+of defining the term.
 A B<token stream> is input structured as
 a sequence of tokens,
-where token occupy successive locations and
-are of the same length.
+where each token occupies one location
+and every location has a token.
+In the token stream model, all tokens are
+of the same length.
+
 Conventionally, all tokens are of length 1,
 and the token stream starts at location 0.
 Following this convention,
@@ -38,17 +42,9 @@ Earlemes are named after Jay Earley.
 Internally,
 each earleme corresponds exactly and directly to an Earley set.
 Every token has a start earleme and an end earleme.
-A token is said to be B<at an earleme>, if that earleme is its
-start earleme.
 
 The token stream model may also be called the token-per-earleme
 model.
-The I<N>th token starts
-at earleme I<N-1> and ends at earleme I<N>.
-The first token starts at earleme 0 and ends at earleme 1.
-and therefore is said to be at earleme 0.
-The second token is at earleme 1 and ends at earleme 2.
-
 In the token stream model,
 token location and earleme location
 directly correspond on an one-to-one basis.
@@ -63,7 +59,8 @@ below|/"THE CHARACTER-PER-EARLEME MODEL">.
 Alternative models are implemented
 using the optional third
 and fourth parameters of the token descriptors.
-The array of token descriptors is an argument to the L<Marpa Recognizer's tokens
+Token descriptors are used in the arguments to the
+L<Marpa Recognizer's tokens
 method|Marpa::Recognizer/"tokens">.
 
 =head2 Token Length
@@ -78,19 +75,21 @@ Marpa does not allow zero length tokens in any input model.
 
 The token offset
 is the fourth element of each token's descriptor.
-It controls the B<current earleme location>.
+This is the offset to be added to the B<current earleme location>.
 The B<current earleme location> is the earleme which
 will be the start earleme of the
 next token to be added.
-When parsing begins, the B<current earleme location> is
+When parsing begins, the current earleme location is
 earleme 0.
 
 When token offset is left undefined,
 it defaults to 1.
+That means the next token will be added at another
+earleme location, one after the current one.
 This is the correct value for the token
 stream model.
-Negative token offsets are not allowed.
 
+Negative token offsets are not allowed.
 Zero token offset are allowed,
 and will cause 
 multiple tokens to start at the same location.
@@ -103,21 +102,23 @@ Ambiguous lexing occurs when several different sequences
 of tokens are possible.
 Potentially ambiguous lexing occurs in any parse where multiple
 tokens start at a single earleme.
-If only one of the potential token choices is consistent with
-the grammar and the rest of input, there is no actual ambiguity
-and the one token choice which is
-consistent is the one that will be used.
+An B<actual ambiguity> only occurs if
+more than one of the potential token choices is consistent with
+the grammar and its input.
+If there is no actual ambiguity, Marpa
+will use the only token choice which is
+consistent with the grammar and its inputs.
 
-If more than one of these potential alternative lexings is consistent
-with the grammar and the rest of the input,
-then lexing is B<actually ambiguous>.
-If the lexing in a parse is actually ambiguous,
-the parse will be
-ambiguous,
-even if the grammar is not.
+When lexing is B<actually ambiguous>, Marpa
+will use all consistent alternatives.
+When the lexing in a parse is actually ambiguous,
+the parse will be ambiguous.
+This means that in Marpa, a parse can be ambiguous,
+even when the grammar is not ambiguous.
 
-Marpa deals with ambiguity due to lexing in the
-same way that it deals with
+Marpa's semantics deal
+with ambiguity due to lexing in the
+same way that Marpa deals with
 grammatical ambiguity.
 When the Single Parse Evaluator is used,
 Marpa arbitrarily chooses one of the possible

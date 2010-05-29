@@ -4,40 +4,303 @@ Marpa::Algorithm - The Marpa Algorithm
 
 =head1 DESCRIPTION
 
-Marpa is derived from
-the parser
-L<described by John Aycock and R.  Nigel Horspool|Marpa::Bibliography/"Aycock and Horspool 2002">.
-Aycock and Horspool combined LR(0)
-precomputation
-with the general parsing algorithm
-L<described by Jay
-Earley in 1970|Marpa::Bibliography/"Earley 1970">.
+This document
+describes the aspects of
+the Marpa algorithm
+which break new ground.
+When I started writing Marpa I had many expectations.
+Marpa has exceeded most of them.
+Marpa will be a fast algorithm for almost every practical grammar.
+The one respect in which Marpa disappoints me
+is its complexity.
+As an algorithm, Marpa has its moments of beauty,
+but nobody could say it achieves that beauty through simplicity.
 
-Marpa combines several parsing techniques,
-and a full description would be most of a textbook
-on parsing.
-That might be fun to write someday,
-but for now I have to content myself
-with briefly describing the significant ideas
-that are new with Marpa.
-I have to assume that my reader is familiar with parsing in general,
-so that he understands terms like Earley set and Earley item.
+Marpa is many different parsing techniques, rolled into one.
+The way these interact is a major source of the beauty 
+I see in the algorithm.
+It was also a source of my hope that
+underlying simplicities would reveal themselves.
+But perhaps it was wrong of me to expect Marpa to be a late Picasso.
+Perhaps I should have been looking more for a Hieronymous Bosch.
 
-=head2 A New Recognition Engine
+=head1 THE SOURCES OF THE MARPA ALGORITHM
+
+=over
+
+=item 1970
+
+Jay Earley L<invents the algorithm that now bears his
+name|Marpa::Bibliography/"Earley 1970">.
+
+=item 1991
+
+Joop Leo L<describes a way to modify Earley's algorithm so that it
+runs in O(n) time for all LR-regular
+grammars|Marpa::Bibliography/"Leo 1991">.
+LR-regular is a vast class of grammars, including all the
+LR(k) grammars, all grammars parseable with recursive descent,
+and regular expressions.
+LR-regular can safely be thought of as including all grammars
+in practical use today, and then some.
+
+=item 2002
+
+L<Aycock and Horspool describe a way to do LR(0)
+precomputation|Marpa::Bibliography/"Aycock and Horspool 2002">
+for Earley's algorithm.
+Their method makes Earley's faster in most
+practical situations, but not all.
+In particular, right-recursion remains quadratic in
+the Aycock and Horspool algorithm.
+Worst case is no better than Earley's.
+Leo is unaware of Aycock and Horspool's work
+and Aycock and Horspool seem unaware of Leo.
+
+=item 2010
+
+... which brings us to Marpa.
+
+=back
+
+=head1 ABOUT THE REST OF THIS DOCUMENT
+
+The rest of this document is very difficult and sketchy material.
+I tried to write these sections for as wide an audience
+as possible, but in many cases it simply was not possible
+to keep the sections short without
+assuming a lot of
+familiarity with the literature on Earley parsing.
+
+=head1 COMBINING LEO 1991 and AYCOCK-HORSPOOL 2002
+
+The algorithm described in
+L<Aycock-Horspool 2002
+|Marpa::Bibliography/"Aycock and Horspool 2002">
+speeds up Earley's algorithm
+by combining Earley items.
+Each Earley item in Earley's original algorithm
+is for a B<dotted rule> --
+a pair consisting of
+a grammar rule and a position in that rule.
+Dotted rules are so called because the convention when writing
+them is to designate the distinguished position with a raised dot.
+Dotted rules are also called LR(0) items.
+
+Aycock and Horspool combined dotted rules into sets,
+which were also states of a finite automaton.
+I call this finite automaton, an Aycock-Horspool Finite Automaton (AHFA).
+Aycock and Horspool
+changed their Earley items to contain information about AHFA states,
+instead of about individual dotted rules.
+This reduced the number of
+Earley items and
+improved the speed of Earley's algorithm considerably.
+
+L<Aycock-Horspool 2002
+|Marpa::Bibliography/"Aycock and Horspool 2002">
+had other very practical insights.
+For example, I can't imagine how I could have written Marpa had
+I not learned how to deal with
+nullable symbols and rules from 
+L<Aycock-Horspool 2002
+|Marpa::Bibliography/"Aycock and Horspool 2002">.
+But Aycock and Horspool could not
+lay claim to any theoretical milestones.
+As the theoreticians say,
+L<Aycock-Horspool 2002
+|Marpa::Bibliography/"Aycock and Horspool 2002">
+"improved the constants".
+Worst case remained the same,
+and right-recursion was still quadratic.
+
+Leo's algorithm and the Aycock-Horspool algorithm each offered
+major improvements.
+Was it possible to get the best of both worlds?
+The major obstacle was that the algorithms spoke different dialects:
+Earley items in the
+Aycock-Horspool algorithm
+used AHFA states.
+Leo kept his Earley items in the classic form, one dotted rule per Earley item.
+To combine the two algorithms, one algorithm would have to learn to
+speak the other's dialect.
+
+It was always clear that translating from one algorithm to the other
+would be possible.
+What was not so clear was whether
+this translation could be made
+without doing so much
+processing that most or all of the benefit of
+one algorithm or the other would be lost.
+L<Leo 1991
+|Marpa::Bibliography/"Leo 1991">,
+L<Aycock-Horspool 2002
+|Marpa::Bibliography/"Aycock and Horspool 2002">,
+and even Earley's original algorithm
+(after the bug fix suggested
+L<by Aho & Ullman in
+1972|Aho and Ullman 1972>)
+all do the same job.
+For decades now, the only question has been speed.
+
+Most important was the translation of "Leo completions" -- those
+Earley items added during recognition as a result of Leo's logic.
+Leo completions had to "play nice" with Marpa's AHFA-based recognition engine,
+or all was lost.
+Potentially, I might have been required to rewrite the Aycock-Horspool
+Finite Automaton.
+This would be difficult.
+Worse than that, it might be counter-productive.
+The AHFA was the source of the efficiencies delivered
+by the Aycock-Horspool algorithm.
+Rewrite the AHFA enough and I might as well throw it away.
+
+My explorations here had a very happy result.
+I discovered, and was able to prove that,
+in the special case of Leo completions,
+there is a one-to-one correspondence between AHFA states
+and the original dotted rules as used by Earley and Leo.
+Leo completions were always AHFA "singletons" --
+exactly one dotted rule.
+
+This was very unexpected.
+The Aycock-Horspool algorithm
+produced its gains by combining dotted rules into AHFA states,
+and was aggressive about it.
+Singletons were infrequent.
+That a convenient class of the Aycock-Horspool
+Earley items should turn
+out always to be AHFA singletons,
+was a very pleasant surprise.
+When it most mattered, the Leo logic and the AHFA states
+spoke the same language.
+
+In almost every other case,
+as expected,
+the Leo logic and the Aycock-Horspool logic
+did not speak the same language.
+A lot of details had to be worked out, but none of these
+other details
+had the potential
+to derail the project of combining
+the best of
+L<Leo 1991
+|Marpa::Bibliography/"Leo 1991">
+and
+L<Aycock-Horspool
+2002|Marpa::Bibliography/"Aycock and Horspool 2002">
+to
+get the best of both.
+
+=head2 Marpa's Changes to the Leo Recognizer Algorithm
+
+L<Leo 1991
+|Marpa::Bibliography/"Leo 1991">
+describes an algorithm for a recognizer.
+Marpa modifies Leo's original recognizer algorithm in two
+major respects.
+First, as mentioned above,
+Leo's recognizer algorithm
+had to be converted to work
+with AHFA states, instead of dotted rules.
+
+Second, Leo's algorithm is lazy about computing Leo
+items.
+(A B<Leo item> is my term for what
+L<Leo 1991
+|Marpa::Bibliography/"Leo 1991">
+calls
+"transition items".)
+Leo's original algorithm
+does not compute the Leo items until they are
+actually needed.
+I chose eager computation -- computing
+the Leo items as soon as each Earley set is complete.
+
+Eager computation of Leo items greatly simplifies the logic
+for using the Leo items.
+The processing for each Earley set
+can assume that
+any Leo items of interest in prior Earley sets
+already exist.
+A particular advantage of eager computation is that
+long chains of Leo items never need to
+be followed in the recognition phase.
+
+=head2 Leo Semantics: Indirect and Lazy
+
+Leo's hints about semantic processing,
+while brief, were insightful.
+The first decision to make with the Leo
+semantics was direct versus indirect.
+The direct approach does the semantic processing
+with the Leo items themselves, without converting them.
+This has the usual advantage that
+costs are incurred only for the Leo items that are
+actually used by the semantics.
+It has the very serious disadvantage of intertwining the Leo logic
+with the semantics.
+Dealing directly
+with Leo items would more than double the complexity
+of the logic for Marpa's semantics.
+Because of this, Marpa
+rejected the direct approach.
+
+The indirect approach is to expand the Leo completions
+into the stacks of Earley items for which Leo completions
+are a shorthand.
+Of course, in a naive implementation, this eliminates
+every advantage of using the Leo speedups --
+it merely moves processing from the recognizer into the
+semantic phase.
+
+Marpa optimizes by using a lazy implementation of the
+indirect approach.
+Only those Leo completions useful
+for the semantics
+are expanded.
+
+For a lazy and indirect implementation,
+in all cases,
+time complexity is the same as with a
+direct implementation.
+But for some ambiguous grammars,
+the space required grows from linear to quadratic with
+any indirect approach.
+This does not change the worst case time-complexity --
+that was already quadratic.
+Fortunately, this worst case --
+ambiguous parses where
+all the parse
+results are demanded --
+is of limited practical interest.
+
+The logic for lazy translation of Leo items
+proved simple.
+The tradeoffs clearly favored the
+indirect implementation which
+L<Leo 1991
+|Marpa::Bibliography/"Leo 1991">
+suggests and Marpa uses.
+
+=head1 IMPROVEMENTS TO THE AYCOCK-HORSPOOL RECOGNITION ENGINE
 
 Marpa takes the recognition engine as
-described by Horspool and Aycock
-and turns it inside out and upside down.
-In the Horspool and Aycock version of Earley's,
+described by Aycock and Horspool
+and turns it inside out and upside down --
+a double inversion.
+In the Aycock and Horspool
+version of Earley's,
 the main loop iterated over each item of an Earley set,
-first scanning for tokens,
-then completing items in the set.
+first using that item to scan for tokens,
+then using it to add new items in the set
+through completion.
 Marpa turns this into two separate loops over the
 Earley items,
 the first of which completes the current earley set,
 and the second of which scans for tokens.
 
-=head3 Prediction-driven Lexing and Earley Parsing
+=head2 Prediction-driven Lexing and Earley Parsing
 
 The advantage of this double inversion is that the lexical analysis
 can be put between the two loops
@@ -47,7 +310,7 @@ This makes prediction-driven lexing possible.
 Prediction-driven lexing, when combined with Earley power,
 turns out to be very useful.
 
-=head2 Earlemes
+=head1 EARLEMES
 
 Marpa allows ambiguous lexing,
 including recognition of lexemes of different lengths starting at the
@@ -57,12 +320,12 @@ To facilitate this,
 Marpa introduces the B<earleme> (named after Jay Earley).
 Previous Earley 
 implementations required the input to be broken
-up into tokens, usually by lexical analysis of the input using
-DFA's.
-(DFA's -- deterministic finite automata -- are the equivalent of
-regular expressions when that term is used in the strictest sense).
+up into tokens,
+typically by lexical analysis of the input using
+regular expressions.
 Requiring that the first level of analysis
-be performed by a DFA hobbles a general parser like Earley's.
+be performed by a regular expression can be viewed
+as hobbling a general parser like Earley's.
 
 Marpa allows the scanning phase of
 Earley's algorithm to add items not just to the
@@ -91,7 +354,7 @@ to traditional lexing.
 But distance in earlemes could also be defined as equivalent to string length,
 measured either in bytes or Unicode graphemes.
 
-=head2 Chomsky-Horspool-Aycock Form
+=head1 CHOMSKY-HORSPOOL-AYCOCK FORM
 
 Another significant change
 to the Aycock and Horspool algorithm
@@ -105,14 +368,14 @@ algorithm had serious issues with nullable symbols and productions,
 and the NNF rewrite fixes almost all of them.
 (As a reminder,
 a nullable symbol or production is
-one which derives the empty sentence.)
+one which derives the empty string.)
 Importantly,
 NNF also allows complete and easy mapping of the semantics of the
 original grammar to its NNF rewrite, so that NNF and the whole
 rewrite process can be made invisible to the user.
 
 A problem with NNF is that the rewritten grammar is
-exponentially larger than the original in the theoretical worst
+exponentially larger than the original in the worst
 case.
 I think
 cases would arise in practice
@@ -123,97 +386,79 @@ could cause an NNF size explosion.
 
 Marpa's solution is Chomsky-Horspool-Aycock Form (CHAF).
 This is
-Horspool and Aycock's NNF, but with the further restriction that
+Aycock and Horspool's NNF, but with the further restriction that
 no more than two nullable symbols may appear in any production.
 (The idea that any context-free grammar can
 be rewritten into productions of at most a small fixed size appears to
 originate, like so much else, with Noam Chomsky.)
 The shortened CHAF production maps back
-to the original grammar, so that like NNF, the CHAF rewrite can be
+to the original grammar so that like NNF,
+the CHAF rewrite can be
 made invisible to the user.
 With CHAF, the theoretical worst
 behavior is linear, and in those difficult cases likely to arise
 in practice the multiplier is much smaller.
 
-=head2 An Algorithm to Construct the Split E<epsilon>-DFA.
+=head1 AN ALGORITHM TO CONSTRUCT THE SPLIT E<epsilon>-DFA.
 
-Aycock and Horspool do not give an algorithm for constructing
-the split E<epsilon>-DFA.
-They give hints on pages 624-627.
-Reconstructing an algorithm from these hints proved
-non-trivial.
+The Aycock-Horspool algorithm requires the grammar to be
+converted into a "split E<epsilon>-DFA".
+But Aycock and Horspool do not give an algorithm for doing this
+construction.
+Writing an algorithm for Marpa to do this
+construction proved non-trivial.
 
-Based on what is stated in the first paragraph of page 626,
-the original Aycock-Horspool
-split E<epsilon>-DFA construction algorithm
-only works on grammars that have been
-rewritten into the NNF form that Aycock and Horspool describe.
-Aycock and Horspool describe the 
-split E<epsilon>-DFA algorithm construction in these stages:
-
-=over
-
-=item * Construct an LR(0) DFA from the LR(0) NFA.
-
-=item * Construct an E<epsilon>-DFA from the LR(0) DFA.
-
-=item * Construct a split E<epsilon>-DFA from the 
-E<epsilon>-DFA.
-
-=back
-
-It is not clear if the stages
-in the article describe Aycock and Horspool's
-actual algorithm.
-While the multiple stages are 
-useful as a presentation device,
-actual implementation using
-those successive stages would be cumbersome.
-
-The Marpa algorithm for creating the 
-the split E<epsilon>-DFA states
-works in a single
-pass, directly from
-the NFA states.
-The Marpa algorithm
-requires that the grammar first
-be rewritten into CHAF form.
-
-Its construction aside,
-the split E<epsilon>-DFA contains several vital
-insights,
-and without these Marpa could not have been written.
-I find the term split E<epsilon>-DFA unwieldy,
+The description of the
+"split E<epsilon>-DFA"
+is on pages 624-627 of 
+L<Aycock-Horspool
+2002|Marpa::Bibliography/"Aycock and Horspool 2002">.
+It contained several insights
+without which Marpa could not have been written.
+I find the term "split E<epsilon>-DFA" unwieldy,
 and prefer to take the opportunity to give credit where it is due.
-What Aycock and Horspool call their
+The sets which Aycock and Horspool call
 split E<epsilon>-DFA states,
-I call Aycock-Horspool states.
+I call AHFA states.
 
-=head2 Iterating Aycock-Horspool Parses
+=head1 ITERATING AYCOCK-HORSPOOL PARSES
 
 Aycock and Horspool give an algorithm for constructing a rightmost derivation
 from their version of the Earley sets.
-They suggest that in the case of multiple parses,
-their Earley sets could be iterated through,
-and they point out where the decision points occur
-in their algorithm.
+They suggest that,
+in the case of multiple parses,
+their Earley sets could be iterated through.
+They point out where
+in their algorithm
+the decision points would be.
 
-But they give no algorithm to do that iteration.
-Marpa, of course, required an algorithm to actually produce
-and evaluate the parses it recognizes.
-Inventing that algorithm was the most difficult part
-of writing Marpa -- far more difficult than the modifications
-to the core Earley-Aycock-Horspool algorithm.
+But Aycock and Horspool give no algorithm to do that iteration.
+Marpa, of course, needed an algorithm to actually
+evaluate its parse results.
+Inventing that algorithm was
+one of the two most difficult parts
+of writing Marpa --
+as difficult as combining the
+three sets of modifications to Earley's recognizer
+-- those of Aycock and Horspool,
+Leo's, and mine.
+
+=head1 THE PARSE BOCAGE
+
 Marpa sets itself up to iterate
-and evaluate parses by creating a B<parse bocage>
+and evaluate parse results by creating a B<parse bocage>
 from the Earley sets.
+A Marpa parse is a set of parse trees.
+It's a trivial set if the parse is unambiguous --
+a set of trees that contains only one tree.
 
-=head3 Parse Bocages
-
-A ambiguous parse is a set of parse trees, and in the parsing literature
+If the parse is ambiguous,
+there is more than one parse tree.
+In the parsing literature,
 there is
 an efficient and compact means of storing a set of closely related
-parse trees.  It is called, aptly, a parse forest.
+parse trees.
+It is called, aptly, a parse forest.
 
 Nodes in
 a parse forest are divided into and-nodes and or-nodes.
@@ -229,7 +474,7 @@ the lhs as the parent node and the rhs symbols as child nodes.
 Or-nodes represent choices among and-nodes.
 Each child of an or-node is one choice.
 A parse tree is generated from a parse forest
-by traversing the forest and selecting one child node
+by traversing the forest and selecting one child and-node
 at every or-node.
 
 Marpa uses a modified form of parse forest,
@@ -241,9 +486,12 @@ However, the data produced by Marpa's recognizer may contain cycles.
 Therefore, the data structure Marpa needs is not a tree,
 strictly speaking, but a graph.
 
-Second, the productions of the grammar are not repesented intact
-when the Marpa evaluator finds them in the Earley items.
-Instead,
+Second, the original
+productions of the grammar are not repesented
+directly in Marpa's parse bocage.
+Instead, they are represented in the form in which
+the Marpa evaluator finds them in the Earley items.
+In the Earley items,
 each production is broken up,
 and represented as links between Earley items.
 
@@ -261,15 +509,12 @@ and the linked Earley item is the "predecessor" or earlier part.
 
 The cause element of the source is always present.
 It can be a token or a link to a child Earley item.
-The Earley item linked-to by the cause element is a child in the sense
-that if the productions
-from the two Earley items were represented in a parse tree,
-the production from the linking Earley item would be the parent,
-and the production from the linked-to Earley item would be the child.
 
-In effect, the sources in the Earley items
-contain the original grammar rewritten
-into productions with at most two symbols on the
+Because the Earley items contain their sources in the form
+of predecessor-cause pairs,
+they in effect rewrite the original grammar
+into productions
+with at most two symbols on the
 right hand side.
 This is basically Chomsky Normal Form (CNF).
 
@@ -281,12 +526,13 @@ it creates the parse bocage from the Earley items.
 Marpa could do so, but
 for two reasons, that doesn't make sense.
 
-First,
-CNF, combined with Aycock and Horspool's split DFA states,
+=over
+
+=item * CNF, combined with Aycock and Horspool's split DFA states,
 produces a representation even more compact than a conventional
 parse forest.
-Secondly,
-code to traverse, iterate and evaluate binary nodes
+
+=item * Code to traverse, iterate and evaluate binary nodes
 is considerably simpler than code which needs to deal
 with nodes which have an arbitrary number of children.
 Rather than rewrite the grammar into a form that's harder
@@ -294,21 +540,33 @@ to process,
 it makes sense to leave the grammar the way it is found
 in the Earley items.
 
+=back
+
 For these reasons,
 the and-nodes in parse bocages do not directly represent productions
 of the grammar. 
 Instead productions are broken up,
 so that every and-node has at most two children.
 
-The bocage forests of Normandy and Brittany are
-networks of dense hedgerows cultivated over centuries
-as a fence for livestock, but also for military defense.
-These hedges remained impressive obstacles
-even after the development of tanks.
-The Norman bocage played a major role in World War II.
-The term "parse bocage" seemed appropriate for
-the tactically-effective thicket that
-Marpa uses to store parses.
+In some cases, it is useful to know the current parse location
+in terms of the rules of the original grammar.
+All of Marpa's grammar rewrites can
+be efficiently "unwritten" when needed.
+This "un-rewriting" is done on a "lazy" basis.
+
+The term "bocage" comes from
+the bocage forests of Normandy and Brittany.
+These man-made forests are
+networks of hedgerows,
+vegetative tangles encouraged
+to grow denser and denser over the centuries.
+Their purpose is
+to fence in livestock and
+to fence out invading armies.
+Bocage hedges are serious tactical obstacles
+even to armies equipped with tanks.
+The Norman bocage played a major role in the D-Day
+invasion of World War II.
 
 =head1 LICENSE AND COPYRIGHT
 

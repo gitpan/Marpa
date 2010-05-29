@@ -274,16 +274,17 @@ sub Marpa::Recognizer::value {
                     $target_item->[Marpa::Internal::Earley_Item::STATE] =
                         $state;
                     $target_item->[Marpa::Internal::Earley_Item::TOKENS] = [];
-                    $target_item->[Marpa::Internal::Earley_Item::LINKS] = [];
+                    $target_item->[Marpa::Internal::Earley_Item::LINKS]  = [];
                     $target_item->[Marpa::Internal::Earley_Item::SET] =
                         $or_sapling_set;
                     $earley_hash->{$name} = $target_item;
-                    push @{ $earley_sets->[$or_sapling_set] },
-                        $target_item;
+                    push @{ $earley_sets->[$or_sapling_set] }, $target_item;
                 } ## end if ( not defined $target_item )
 
-                push @{ $target_item->[Marpa::Internal::Earley_Item::LINKS] }, @{$next_links};
-                push @{ $target_item->[Marpa::Internal::Earley_Item::TOKENS] }, @{$next_tokens};
+                push @{ $target_item->[Marpa::Internal::Earley_Item::LINKS] },
+                    @{$next_links};
+                push @{ $target_item->[Marpa::Internal::Earley_Item::TOKENS]
+                    }, @{$next_tokens};
 
                 $leo_item = $next_leo_item;
 

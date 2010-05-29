@@ -144,7 +144,7 @@ sub Marpa::Recognizer::new {
         $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE];
     $self->[Marpa::Internal::Recognizer::WARNINGS] = 1;
     $self->[Marpa::Internal::Recognizer::MODE]     = 'default';
-    $self->[Marpa::Internal::Recognizer::USE_LEO]     = 1;
+    $self->[Marpa::Internal::Recognizer::USE_LEO]  = 1;
 
     $self->set(@arg_hashes);
 
@@ -169,7 +169,7 @@ sub Marpa::Recognizer::new {
     my $earley_set;
 
     my $start_states = $grammar->[Marpa::Internal::Grammar::START_STATES];
-    my $postdot = {};
+    my $postdot      = {};
 
     for my $state ( @{$start_states} ) {
         my $state_id = $state->[Marpa::Internal::AHFA::ID];
@@ -192,10 +192,10 @@ sub Marpa::Recognizer::new {
         while ( my ( $transition_symbol, $to_states ) =
             each %{ $state->[Marpa::Internal::AHFA::TRANSITION] } )
         {
-            my @to_states = grep { ref } @{$to_states};
+            my @to_states = grep {ref} @{$to_states};
             push @{ $postdot->{0}->{$transition_symbol} },
                 [ $item, \@to_states, 0 ];
-        }
+        } ## end while ( my ( $transition_symbol, $to_states ) = each %{...})
 
     } ## end for my $state ( @{$start_states} )
 
@@ -214,13 +214,14 @@ sub Marpa::Recognizer::new {
 
     if ( $self->[Marpa::Internal::Recognizer::TRACE_TERMINALS] ) {
         for my $terminal (
-            grep { $terminal_names->{$_} } keys %{ $postdot->{0} }
+            grep { $terminal_names->{$_} }
+            keys %{ $postdot->{0} }
             )
         {
             say {$Marpa::Internal::TRACE_FH}
                 qq{Expecting "$terminal" at earleme 0}
                 or Marpa::exception("Cannot print: $ERRNO");
-        } ## end for my $terminal ( keys %{ $self->[...]})
+        } ## end for my $terminal ( grep { $terminal_names->{$_} } keys...)
     } ## end if ( $self->[Marpa::Internal::Recognizer::TRACE_TERMINALS...])
 
     return $self;
@@ -323,11 +324,11 @@ sub Marpa::Recognizer::earley_set_size {
     my ( $recce, $name ) = @_;
     my $last_completed_earleme =
         $recce->[Marpa::Internal::Recognizer::LAST_COMPLETED_EARLEME];
-    return undef if not defined $last_completed_earleme;
-    my $earley_set  = $recce->[EARLEY_SETS]->[$last_completed_earleme];
-    return undef if not defined $earley_set;
+    return if not defined $last_completed_earleme;
+    my $earley_set = $recce->[EARLEY_SETS]->[$last_completed_earleme];
+    return if not defined $earley_set;
     return scalar @{$earley_set};
-}
+} ## end sub Marpa::Recognizer::earley_set_size
 
 sub Marpa::Recognizer::check_terminal {
     my ( $recce, $name ) = @_;
@@ -379,14 +380,15 @@ sub Marpa::show_token_choice {
 } ## end sub Marpa::show_token_choice
 
 sub Marpa::show_link_choice {
-    my ($link) = @_;
+    my ($link)      = @_;
     my $predecessor = $link->[0];
-    my @link_texts = ();
+    my @link_texts  = ();
     if ($predecessor) {
-        push @link_texts, 'p=' . $predecessor->[Marpa::Internal::Earley_Item::NAME];
+        push @link_texts,
+            'p=' . $predecessor->[Marpa::Internal::Earley_Item::NAME];
     }
     push @link_texts, 'c=' . $link->[1]->[Marpa::Internal::Earley_Item::NAME];
-    return '[' . (join '; ', @link_texts) . ']';
+    return '[' . ( join '; ', @link_texts ) . ']';
 } ## end sub Marpa::show_link_choice
 
 sub Marpa::show_leo_link_choice {
@@ -449,9 +451,9 @@ sub Marpa::show_earley_set {
 } ## end sub Marpa::show_earley_set
 
 sub Marpa::show_earley_set_list {
-    my ($earley_set_list, $leo_set_list) = @_;
-    my $text              = q{};
-    my $earley_set_count  = @{$earley_set_list};
+    my ( $earley_set_list, $leo_set_list ) = @_;
+    my $text             = q{};
+    my $earley_set_count = @{$earley_set_list};
     LIST: for my $ix ( 0 .. $earley_set_count - 1 ) {
         my $set = $earley_set_list->[$ix];
         next LIST if not defined $set;
@@ -459,7 +461,7 @@ sub Marpa::show_earley_set_list {
         my $leo_set = $leo_set_list->[$ix];
         next LIST if not defined $leo_set;
         $text .= Marpa::show_earley_set($leo_set);
-    }
+    } ## end for my $ix ( 0 .. $earley_set_count - 1 )
     return $text;
 } ## end sub Marpa::show_earley_set_list
 
@@ -469,12 +471,12 @@ sub Marpa::Recognizer::show_earley_sets {
         // 'stripped';
     my $furthest_earleme = $recce->[FURTHEST_EARLEME];
     my $earley_set_list  = $recce->[EARLEY_SETS];
-    my $leo_set_list  = $recce->[LEO_SETS];
+    my $leo_set_list     = $recce->[LEO_SETS];
 
     return
           "Last Completed: $last_completed_earleme; "
         . "Furthest: $furthest_earleme\n"
-        . Marpa::show_earley_set_list($earley_set_list, $leo_set_list);
+        . Marpa::show_earley_set_list( $earley_set_list, $leo_set_list );
 
 } ## end sub Marpa::Recognizer::show_earley_sets
 
@@ -518,7 +520,7 @@ sub Marpa::Recognizer::tokens {
 
     # TOKEN PROCESSING PHASE
 
-    my $terminal_names     = $grammar->[Marpa::Internal::Grammar::TERMINAL_NAMES];
+    my $terminal_names = $grammar->[Marpa::Internal::Grammar::TERMINAL_NAMES];
 
     my $next_token_earleme = my $last_completed_earleme =
         $recce->[Marpa::Internal::Recognizer::LAST_COMPLETED_EARLEME];
@@ -540,7 +542,6 @@ sub Marpa::Recognizer::tokens {
 
         my $current_token_earleme = $last_completed_earleme;
 
-
         my $first_ix_of_this_earleme = ${$token_ix_ref};
 
         TOKEN: while ( $current_token_earleme == $next_token_earleme ) {
@@ -548,13 +549,12 @@ sub Marpa::Recognizer::tokens {
             last TOKEN if not my $token_args = $tokens->[ ${$token_ix_ref} ];
             Marpa::exception(
                 'Tokens must be array refs: token #',
-                ${$token_ix_ref},
-                " is $token_args\n",
+                ${$token_ix_ref}, " is $token_args\n",
             ) if ref $token_args ne 'ARRAY';
             ${$token_ix_ref}++;
             my ( $symbol_name, $value, $length, $offset ) = @{$token_args};
 
-            my $postdot = $recce->[Marpa::Internal::Recognizer::POSTDOT];
+            my $postdot      = $recce->[Marpa::Internal::Recognizer::POSTDOT];
             my $postdot_here = $postdot->{$current_token_earleme};
 
             Marpa::exception(
@@ -580,7 +580,8 @@ sub Marpa::Recognizer::tokens {
                 ${$token_ix_ref} = $first_ix_of_this_earleme;
                 return (
                     $last_completed_earleme,
-                    [   grep { $terminal_names->{$_} } keys %{ $postdot->{$last_completed_earleme} }
+                    [   grep { $terminal_names->{$_} }
+                            keys %{ $postdot->{$last_completed_earleme} }
                     ]
                 ) if wantarray;
                 return $last_completed_earleme;
@@ -666,7 +667,8 @@ sub Marpa::Recognizer::tokens {
 
             EARLEY_ITEM: for my $postdot_data_entry ( @{$postdot_data} ) {
 
-                my ($earley_item, $to_states, $parent, $leo_item) = @{$postdot_data_entry};
+                my ( $earley_item, $to_states, $parent, $leo_item ) =
+                    @{$postdot_data_entry};
 
                 next EARLEY_ITEM if not $to_states;
 
@@ -681,7 +683,7 @@ sub Marpa::Recognizer::tokens {
                 }
 
                 my $target_set = ( $earley_set_list->[$target_ix] //= [] );
-                TO_STATE: for my $to_state ( grep { ref } @{$to_states} ) {
+                TO_STATE: for my $to_state ( grep {ref} @{$to_states} ) {
                     my $reset =
                         $to_state->[Marpa::Internal::AHFA::RESET_ORIGIN];
                     my $origin      = $reset ? $target_ix : $parent;
@@ -720,7 +722,8 @@ sub Marpa::Recognizer::tokens {
                         push @{ $target_item
                                 ->[Marpa::Internal::Earley_Item::LEO_LINKS] },
                             [ $leo_item, undef, $token_name, $value_ref ];
-                    } else {
+                    }
+                    else {
                         push @{ $target_item
                                 ->[Marpa::Internal::Earley_Item::TOKENS] },
                             [ $earley_item, $token_name, $value_ref ];
@@ -851,12 +854,13 @@ sub complete {
             @{ $state->[Marpa::Internal::AHFA::COMPLETE_LHS] }
             )
         {
-            my ( $parent_item, $states, $grandparent, $leo_item ) = @{$parent_data};
+            my ( $parent_item, $states, $grandparent, $leo_item ) =
+                @{$parent_data};
             my $parent_state =
                 $parent_item->[Marpa::Internal::Earley_Item::STATE];
 
             TRANSITION_STATE:
-            for my $transition_state ( grep { ref } @{$states} ) {
+            for my $transition_state ( grep {ref} @{$states} ) {
                 my $reset =
                     $transition_state->[Marpa::Internal::AHFA::RESET_ORIGIN];
                 my $origin =
@@ -879,7 +883,8 @@ sub complete {
                         $transition_state;
                     $target_item->[Marpa::Internal::Earley_Item::PARENT] =
                         $origin;
-                    $target_item->[Marpa::Internal::Earley_Item::LEO_LINKS]  = [];
+                    $target_item->[Marpa::Internal::Earley_Item::LEO_LINKS] =
+                        [];
                     $target_item->[Marpa::Internal::Earley_Item::LINKS]  = [];
                     $target_item->[Marpa::Internal::Earley_Item::TOKENS] = [];
                     $target_item->[Marpa::Internal::Earley_Item::SET] =
@@ -889,12 +894,16 @@ sub complete {
                 }    # unless defined $target_item
                 next TRANSITION_STATE if $reset;
                 if ($leo_item) {
-                    push @{ $target_item->[Marpa::Internal::Earley_Item::LEO_LINKS] },
+                    push @{ $target_item
+                            ->[Marpa::Internal::Earley_Item::LEO_LINKS] },
                         [ $leo_item, $earley_item ];
-                } else {
-                    push @{ $target_item->[Marpa::Internal::Earley_Item::LINKS] },
-                        [ $parent_item, $earley_item ];
                 }
+                else {
+                    push
+                        @{ $target_item->[Marpa::Internal::Earley_Item::LINKS]
+                        },
+                        [ $parent_item, $earley_item ];
+                } ## end else [ if ($leo_item) ]
             }    # TRANSITION_STATE
 
         }    # PARENT_ITEM
@@ -912,11 +921,20 @@ sub complete {
         }
     } ## end if ( $too_many_earley_items >= 0 and ( my $item_count...))
 
-    # Are the completion links unique?
-    # It doesn't matter a lot.
-    # I have to remove duplicates anyway
-    # because the same rule derivation can result from
-    # different states.
+    # Each possible cause
+    # link is only visited once.
+    # It may be paired with several different predecessors.
+    # The cause may complete several different LHS symbols
+    # and Marpa will seek predecessors for each at
+    # the parent location.
+    # Different completed LHS symbols might be postdot
+    # symbols for the same predecessor Earley item.
+    # For this reason,
+    # predecessor-cause pairs might not be unique
+    # within an Earley item.
+    #
+    # This is not an issue for unambiguous parsing.
+    # It *IS* an issue for iterating ambiguous parses.
 
     if ($trace_earley_sets) {
         print {$Marpa::Internal::TRACE_FH}
@@ -948,20 +966,21 @@ sub complete {
     SYMBOL:
     for ( ;; ) {
         my $postdot_symbol = shift @leo_worklist;
-        if (not defined $postdot_symbol) {
+        if ( not defined $postdot_symbol ) {
             last SYMBOL if $leo_phase eq 'final';
-            $leo_phase = 'final';
+            $leo_phase    = 'final';
             @leo_worklist = values %leo_triggers;
             next SYMBOL;
-        }
-        if (ref $postdot_symbol) {
+        } ## end if ( not defined $postdot_symbol )
+        if ( ref $postdot_symbol ) {
             $leo_phase = $postdot_symbol->[0];
             next SYMBOL;
         }
         my $postdot_data = $postdot_here->{$postdot_symbol};
         next SYMBOL if scalar @{$postdot_data} != 1;
         my $postdot_0 = $postdot_data->[0];
-        my ( $base_earley_item, $next_states, $leo_parent, $already_done ) = @{$postdot_0};
+        my ( $base_earley_item, $next_states, $leo_parent, $already_done ) =
+            @{$postdot_0};
 
         # $already_done is actually the leo item.
         # It is true iff we've already added a leo item for this postdot symbol
@@ -973,10 +992,10 @@ sub complete {
         # but it is not to a Leo completion.
         next SYMBOL if ref $leo_lhs;
 
-        my $leo_actual_state =
-            List::Util::first {ref}
-        ( @{ $base_earley_item->[Marpa::Internal::Earley_Item::STATE]
-                ->[Marpa::Internal::AHFA::TRANSITION]->{$postdot_symbol}}
+        my $leo_actual_state = List::Util::first {ref} (
+            @{  $base_earley_item->[Marpa::Internal::Earley_Item::STATE]
+                    ->[Marpa::Internal::AHFA::TRANSITION]->{$postdot_symbol}
+                }
         );
 
         # A flag that indicates if we working on a prediction
@@ -998,13 +1017,15 @@ sub complete {
                 $leo_parent = $predecessor_parent;
                 $leo_state =
                     List::Util::first {ref} @{$predecessor_to_states};
-                    last FIND_LEO_ITEM_DATA;
-            }
+                last FIND_LEO_ITEM_DATA;
+            } ## end if ($predecessor_leo_item)
 
             # If here, we didn't find a predecessor Leo item.
             # That's ok in the final phase,
             # or if we are not working on a Leo prediction item.
-            last FIND_LEO_ITEM_DATA if not $prediction or $leo_phase eq 'final';
+            last FIND_LEO_ITEM_DATA
+                if not $prediction
+                    or $leo_phase eq 'final';
 
             # Set up so that when we do find the $leo_lhs,
             # we will 'trigger' this postdot symbol again.
@@ -1012,9 +1033,9 @@ sub complete {
 
             next SYMBOL;
 
-        } ## end if ( $leo_parent < $earleme_to_complete )
+        } ## end FIND_LEO_ITEM_DATA:
 
-        my $name     = sprintf
+        my $name = sprintf
             ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
             'L%d@%d-%d',
             ## use critic
@@ -1025,9 +1046,11 @@ sub complete {
         $leo_item->[Marpa::Internal::Earley_Item::STATE]  = $leo_state;
         $leo_item->[Marpa::Internal::Earley_Item::PARENT] = $leo_parent;
         $leo_item->[Marpa::Internal::Earley_Item::SET] = $earleme_to_complete;
-        $leo_item->[Marpa::Internal::Earley_Item::LEO_SYMBOL] = $postdot_symbol;
-        $leo_item->[Marpa::Internal::Earley_Item::LEO_ACTUAL_STATE] = $leo_actual_state;
-        $leo_item->[Marpa::Internal::Earley_Item::TOKENS]      = [];
+        $leo_item->[Marpa::Internal::Earley_Item::LEO_SYMBOL] =
+            $postdot_symbol;
+        $leo_item->[Marpa::Internal::Earley_Item::LEO_ACTUAL_STATE] =
+            $leo_actual_state;
+        $leo_item->[Marpa::Internal::Earley_Item::TOKENS] = [];
         $leo_item->[Marpa::Internal::Earley_Item::LINKS] =
             [ [ $predecessor_leo_item, $base_earley_item ] ];
 
@@ -1039,22 +1062,19 @@ sub complete {
         # The rest of the processing is to deal with Leo prediction items.
         next SYMBOL if not $prediction;
 
-        next SYMBOL if not my $triggered_symbol = $leo_triggers{$postdot_symbol};
+        next SYMBOL
+            if not my $triggered_symbol = $leo_triggers{$postdot_symbol};
 
         push @leo_worklist, $triggered_symbol;
         delete $leo_triggers{$postdot_symbol};
 
-    } ## end while ( my ( $postdot_symbol, $postdot_data ) = each %{...})
-
-    # Insert code to add Leo items for prediction states here
-    # Parent of prediction states is $earleme_to_complete.
-    # -- Create a worklist of the symbols above.
-    # -- Cycle through, looking for Leo items @ symbol @ $earleme_to_complete
-    # -- As found, add Leo lhs to worklist
+    } ## end for ( ;; )
 
     if ($trace_terminals) {
-        for my $terminal ( grep { $terminal_names->{$_} }
-            keys %{ $postdot->{$earleme_to_complete} } )
+        for my $terminal (
+            grep { $terminal_names->{$_} }
+            keys %{ $postdot->{$earleme_to_complete} }
+            )
         {
             say {$Marpa::Internal::TRACE_FH}
                 qq{Expecting "$terminal" at $earleme_to_complete}

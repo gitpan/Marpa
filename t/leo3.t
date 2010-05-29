@@ -20,8 +20,8 @@ BEGIN {
 
 sub main::default_action {
     shift;
-    return (join q{}, grep {defined} @_ );
-} ## end main::default_action
+    return ( join q{}, grep {defined} @_ );
+}
 
 ## use critic
 
@@ -112,10 +112,10 @@ my $a_token = [ 'a', 'a' ];
 my $length = 20;
 
 LEO_FLAG: for my $leo_flag ( 0, 1 ) {
-    my $recce =
-        Marpa::Recognizer->new( { grammar => $grammar, mode => 'stream', leo=>$leo_flag } );
+    my $recce = Marpa::Recognizer->new(
+        { grammar => $grammar, mode => 'stream', leo => $leo_flag } );
 
-    my $i = 0;
+    my $i        = 0;
     my $max_size = $recce->earley_set_size();
     TOKEN: while ( $i++ < $length ) {
         $recce->tokens( [$a_token] );
@@ -127,14 +127,15 @@ LEO_FLAG: for my $leo_flag ( 0, 1 ) {
     # Note that the length formula only works
     # beginning with Earley set c, for some small
     # constant c
-    my $expected_size = $leo_flag ? 4 : ($length-1)*4+3;
-    Marpa::Test::is( $max_size, $expected_size, "Leo flag $leo_flag, size $max_size");
+    my $expected_size = $leo_flag ? 4 : ( $length - 1 ) * 4 + 3;
+    Marpa::Test::is( $max_size, $expected_size,
+        "Leo flag $leo_flag, size $max_size" );
 
     my $value_ref = $recce->value( {} );
     my $value = $value_ref ? ${$value_ref} : 'No parse';
-    Marpa::Test::is( $value, 'a' x $length, "Leo p166 parse" );
+    Marpa::Test::is( $value, 'a' x $length, 'Leo p166 parse' );
 
-} ## end for my $leo ( 0, 1 )
+} ## end for my $leo_flag ( 0, 1 )
 
 # Local Variables:
 #   mode: cperl

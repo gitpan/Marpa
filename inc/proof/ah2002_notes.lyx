@@ -47,7 +47,7 @@
 \begin_body
 
 \begin_layout Title
-Note to Aycock and Horspool 2002
+Notes to Aycock and Horspool 2002
 \end_layout
 
 \begin_layout Author
@@ -64,6 +64,15 @@ The 2002 paper by Aycock and Horspool, on a modification to Jay Earley's
  Finally, there are a number of obscurities and some errors.
  This paper is a series of notes and errate intended to address the last
  problem.
+\end_layout
+
+\begin_layout Section
+THIS IS A DRAFT
+\end_layout
+
+\begin_layout Standard
+This paper is in late stages, but not yet finished.
+ It will contain many errors of the kind that the last drafts should remove.
 \end_layout
 
 \begin_layout Section
@@ -256,47 +265,6 @@ The problem can be resolved, and all statements involving the square subset
 \end_layout
 
 \begin_layout Section
-\begin_inset Formula $\epsilon$
-\end_inset
-
--DFA States
-\end_layout
-
-\begin_layout Standard
-In the display in the paragraph at the top of the right hand column on p.
- 624, it seems that the column of numbers on the right hand side is intended
- to refer to Figure 5, but it does not match.
- As printed, that column is
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula $\begin{array}{cc}
-\ldots & \{1\}\\
-\ldots & \{2\}\\
-\ldots & \{3\}\\
-\ldots & \{7\}\end{array}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-If it is intended to refer to the states depicted in Figure 5, it should
- be
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula $\begin{array}{cc}
-\ldots & \{0\}\\
-\ldots & \{4\}\\
-\ldots & \{5\}\\
-\ldots & \{6\}\end{array}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Section
 LR(0) State versus LR(0) Item
 \end_layout
 
@@ -356,8 +324,10 @@ All items
 \end_inset
 
 .
- Additionally, while the assertion in the statement is true, it might be
- useful to remind the reader of the reason why the assertion is true: By
+\end_layout
+
+\begin_layout Standard
+Also, I found it necessary to remind myself why the assertion is true: By
  the definition of LR(0) states, whenever an item 
 \begin_inset Formula $[B→...•A...,k]$
 \end_inset

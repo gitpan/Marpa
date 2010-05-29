@@ -909,6 +909,18 @@ in module writing,
 both on the finer points and
 on issues about which I really should have know better.
 
+My academic sources are described in detail in 
+L<my bibliography|Marpa::Bibliography> and
+L<my (very difficult and sketchy) description of the Marpa algorithm|Marpa::Algorithm>.
+Nonetheless, here I am to name those who
+created the algorithms which are the direct
+and near-direct predecesssors of Marpa --
+Jay Earley,
+Joop Leo,
+John Aycock and
+R.  Nigel Horspool.
+Without their work Marpa would not exist.
+
 =head1 SUPPORT
 
 L<Marpa> comes without warranty.

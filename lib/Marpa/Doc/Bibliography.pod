@@ -16,15 +16,15 @@ The account of Earley's algorithm is on pages 320-330.
 
 =head2 Aycock and Horspool 2002
 
-Marpa is derived from
-the parser described in John Aycock and R.
+Marpa is based on ideas from
+John Aycock and R.
 Nigel Horspool's "Practical Earley Parsing", I<The Computer Journal>,
 Vol. 45, No. 6, 2002, pp. 620-630.
 The idea of doing LR(0)
 precomputation for
 L<Earley's general parsing algorithm|"Earley 1970">,
-as well as details of how to do it,
-came to me from this article.
+and Marpa's approach to handling nullable symbols and rules,
+both came from this article.
 
 The Aycock and Horspool paper 
 summarizes Earley's very nicely and is
@@ -95,7 +95,7 @@ In the printed edition of the 2008 bibliography, the entry is on page 578,
 and on the web
 (L<ftp://ftp.cs.vu.nl/pub/dick/PTAPG_2nd_Edition/CompleteList.pdf>),
 it's on pp. 583-584.
-My methods for getting the parses
+My methods for getting the parse results
 out of Earley sets
 have come from L<Aho and Ullman|/"Aho and Ullmann 1972">,
 L<Aycock and Horspool|/"Aycock and Horspool 2002">,
@@ -105,7 +105,7 @@ so I am taking Tomita's word on this one.
 =head2 Grune and Jacobs 1990
 
 I<Parsing Techniques: A Practical Guide>,
-by Dick Grune 
+by Dick Grune and
 Ceriel Jacobs,
 (Ellis Horwood Limited: Chichester, West Sussex, England,
 1990).
@@ -114,7 +114,7 @@ This book is available on the Web: L<http://www.cs.vu.nl/~dick/PTAPG.html>
 =head2 Grune and Jacobs 2008
 
 I<Parsing Techniques: A Practical Guide>,
-by Dick Grune 
+by Dick Grune and
 Ceriel Jacobs,
 2nd Edition.
 (Springer: New York NY, 2008).
@@ -126,6 +126,24 @@ but even so it is moderately difficult reading.
 This is L<Grune and Jacobs 1990> updated.
 The bibliography for this book is available in enlarged form
 on the web: L<ftp://ftp.cs.vu.nl/pub/dick/PTAPG_2nd_Edition/CompleteList.pdf>.
+
+=head2 Leo 1991
+
+Marpa's handling of right-recursion uses the ideas in
+Joop M.I.M. Leo's
+"A General Context-Free Parsing Algorithm Running in Linear
+Time on Every LR(k) Grammar Without Using Lookahead",
+I<Theoretical Computer Science>,
+Vol. 82, No. 1, 1991, pp 165-176.
+Unfortunately,
+there is no copy of this paper on-line.
+
+This is a difficult paper.
+Readers will want to already be familiar with
+Earley's algorithm,
+and the basics of
+Theory of Computation and
+parsing theory.
 
 =head2 Wikipedia
 
@@ -142,7 +160,7 @@ using a similar notation.
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2007-2009 Jeffrey Kegler, all rights reserved.
+Copyright 2007-2010 Jeffrey Kegler, all rights reserved.
 Marpa is free software under the Perl license.
 For details see the LICENSE file in the Marpa distribution.
 

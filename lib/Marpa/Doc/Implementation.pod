@@ -1076,10 +1076,14 @@ name: Implementation Example show_AHFA Output
 partial: 1
 normalize-whitespace: 1
 
-    S10: 14
+    S10: leo-c; 14
     Factor -> Factor Multiply Factor .
 
 =for Marpa::Display::End
+
+(Ignore the "leo-c" notation for now.
+It indicates that S10 is what's called a Leo completion.
+The Leo logic will be dealt with later.)
 
 The completed symbol is C<Factor> with origin
 0 and current earleme 3.
@@ -1354,6 +1358,10 @@ a virtual symbol.
 C<real> is an integer, indicating the number of real (that is, non-virtual)
 symbols on the right hand side.
 
+=head1 THE LEO LOGIC
+
+[ To be written. ]
+
 =head1 DETERMINING WHETHER A PARSE IS SUCCESSFUL
 
 As mentioned, in the strict sense,
@@ -1400,7 +1408,7 @@ name: Implementation Example show_AHFA Output
 partial: 1
 normalize-whitespace: 1
 
-    S2: 16
+    S2: leo-c; 16
     Expression['] -> Expression .
 
 =for Marpa::Display::End
@@ -1542,7 +1550,7 @@ remove-blank-last-line: 1
     Start States: S0; S1
     S0: 15
     Expression['] -> . Expression
-     <Expression> => S2
+     <Expression> => S2; leo(Expression['])
     S1: predict; 1,3,5,7,11
     Expression -> . Term
     Term -> . Factor
@@ -1552,7 +1560,7 @@ remove-blank-last-line: 1
      <Factor> => S3
      <Number> => S4
      <Term> => S5
-    S2: 16
+    S2: leo-c; 16
     Expression['] -> Expression .
     S3: 4,12
     Term -> Factor .
@@ -1566,7 +1574,7 @@ remove-blank-last-line: 1
      <Add> => S8; S9
     S6: 13
     Factor -> Factor Multiply . Factor
-     <Factor> => S10
+     <Factor> => S10; leo(Factor)
     S7: predict; 5,11
     Factor -> . Number
     Factor -> . Factor Multiply Factor
@@ -1574,7 +1582,7 @@ remove-blank-last-line: 1
      <Number> => S4
     S8: 9
     Term -> Term Add . Term
-     <Term> => S12
+     <Term> => S12; leo(Term)
     S9: predict; 3,5,7,11
     Term -> . Factor
     Factor -> . Number
@@ -1583,12 +1591,12 @@ remove-blank-last-line: 1
      <Factor> => S3
      <Number> => S4
      <Term> => S13
-    S10: 14
+    S10: leo-c; 14
     Factor -> Factor Multiply Factor .
     S11: 12
     Factor -> Factor . Multiply Factor
      <Multiply> => S6; S7
-    S12: 10
+    S12: leo-c; 10
     Term -> Term Add Term .
     S13: 8
     Term -> Term . Add Term

@@ -21,6 +21,7 @@ use constant OK => 200;
 my $most_recent_distribution = pop @ARGV;
 if ( not $most_recent_distribution ) {
     my @distributions =
+        grep     {/\A Marpa [-] \d /xms}
         sort map { $_->[2] }
         CPAN::Shell->expand( 'Author', 'JKEGL' )->ls( 'Marpa-*', 2 );
     $most_recent_distribution = pop @distributions;
