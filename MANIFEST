@@ -38,6 +38,7 @@ lib/Marpa/Doc/Bocage.pod
 lib/Marpa/Doc/Evaluator.pod
 lib/Marpa/Doc/Grammar.pod
 lib/Marpa/Doc/Implementation.pod
+lib/Marpa/Doc/Leo.pod
 lib/Marpa/Doc/Marpa.pod
 lib/Marpa/Doc/Models.pod
 lib/Marpa/Doc/Parse_Terms.pod
@@ -105,6 +106,7 @@ t/initial_nulls.t
 t/leo.t
 t/leo2.t
 t/leo3.t
+t/leo_example.t
 t/leo_s.t
 t/limits.t
 t/mdl/00-load.t

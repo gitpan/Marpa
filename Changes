@@ -1,5 +1,6 @@
 Revision history for Marpa
 
+0.101_004 Sat May 29 05:57:05 2010
 0.101_003 Tue May 25 12:40:50 2010
 0.101_002 Tue May 25 12:24:21 2010
 0.101_001 Sun May 23 08:29:49 2010
@@ -18,18 +19,23 @@ Revision history for Marpa
     * Marpa::API::Evaluator and Marpa::API::Bocage documents added.
 
 0.010000 Sun Mar  7 16:14:24 2010
-Fixes issue with missing requirement: HTML::PullParser.
+
+    * Fixes issue with missing requirement: HTML::PullParser.
 
 0.008000 Wed Mar  3 15:30:27 2010
-Added Marpa::Implementation document.
+
+    * Added Marpa::Implementation document.
 
 0.006000 Sat Feb  6 20:48:48 2010
-Fix problems in trace output.
+
+    * Fix problems in trace output.
 
 0.004000 Sat Jan 30 18:25:23 2010
-Core documentation of Marpa API added.  Still not documented are some
-of the tracing and advanced features.
+
+    * Core documentation of Marpa API added.  Still not documented
+    are some of the tracing and advanced features.
 
 0.002000 Tue Dec 29 18:10:47 2009
-First alpha release.  A fork from Parse::Marpa.  The documentation is
-in progress.
+
+    * First alpha release.  A fork from Parse::Marpa.  The documentation
+    is in progress.

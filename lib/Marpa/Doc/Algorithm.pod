@@ -139,7 +139,7 @@ L<Aycock-Horspool 2002
 and even Earley's original algorithm
 (after the bug fix suggested
 L<by Aho & Ullman in
-1972|Aho and Ullman 1972>)
+1972|Marpa::Bibliography/"Aho and Ullman 1972">)
 all do the same job.
 For decades now, the only question has been speed.
 

@@ -1083,7 +1083,8 @@ normalize-whitespace: 1
 
 (Ignore the "leo-c" notation for now.
 It indicates that S10 is what's called a Leo completion.
-The Leo logic will be dealt with later.)
+The Leo logic is dealt in L<another
+document|Marpa::Leo>.)
 
 The completed symbol is C<Factor> with origin
 0 and current earleme 3.
@@ -1360,7 +1361,12 @@ symbols on the right hand side.
 
 =head1 THE LEO LOGIC
 
-[ To be written. ]
+Marpa uses the ideas from L<an algorithm developed
+by Joop Leo|Marpa::Bibliography/"Leo 1991"> to deal
+with right recursion.
+The Leo logic is complex enough to merit its own
+example, and so is presented in L<a separate
+document|Marpa::Leo>.
 
 =head1 DETERMINING WHETHER A PARSE IS SUCCESSFUL
 
