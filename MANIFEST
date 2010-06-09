@@ -27,6 +27,8 @@ inc/proof/.gitignore
 inc/proof/Makefile
 inc/proof/ah2002_notes.lyx
 inc/proof/ah2002_notes.pdf
+inc/proof/ah_to_leo.lyx
+inc/proof/ah_to_leo.pdf
 inc/proof/proof.lyx
 inc/proof/proof.pdf
 lib/Marpa.pm

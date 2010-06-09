@@ -1,5 +1,9 @@
 Revision history for Marpa
 
+0.103_000 Wed Jun  9 11:23:51 2010
+    * Series of developer's releases.
+    * Added correctness proof for incorporation of Leo 1991.
+
 0.102000 Wed Jun  2 18:32:54 2010
 
     * Right recursion is now linear
