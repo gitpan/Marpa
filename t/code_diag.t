@@ -306,27 +306,29 @@ $x++;
 __END__
 
 | expected e_op_action run phase warning
-Fatal problem(s) in computing value for rule: 1: E -> E Op E
-2 Warning(s)
-Warning(s) treated as fatal problem
-Warning #0 in computing value:
+============================================================
+* THERE WERE 2 WARNING(S) IN THE MARPA SEMANTICS:
+Marpa treats warnings as fatal errors
+* THIS IS WHAT MARPA WAS DOING WHEN THE PROBLEM OCCURRED:
+Computing value for rule: 1: E -> E Op E
+* WARNING MESSAGE NUMBER 0:
 Test Warning 1, <DATA> line <LINE_NO>.
-======
-Warning #1 in computing value:
+* WARNING MESSAGE NUMBER 1:
 Test Warning 2, <DATA> line <LINE_NO>.
-======
+* ONE PLACE TO LOOK FOR THE PROBLEM IS IN THE CODE
 __END__
 
 | expected default_action run phase warning
-Fatal problem(s) in computing value for rule: 6: trailer -> Text
-2 Warning(s)
-Warning(s) treated as fatal problem
-Warning #0 in computing value:
+============================================================
+* THERE WERE 2 WARNING(S) IN THE MARPA SEMANTICS:
+Marpa treats warnings as fatal errors
+* THIS IS WHAT MARPA WAS DOING WHEN THE PROBLEM OCCURRED:
+Computing value for rule: 6: trailer -> Text
+* WARNING MESSAGE NUMBER 0:
 Test Warning 1, <DATA> line <LINE_NO>.
-======
-Warning #1 in computing value:
+* WARNING MESSAGE NUMBER 1:
 Test Warning 2, <DATA> line <LINE_NO>.
-======
+* ONE PLACE TO LOOK FOR THE PROBLEM IS IN THE CODE
 __END__
 
 | bad code run phase error
@@ -338,19 +340,23 @@ $x++;
 __END__
 
 | expected e_op_action run phase error
-Fatal problem(s) in computing value for rule: 1: E -> E Op E
-Fatal Error
-Error in computing value:
+============================================================
+* THE MARPA SEMANTICS PRODUCED A FATAL ERROR
+* THIS IS WHAT MARPA WAS DOING WHEN THE PROBLEM OCCURRED:
+Computing value for rule: 1: E -> E Op E
+* THIS WAS THE FATAL ERROR MESSAGE:
 Illegal division by zero, <DATA> line <LINE_NO>.
-======
+* ONE PLACE TO LOOK FOR THE PROBLEM IS IN THE CODE
 __END__
 
 | expected default_action run phase error
-Fatal problem(s) in computing value for rule: 6: trailer -> Text
-Fatal Error
-Error in computing value:
+============================================================
+* THE MARPA SEMANTICS PRODUCED A FATAL ERROR
+* THIS IS WHAT MARPA WAS DOING WHEN THE PROBLEM OCCURRED:
+Computing value for rule: 6: trailer -> Text
+* THIS WAS THE FATAL ERROR MESSAGE:
 Illegal division by zero, <DATA> line <LINE_NO>.
-======
+* ONE PLACE TO LOOK FOR THE PROBLEM IS IN THE CODE
 __END__
 
 | bad code run phase die
@@ -362,18 +368,22 @@ $x++;
 __END__
 
 | expected e_op_action run phase die
-Fatal problem(s) in computing value for rule: 1: E -> E Op E
-Fatal Error
-Error in computing value:
+============================================================
+* THE MARPA SEMANTICS PRODUCED A FATAL ERROR
+* THIS IS WHAT MARPA WAS DOING WHEN THE PROBLEM OCCURRED:
+Computing value for rule: 1: E -> E Op E
+* THIS WAS THE FATAL ERROR MESSAGE:
 test call to die, <DATA> line <LINE_NO>.
-======
+* ONE PLACE TO LOOK FOR THE PROBLEM IS IN THE CODE
 __END__
 
 | expected default_action run phase die
-Fatal problem(s) in computing value for rule: 6: trailer -> Text
-Fatal Error
-Error in computing value:
+============================================================
+* THE MARPA SEMANTICS PRODUCED A FATAL ERROR
+* THIS IS WHAT MARPA WAS DOING WHEN THE PROBLEM OCCURRED:
+Computing value for rule: 6: trailer -> Text
+* THIS WAS THE FATAL ERROR MESSAGE:
 test call to die, <DATA> line <LINE_NO>.
-======
+* ONE PLACE TO LOOK FOR THE PROBLEM IS IN THE CODE
 __END__
 

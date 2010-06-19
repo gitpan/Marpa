@@ -38,8 +38,14 @@ sub Marpa::Recognizer::value {
 
         if ( exists $arg_hash->{closures} ) {
             $Marpa::Internal::EXPLICIT_CLOSURES = $arg_hash->{closures};
+            while ( my ( $action, $closure ) =
+                each %{$Marpa::Internal::EXPLICIT_CLOSURES} )
+            {
+                Marpa::exception(qq{Bad closure for action "$action"})
+                    if ref $closure ne 'CODE';
+            } ## end while ( my ( $action, $closure ) = each %{...})
             delete $arg_hash->{closures};
-        }
+        } ## end if ( exists $arg_hash->{closures} )
 
         if ( exists $arg_hash->{trace_actions} ) {
             $Marpa::Internal::TRACE_ACTIONS = $arg_hash->{trace_actions};

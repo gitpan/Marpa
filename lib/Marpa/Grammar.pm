@@ -171,6 +171,7 @@ use Marpa::Offset qw(
     DEFAULT_ACTION { Action for rules without one }
     TRACE_FILE_HANDLE
     STRIP { Boolean.  If true, strip unused data to save space. }
+    LHS_TERMINALS { Boolean.  If true, LHS terminals are allowed. }
     WARNINGS { print warnings about grammar? }
     TRACING { master flag, set if any tracing is being done
     (to control overhead for non-tracing processes) }
@@ -270,6 +271,7 @@ sub Marpa::Internal::code_problems {
     my $eval_value;
     my $eval_given = 0;
 
+    push @msg, q{=} x 60, "\n";
     while ( my ( $arg, $value ) = each %{$args} ) {
         given ($arg) {
             when ('fatal_error') { $fatal_error = $value }
@@ -296,43 +298,46 @@ sub Marpa::Internal::code_problems {
 
     $long_where //= $where;
 
-    push @msg, 'Fatal problem(s) in ' . $long_where . "\n";
     my $warnings_count = scalar @{$warnings};
     {
-        my $msg_line = 'Problems: ';
         my @problems;
         my $false_eval = $eval_given && !$eval_value && !$fatal_error;
         if ($false_eval) {
-            push @problems, 'Code returned False';
+            push @problems, '* THE MARPA SEMANTICS RETURNED A PERL FALSE',
+                'Marpa requires its semantics to return a true value';
         }
         if ($fatal_error) {
-            push @problems, 'Fatal Error';
+            push @problems, '* THE MARPA SEMANTICS PRODUCED A FATAL ERROR';
         }
         if ($warnings_count) {
-            push @problems, "$warnings_count Warning(s)";
+            push @problems,
+                "* THERE WERE $warnings_count WARNING(S) IN THE MARPA SEMANTICS:",
+                'Marpa treats warnings as fatal errors';
         }
-        push @msg, ( join q{; }, @problems ) . "\n";
-        if ( $warnings_count and not $false_eval and not $fatal_error ) {
-            push @msg, "Warning(s) treated as fatal problem\n";
+        if ( not scalar @problems ) {
+            push @msg, '* THERE WAS A FATAL PROBLEM IN THE MARPA SEMANTICS';
         }
+        push @msg, ( join "\n", @problems ) . "\n";
     }
 
+    push @msg, "* THIS IS WHAT MARPA WAS DOING WHEN THE PROBLEM OCCURRED:\n"
+        . $long_where . "\n";
+
     for my $warning_ix ( 0 .. ( $warnings_count - 1 ) ) {
-        push @msg, "Warning #$warning_ix in $where:\n";
+        push @msg, "* WARNING MESSAGE NUMBER $warning_ix:\n";
         my $warning_message = $warnings->[$warning_ix]->[0];
         $warning_message =~ s/\n*\z/\n/xms;
         push @msg, $warning_message;
-        push @msg, q{======} . "\n";
     } ## end for my $warning_ix ( 0 .. ( $warnings_count - 1 ) )
 
     if ($fatal_error) {
-        push @msg, "Error in $where:\n";
+        push @msg, "* THIS WAS THE FATAL ERROR MESSAGE:\n";
         my $fatal_error_message = $fatal_error;
         $fatal_error_message =~ s/\n*\z/\n/xms;
         push @msg, $fatal_error_message;
-        push @msg, q{======} . "\n";
     } ## end if ($fatal_error)
 
+    push @msg, q{* ONE PLACE TO LOOK FOR THE PROBLEM IS IN THE CODE};
     Marpa::exception(@msg);
 } ## end sub Marpa::Internal::code_problems
 
@@ -348,6 +353,7 @@ sub Marpa::Grammar::new {
     $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE] = *STDERR;
 
     $grammar->[Marpa::Internal::Grammar::ACADEMIC]        = 0;
+    $grammar->[Marpa::Internal::Grammar::LHS_TERMINALS]   = 1;
     $grammar->[Marpa::Internal::Grammar::TRACE_RULES]     = 0;
     $grammar->[Marpa::Internal::Grammar::TRACING]         = 0;
     $grammar->[Marpa::Internal::Grammar::STRIP]           = 1;
@@ -428,6 +434,7 @@ use constant GRAMMAR_OPTIONS => [
         default_action
         default_null_value
         inaccessible_ok
+        lhs_terminals
         maximal
         minimal
         rules
@@ -532,6 +539,15 @@ sub Marpa::Grammar::set {
             $phase = $grammar->[Marpa::Internal::Grammar::PHASE] =
                 Marpa::Internal::Phase::RULES;
         } ## end if ( defined( my $value = $args->{'symbols'} ) )
+
+        if ( defined( my $value = $args->{'lhs_terminals'} ) ) {
+            Marpa::exception(
+                'lhs_terminals option not allowed after grammar is precomputed'
+            ) if $phase >= Marpa::Internal::Phase::PRECOMPUTED;
+            $grammar->[Marpa::Internal::Grammar::LHS_TERMINALS] = $value;
+            $phase = $grammar->[Marpa::Internal::Grammar::PHASE] =
+                Marpa::Internal::Phase::RULES;
+        } ## end if ( defined( my $value = $args->{'lhs_terminals'} ))
 
         if ( defined( my $value = $args->{'terminals'} ) ) {
             Marpa::exception(
@@ -725,9 +741,27 @@ sub Marpa::Grammar::precompute {
         );
     } ## end if ( $phase != Marpa::Internal::Phase::RULES )
 
-    if ( not terminals_distinguished($grammar) ) {
+    SET_TERMINALS: {
+        my $lhs_terminals_ok =
+            $grammar->[Marpa::Internal::Grammar::LHS_TERMINALS];
+        my $distinguished = terminals_distinguished($grammar);
+        if ( $distinguished and not $lhs_terminals_ok ) {
+            check_lhs_non_terminal($grammar);
+            last SET_TERMINALS;
+        }
+        last SET_TERMINALS if $distinguished;
+        if ( not $lhs_terminals_ok ) {
+            mark_non_lhs_terminal($grammar);
+            last SET_TERMINALS;
+        }
+        if ( has_empty_rule($grammar) ) {
+            Marpa::exception(
+                'A grammar with empty rules must mark its terminals or unset lhs_terminals'
+            );
+        }
         mark_all_symbols_terminal($grammar);
-    }
+    } ## end SET_TERMINALS:
+
     nulling($grammar);
     nullable($grammar) or return $grammar;
     productive($grammar);
@@ -2062,17 +2096,23 @@ sub productive {
 
 } ## end sub productive
 
+sub has_empty_rule {
+    my ($grammar) = @_;
+    my $rules = $grammar->[Marpa::Internal::Grammar::RULES];
+    RULE: for my $rule ( @{$rules} ) {
+        next RULE if scalar @{ $rule->[Marpa::Internal::Rule::RHS] };
+        Marpa::exception(
+            'A grammar with empty rules must mark its terminals or unset lhs_terminals'
+        );
+    } ## end for my $rule ( @{$rules} )
+    return;
+} ## end sub has_empty_rule
+
 sub terminals_distinguished {
     my ($grammar) = @_;
     my $symbols = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
     for my $symbol ( @{$symbols} ) {
         return 1 if $symbol->[Marpa::Internal::Symbol::TERMINAL];
-    }
-    my $rules = $grammar->[Marpa::Internal::Grammar::RULES];
-    RULE: for my $rule ( @{$rules} ) {
-        next RULE if scalar @{ $rule->[Marpa::Internal::Rule::RHS] };
-        Marpa::exception(
-            'A grammar with empty rules must mark its terminals');
     }
     return 0;
 } ## end sub terminals_distinguished
@@ -2085,6 +2125,33 @@ sub mark_all_symbols_terminal {
     }
     return 1;
 } ## end sub mark_all_symbols_terminal
+
+sub check_lhs_non_terminal {
+    my ($grammar) = @_;
+    my $symbols = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
+    SYMBOL: for my $symbol ( @{$symbols} ) {
+        next SYMBOL if not $symbol->[Marpa::Internal::Symbol::TERMINAL];
+        next SYMBOL
+            if not
+                scalar @{ $symbol->[Marpa::Internal::Symbol::LH_RULE_IDS] };
+        my $name = $symbol->[Marpa::Internal::Symbol::NAME];
+        Marpa::exception(
+            "lhs_terminals option is off, but Symbol $name is both on LHS and a terminal"
+        );
+    } ## end for my $symbol ( @{$symbols} )
+    return 1;
+} ## end sub check_lhs_non_terminal
+
+sub mark_non_lhs_terminal {
+    my ($grammar) = @_;
+    my $symbols = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
+    SYMBOL: for my $symbol ( @{$symbols} ) {
+        next SYMBOL
+            if scalar @{ $symbol->[Marpa::Internal::Symbol::LH_RULE_IDS] };
+        $symbol->[Marpa::Internal::Symbol::TERMINAL] = 1;
+    }
+    return 1;
+} ## end sub mark_non_lhs_terminal
 
 sub nulling {
     my $grammar = shift;
@@ -2457,10 +2524,8 @@ sub create_NFA {
 
         # transitions from states other than state 0:
 
-        my ( $rule, $position ) = @{$item}[
-            Marpa::Internal::LR0_item::RULE,
-            Marpa::Internal::LR0_item::POSITION
-        ];
+        my $rule        = $item->[Marpa::Internal::LR0_item::RULE];
+        my $position    = $item->[Marpa::Internal::LR0_item::POSITION];
         my $rule_id     = $rule->[Marpa::Internal::Rule::ID];
         my $next_symbol = $rule->[Marpa::Internal::Rule::RHS]->[$position];
 

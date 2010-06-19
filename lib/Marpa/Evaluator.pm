@@ -2795,7 +2795,7 @@ sub evaluate {
                                 eval_ok     => $eval_ok,
                                 warnings    => \@warnings,
                                 where       => 'computing value',
-                                long_where  => 'computing value for rule: '
+                                long_where  => 'Computing value for rule: '
                                     . Marpa::brief_rule($rule),
                             }
                         );

@@ -480,6 +480,144 @@ sub Marpa::Recognizer::show_earley_sets {
 
 } ## end sub Marpa::Recognizer::show_earley_sets
 
+use Marpa::Offset qw(
+
+    :package=Marpa::Internal::Progress_Report
+
+    RULE_ID
+    POSITION
+    ORIGIN
+    CURRENT
+    IS_LEO
+
+);
+
+sub Marpa::Recognizer::show_progress {
+    my ( $recce, $start_ix, $end_ix ) = @_;
+    my $earley_set_list = $recce->[Marpa::Internal::Recognizer::EARLEY_SETS];
+    my $grammar         = $recce->[Marpa::Internal::Recognizer::GRAMMAR];
+    my $rules           = $grammar->[Marpa::Internal::Grammar::RULES];
+    my $last_ix         = $#{$earley_set_list};
+    $start_ix //=
+        $recce->[Marpa::Internal::Recognizer::LAST_COMPLETED_EARLEME];
+    if ( $start_ix < 0 or $start_ix > $last_ix ) {
+        return
+            "Marpa::Recognizer::show_progress start index is $start_ix, must be in range 0-$last_ix";
+    }
+    $end_ix //= $start_ix;
+    if ( $end_ix < 0 ) {
+        $end_ix += $last_ix + 1;
+    }
+    if ( $end_ix < 0 or $end_ix > $last_ix ) {
+        return
+            "Marpa::Recognizer::show_progress end index is $end_ix, must be in range 0-$last_ix";
+    }
+    my $text = q{};
+    for my $ix ( $start_ix .. $end_ix ) {
+        my $earley_set = $earley_set_list->[$ix];
+        my $reports    = report_progress($earley_set);
+        for my $report ( @{$reports} ) {
+            my $rule_id =
+                $report->[Marpa::Internal::Progress_Report::RULE_ID];
+            my $rule = $rules->[$rule_id];
+            my $position =
+                $report->[Marpa::Internal::Progress_Report::POSITION];
+            my $origin = $report->[Marpa::Internal::Progress_Report::ORIGIN];
+            my $current =
+                $report->[Marpa::Internal::Progress_Report::CURRENT];
+            my $is_leo = $report->[Marpa::Internal::Progress_Report::IS_LEO];
+            my $rhs_length = scalar @{ $rule->[Marpa::Internal::Rule::RHS] };
+
+            # flag indicating whether we need to show the dot in the rule
+            my $show_dotted;
+            if ( $position >= $rhs_length ) {
+                $text .= 'COMPLETED';
+                $text .= q{ @} . $origin . q{-} . $current . q{ };
+                $is_leo and $text .= '(Leo) ';
+            }
+            elsif ($position) {
+                $text .= 'BUILDING';
+                $text .= q{ @} . $origin . q{-} . $current . q{ };
+                $show_dotted++;
+            }
+            else {
+                $text .= 'PREDICTING';
+                $text .= q{ @} . $origin . q{ };
+            }
+            if ($show_dotted) {
+                $text .= Marpa::show_dotted_rule( $rule, $position );
+            }
+            else {
+                $text .= Marpa::brief_rule($rule);
+            }
+            $text .= "\n";
+        } ## end for my $report ( @{$reports} )
+    } ## end for my $ix ( $start_ix .. $end_ix )
+    return $text;
+} ## end sub Marpa::Recognizer::show_progress
+
+sub report_progress {
+    my ($earley_set) = @_;
+
+    # Reports must be unique by a key
+    # composted of original rule, rule position, and
+    # location in the parse.  This hash is to
+    # quarantee that.
+    my %progress_report_hash = ();
+
+    for my $earley_item ( @{$earley_set} ) {
+        my $AHFA_state = $earley_item->[Marpa::Internal::Earley_Item::STATE];
+        my $origin     = $earley_item->[Marpa::Internal::Earley_Item::PARENT];
+        my $current    = $earley_item->[Marpa::Internal::Earley_Item::SET];
+        my $leo_links =
+            $earley_item->[Marpa::Internal::Earley_Item::LEO_LINKS];
+        my $is_leo = $leo_links && scalar @{$leo_links};
+        my $NFA_states = $AHFA_state->[Marpa::Internal::AHFA::NFA_STATES];
+        if ( not $NFA_states ) {
+            Marpa::exception(
+                'Cannot progress of Marpa::Recognizer: it is stripped');
+        }
+        NFA_STATE: for my $NFA_state ( @{$NFA_states} ) {
+            my $LR0_item   = $NFA_state->[Marpa::Internal::NFA::ITEM];
+            my $marpa_rule = $LR0_item->[Marpa::Internal::LR0_item::RULE];
+            my $marpa_position =
+                $LR0_item->[Marpa::Internal::LR0_item::POSITION];
+            my $original_rule =
+                $marpa_rule->[Marpa::Internal::Rule::ORIGINAL_RULE]
+                // $marpa_rule;
+            my $original_rhs = $original_rule->[Marpa::Internal::Rule::RHS];
+
+            # position in original rule, to be calculated
+            my $original_position;
+            if ( my $chaf_start =
+                $marpa_rule->[Marpa::Internal::Rule::VIRTUAL_START] )
+            {
+                my $chaf_rhs = $marpa_rule->[Marpa::Internal::Rule::RHS];
+                $original_position =
+                    $marpa_position >= scalar @{$chaf_rhs}
+                    ? scalar @{$original_rhs}
+                    : ( $chaf_start + $marpa_position );
+            } ## end if ( my $chaf_start = $marpa_rule->[...])
+            $original_position //= $marpa_position;
+            my $rule_id         = $original_rule->[Marpa::Internal::Rule::ID];
+            my @data            = ( $rule_id, $original_position, $origin );
+            my $key             = join q{;}, @data;
+            my $progress_report = $progress_report_hash{$key};
+
+            # If an entry already exists, just update the Leo flag
+            if ( defined $progress_report ) {
+                if ($is_leo) {
+                    $progress_report
+                        ->[Marpa::Internal::Progress_Report::IS_LEO] = 1;
+                }
+                next NFA_STATE;
+            } ## end if ( defined $progress_report )
+            $progress_report_hash{$key} = [ @data, $current, $is_leo ];
+        } ## end for my $NFA_state ( @{$NFA_states} )
+    } ## end for my $earley_item ( @{$earley_set} )
+    return [ values %progress_report_hash ];
+} ## end sub report_progress
+
 sub Marpa::Recognizer::tokens {
 
     my ( $recce, $tokens, $token_ix_ref ) = @_;
@@ -495,6 +633,13 @@ sub Marpa::Recognizer::tokens {
     my $interactive;
 
     if ( defined $token_ix_ref ) {
+        my $ref_type = ref $token_ix_ref;
+        if ( ref $token_ix_ref ne 'SCALAR' ) {
+            my $description = $ref_type ? "ref to $ref_type" : 'not a ref';
+            Marpa::exception(
+                "Token index arg for Marpa::Recognizer::tokens is $description, must be ref to SCALAR"
+            );
+        } ## end if ( ref $token_ix_ref ne 'SCALAR' )
         Marpa::exception(
             q{'Tokens index ref for Marpa::Recognizer::tokens allowed only in 'stream' mode}
         ) if $mode ne 'stream';
@@ -673,7 +818,7 @@ sub Marpa::Recognizer::tokens {
                 next EARLEY_ITEM if not $to_states;
 
                 if ($trace_terminals) {
-                    $accepted{$token_name}++;
+                    $accepted{$token_name} = $length;
                 }
 
                 # Create the kernel item and its link.
@@ -735,11 +880,18 @@ sub Marpa::Recognizer::tokens {
         }    # EARLEY_ITEM
 
         if ($trace_terminals) {
-            while ( my ( $token_name, $accepted ) = each %accepted ) {
-                say {$trace_fh} +( $accepted ? 'Accepted' : 'Rejected' ),
-                    qq{ "$token_name" at $last_completed_earleme}
+            while ( my ( $token_name, $length ) = each %accepted ) {
+
+                # The logic assumes that
+                # length is non-zero only for accepted tokens
+                my $msg =
+                    $length
+                    ? qq{Accepted "$token_name" at $last_completed_earleme-}
+                    . ( $length + $last_completed_earleme )
+                    : qq{Rejected "$token_name" at $last_completed_earleme};
+                say {$trace_fh} $msg
                     or Marpa::exception("Cannot print: $ERRNO");
-            }
+            } ## end while ( my ( $token_name, $length ) = each %accepted )
         } ## end if ($trace_terminals)
 
         $recce->[Marpa::Internal::Recognizer::FURTHEST_EARLEME] =
