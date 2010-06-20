@@ -1,0 +1,159 @@
+=head1 NAME
+
+Marpa::Debug - Marpa Grammar Debugging
+
+=head1 OVERVIEW
+
+This document assumes that you have written
+a grammar for your Marpa application,
+and something is going wrong.
+It tells you how to go about diagnosing
+the problem and fixing it.
+It assumes that the reader
+knows
+the Marpa API.
+
+=head1 DESCRIPTION
+
+Not yet written.
+
+=head1 APPENDIX: THE EXAMPLE
+
+Below are the code, the trace outputs
+and the progress report
+for the example used in this
+document.
+
+=head2 Code for the example
+
+=for Marpa::Display:
+name: Debug Example Part 1
+perltidy: '-dcsc -sil=0'
+
+    my $grammar = Marpa::Grammar->new(
+        {   start          => 'Expression',
+            actions        => 'My_Actions',
+            default_action => 'first_arg',
+            strip          => 0,
+            rules          => [
+                { lhs => 'Expression', rhs => [qw/Factor/] },    # ERROR !!!
+                { lhs => 'Term',       rhs => [qw/Factor/] },
+                { lhs => 'Factor',     rhs => [qw/Number/] },
+                {   lhs    => 'Term',
+                    rhs    => [qw/Term Add Term/],
+                    action => 'do_add'
+                },
+                {   lhs    => 'Factor',
+                    rhs    => [qw/Factor Multiply Factor/],
+                    action => 'do_multiply'
+                },
+            ],
+        }
+    );
+
+=for Marpa::Display::End
+
+=for Marpa::Display:
+name: Debug Example Part 2
+perltidy: '-dcsc -sil=0'
+
+    $grammar->precompute();
+
+    my @tokens = (
+        [ 'Number', 42 ],
+        [ 'Multiply', q{*} ],
+        [ 'Number', 1 ],
+        [ 'Add', q{+} ],
+        [ 'Number', 7 ],
+    );
+
+    sub My_Actions::do_add {
+        my ( undef, $t1, undef, $t2 ) = @_;
+        return $t1 + $t2;
+    }
+
+    sub My_Actions::do_multiply {
+        my ( undef, $t1, undef, $t2 ) = @_;
+        return $t1 * $t2;
+    }
+
+    sub My_Actions::first_arg { shift; return shift; }
+
+    my $recce = Marpa::Recognizer->new(
+        { grammar => $grammar, trace_terminals => 1, mode => 'stream' } );
+
+    my $token_ix = 0;
+
+    my ( $current_earleme, $expected_tokens ) =
+        $recce->tokens( \@tokens, \$token_ix );
+
+    if ( $token_ix <= $#tokens ) {
+        $progress_report = $recce->show_progress( 0, $current_earleme );
+    }
+
+=for Marpa::Display::End
+
+=head2 Trace Output
+
+=for Marpa::Display
+name: Debug Example Trace Output
+remove-display-indent: 1
+remove-blank-last-line: 1
+
+    Inaccessible symbol: Add
+    Inaccessible symbol: Term
+    Setting trace_terminals option
+    Expecting "Number" at earleme 0
+    Expecting "Expression" at earleme 0
+    Expecting "Factor" at earleme 0
+    Accepted "Number" at 0-1
+    Expecting "Multiply" at 1
+    Accepted "Multiply" at 1-2
+    Expecting "Number" at 2
+    Expecting "Factor" at 2
+    Accepted "Number" at 2-3
+    Expecting "Multiply" at 3
+
+=for Marpa::Display::End
+
+=head2 Progress Output
+
+=for Marpa::Display
+name: Debug Example Progress Report
+remove-display-indent: 1
+remove-blank-last-line: 1
+
+    PREDICTING @0 2: Factor -> Number
+    PREDICTING @0 4: Factor -> Factor Multiply Factor
+    PREDICTING @0 5: Expression['] -> Expression
+    PREDICTING @0 0: Expression -> Factor
+    COMPLETED @0-1 5: Expression['] -> Expression
+    BUILDING @0-1 Factor -> Factor . Multiply Factor
+    COMPLETED @0-1 0: Expression -> Factor
+    COMPLETED @0-1 2: Factor -> Number
+    PREDICTING @2 2: Factor -> Number
+    BUILDING @0-2 Factor -> Factor Multiply . Factor
+    PREDICTING @2 4: Factor -> Factor Multiply Factor
+    BUILDING @2-3 Factor -> Factor . Multiply Factor
+    COMPLETED @0-3 4: Factor -> Factor Multiply Factor
+    COMPLETED @0-3 5: Expression['] -> Expression
+    BUILDING @0-3 Factor -> Factor . Multiply Factor
+    COMPLETED @2-3 2: Factor -> Number
+    COMPLETED @0-3 0: Expression -> Factor
+
+=for Marpa::Display::End
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright 2007-2010 Jeffrey Kegler, all rights reserved.
+Marpa is free software under the Perl license.
+For details see the LICENSE file in the Marpa distribution.
+
+=cut
+
+# Local Variables:
+#   mode: cperl
+#   cperl-indent-level: 4
+#   fill-column: 100
+# End:
+# vim: expandtab shiftwidth=4:

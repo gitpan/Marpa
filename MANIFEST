@@ -37,6 +37,7 @@ lib/Marpa/Display.pm
 lib/Marpa/Doc/Algorithm.pod
 lib/Marpa/Doc/Bibliography.pod
 lib/Marpa/Doc/Bocage.pod
+lib/Marpa/Doc/Debug.pod
 lib/Marpa/Doc/Evaluator.pod
 lib/Marpa/Doc/Grammar.pod
 lib/Marpa/Doc/Implementation.pod
@@ -95,6 +96,7 @@ t/ah_minimal.t
 t/ah_numeric.t
 t/code_diag.t
 t/counter.t
+t/debug.t
 t/duplicate_parse.t
 t/equation.t
 t/final_nonnullable.t

@@ -43,7 +43,9 @@ no_index:
 provides:
   Marpa:
     file: lib/Marpa.pm
-    version: 0.103_001
+    version: 0.103_002
+recommends:
+  PPI: 1.206
 requires:
   HTML::Parser: 3.64
   HTML::PullParser: 3.57
@@ -51,4 +53,4 @@ requires:
 resources:
   license: http://dev.perl.org/licenses/
   repository: git://github.com/jeffreykegler/Marpa.git
-version: 0.103_001
+version: 0.103_002

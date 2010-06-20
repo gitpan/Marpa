@@ -301,7 +301,7 @@ name: show_AHFA Synopsis
 perltidy: '-dcsc -sil=0'
 
     print $grammar->show_AHFA()
-        or Carp::croak "print failed: $OS_ERROR";
+        or die "print failed: $ERRNO";
 
 =for Marpa::Display::End
 
@@ -317,7 +317,7 @@ name: show_problems Synopsis
 perltidy: '-dcsc -sil=0'
 
     print $grammar->show_problems()
-        or Carp::croak "print failed: $OS_ERROR";
+        or die "print failed: $ERRNO";
 
 =for Marpa::Display::End
 
@@ -357,7 +357,7 @@ name: show_rules Synopsis
 perltidy: '-dcsc -sil=0'
 
     print $grammar->show_rules()
-        or Carp::croak "print failed: $OS_ERROR";
+        or die "print failed: $ERRNO";
 
 =for Marpa::Display::End
 
@@ -405,7 +405,7 @@ name: show_symbols Synopsis
 perltidy: '-dcsc -sil=0'
 
     print $grammar->show_symbols()
-        or Carp::croak "print failed: $OS_ERROR";
+        or die "print failed: $ERRNO";
 
 =for Marpa::Display::End
 

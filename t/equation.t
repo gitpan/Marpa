@@ -5,7 +5,7 @@ use 5.010;
 use strict;
 use warnings;
 
-use Test::More tests => 12;
+use Test::More tests => 13;
 
 use lib 'lib';
 use Marpa::Test;
@@ -34,7 +34,7 @@ sub restore_stdout {
     return 1;
 }
 
-## no critic (Subroutines::RequireArgUnpacking)
+## no critic (Subroutines::RequireArgUnpacking, ErrorHandling::RequireCarping)
 
 sub do_op {
     shift;
@@ -71,7 +71,7 @@ sub default_action {
     return '(' . join( q{;}, @_ ) . ')';
 } ## end sub default_action
 
-## use critic
+## no critic (ErrorHandling::RequireCarping)
 
 my $grammar = Marpa::Grammar->new(
     {   start   => 'E',
@@ -94,7 +94,7 @@ $actual_ref = save_stdout();
 # name: show_symbols Synopsis
 
 print $grammar->show_symbols()
-    or Carp::croak "print failed: $OS_ERROR";
+    or die "print failed: $ERRNO";
 
 # Marpa::Display::End
 
@@ -114,7 +114,7 @@ $actual_ref = save_stdout();
 # name: show_rules Synopsis
 
 print $grammar->show_rules()
-    or Carp::croak "print failed: $OS_ERROR";
+    or die "print failed: $ERRNO";
 
 # Marpa::Display::End
 
@@ -127,7 +127,7 @@ END_RULES
 $actual_ref = save_stdout();
 
 print $grammar->show_NFA()
-    or Carp::croak "print failed: $OS_ERROR";
+    or die "print failed: $ERRNO";
 
 Marpa::Test::is( ${$actual_ref}, <<'END_NFA', 'Ambiguous Equation NFA' );
 S0: /* empty */
@@ -156,7 +156,7 @@ $actual_ref = save_stdout();
 # name: show_AHFA Synopsis
 
 print $grammar->show_AHFA()
-    or Carp::croak "print failed: $OS_ERROR";
+    or die "print failed: $ERRNO";
 
 # Marpa::Display::End
 
@@ -190,7 +190,7 @@ $actual_ref = save_stdout();
 # name: show_problems Synopsis
 
 print $grammar->show_problems()
-    or Carp::croak "print failed: $OS_ERROR";
+    or die "print failed: $ERRNO";
 
 # Marpa::Display::End
 
@@ -221,7 +221,7 @@ $actual_ref = save_stdout();
 # name: show_earley_sets Synopsis
 
 print $recce->show_earley_sets()
-    or Carp::croak "print failed: $OS_ERROR";
+    or die "print failed: $ERRNO";
 
 # Marpa::Display::End
 
@@ -272,6 +272,31 @@ S3@2-7 [p=S1@2-2; c=S6@2-7]
 S2@0-7 [p=S0@0-0; c=S6@0-7]
 S3@0-7 [p=S1@0-0; c=S6@0-7]
 END_OF_EARLEY_SETS
+
+restore_stdout();
+
+$actual_ref = save_stdout();
+
+# Marpa::Display
+# name: show_progress Synopsis
+
+print $recce->show_progress()
+    or die "print failed: $ERRNO";
+
+# Marpa::Display::End
+
+Marpa::Test::is( ${$actual_ref},
+    <<'END_OF_PROGRESS_REPORT', 'Ambiguous Equation Progress Report' );
+COMPLETED @4-7 0: E -> E Op E
+BUILDING @6-7 E -> E . Op E
+COMPLETED @2-7 0: E -> E Op E
+BUILDING @0-7 E -> E . Op E
+COMPLETED @0-7 2: E['] -> E
+BUILDING @2-7 E -> E . Op E
+BUILDING @4-7 E -> E . Op E
+COMPLETED @6-7 1: E -> Number
+COMPLETED @0-7 0: E -> E Op E
+END_OF_PROGRESS_REPORT
 
 restore_stdout();
 

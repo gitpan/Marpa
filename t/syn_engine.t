@@ -15,6 +15,8 @@ BEGIN {
     Test::More::use_ok('Marpa');
 }
 
+## no critic (ErrorHandling::RequireCarping);
+
 # Marpa::Display
 # name: Engine Synopsis Unambiguous Parse
 
@@ -108,7 +110,7 @@ Test::More::is_deeply( [ sort @values ], [ 336, 49 ], 'Ambiguous Values' );
 # the unambiguous grammar.
 
 sub fix_things {
-    Carp::croak(q{Don't know how to fix things});
+    die q{Don't know how to fix things};
 }
 
 $recce = Marpa::Recognizer->new( { grammar => $grammar, mode => 'stream' } );
@@ -124,7 +126,7 @@ RECCE_RESPONSE: for ( my $token_ix = 0;; ) {
     last RECCE_RESPONSE if $token_ix > $#tokens;
 
     fix_things( \@tokens, $expected_tokens )
-        or Carp::croak(q{Don't know how to fix things});
+        or die q{Don't know how to fix things};
 
 } ## end for ( my $token_ix = 0;; )
 

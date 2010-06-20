@@ -1,9 +1,12 @@
 Revision history for Marpa
 
+0.103_002 Sun Jun 20 15:37:40 2010
 0.103_001 Wed Jun  9 11:38:26 2010
 0.103_000 Wed Jun  9 11:23:51 2010
     * Series of developer's releases.
     * Added correctness proof for incorporation of Leo 1991.
+    * Added (but am not yet documenting) test of Perl parsing.
+    * Added show_progress().
 
 0.102000 Wed Jun  2 18:32:54 2010
 

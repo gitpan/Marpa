@@ -297,12 +297,39 @@ partial: 1
 normalize-whitespace: 1
 
     print $recce->show_earley_sets()
-        or Carp::croak "print failed: $OS_ERROR";
+        or die "print failed: $ERRNO";
 
 =for Marpa::Display::End
 
 Returns a multi-line string
 listing every Earley item in every Earley set.
+For debugging grammars, try C<show_progress> first.
+C<show_earley_sets> 
+requires knowledge of Marpa internals to interpret,
+and C<show_progress> will usually contain all the detail
+necessary to debug grammars
+and interpret parse progress.
+
+=head2 show_progress
+
+=for Marpa::Display
+name: show_progress Synopsis
+partial: 1
+normalize-whitespace: 1
+
+    print $recce->show_progress()
+        or die "print failed: $ERRNO";
+
+=for Marpa::Display::End
+
+Indicates the progress of the parse.
+Intended as a primary tool for users who need
+to debug application grammars
+or want to interpret parse progress.
+For more detail,
+see
+L<the document on debugging Marpa
+grammars|Marpa::Debug>.
 
 =head1 NAMED ARGUMENTS
 
@@ -410,7 +437,7 @@ normalize-whitespace: 1
         last RECCE_RESPONSE if $token_ix > $#tokens;
 
         fix_things( \@tokens, $expected_tokens )
-            or Carp::croak(q{Don't know how to fix things});
+            or die q{Don't know how to fix things};
 
     } ## end for ( my $token_ix = 0;; )
 
@@ -547,8 +574,6 @@ normalize-whitespace: 1
 
     my $value_ref = $recce->value;
     my $value = $value_ref ? ${$value_ref} : 'No Parse';
-
-=for Marpa::Display::End
 
 =for Marpa::Display::End
 

@@ -12,9 +12,26 @@ use Data::Dumper ();
 use English qw( -no_match_vars );
 use Carp 1.08 ();
 use Test::More ();
-Test::More::plan tests => 12;
-use PPI 1.203 ();
-use Marpa ();
+
+BEGIN {
+    my $PPI_problem;
+    CHECK_PPI: {
+        if ( not eval { require PPI } ) {
+            $PPI_problem = 'PPI not installed';
+            last CHECK_PPI;
+        }
+        if ( not PPI->VERSION(1.206) ) {
+            $PPI_problem = 'PPI 1.206 not installed';
+        }
+    } ## end CHECK_PPI:
+    if ($PPI_problem) {
+        Test::More::plan skip_all => $PPI_problem;
+    }
+    else {
+        Test::More::plan tests => 13;
+    }
+    Test::More::use_ok('Marpa');
+} ## end BEGIN
 
 our @OUTPUT = ();
 our %SYMTAB = ( SCALAR => {} );
