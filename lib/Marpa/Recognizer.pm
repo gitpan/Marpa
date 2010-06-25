@@ -58,6 +58,17 @@ use Marpa::Offset qw(
 
     TRACE_FILE_HANDLE
 
+    CLOSURES
+    TRACE_ACTIONS
+    TRACE_VALUES
+    END
+
+    { The following fields must be reinitialized when
+    evaluation is reset }
+
+    SINGLE_PARSE_MODE
+    PARSE_COUNT :{ number of parses in an ambiguous parse :}
+
     =LAST_EVALUATOR_FIELD
 
     EARLEY_HASH { Hash of the Earley items by Earley set.
@@ -143,8 +154,9 @@ sub Marpa::Recognizer::new {
         $self->[Marpa::Internal::Recognizer::TRACE_FILE_HANDLE] =
         $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE];
     $self->[Marpa::Internal::Recognizer::WARNINGS] = 1;
-    $self->[Marpa::Internal::Recognizer::MODE]     = 'default';
-    $self->[Marpa::Internal::Recognizer::USE_LEO]  = 1;
+    $self->reset_evaluation();
+    $self->[Marpa::Internal::Recognizer::MODE]    = 'default';
+    $self->[Marpa::Internal::Recognizer::USE_LEO] = 1;
 
     $self->set(@arg_hashes);
 
@@ -229,17 +241,28 @@ sub Marpa::Recognizer::new {
 
 use constant RECOGNIZER_OPTIONS => [
     qw{
+        closures
+        end
         leo
         too_many_earley_items
+        trace_actions
         trace_earley_sets
         trace_file_handle
         trace_terminals
+        trace_values
         warnings
         mode
         }
 ];
 
 use constant RECOGNIZER_MODES => [qw(default stream)];
+
+sub Marpa::Recognizer::reset_evaluation {
+    my ($recce) = @_;
+    $recce->[Marpa::Internal::Recognizer::PARSE_COUNT]       = 0;
+    $recce->[Marpa::Internal::Recognizer::SINGLE_PARSE_MODE] = undef;
+    return;
+} ## end sub Marpa::Recognizer::reset_evaluation
 
 sub Marpa::Recognizer::set {
     my ( $recce, @arg_hashes ) = @_;
@@ -284,6 +307,17 @@ sub Marpa::Recognizer::set {
                 $value;
         }
 
+        if ( defined( my $value = $args->{'trace_actions'} ) ) {
+            $recce->[Marpa::Internal::Recognizer::TRACE_ACTIONS] = $value;
+            ## Do not allow setting this option in recognizer for single parse mode
+            $recce->[Marpa::Internal::Recognizer::SINGLE_PARSE_MODE] = 0;
+            if ($value) {
+                say {$trace_fh} 'Setting trace_actions option'
+                    or Marpa::exception("Cannot print: $ERRNO");
+                $recce->[Marpa::Internal::Recognizer::TRACING] = 1;
+            }
+        } ## end if ( defined( my $value = $args->{'trace_actions'} ))
+
         if ( defined( my $value = $args->{'trace_terminals'} ) ) {
             $recce->[Marpa::Internal::Recognizer::TRACE_TERMINALS] = $value;
             if ($value) {
@@ -301,6 +335,34 @@ sub Marpa::Recognizer::set {
                 $recce->[Marpa::Internal::Recognizer::TRACING] = 1;
             }
         } ## end if ( defined( my $value = $args->{'trace_earley_sets'...}))
+
+        if ( defined( my $value = $args->{'trace_values'} ) ) {
+            $recce->[Marpa::Internal::Recognizer::TRACE_ACTIONS] = $value;
+            ## Do not allow setting this option in recognizer for single parse mode
+            $recce->[Marpa::Internal::Recognizer::SINGLE_PARSE_MODE] = 0;
+            if ($value) {
+                say {$trace_fh} 'Setting trace_values option'
+                    or Marpa::exception("Cannot print: $ERRNO");
+                $recce->[Marpa::Internal::Recognizer::TRACING] = 1;
+            }
+        } ## end if ( defined( my $value = $args->{'trace_values'} ) )
+
+        if ( defined( my $value = $args->{'end'} ) ) {
+            $recce->[Marpa::Internal::Recognizer::END] = $value;
+            ## Do not allow setting this option in recognizer for single parse mode
+            $recce->[Marpa::Internal::Recognizer::SINGLE_PARSE_MODE] = 0;
+        }
+
+        if ( defined( my $value = $args->{'closures'} ) ) {
+            my $closures = $recce->[Marpa::Internal::Recognizer::CLOSURES] =
+                $value;
+            ## Do not allow setting this option in recognizer for single parse mode
+            $recce->[Marpa::Internal::Recognizer::SINGLE_PARSE_MODE] = 0;
+            while ( my ( $action, $closure ) = each %{$closures} ) {
+                Marpa::exception(qq{Bad closure for action "$action"})
+                    if ref $closure ne 'CODE';
+            }
+        } ## end if ( defined( my $value = $args->{'closures'} ) )
 
         if ( defined( my $value = $args->{'warnings'} ) ) {
             $recce->[Marpa::Internal::Recognizer::WARNINGS] = $value;
@@ -516,6 +578,7 @@ sub Marpa::Recognizer::show_progress {
     for my $ix ( $start_ix .. $end_ix ) {
         my $earley_set = $earley_set_list->[$ix];
         my $reports    = report_progress($earley_set);
+        my @sort_data;
         for my $report ( @{$reports} ) {
             my $rule_id =
                 $report->[Marpa::Internal::Progress_Report::RULE_ID];
@@ -527,31 +590,42 @@ sub Marpa::Recognizer::show_progress {
                 $report->[Marpa::Internal::Progress_Report::CURRENT];
             my $is_leo = $report->[Marpa::Internal::Progress_Report::IS_LEO];
             my $rhs_length = scalar @{ $rule->[Marpa::Internal::Rule::RHS] };
+            my $item_text;
+            my $type;
 
             # flag indicating whether we need to show the dot in the rule
             my $show_dotted;
             if ( $position >= $rhs_length ) {
-                $text .= 'COMPLETED';
-                $text .= q{ @} . $origin . q{-} . $current . q{ };
-                $is_leo and $text .= '(Leo) ';
-            }
+                $item_text .= 'COMPLETED';
+                $type = 3;
+                $item_text .= q{ @} . $origin . q{-} . $current . q{ };
+                $is_leo and $item_text .= '(Leo) ';
+            } ## end if ( $position >= $rhs_length )
             elsif ($position) {
-                $text .= 'BUILDING';
-                $text .= q{ @} . $origin . q{-} . $current . q{ };
+                $item_text .= 'BUILDING';
+                $type = 2;
+                $item_text .= q{ @} . $origin . q{-} . $current . q{ };
                 $show_dotted++;
-            }
+            } ## end elsif ($position)
             else {
-                $text .= 'PREDICTING';
-                $text .= q{ @} . $origin . q{ };
+                $item_text .= 'PREDICTING';
+                $type = 1;
+                $item_text .= q{ @} . $origin . q{ };
             }
             if ($show_dotted) {
-                $text .= Marpa::show_dotted_rule( $rule, $position );
+                $item_text .= Marpa::show_dotted_rule( $rule, $position );
             }
             else {
-                $text .= Marpa::brief_rule($rule);
+                $item_text .= Marpa::brief_rule($rule);
             }
-            $text .= "\n";
+            push @sort_data,
+                [
+                ( pack 'N*', $type, $rule_id, $position, $origin ), $item_text
+                ];
         } ## end for my $report ( @{$reports} )
+        $text .= (
+            join "\n", map { $_->[1] } sort { $a->[0] cmp $b->[0] } @sort_data
+        ) . "\n";
     } ## end for my $ix ( $start_ix .. $end_ix )
     return $text;
 } ## end sub Marpa::Recognizer::show_progress

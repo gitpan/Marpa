@@ -28,7 +28,12 @@ my $grammar = Marpa::Grammar->new(
         default_action => 'first_arg',
         strip          => 0,
         rules          => [
-            { lhs => 'Expression', rhs => [qw/Factor/] },    # ERROR !!!
+            ## This is a deliberate error in the grammar
+            ## The next line should be:
+            ## { lhs => 'Expression', rhs => [qw/Term/] },
+            ## I have changed the Term to 'Factor' which
+            ## will cause problems.
+            { lhs => 'Expression', rhs => [qw/Factor/] },
             { lhs => 'Term',       rhs => [qw/Factor/] },
             { lhs => 'Factor',     rhs => [qw/Number/] },
             {   lhs    => 'Term',
@@ -102,23 +107,23 @@ Test::More::is( $value, 42, 'value' );
 
 Test::More::is( $progress_report,
     <<'END_PROGRESS_REPORT', 'progress report' );
+PREDICTING @0 0: Expression -> Factor
 PREDICTING @0 2: Factor -> Number
 PREDICTING @0 4: Factor -> Factor Multiply Factor
 PREDICTING @0 5: Expression['] -> Expression
-PREDICTING @0 0: Expression -> Factor
-COMPLETED @0-1 5: Expression['] -> Expression
 BUILDING @0-1 Factor -> Factor . Multiply Factor
 COMPLETED @0-1 0: Expression -> Factor
 COMPLETED @0-1 2: Factor -> Number
+COMPLETED @0-1 5: Expression['] -> Expression
 PREDICTING @2 2: Factor -> Number
-BUILDING @0-2 Factor -> Factor Multiply . Factor
 PREDICTING @2 4: Factor -> Factor Multiply Factor
+BUILDING @0-2 Factor -> Factor Multiply . Factor
+BUILDING @0-3 Factor -> Factor . Multiply Factor
 BUILDING @2-3 Factor -> Factor . Multiply Factor
+COMPLETED @0-3 0: Expression -> Factor
+COMPLETED @2-3 2: Factor -> Number
 COMPLETED @0-3 4: Factor -> Factor Multiply Factor
 COMPLETED @0-3 5: Expression['] -> Expression
-BUILDING @0-3 Factor -> Factor . Multiply Factor
-COMPLETED @2-3 2: Factor -> Number
-COMPLETED @0-3 0: Expression -> Factor
 END_PROGRESS_REPORT
 
 # Marpa::Display::End

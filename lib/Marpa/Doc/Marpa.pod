@@ -800,42 +800,40 @@ be inherited.
 
 =head1 OTHER DOCUMENTS
 
-This document gave a semi-tutorial overview of the entire Marpa API.
+=head2 Basic Documents
+
+This document gives a semi-tutorial overview of the entire Marpa API.
 For full details on Marpa's grammar objects and their methods,
 see the
 L<Marpa::Grammar> document.
 For full details on Marpa's recognizer objects and their methods,
 see the
 L<Marpa::Recognizer> document.
+The L<Marpa::Evaluator> document provides
+details about the Multi-parse Evaluator.
 
+L<Marpa::Parse_Terms> is intended as a quick refresher in
+parsing terminology.
 Marpa's standard semantics are fully described in the
 L<Marpa::Semantics> document.
 Techniques for tracing and for debugging your Marpa grammars
 are described in the
-L<Marpa::Tracing> document.
+L<Marpa::Tracing> document and the
+L<Marpa::Debug> document.
 
-The L<Marpa::Implementation> describes Marpa's internals,
-focusing on the Marpa tables (Earley sets) and how to read them.
-This information can be quite useful for users of Marpa who are
-tracing and debugging grammars they've written.
+=head2 Advanced Documents
 
-The L<Marpa::Evaluator> document provides
-details about the Multi-parse Evaluator.
+The L<Marpa::Implementation> describes Marpa's internals.
 The L<Marpa::Models> document (yet to be written)
 will provide details about alternative models
 of the input for Marpa.
 
-L<Marpa::Parse_Terms> is intended as a quick refresher in
-parsing terminology.
-My sources, and other useful references, are described in
+=head2 Academic Documents
+
+For those with a theoretical bent,
+my sources, and other useful references, are described in
 L<Marpa::Bibliography>.
 L<Marpa::Algorithm> describes the Marpa algorithm itself.
-It will only be of interest to those with a theoretical bent.
-
-=head1 HISTORY
-
-L<Marpa> is a branch from L<Parse::Marpa>.
-L<Marpa> will, in the near future, replace L<Parse::Marpa>.
 
 =head1 AUTHOR
 
@@ -912,7 +910,7 @@ on issues about which I really should have know better.
 My academic sources are described in detail in 
 L<my bibliography|Marpa::Bibliography> and
 L<my (very difficult and sketchy) description of the Marpa algorithm|Marpa::Algorithm>.
-Nonetheless, here I am to name those who
+Here I want to name those who
 created the algorithms which are the direct
 and near-direct predecesssors of Marpa --
 Jay Earley,

@@ -6,10 +6,6 @@ no warnings qw(recursion qw);
 use strict;
 use integer;
 
-# use Smart::Comments '-ENV';
-
-### Using smart comments <where>...
-
 use Scalar::Util;
 use List::Util;
 use English qw( -no_match_vars );
@@ -20,23 +16,37 @@ use Marpa::Internal;
 sub Marpa::Recognizer::value {
     my ( $self, @arg_hashes ) = @_;
 
-    my $parse_set_arg;
-    my $trace_values = 0;
+    my $parse_set_arg = $self->[Marpa::Internal::Recognizer::END];
+    my $trace_values  = $self->[Marpa::Internal::Recognizer::TRACE_VALUES]
+        // 0;
 
     # default settings
-    local $Marpa::Internal::EXPLICIT_CLOSURES = {};
-    local $Marpa::Internal::TRACE_ACTIONS     = 0;
+    local $Marpa::Internal::EXPLICIT_CLOSURES =
+        $self->[Marpa::Internal::Recognizer::CLOSURES] // {};
+    local $Marpa::Internal::TRACE_ACTIONS =
+        $self->[Marpa::Internal::Recognizer::TRACE_ACTIONS] // 0;
+
     local $Marpa::Internal::TRACE_FH =
         $self->[Marpa::Internal::Recognizer::TRACE_FILE_HANDLE];
+
+    if ( $self->[Marpa::Internal::Recognizer::SINGLE_PARSE_MODE] ) {
+        Marpa::exception(
+            qq{Arguments were passed directly to value() in a previous call\n},
+            qq{Only one call to value() is allowed per recognizer when arguments are passed directly\n},
+            qq{This is the second call to value()\n}
+        );
+    } ## end if ( $self->[Marpa::Internal::Recognizer::SINGLE_PARSE_MODE...])
 
     for my $arg_hash (@arg_hashes) {
 
         if ( exists $arg_hash->{end} ) {
+            $self->[Marpa::Internal::Recognizer::SINGLE_PARSE_MODE] = 1;
             $parse_set_arg = $arg_hash->{end};
             delete $arg_hash->{end};
         }
 
         if ( exists $arg_hash->{closures} ) {
+            $self->[Marpa::Internal::Recognizer::SINGLE_PARSE_MODE] = 1;
             $Marpa::Internal::EXPLICIT_CLOSURES = $arg_hash->{closures};
             while ( my ( $action, $closure ) =
                 each %{$Marpa::Internal::EXPLICIT_CLOSURES} )
@@ -48,11 +58,13 @@ sub Marpa::Recognizer::value {
         } ## end if ( exists $arg_hash->{closures} )
 
         if ( exists $arg_hash->{trace_actions} ) {
+            $self->[Marpa::Internal::Recognizer::SINGLE_PARSE_MODE] = 1;
             $Marpa::Internal::TRACE_ACTIONS = $arg_hash->{trace_actions};
             delete $arg_hash->{trace_actions};
         }
 
         if ( exists $arg_hash->{trace_values} ) {
+            $self->[Marpa::Internal::Recognizer::SINGLE_PARSE_MODE] = 1;
             $trace_values = $arg_hash->{trace_values};
             delete $arg_hash->{trace_values};
         }

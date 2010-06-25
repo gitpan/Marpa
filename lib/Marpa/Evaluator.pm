@@ -187,10 +187,6 @@ use Marpa::Offset qw(
 
 package Marpa::Internal::Evaluator;
 
-# use Smart::Comments '-ENV';
-
-### Using smart comments <where>...
-
 use Scalar::Util;
 use List::Util;
 use English qw( -no_match_vars );

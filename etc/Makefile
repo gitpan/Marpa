@@ -18,4 +18,4 @@ update:
 
 devlib:
 	(cd ..;perl Build.PL)
-	(cd ..;./Build install --install_base ../devlib)
+	(cd ..;./Build install --install_base $$HOME/devlib)

@@ -217,10 +217,6 @@ package Marpa::Internal::Grammar;
 use Carp;
 use POSIX qw(ceil);
 
-# use Smart::Comments '-ENV';
-
-### Using smart comments <where>...
-
 # values for grammar phases
 use Marpa::Offset qw(
 

@@ -347,11 +347,10 @@ my @expected = (
 );
 
 for my $i ( 0 .. $input_length ) {
-
+    $recce->reset_evaluation();
     my $value_ref = $recce->value( { end => $i } );
     my $value = $value_ref ? ${$value_ref} : 'No Parse';
     Test::More::is( $value, $expected[$i], "ah2 length $i" );
-
 } ## end for my $i ( 0 .. $input_length )
 
 # Local Variables:

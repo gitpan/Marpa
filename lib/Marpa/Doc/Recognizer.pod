@@ -322,12 +322,32 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-Indicates the progress of the parse.
-Intended as a primary tool for users who need
-to debug application grammars
-or want to interpret parse progress.
-For more detail,
-see
+Returns a string describing the progress of the parse.
+With no arguments,
+the string contains reports for
+the last completed earleme, which is typically the one
+of most interest.
+With a non-negative argument I<N>,
+and the string contains reports for earleme I<N>.
+
+With two numeric arguments, I<N> and I<M>, the arguments are interpreted
+as a range of earlemes and the returned string contains
+reports for all earlemes from I<N> to I<M>.
+The first argument must be non-negative.
+If the second argument is negative,
+"-I<M>", the range is to the I<M>th earleme from the last.
+In other words,
+-1 is the last earleme, -2 the next to last, etc.
+The call C<< $recce->show_progress(0, -1) >>
+will print progress reports for the entire parse.
+
+C<show_progress> is
+a powerful tool for users who need
+to debug application grammars.
+It can also be used to track the
+progress of a parse or
+to investigate how a parse works.
+Details are in
 L<the document on debugging Marpa
 grammars|Marpa::Debug>.
 

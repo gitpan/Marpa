@@ -52,10 +52,6 @@ use Marpa::Offset qw(
 
 package Marpa::Internal::MDLex;
 
-# use Smart::Comments '-ENV';
-
-### Using smart comments <where>...
-
 use Data::Dumper;
 use English qw( -no_match_vars );
 use List::Util;
@@ -376,13 +372,9 @@ sub Marpa::MDLex::text {
     $input_length //= length ${$input_ref};
     my $pos = 0;
 
-    ### input length: $input_length
-
     pos ${$input_ref} = 0;
     POS: while ( $pos < $input_length ) {
         my @alternatives;
-
-        ### pos: $pos
 
         # NOTE: Often the number of the earley set, and the idea of
         # lexical position will correspond.  Be careful that Marpa

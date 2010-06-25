@@ -5,10 +5,6 @@ use warnings;
 use strict;
 use integer;
 
-# use Smart::Comments '-ENV';
-
-### Using smart comments <where>...
-
 use English qw( -no_match_vars );
 
 use Marpa::Internal;
