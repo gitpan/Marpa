@@ -1,13 +1,14 @@
 Revision history for Marpa
 
-0.103_003 Sun Jun 20 17:55:37 2010
-0.103_002 Sun Jun 20 15:37:40 2010
-0.103_001 Wed Jun  9 11:38:26 2010
-0.103_000 Wed Jun  9 11:23:51 2010
-    * Series of developer's releases.
+0.104000 Mon Jun 28 19:42:10 2010
+
+    * Added very useful tool for debugging grammars: show_progress().
+
+    * Documented show_progress().
+
+    * Added (but deliberately have not yet documented) Marpa::Perl.
+
     * Added correctness proof for incorporation of Leo 1991.
-    * Added (but am not yet documenting) test of Perl parsing.
-    * Added show_progress().
 
 0.102000 Wed Jun  2 18:32:54 2010
 
