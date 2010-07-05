@@ -24,7 +24,6 @@ use Marpa::Offset qw(
 
     NAME { Unique string describing Earley item. }
     STATE { The AHFA state. }
-    TOKENS { A list of the links from token scanning. }
     LINKS { A list of the links from the completer step. }
 
     LEO_SYMBOL { A symbol name.
@@ -38,6 +37,7 @@ use Marpa::Offset qw(
     =LAST_EVALUATOR_FIELD
 
     PARENT { The number of the Earley set with the parent item(s) }
+    =ORIGIN { A synonym I prefer over PARENT. }
     SET { The set this item is in. For debugging. }
 
     =LAST_FIELD
@@ -68,6 +68,11 @@ use Marpa::Offset qw(
 
     SINGLE_PARSE_MODE
     PARSE_COUNT :{ number of parses in an ambiguous parse :}
+
+    AND_NODES
+    AND_NODE_HASH
+    OR_NODES
+    OR_NODE_HASH
 
     =LAST_EVALUATOR_FIELD
 
@@ -160,6 +165,9 @@ sub Marpa::Recognizer::new {
 
     $self->set(@arg_hashes);
 
+    my $trace_terminals =
+        $self->[Marpa::Internal::Recognizer::TRACE_TERMINALS] // 0;
+
     if (not
         defined $self->[Marpa::Internal::Recognizer::TOO_MANY_EARLEY_ITEMS] )
     {
@@ -195,7 +203,6 @@ sub Marpa::Recognizer::new {
         $item->[Marpa::Internal::Earley_Item::NAME]   = $name;
         $item->[Marpa::Internal::Earley_Item::STATE]  = $state;
         $item->[Marpa::Internal::Earley_Item::PARENT] = 0;
-        $item->[Marpa::Internal::Earley_Item::TOKENS] = [];
         $item->[Marpa::Internal::Earley_Item::LINKS]  = [];
         $item->[Marpa::Internal::Earley_Item::SET]    = 0;
 
@@ -224,7 +231,7 @@ sub Marpa::Recognizer::new {
     # Don't include the start states in the Leo sets.
     $self->[Marpa::Internal::Recognizer::LEO_SETS] = [];
 
-    if ( $self->[Marpa::Internal::Recognizer::TRACE_TERMINALS] ) {
+    if ( $trace_terminals > 1 ) {
         for my $terminal (
             grep { $terminal_names->{$_} }
             keys %{ $postdot->{0} }
@@ -234,7 +241,7 @@ sub Marpa::Recognizer::new {
                 qq{Expecting "$terminal" at earleme 0}
                 or Marpa::exception("Cannot print: $ERRNO");
         } ## end for my $terminal ( grep { $terminal_names->{$_} } keys...)
-    } ## end if ( $self->[Marpa::Internal::Recognizer::TRACE_TERMINALS...])
+    } ## end if ( $trace_terminals > 1 )
 
     return $self;
 } ## end sub Marpa::Recognizer::new
@@ -261,6 +268,10 @@ sub Marpa::Recognizer::reset_evaluation {
     my ($recce) = @_;
     $recce->[Marpa::Internal::Recognizer::PARSE_COUNT]       = 0;
     $recce->[Marpa::Internal::Recognizer::SINGLE_PARSE_MODE] = undef;
+    $recce->[Marpa::Internal::Recognizer::AND_NODES]         = [];
+    $recce->[Marpa::Internal::Recognizer::AND_NODE_HASH]     = {};
+    $recce->[Marpa::Internal::Recognizer::OR_NODES]          = [];
+    $recce->[Marpa::Internal::Recognizer::OR_NODE_HASH]      = {};
     return;
 } ## end sub Marpa::Recognizer::reset_evaluation
 
@@ -337,7 +348,7 @@ sub Marpa::Recognizer::set {
         } ## end if ( defined( my $value = $args->{'trace_earley_sets'...}))
 
         if ( defined( my $value = $args->{'trace_values'} ) ) {
-            $recce->[Marpa::Internal::Recognizer::TRACE_ACTIONS] = $value;
+            $recce->[Marpa::Internal::Recognizer::TRACE_VALUES] = $value;
             ## Do not allow setting this option in recognizer for single parse mode
             $recce->[Marpa::Internal::Recognizer::SINGLE_PARSE_MODE] = 0;
             if ($value) {
@@ -432,25 +443,24 @@ sub Marpa::Recognizer::strip {
 
 # Viewing methods, for debugging
 
-sub Marpa::show_token_choice {
-    my ($token) = @_;
-    my ( $earley_item, $symbol_name, $value_ref ) = @{$token};
-    my $token_dump = Data::Dumper->new( [$value_ref] )->Terse(1)->Dump;
-    chomp $token_dump;
-    my $earley_item_name = $earley_item->[Marpa::Internal::Earley_Item::NAME];
-    return "[p=$earley_item_name; s=$symbol_name; t=$token_dump]";
-} ## end sub Marpa::show_token_choice
-
 sub Marpa::show_link_choice {
-    my ($link)      = @_;
-    my $predecessor = $link->[0];
-    my @link_texts  = ();
+    my ($link) = @_;
+    my ( $predecessor, $cause, $token_name, $value_ref ) = @{$link};
+    my @pieces = ();
     if ($predecessor) {
-        push @link_texts,
+        push @pieces,
             'p=' . $predecessor->[Marpa::Internal::Earley_Item::NAME];
     }
-    push @link_texts, 'c=' . $link->[1]->[Marpa::Internal::Earley_Item::NAME];
-    return '[' . ( join '; ', @link_texts ) . ']';
+    if ( not defined $cause ) {
+        push @pieces, "s=$token_name";
+        my $token_dump = Data::Dumper->new( [$value_ref] )->Terse(1)->Dump;
+        chomp $token_dump;
+        push @pieces, "t=$token_dump";
+    } ## end if ( not defined $cause )
+    else {
+        push @pieces, 'c=' . $link->[1]->[Marpa::Internal::Earley_Item::NAME];
+    }
+    return '[' . ( join '; ', @pieces ) . ']';
 } ## end sub Marpa::show_link_choice
 
 sub Marpa::show_leo_link_choice {
@@ -471,7 +481,6 @@ sub Marpa::show_leo_link_choice {
 
 sub Marpa::show_earley_item {
     my ($item)     = @_;
-    my $tokens     = $item->[Marpa::Internal::Earley_Item::TOKENS];
     my $links      = $item->[Marpa::Internal::Earley_Item::LINKS];
     my $leo_links  = $item->[Marpa::Internal::Earley_Item::LEO_LINKS];
     my $leo_symbol = $item->[Marpa::Internal::Earley_Item::LEO_SYMBOL];
@@ -485,11 +494,6 @@ sub Marpa::show_earley_item {
         $text .= qq{; actual="$leo_symbol"->$leo_state_id;};
     } ## end if ( defined $leo_symbol )
 
-    if ( defined $tokens and @{$tokens} ) {
-        for my $token ( @{$tokens} ) {
-            $text .= q{ } . Marpa::show_token_choice($token);
-        }
-    }
     if ( defined $links and @{$links} ) {
         for my $link ( @{$links} ) {
             $text .= q{ } . Marpa::show_link_choice($link);
@@ -761,7 +765,13 @@ sub Marpa::Recognizer::tokens {
 
         my $current_token_earleme = $last_completed_earleme;
 
-        my $first_ix_of_this_earleme = ${$token_ix_ref};
+        # It's not 100% clear whether it's best to leave
+        # the token_ix_ref pointing at the start of the
+        # earleme, or at the actual problem token.
+        # Right now, we set it at the actual problem
+        # token, which is probably what will turn out
+        # to be easiest.
+        # my $first_ix_of_this_earleme = ${$token_ix_ref};
 
         TOKEN: while ( $current_token_earleme == $next_token_earleme ) {
 
@@ -796,7 +806,16 @@ sub Marpa::Recognizer::tokens {
                         qq{Terminal "$symbol_name" received when not expected}
                     );
                 }
-                ${$token_ix_ref} = $first_ix_of_this_earleme;
+                if ($trace_terminals) {
+                    say {$trace_fh}
+                        qq{Rejected "$symbol_name" at $last_completed_earleme}
+                        or Marpa::exception("Cannot print: $ERRNO");
+                }
+
+                # Current token didn't actually work, so back out
+                # the increment
+                ${$token_ix_ref}--;
+
                 return (
                     $last_completed_earleme,
                     [   grep { $terminal_names->{$_} }
@@ -926,8 +945,6 @@ sub Marpa::Recognizer::tokens {
                             ->[Marpa::Internal::Earley_Item::LEO_LINKS] = [];
                         $target_item->[Marpa::Internal::Earley_Item::LINKS] =
                             [];
-                        $target_item->[Marpa::Internal::Earley_Item::TOKENS] =
-                            [];
                         $target_item->[Marpa::Internal::Earley_Item::SET] =
                             $target_ix;
                         $earley_hash->{$name} = $target_item;
@@ -944,8 +961,8 @@ sub Marpa::Recognizer::tokens {
                     }
                     else {
                         push @{ $target_item
-                                ->[Marpa::Internal::Earley_Item::TOKENS] },
-                            [ $earley_item, $token_name, $value_ref ];
+                                ->[Marpa::Internal::Earley_Item::LINKS] },
+                            [ $earley_item, undef, $token_name, $value_ref ];
                     }
                 }    # for my $to_state
 
@@ -954,17 +971,22 @@ sub Marpa::Recognizer::tokens {
         }    # EARLEY_ITEM
 
         if ($trace_terminals) {
-            while ( my ( $token_name, $length ) = each %accepted ) {
+            TOKEN: while ( my ( $token_name, $length ) = each %accepted ) {
 
                 # The logic assumes that
                 # length is non-zero only for accepted tokens
-                my $msg =
-                    $length
-                    ? qq{Accepted "$token_name" at $last_completed_earleme-}
+                if ( $length <= 0 ) {
+                    say {$trace_fh}
+                        qq{Rejected "$token_name" at $last_completed_earleme}
+                        or Marpa::exception("Cannot print: $ERRNO");
+                    next TOKEN;
+                } ## end if ( $length <= 0 )
+
+                say {$trace_fh}
+                    qq{Accepted "$token_name" at $last_completed_earleme-}
                     . ( $length + $last_completed_earleme )
-                    : qq{Rejected "$token_name" at $last_completed_earleme};
-                say {$trace_fh} $msg
-                    or Marpa::exception("Cannot print: $ERRNO");
+                    or Marpa::exception("Cannot print: $ERRNO")
+
             } ## end while ( my ( $token_name, $length ) = each %accepted )
         } ## end if ($trace_terminals)
 
@@ -1049,7 +1071,7 @@ sub complete {
     my $trace_earley_sets =
         $recce->[Marpa::Internal::Recognizer::TRACE_EARLEY_SETS];
     my $trace_terminals =
-        $recce->[Marpa::Internal::Recognizer::TRACE_TERMINALS];
+        $recce->[Marpa::Internal::Recognizer::TRACE_TERMINALS] // 0;
 
     my $earleme_to_complete =
         ++$recce->[Marpa::Internal::Recognizer::LAST_COMPLETED_EARLEME];
@@ -1111,8 +1133,7 @@ sub complete {
                         $origin;
                     $target_item->[Marpa::Internal::Earley_Item::LEO_LINKS] =
                         [];
-                    $target_item->[Marpa::Internal::Earley_Item::LINKS]  = [];
-                    $target_item->[Marpa::Internal::Earley_Item::TOKENS] = [];
+                    $target_item->[Marpa::Internal::Earley_Item::LINKS] = [];
                     $target_item->[Marpa::Internal::Earley_Item::SET] =
                         $earleme_to_complete;
                     $earley_hash->{$name} = $target_item;
@@ -1276,7 +1297,6 @@ sub complete {
             $postdot_symbol;
         $leo_item->[Marpa::Internal::Earley_Item::LEO_ACTUAL_STATE] =
             $leo_actual_state;
-        $leo_item->[Marpa::Internal::Earley_Item::TOKENS] = [];
         $leo_item->[Marpa::Internal::Earley_Item::LINKS] =
             [ [ $predecessor_leo_item, $base_earley_item ] ];
 
@@ -1296,7 +1316,7 @@ sub complete {
 
     } ## end for ( ;; )
 
-    if ($trace_terminals) {
+    if ( $trace_terminals > 1 ) {
         for my $terminal (
             grep { $terminal_names->{$_} }
             keys %{ $postdot->{$earleme_to_complete} }
@@ -1306,7 +1326,7 @@ sub complete {
                 qq{Expecting "$terminal" at $earleme_to_complete}
                 or Marpa::exception("Cannot print: $ERRNO");
         } ## end for my $terminal ( grep { $terminal_names->{$_} } keys...)
-    } ## end if ($trace_terminals)
+    } ## end if ( $trace_terminals > 1 )
 
     return $earleme_to_complete;
 

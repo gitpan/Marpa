@@ -112,6 +112,7 @@ sub update_changes {
 
 change( \&fix_build_pl,    'Build.PL' );
 change( \&fix_marpa_pm,    'lib/Marpa.pm' );
+change( \&fix_marpa_pm,    'lib/Marpa/Perl.pm' );
 change( \&fix_marpa_xs_pm, 'xs/lib/Marpa/XS.pm' );
 change( \&update_changes,  'Changes' );
 

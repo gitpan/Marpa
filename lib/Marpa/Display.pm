@@ -25,7 +25,7 @@ sub Marpa::Display::new {
     start-after-line end-before-line perltidy normalize-whitespace name
     remove-display-indent
     remove-blank-last-line
-    partial flatten
+    partial flatten inline
     ignore
 );
 

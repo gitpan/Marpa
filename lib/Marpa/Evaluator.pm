@@ -43,29 +43,30 @@ use Marpa::Offset qw(
 
     :package=Marpa::Internal::And_Node
 
-    TAG ID
-    PREDECESSOR_ID
-    CAUSE_ID
-    TOKEN_NAME VALUE_REF
-    TREE_OPS
+    ID
+    TAG
+    RULE_ID
+    TOKEN_NAME
+    VALUE_REF
     VALUE_OPS
+
+    { Fields before this (except ID)
+    are used in evaluate()
+    and must be in the same location
+    for both Recce_And_Node and And_Node.
+    ID is included for orthogonality. }
+
     START_EARLEME
     END_EARLEME
     CAUSE_EARLEME
-    RULE_ID
 
-    POSITION { Position in an and-node is not the same as
+    POSITION {
+    Position in an and-node is not the same as
     position in a rule.  Rule positions are locations BETWEEN
     symbols, and start from 0 (before the first symbol).
     And-node positions are zero-based locations OF symbols.
     An and-node position of -1 means the and-node is for a
-    rule with an empty RHS. }
-
-    PARENT_ID
-    PARENT_CHOICE
-    DELETED
-
-    =LAST_GENERAL_EVALUATOR_FIELD
+    rule with an empty RHS.  }
 
     FIXED_RANKING_DATA { Rank for this and-node itself,
     but not including any of the children.
@@ -77,7 +78,13 @@ use Marpa::Offset qw(
 
     RANKING_CLOSURE
 
-    =LAST_PER_METHOD_EVALUATOR_FIELD
+    CAUSE_ID
+    PREDECESSOR_ID
+    TREE_OPS
+    PARENT_ID
+    PARENT_CHOICE
+    DELETED
+
     =LAST_FIELD
 
 );
@@ -1677,6 +1684,9 @@ sub Marpa::Evaluator::new {
         my $item           = $or_sapling->[Marpa::Internal::Or_Sapling::ITEM];
         my $or_sapling_set = $item->[Marpa::Internal::Earley_Item::SET];
 
+# Marpa::Display
+# name: Leo Expansion
+
         my $leo_links = $item->[Marpa::Internal::Earley_Item::LEO_LINKS]
             // [];
 
@@ -1688,12 +1698,11 @@ sub Marpa::Evaluator::new {
             my ( $next_leo_item, $leo_base_item ) =
                 @{ $leo_item->[Marpa::Internal::Earley_Item::LINKS]->[0] };
 
-            my $next_tokens = [];
-            if ($token_name) {
-                push @{$next_tokens},
-                    [ $leo_base_item, $token_name, $token_value ];
-            }
             my $next_links = [];
+            if ($token_name) {
+                push @{$next_links},
+                    [ $leo_base_item, undef, $token_name, $token_value ];
+            }
             if ($cause) {
                 push @{$next_links}, [ $leo_base_item, $cause ];
             }
@@ -1704,8 +1713,6 @@ sub Marpa::Evaluator::new {
 
                     push @{ $item->[Marpa::Internal::Earley_Item::LINKS] },
                         @{$next_links};
-                    push @{ $item->[Marpa::Internal::Earley_Item::TOKENS] },
-                        @{$next_tokens};
 
                     # Now that the Leo links are translated, remove them
                     $item->[Marpa::Internal::Earley_Item::LEO_LINKS] = undef;
@@ -1733,8 +1740,7 @@ sub Marpa::Evaluator::new {
                         $origin;
                     $target_item->[Marpa::Internal::Earley_Item::STATE] =
                         $state;
-                    $target_item->[Marpa::Internal::Earley_Item::TOKENS] = [];
-                    $target_item->[Marpa::Internal::Earley_Item::LINKS]  = [];
+                    $target_item->[Marpa::Internal::Earley_Item::LINKS] = [];
                     $target_item->[Marpa::Internal::Earley_Item::SET] =
                         $or_sapling_set;
                     $earley_hash->{$name} = $target_item;
@@ -1743,8 +1749,6 @@ sub Marpa::Evaluator::new {
 
                 push @{ $target_item->[Marpa::Internal::Earley_Item::LINKS] },
                     @{$next_links};
-                push @{ $target_item->[Marpa::Internal::Earley_Item::TOKENS]
-                    }, @{$next_tokens};
 
                 $leo_item = $next_leo_item;
 
@@ -1752,11 +1756,12 @@ sub Marpa::Evaluator::new {
                     @{ $leo_item->[Marpa::Internal::Earley_Item::LINKS]->[0]
                     };
 
-                $next_tokens = [];
                 $next_links = [ [ $leo_base_item, $target_item ] ];
 
             } ## end for ( ;; )
-        }    ## for my $leo_link ( @{$leo_links} ) {
+        } ## end for my $leo_link ( @{$leo_links} )
+
+# Marpa::Display::End
 
         my $child_lhs_symbol =
             $or_sapling->[Marpa::Internal::Or_Sapling::CHILD_LHS_SYMBOL];
@@ -1826,28 +1831,21 @@ sub Marpa::Evaluator::new {
             my $rhs         = $and_sapling_rule->[Marpa::Internal::Rule::RHS];
             my $rule_length = @{$rhs};
 
-            my @or_bud_list;
+            my $or_bud_list;
             if ( $symbol->[Marpa::Internal::Symbol::NULLING] ) {
                 my $nulling_symbol_id =
                     $symbol->[Marpa::Internal::Symbol::ID];
                 my $nulling_symbol_name =
                     $symbol->[Marpa::Internal::Symbol::NAME];
                 my $null_value = $null_values->[$nulling_symbol_id];
-                @or_bud_list =
-                    ( [ $item, undef, $nulling_symbol_name, \$null_value, ] );
+                $or_bud_list =
+                    [ [ $item, undef, $nulling_symbol_name, \$null_value, ] ];
             } ## end if ( $symbol->[Marpa::Internal::Symbol::NULLING] )
             else {
-                @or_bud_list = (
-                    (   map { [ $_->[0], undef, @{$_}[ 1, 2 ] ] }
-                            @{ $item->[Marpa::Internal::Earley_Item::TOKENS] }
-                    ),
-                    (   map { [ $_->[0], $_->[1] ] }
-                            @{ $item->[Marpa::Internal::Earley_Item::LINKS] }
-                    )
-                );
-            } ## end else [ if ( $symbol->[Marpa::Internal::Symbol::NULLING] ) ]
+                $or_bud_list = $item->[Marpa::Internal::Earley_Item::LINKS];
+            }
 
-            for my $or_bud (@or_bud_list) {
+            for my $or_bud ( @{$or_bud_list} ) {
 
                 my ( $predecessor, $cause, $token_name, $value_ref ) =
                     @{$or_bud};
@@ -2571,6 +2569,7 @@ use Marpa::Offset qw(
     EVALUATE
 );
 
+# Does not modify stack
 sub evaluate {
     my ( $grammar, $action_object, $stack, $trace_values ) = @_;
 
@@ -2602,7 +2601,9 @@ sub evaluate {
                 my $token_name =
                     $and_node->[Marpa::Internal::And_Node::TOKEN_NAME];
                 print {$Marpa::Internal::TRACE_FH}
-                    'Pushed value from ',
+                    'Pushed value from a',
+                    $and_node->[Marpa::Internal::And_Node::ID],
+                    q{ },
                     $and_node->[Marpa::Internal::And_Node::TAG], ': ',
                     ( $token_name ? qq{$token_name = } : q{} ),
                     Data::Dumper->new( [$value_ref] )->Terse(1)->Dump
@@ -2631,7 +2632,9 @@ sub evaluate {
                         say {$Marpa::Internal::TRACE_FH}
                             'Popping ',
                             $argc,
-                            ' values to evaluate ',
+                            ' values to evaluate a',
+                            $and_node->[Marpa::Internal::And_Node::ID],
+                            q{ },
                             $and_node->[Marpa::Internal::And_Node::TAG],
                             ', rule: ', Marpa::brief_rule($rule)
                             or
@@ -2821,7 +2824,6 @@ sub evaluate {
     return pop @evaluation_stack;
 } ## end sub evaluate
 
-# This will replace the old value method
 sub Marpa::Evaluator::value {
     my ($evaler) = @_;
 
@@ -3427,7 +3429,7 @@ sub Marpa::Evaluator::value {
 The visited arguments is needed for RESET_OR_TREE and RESET_AND_TREE
 because otherwise every node will be reset once for every possible
 derivation involving it.  Resets are idempotent, so in one sense this
-is harmless.  But in some cases the number of derivations is O(n!)
+is harmless.  But in some cases the number of derivations is exponential
 in the size of the input and the CPU time consumed can be staggering.
 
 Preventing re-visits to reset items is NOT the same as cycle prevention.
@@ -3464,7 +3466,7 @@ node appears more than once on the path back to the root node.
             } ## end when (Marpa::Internal::Task::RESET_OR_TREE)
 
             # This is a bit hack-ish.  It's becomes a reset or
-            # an interate depending on the presence of absence
+            # an iterate depending on the presence of absence
             # of the 3rd "visited" argument.
             when (Marpa::Internal::Task::NEXT_AND_TREE) {
                 my ( $and_node_id, $path, $visited ) = @{$task_entry};
@@ -3511,7 +3513,7 @@ node appears more than once on the path back to the root node.
                                 )
                             {
 
-                                # counted rule logic is not fully tested
+                                # counted rule logic is not tested
                                 $rule_id   = $tree_ops->[ $op_ix++ ];
                                 $max_count = $tree_ops->[ $op_ix++ ];
                                 my $key = "r$rule_id";

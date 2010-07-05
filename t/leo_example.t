@@ -356,37 +356,39 @@ END_EARLEY_SETS
 
 Marpa::Test::is( $trace_output,
     <<'END_TRACE_OUTPUT', 'Leo Example Trace Output' );
-Pushed value from S5@0-1L2o18a18: Variable = \'a'
-Popping 1 values to evaluate S5@0-1L2o18a18, rule: 6: Lvalue -> Variable
+Pushed value from a19 T@0-1_Variable: Variable = \'a'
+Popping 1 values to evaluate a19 T@0-1_Variable, rule: 6: Lvalue -> Variable
 Calculated and pushed value: 'a'
-Pushed value from S8@0-2R1:2o16a16: AssignOp = \'='
-Pushed value from S5@2-3L2o15a15: Variable = \'b'
-Popping 1 values to evaluate S5@2-3L2o15a15, rule: 6: Lvalue -> Variable
+Pushed value from a17 R1:1@0-1T@1-2_AssignOp: AssignOp = \'='
+Pushed value from a16 T@2-3_Variable: Variable = \'b'
+Popping 1 values to evaluate a16 T@2-3_Variable, rule: 6: Lvalue -> Variable
 Calculated and pushed value: 'b'
-Pushed value from S6@2-4R2:2o13a13: AddAssignOp = \'+='
-Pushed value from S5@4-5L2o12a12: Variable = \'c'
-Popping 1 values to evaluate S5@4-5L2o12a12, rule: 6: Lvalue -> Variable
+Pushed value from a14 R2:1@2-3T@3-4_AddAssignOp: AddAssignOp = \'+='
+Pushed value from a13 T@4-5_Variable: Variable = \'c'
+Popping 1 values to evaluate a13 T@4-5_Variable, rule: 6: Lvalue -> Variable
 Calculated and pushed value: 'c'
-Pushed value from S9@4-6R3:2o10a10: MinusAssignOp = \'-='
-Pushed value from S5@6-7L2o9a9: Variable = \'d'
-Popping 1 values to evaluate S5@6-7L2o9a9, rule: 6: Lvalue -> Variable
+Pushed value from a11 R3:1@4-5T@5-6_MinusAssignOp: MinusAssignOp = \'-='
+Pushed value from a10 T@6-7_Variable: Variable = \'d'
+Popping 1 values to evaluate a10 T@6-7_Variable, rule: 6: Lvalue -> Variable
 Calculated and pushed value: 'd'
-Pushed value from S10@6-8R4:2o7a7: MultiplyAssignOp = \'*='
-Pushed value from S5@8-9L1o6a6: Variable = \'e'
-Popping 1 values to evaluate S5@8-9L1o6a6, rule: 5: Expression -> Variable
+Pushed value from a8 R4:1@6-7T@7-8_MultiplyAssignOp: MultiplyAssignOp = \'*='
+Pushed value from a7 T@8-9_Variable: Variable = \'e'
+Popping 1 values to evaluate a7 T@8-9_Variable, rule: 5: Expression -> Variable
 Calculated and pushed value: 3
-Popping 3 values to evaluate S14@6-9L1o5a5, rule: 4: Expression -> Lvalue MultiplyAssignOp Expression
+Popping 3 values to evaluate a6 R4:2@6-8F5@8-9, rule: 4: Expression -> Lvalue MultiplyAssignOp Expression
 Calculated and pushed value: 6
-Popping 3 values to evaluate S13@4-9L1o4a4, rule: 3: Expression -> Lvalue MinusAssignOp Expression
+Popping 3 values to evaluate a5 R3:2@4-6F4@6-9, rule: 3: Expression -> Lvalue MinusAssignOp Expression
 Calculated and pushed value: -5
-Popping 3 values to evaluate S11@2-9L1o3a3, rule: 2: Expression -> Lvalue AddAssignOp Expression
+Popping 3 values to evaluate a4 R2:2@2-4F3@4-9, rule: 2: Expression -> Lvalue AddAssignOp Expression
 Calculated and pushed value: 42
-Popping 3 values to evaluate S12@0-9L1o2a2, rule: 1: Expression -> Lvalue AssignOp Expression
+Popping 3 values to evaluate a3 R1:2@0-2F2@2-9, rule: 1: Expression -> Lvalue AssignOp Expression
 Calculated and pushed value: 42
-Popping 1 values to evaluate S3@0-9L0o1a1, rule: 0: Statement -> Expression
+Popping 1 values to evaluate a2 F1@0-9, rule: 0: Statement -> Expression
 Calculated and pushed value: 'a=42 b=42 c=-5 d=6 e=3'
-New Virtual Rule: S2@0-9L8o0a0, rule: 7: Statement['] -> Statement
+New Virtual Rule: F0@0-9, rule: 7: Statement['] -> Statement
 Symbol count is 1, now 1 rules
+New Virtual Rule: F7@0-9, rule: 7: Statement['] -> Statement
+Symbol count is 1, now 2 rules
 END_TRACE_OUTPUT
 
 # Marpa::Display::End

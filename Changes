@@ -1,5 +1,9 @@
 Revision history for Marpa
 
+0.105_000 Tue Jun 29 11:05:37 2010
+
+    * New series of developer's releases.
+
 0.104000 Mon Jun 28 19:42:10 2010
 
     * Added very useful tool for debugging grammars: show_progress().

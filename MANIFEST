@@ -69,6 +69,7 @@ lib/Marpa/MDLex.pm
 lib/Marpa/MDLex/Internal/Quotes.pm
 lib/Marpa/MDLex/bin/mdlex_dump
 lib/Marpa/Offset.pm
+lib/Marpa/Perl.pm
 lib/Marpa/Recce_Value.pm
 lib/Marpa/Recognizer.pm
 lib/Marpa/Test.pm

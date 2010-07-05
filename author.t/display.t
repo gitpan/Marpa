@@ -8,8 +8,10 @@ use English qw( -no_match_vars );
 use Fatal qw(open close);
 use Text::Diff;
 use Getopt::Long qw(GetOptions);
+use List::Util;
 use Test::More 0.94;
 use Carp;
+
 use Perl::Tidy;
 use Text::Wrap;
 
@@ -94,7 +96,7 @@ FILE: for my $file (@test_files) {
 
 my @formatting_instructions = qw(perltidy
     remove-display-indent
-    remove-blank-last-line
+    remove-blank-last-line inline
     partial flatten normalize-whitespace);
 
 sub format_display {
@@ -106,6 +108,23 @@ sub format_display {
         $first_line_spaces = quotemeta $first_line_spaces;
         $result =~ s/^$first_line_spaces//gxms;
     }
+    if ( $instructions->{'inline'} ) {
+        my $min_indent = 99_999_999;
+        my @text = grep {/ [^ ] /xms} split /\n/xms, $result;
+        for my $line (@text) {
+            my ($s) = ( $line =~ / \A  ([ ]* ) /xms );
+            my $indent = length $s;
+            $min_indent > $indent and $min_indent = $indent;
+        }
+        $result = join "\n", map { substr $_, $min_indent } @text;
+        my $tidied;
+        Perl::Tidy::perltidy(
+            source      => \$result,
+            destination => \$tidied,
+            perltidyrc  => \'-dcsc -sil=0',
+        );
+        $result = $tidied;
+    } ## end if ( $instructions->{'inline'} )
     if ( $instructions->{'remove-blank-last-line'} ) {
         $result =~ s/^[ \t]*\n\z//xms;
     }

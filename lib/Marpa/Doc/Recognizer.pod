@@ -428,12 +428,23 @@ from the grammar used to create the recognizer.
 
 =head2 trace_terminals
 
-Traces terminals as they are accepted or rejected
-by the recognizer.
 Very handy in debugging, and often useful
 even when the problem is not in the lexing.
-Requires little knowledge of Marpa internals
-to interpret.
+The value is a trace level.
+When the trace level is 0,
+tracing of terminals is off.
+This is the default.
+
+A trace level of 1 or higher,
+traces terminals as they are accepted or rejected
+by the recognizer.
+A trace level of 2 or higher
+traces the terminals expected at every
+earleme.
+Practical grammars often a large number of different
+terminals at many locations,
+so the output from a trace level of 2
+can be voluminous.
 
 =head2 warnings
 

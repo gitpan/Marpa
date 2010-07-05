@@ -82,7 +82,7 @@ sub My_Actions::do_multiply {
 sub My_Actions::first_arg { shift; return shift; }
 
 my $recce = Marpa::Recognizer->new(
-    { grammar => $grammar, trace_terminals => 1, mode => 'stream' } );
+    { grammar => $grammar, trace_terminals => 2, mode => 'stream' } );
 
 my $token_ix = 0;
 
@@ -147,6 +147,7 @@ Expecting "Number" at 2
 Expecting "Factor" at 2
 Accepted "Number" at 2-3
 Expecting "Multiply" at 3
+Rejected "Add" at 3
 END_TRACE_OUTPUT
 
 # Marpa::Display::End
