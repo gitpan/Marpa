@@ -7,7 +7,7 @@ use strict;
 use warnings;
 
 use Fatal qw(open close);
-use Test::More tests => 7;
+use Test::More tests => 10;
 
 use lib 'lib';
 use Marpa::Test;
@@ -67,6 +67,10 @@ my $value_ref = $recce->value();
 my $value = $value_ref ? ${$value_ref} : 'No Parse';
 
 # Marpa::Display::End
+
+Marpa::Test::is( 49, $value, 'Implementation Example Value 1' );
+
+$recce->reset_evaluation();
 
 my $show_symbols_output = $grammar->show_symbols();
 
@@ -221,6 +225,9 @@ open my $trace_fh, q{>}, \$trace_output;
 $value_ref = $recce->value( { trace_fh => $trace_fh, trace_values => 1 } );
 close $trace_fh;
 
+$value = $value_ref ? ${$value_ref} : 'No Parse';
+Marpa::Test::is( 49, $value, 'Implementation Example Value 2' );
+
 # Marpa::Display
 # name: Implementation Example trace_values Output
 # start-after-line: END_TRACE_OUTPUT
@@ -228,34 +235,34 @@ close $trace_fh;
 
 Marpa::Test::is( $trace_output,
     <<'END_TRACE_OUTPUT', 'Implementation Example Trace Output' );
-Pushed value from a26 T@0-1_Number: Number = \42
-Popping 1 values to evaluate a26 T@0-1_Number, rule: 2: Factor -> Number
+Pushed value from a12 T@0-1_Number: Number = \42
+Popping 1 values to evaluate a12 T@0-1_Number, rule: 2: Factor -> Number
 Calculated and pushed value: 42
-Pushed value from a24 R4:1@0-1T@1-2_Multiply: Multiply = \'*'
-Pushed value from a23 T@2-3_Number: Number = \1
-Popping 1 values to evaluate a23 T@2-3_Number, rule: 2: Factor -> Number
+Pushed value from a10 R4:1@0-1T@1-2_Multiply: Multiply = \'*'
+Pushed value from a9 T@2-3_Number: Number = \1
+Popping 1 values to evaluate a9 T@2-3_Number, rule: 2: Factor -> Number
 Calculated and pushed value: 1
-Popping 3 values to evaluate a22 R4:2@0-2F2@2-3, rule: 4: Factor -> Factor Multiply Factor
+Popping 3 values to evaluate a8 R4:2@0-2F2@2-3, rule: 4: Factor -> Factor Multiply Factor
 Calculated and pushed value: 42
-Popping 1 values to evaluate a21 F4@0-3, rule: 1: Term -> Factor
+Popping 1 values to evaluate a7 F4@0-3, rule: 1: Term -> Factor
 Calculated and pushed value: 42
-Pushed value from a19 R3:1@0-3T@3-4_Add: Add = \'+'
-Pushed value from a18 T@4-5_Number: Number = \7
-Popping 1 values to evaluate a18 T@4-5_Number, rule: 2: Factor -> Number
+Pushed value from a5 R3:1@0-3T@3-4_Add: Add = \'+'
+Pushed value from a4 T@4-5_Number: Number = \7
+Popping 1 values to evaluate a4 T@4-5_Number, rule: 2: Factor -> Number
 Calculated and pushed value: 7
-Popping 1 values to evaluate a17 F2@4-5, rule: 1: Term -> Factor
+Popping 1 values to evaluate a3 F2@4-5, rule: 1: Term -> Factor
 Calculated and pushed value: 7
-Popping 3 values to evaluate a16 R3:2@0-4F1@4-5, rule: 3: Term -> Term Add Term
+Popping 3 values to evaluate a2 R3:2@0-4F1@4-5, rule: 3: Term -> Term Add Term
 Calculated and pushed value: 49
-Popping 1 values to evaluate a15 F3@0-5, rule: 0: Expression -> Term
+Popping 1 values to evaluate a1 F3@0-5, rule: 0: Expression -> Term
 Calculated and pushed value: 49
-New Virtual Rule: F0@0-5, rule: 5: Expression['] -> Expression
+New Virtual Rule: a0 F0@0-5, rule: 5: Expression['] -> Expression
 Symbol count is 1, now 1 rules
-New Virtual Rule: F5@0-5, rule: 5: Expression['] -> Expression
-Symbol count is 1, now 2 rules
 END_TRACE_OUTPUT
 
 # Marpa::Display::End
+
+$recce->reset_evaluation();
 
 # Marpa::Display
 # name: Implementation Example Multi-parse Evaluator Call
@@ -263,6 +270,10 @@ END_TRACE_OUTPUT
 my $evaler = Marpa::Evaluator->new( { recce => $recce } );
 
 # Marpa::Display::End
+
+$value_ref = $evaler->value();
+$value = $value_ref ? ${$value_ref} : 'No Parse';
+Marpa::Test::is( 49, $value, 'Implementation Example Value 3' );
 
 # Marpa::Display
 # name: Implementation Example show_bocage Call
@@ -278,7 +289,7 @@ my $show_bocage_output = $evaler->show_bocage(2);
 
 Marpa::Test::is( $show_bocage_output,
     <<'END_BOCAGE' , 'Implementation Example Bocage' );
-parse count: 0
+parse count: 1
 S2@0-5L6o0 -> S2@0-5L6o0a0
 S2@0-5L6o0a0 -> S5@0-5L0o1
     rule 5: Expression['] -> Expression .

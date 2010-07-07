@@ -12,7 +12,6 @@ use Data::Dumper ();
 use English qw( -no_match_vars );
 use Carp 1.08 ();
 use Test::More ();
-use Marpa::Perl;
 
 BEGIN {
     my $PPI_problem;
@@ -33,6 +32,8 @@ BEGIN {
     }
     Test::More::use_ok('Marpa');
 } ## end BEGIN
+
+use Marpa::Perl;
 
 our @OUTPUT = ();
 our %SYMTAB = ( SCALAR => {} );

@@ -118,10 +118,15 @@ sub format_display {
         }
         $result = join "\n", map { substr $_, $min_indent } @text;
         my $tidied;
+
+        # perltidy options chosen to make it as likely
+        # as possible that code which differs
+        # only in whitespace
+        # will end up the same.
         Perl::Tidy::perltidy(
             source      => \$result,
             destination => \$tidied,
-            perltidyrc  => \'-dcsc -sil=0',
+            perltidyrc  => \'-sbt=0 -iob -dcsc -sil=0',
         );
         $result = $tidied;
     } ## end if ( $instructions->{'inline'} )

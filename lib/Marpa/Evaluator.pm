@@ -1473,6 +1473,9 @@ sub Marpa::Evaluator::new {
     my $earley_sets = $recce->[Marpa::Internal::Recognizer::EARLEY_SETS];
     my $earley_hash = $recce->[Marpa::Internal::Recognizer::EARLEY_HASH];
 
+    Marpa::exception("Attempt to evaluate unfinished parse:\n")
+        if not $recce->[Marpa::Internal::Recognizer::FINISHED];
+
     my $furthest_earleme =
         $recce->[Marpa::Internal::Recognizer::FURTHEST_EARLEME];
     my $last_completed_earleme =
@@ -2655,7 +2658,9 @@ sub evaluate {
                             $and_node->[Marpa::Internal::And_Node::RULE_ID];
                         my $rule = $rules->[$rule_id];
                         say {$Marpa::Internal::TRACE_FH}
-                            'Head of Virtual Rule: ',
+                            'Head of Virtual Rule: a',
+                            $and_node->[Marpa::Internal::And_Node::ID],
+                            q{ },
                             $and_node->[Marpa::Internal::And_Node::TAG],
                             ', rule: ', Marpa::brief_rule($rule),
                             "\n",
@@ -2683,7 +2688,9 @@ sub evaluate {
                             $and_node->[Marpa::Internal::And_Node::RULE_ID];
                         my $rule = $rules->[$rule_id];
                         say {$Marpa::Internal::TRACE_FH}
-                            'Head of Virtual Rule (discards separation): ',
+                            'Head of Virtual Rule (discards separation): a',
+                            $and_node->[Marpa::Internal::And_Node::ID],
+                            q{ },
                             $and_node->[Marpa::Internal::And_Node::TAG],
                             ', rule: ', Marpa::brief_rule($rule),
                             "\nAdding $real_symbol_count symbols; currently ",
@@ -2717,7 +2724,9 @@ sub evaluate {
                             $and_node->[Marpa::Internal::And_Node::RULE_ID];
                         my $rule = $rules->[$rule_id];
                         say {$Marpa::Internal::TRACE_FH}
-                            'Virtual Rule: ',
+                            'Virtual Rule: a',
+                            $and_node->[Marpa::Internal::And_Node::ID],
+                            q{ },
                             $and_node->[Marpa::Internal::And_Node::TAG],
                             ', rule: ', Marpa::brief_rule($rule),
                             "\nAdding $real_symbol_count, now ",
@@ -2737,7 +2746,9 @@ sub evaluate {
                             $and_node->[Marpa::Internal::And_Node::RULE_ID];
                         my $rule = $rules->[$rule_id];
                         say {$Marpa::Internal::TRACE_FH}
-                            'New Virtual Rule: ',
+                            'New Virtual Rule: a',
+                            $and_node->[Marpa::Internal::And_Node::ID],
+                            q{ },
                             $and_node->[Marpa::Internal::And_Node::TAG],
                             ', rule: ', Marpa::brief_rule($rule),
                             "\nSymbol count is $real_symbol_count, now ",

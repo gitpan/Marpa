@@ -1,8 +1,11 @@
 Revision history for Marpa
 
+0.105_001 Wed Jul  7 08:51:22 2010
 0.105_000 Tue Jun 29 11:05:37 2010
 
     * New series of developer's releases.
+
+    * Fixed failure to install on systems without PPI.
 
 0.104000 Mon Jun 28 19:42:10 2010
 

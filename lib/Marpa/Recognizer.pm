@@ -74,6 +74,8 @@ use Marpa::Offset qw(
     OR_NODES
     OR_NODE_HASH
 
+    ITERATION_STACK
+
     =LAST_EVALUATOR_FIELD
 
     EARLEY_HASH { Hash of the Earley items by Earley set.
@@ -272,6 +274,7 @@ sub Marpa::Recognizer::reset_evaluation {
     $recce->[Marpa::Internal::Recognizer::AND_NODE_HASH]     = {};
     $recce->[Marpa::Internal::Recognizer::OR_NODES]          = [];
     $recce->[Marpa::Internal::Recognizer::OR_NODE_HASH]      = {};
+    $recce->[Marpa::Internal::Recognizer::ITERATION_STACK]   = [];
     return;
 } ## end sub Marpa::Recognizer::reset_evaluation
 
