@@ -10,7 +10,7 @@ use lib 'lib';
 use English qw( -no_match_vars );
 use Fatal qw(open close chdir);
 
-use Test::More tests => 10;
+use Test::More tests => 7;
 use Marpa::Test;
 
 use constant A_LOT_OF_VALUES => 25;
@@ -61,10 +61,6 @@ sA(AA(At(t)))
 sA(At(t))
 EOS
     <<'EOS',
-sA(AA(At(t)))
-sA(At(t))
-EOS
-    <<'EOS',
 Cycle found involving rule: 0: A -> A
 EOS
 ];
@@ -99,22 +95,6 @@ sB(BB(Bt(t)))
 sB(Bt(t))
 EOS
     <<'EOS',
-sA(AA(AB(Bt(t))))
-sA(AA(At(t)))
-sA(AB(Bt(t)))
-sA(At(t))
-sB(BA(AA(AB(Bt(t)))))
-sB(BA(AA(At(t))))
-sB(BA(AB(Bt(t))))
-sB(BA(At(t)))
-sB(BB(BA(AA(AB(Bt(t))))))
-sB(BB(BA(AA(At(t)))))
-sB(BB(BA(AB(Bt(t)))))
-sB(BB(BA(At(t))))
-sB(BB(Bt(t)))
-sB(Bt(t))
-EOS
-    <<'EOS',
 Cycle found involving rule: 5: B -> B
 Cycle found involving rule: 4: B -> A
 Cycle found involving rule: 1: A -> B
@@ -127,9 +107,6 @@ my $plex3_test = [
     [ start => 's', rules => make_plex_rules(3) ],
     <<'EOS',
 1884 values
-EOS
-    <<'EOS',
-119 values
 EOS
     <<'EOS',
 Cycle found involving rule: 12: C -> C
@@ -145,9 +122,8 @@ EOS
 ];
 
 for my $test_data ( $plex1_test, $plex2_test, $plex3_test ) {
-    my ( $test_name, $rules, $expected_values_rw, $expected_values_norw,
-        $expected_trace )
-        = @{$test_data};
+    my ( $test_name, $rules, $expected_values, $expected_trace ) =
+        @{$test_data};
 
     my $trace = q{};
     open my $MEMORY, '>', \$trace;
@@ -170,40 +146,19 @@ for my $test_data ( $plex1_test, $plex2_test, $plex3_test ) {
         { grammar => $grammar, trace_file_handle => \*STDERR } );
     $recce->tokens( [ [ 't', 't', 1 ] ] );
 
-    for my $infinite_rewrite ( 0, 1 ) {
-        my $evaler = Marpa::Evaluator->new(
-            { experimental => 'no warning' },
-            {   recce            => $recce,
-                infinite_scale   => 200,
-                infinite_rewrite => $infinite_rewrite,
-            }
-        );
-        if ( not defined $evaler ) {
-            Marpa::exception('Input not recognized');
-        }
+    my @values = ();
+    while ( my $value_ref = $recce->value() ) {
+        push @values, ${$value_ref};
+    }
 
-        my @values = ();
-        while ( my $value = $evaler->value() ) {
-            push @values, ${$value};
-        }
-
-        my $values = q{};
-        if ( @values > A_LOT_OF_VALUES ) {
-            $values = @values . ' values';
-        }
-        else {
-            $values = join "\n", sort @values;
-        }
-        Marpa::Test::is(
-            "$values\n",
-            (     $infinite_rewrite
-                ? $expected_values_rw
-                : $expected_values_norw,
-                "$test_name "
-                    . ( $infinite_rewrite ? 'rewrite' : 'no rewrite' )
-            )
-        );
-    } ## end for my $infinite_rewrite ( 0, 1 )
+    my $values = q{};
+    if ( @values > A_LOT_OF_VALUES ) {
+        $values = @values . ' values';
+    }
+    else {
+        $values = join "\n", sort @values;
+    }
+    Marpa::Test::is( "$values\n", $expected_values, $test_name );
 
 } ## end for my $test_data ( $plex1_test, $plex2_test, $plex3_test)
 

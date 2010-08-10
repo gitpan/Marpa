@@ -9,23 +9,32 @@ use English qw( -no_match_vars );
 
 use Marpa::Internal;
 use Marpa::Evaluator;
+use Marpa::Recce_Value;
 
 sub Marpa::location {
-    Marpa::exception('No context for location tie')
+    Marpa::exception('No context for location callback')
         if not my $context = $Marpa::Internal::CONTEXT;
     my ( $context_type, $and_node ) = @{$context};
-    Marpa::exception('LOCATION called outside and-node context')
-        if not $context_type ~~ [ 'setup and-node', 'rank and-node' ];
-    return $and_node->[Marpa::Internal::And_Node::START_EARLEME];
+    if ( $context_type ~~ [ 'setup eval and-node', 'rank eval and-node' ] ) {
+        return $and_node->[Marpa::Internal::Eval_And_Node::START_EARLEME];
+    }
+    if ( $context_type eq 'and-node' ) {
+        return $and_node->[Marpa::Internal::And_Node::START_EARLEME];
+    }
+    Marpa::exception('LOCATION called outside and-node context');
 } ## end sub Marpa::location
 
 sub Marpa::cause_location {
-    Marpa::exception('No context for cause_location')
+    Marpa::exception('No context for cause_location callback')
         if not my $context = $Marpa::Internal::CONTEXT;
     my ( $context_type, $and_node ) = @{$context};
-    Marpa::exception('cause_location() called outside and-node context')
-        if not $context_type ~~ [ 'setup and-node', 'rank and-node' ];
-    return $and_node->[Marpa::Internal::And_Node::CAUSE_EARLEME];
+    if ( $context_type ~~ [ 'setup eval and-node', 'rank eval and-node' ] ) {
+        return $and_node->[Marpa::Internal::Eval_And_Node::CAUSE_EARLEME];
+    }
+    if ( $context_type eq 'and-node' ) {
+        return $and_node->[Marpa::Internal::And_Node::CAUSE_EARLEME];
+    }
+    Marpa::exception('cause_location() called outside and-node context');
 } ## end sub Marpa::cause_location
 
 no strict 'refs';
@@ -36,10 +45,15 @@ sub Marpa::length {
     Marpa::exception('No context for LENGTH tie')
         if not my $context = $Marpa::Internal::CONTEXT;
     my ( $context_type, $and_node ) = @{$context};
-    Marpa::exception('LENGTH called outside and-node context')
-        if not $context_type ~~ [ 'setup and-node', 'rank and-node' ];
-    return $and_node->[Marpa::Internal::And_Node::END_EARLEME]
-        - $and_node->[Marpa::Internal::And_Node::START_EARLEME];
+    if ( $context_type ~~ [ 'setup eval and-node', 'rank eval and-node' ] ) {
+        return $and_node->[Marpa::Internal::Eval_And_Node::END_EARLEME]
+            - $and_node->[Marpa::Internal::Eval_And_Node::START_EARLEME];
+    }
+    if ( $context_type eq 'and-node' ) {
+        return $and_node->[Marpa::Internal::And_Node::END_EARLEME]
+            - $and_node->[Marpa::Internal::And_Node::START_EARLEME];
+    }
+    Marpa::exception('LENGTH called outside and-node context');
 } ## end sub Marpa::length
 
 1;

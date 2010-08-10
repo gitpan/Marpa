@@ -199,19 +199,18 @@ TEST: for my $test_data (@test_data) {
     $lexer->text( \$test_input );
     $recce->end_input();
 
-    my $evaler = Marpa::Evaluator->new( { recce => $recce } );
-    Carp::croak('Parse failed') if not $evaler;
     my @parses;
-    while ( defined( my $value = $evaler->value ) ) {
-        push @parses, ${$value};
+    while ( defined( my $value_ref = $recce->value() ) ) {
+        my $value = $value_ref ? ${$value_ref} : 'No parse';
+        push @parses, $value;
     }
     my $expected_parse_count = scalar @{$test_results};
     my $parse_count          = scalar @parses;
     Marpa::Test::is( $parse_count, $expected_parse_count,
         "$test_name: Parse count" );
 
-    my $expected = join "\n", @{$test_results};
-    my $actual   = join "\n", @parses;
+    my $expected = join "\n", sort @{$test_results};
+    my $actual   = join "\n", sort @parses;
     Marpa::Test::is( $actual, $expected, "$test_name: Parse match" );
 } ## end for my $test_data (@test_data)
 

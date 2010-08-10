@@ -384,7 +384,7 @@ sub Marpa::MDLex::text {
             my $string_to_match = substr ${$input_ref}, $pos, 20;
             $string_to_match
                 =~ s/([\x00-\x1F\x7F-\xFF])/sprintf('{%#.2x}', ord($1))/gexms;
-            say $trace_fh "Match target at $pos: ", $string_to_match
+            say {$trace_fh} "Match target at $pos: ", $string_to_match
                 or Marpa::exception("Cannot print: $ERRNO");
         } ## end if ( $trace_tries and scalar @{$lexables} )
 

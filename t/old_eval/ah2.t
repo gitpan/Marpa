@@ -23,7 +23,7 @@ sub default_action {
     my $v_count = scalar @_;
     return q{}   if $v_count <= 0;
     return $_[0] if $v_count == 1;
-    return '(' . join( q{}, @_ ) . ')';
+    return '(' . ( join q{;}, @_ ) . ')';
 } ## end sub default_action
 
 ## use critic
@@ -322,7 +322,7 @@ EARLEME: for my $earleme ( 0 .. $input_length + 1 ) {
     Marpa::Test::is(
         $recce->show_earley_sets(1),
         "Last Completed: $last_completed; Furthest: $furthest\n"
-            . join( q{}, @set[ 0 .. $furthest ] ),
+            . ( join q{}, @set[ 0 .. $furthest ] ),
         "Aycock/Horspool Parse Status at earleme $earleme"
     );
     given ($earleme) {
@@ -337,20 +337,44 @@ EARLEME: for my $earleme ( 0 .. $input_length + 1 ) {
     } ## end given
 } ## end for my $earleme ( 0 .. $input_length + 1 )
 
-my @expected = (
-    q{}, qw[
-        (a)
-        (aa)
-        (aaa)
-        (aaaa)
-        ]
+my @expected = (q{});
+$expected[1] = join "\n", qw(
+    (a;;;)
+    (;a;;)
+    (;;a;)
+    (;;;a)
 );
+$expected[2] = join "\n", qw(
+    (a;a;;)
+    (a;;a;)
+    (a;;;a)
+    (;a;a;)
+    (;a;;a)
+    (;;a;a)
+);
+$expected[3] = join "\n", qw(
+    (a;a;a;)
+    (a;a;;a)
+    (a;;a;a)
+    (;a;a;a)
+);
+$expected[4] = '(a;a;a;a)';
 
 for my $i ( 0 .. $input_length ) {
-    $recce->reset_evaluation();
-    my $value_ref = $recce->value( { end => $i } );
-    my $value = $value_ref ? ${$value_ref} : 'No Parse';
-    Test::More::is( $value, $expected[$i], "ah2 length $i" );
+    my $evaler = Marpa::Evaluator->new(
+        {   recce       => $recce,
+            end         => $i,
+            max_parses  => 20,
+            parse_order => 'original',
+        }
+    );
+    my @result;
+    while ( my $result = $evaler->value() ) {
+        push @result, ${$result};
+    }
+    my $all_results = ( join "\n", @result );
+    Test::More::is( $all_results, $expected[$i], "parse permutation $i" );
+
 } ## end for my $i ( 0 .. $input_length )
 
 # Local Variables:

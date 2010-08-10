@@ -25,6 +25,7 @@ my @tests = ( 'run phase warning', 'run phase error', 'run phase die', );
 
 my %good_code = (
     'e_op_action'     => 'main::e_op_action',
+    'e_pass_through'  => 'main::e_pass_through',
     'e_number_action' => 'main::e_number_action',
     'default_action'  => 'main::default_action',
 );
@@ -32,7 +33,6 @@ my %good_code = (
 # Code to produce a run phase warning
 sub run_phase_warning {
     my $x;
-    ## no critic (ErrorHandling::RequireCarping)
     warn 'Test Warning 1';
     warn 'Test Warning 2';
     $x++;
@@ -49,7 +49,6 @@ sub run_phase_error {
 # Code to produce a run phase die()
 sub run_phase_die {
     my $x = 0;
-    ## no critic (ErrorHandling::RequireCarping)
     die 'test call to die';
 }
 
@@ -144,6 +143,7 @@ sub run_test {
     my $args = shift;
 
     my $e_op_action     = $good_code{e_op_action};
+    my $e_pass_through  = $good_code{e_pass_through};
     my $e_number_action = $good_code{e_number_action};
     my $default_action  = $good_code{default_action};
 
@@ -167,9 +167,11 @@ sub run_test {
     my $grammar = Marpa::Grammar->new(
         {   start => 'S',
             rules => [
-                [ 'S', [qw/E trailer optional_trailer1 optional_trailer2/], ],
-                [ 'E', [qw/E Op E/], $e_op_action, ],
-                [ 'E', [qw/Number/], $e_number_action, ],
+                [ 'S', [qw/T trailer optional_trailer1 optional_trailer2/], ],
+                [ 'T', [qw/T AddOp T/], $e_op_action, ],
+                [ 'T', [qw/F/], $e_pass_through, ],
+                [ 'F', [qw/F MultOp F/], $e_op_action, ],
+                [ 'F', [qw/Number/], $e_number_action, ],
                 [ 'optional_trailer1', [qw/trailer/], ],
                 [ 'optional_trailer1', [], ],
                 [ 'optional_trailer2', [], ],
@@ -178,7 +180,7 @@ sub run_test {
             default_action     => $default_action,
             default_null_value => '[default null]',
             symbols   => { optional_trailer2 => { null_value => '[null]' } },
-            terminals => [qw(Number Op Text)],
+            terminals => [qw(Number AddOp MultOp Text)],
         }
     );
     $grammar->precompute();
@@ -190,24 +192,24 @@ sub run_test {
             default_prefix => '\s*',
             terminals      => [
                 [ 'Number', '\d+' ],
-                [ 'Op',     '[-+*]' ],
+                [ 'AddOp',  '[-+]' ],
+                [ 'MultOp', '[*]' ],
                 { name => 'Text', builtin => 'q_quote' },
             ],
         }
     );
 
-    my $fail_offset = $lexer->text('2 - 0 * 3 + 1 q{trailer}');
+    my $fail_offset = $lexer->text('2 * 3 + 4 * 1 q{trailer}');
     if ( $fail_offset >= 0 ) {
         Marpa::exception("Parse failed at offset $fail_offset");
     }
 
     $recce->end_input();
 
-    my $expected = '((2-(0*(3+1)))==2; q{trailer};[default null];[null])';
-    my $evaler = Marpa::Evaluator->new( { recce => $recce } );
-    Carp::croak('Parse failed') if not defined $evaler;
-    my $value = $evaler->value();
-    Marpa::Test::is( ${$value}, $expected, 'Ambiguous Equation Value' );
+    my $expected  = '(((2*3)+(4*1))==10; q{trailer};[default null];[null])';
+    my $value_ref = $recce->value();
+    my $value     = $value_ref ? ${$value_ref} : 'No parse';
+    Marpa::Test::is( $value, $expected, 'Ambiguous Equation Value' );
 
     return 1;
 
@@ -249,6 +251,11 @@ for my $test (@tests) {
 } ## end for my $test (@tests)
 
 ## no critic (Subroutines::RequireArgUnpacking)
+
+sub e_pass_through {
+    shift;
+    return $_[0];
+}
 
 sub e_op_action {
     shift;
@@ -310,7 +317,7 @@ __END__
 * THERE WERE 2 WARNING(S) IN THE MARPA SEMANTICS:
 Marpa treats warnings as fatal errors
 * THIS IS WHAT MARPA WAS DOING WHEN THE PROBLEM OCCURRED:
-Computing value for rule: 1: E -> E Op E
+Computing value for rule: 3: F -> F MultOp F
 * WARNING MESSAGE NUMBER 0:
 Test Warning 1, <DATA> line <LINE_NO>.
 * WARNING MESSAGE NUMBER 1:
@@ -323,7 +330,7 @@ __END__
 * THERE WERE 2 WARNING(S) IN THE MARPA SEMANTICS:
 Marpa treats warnings as fatal errors
 * THIS IS WHAT MARPA WAS DOING WHEN THE PROBLEM OCCURRED:
-Computing value for rule: 6: trailer -> Text
+Computing value for rule: 8: trailer -> Text
 * WARNING MESSAGE NUMBER 0:
 Test Warning 1, <DATA> line <LINE_NO>.
 * WARNING MESSAGE NUMBER 1:
@@ -343,7 +350,7 @@ __END__
 ============================================================
 * THE MARPA SEMANTICS PRODUCED A FATAL ERROR
 * THIS IS WHAT MARPA WAS DOING WHEN THE PROBLEM OCCURRED:
-Computing value for rule: 1: E -> E Op E
+Computing value for rule: 3: F -> F MultOp F
 * THIS WAS THE FATAL ERROR MESSAGE:
 Illegal division by zero, <DATA> line <LINE_NO>.
 * ONE PLACE TO LOOK FOR THE PROBLEM IS IN THE CODE
@@ -353,7 +360,7 @@ __END__
 ============================================================
 * THE MARPA SEMANTICS PRODUCED A FATAL ERROR
 * THIS IS WHAT MARPA WAS DOING WHEN THE PROBLEM OCCURRED:
-Computing value for rule: 6: trailer -> Text
+Computing value for rule: 8: trailer -> Text
 * THIS WAS THE FATAL ERROR MESSAGE:
 Illegal division by zero, <DATA> line <LINE_NO>.
 * ONE PLACE TO LOOK FOR THE PROBLEM IS IN THE CODE
@@ -371,7 +378,7 @@ __END__
 ============================================================
 * THE MARPA SEMANTICS PRODUCED A FATAL ERROR
 * THIS IS WHAT MARPA WAS DOING WHEN THE PROBLEM OCCURRED:
-Computing value for rule: 1: E -> E Op E
+Computing value for rule: 3: F -> F MultOp F
 * THIS WAS THE FATAL ERROR MESSAGE:
 test call to die, <DATA> line <LINE_NO>.
 * ONE PLACE TO LOOK FOR THE PROBLEM IS IN THE CODE
@@ -381,7 +388,7 @@ __END__
 ============================================================
 * THE MARPA SEMANTICS PRODUCED A FATAL ERROR
 * THIS IS WHAT MARPA WAS DOING WHEN THE PROBLEM OCCURRED:
-Computing value for rule: 6: trailer -> Text
+Computing value for rule: 8: trailer -> Text
 * THIS WAS THE FATAL ERROR MESSAGE:
 test call to die, <DATA> line <LINE_NO>.
 * ONE PLACE TO LOOK FOR THE PROBLEM IS IN THE CODE

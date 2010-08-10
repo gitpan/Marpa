@@ -71,8 +71,6 @@ sub default_action {
     return '(' . join( q{;}, @_ ) . ')';
 } ## end sub default_action
 
-## no critic (ErrorHandling::RequireCarping)
-
 my $grammar = Marpa::Grammar->new(
     {   start   => 'E',
         strip   => 0,
@@ -307,23 +305,23 @@ my %expected_value = (
     '((2-0)*(3+1))==8' => 1,
     '(2-((0*3)+1))==1' => 1,
 );
-my $evaler = Marpa::Evaluator->new(
-    {   recce => $recce,
 
-        # Set max at 10 just in case there's an infinite loop.
-        # This is for debugging, after all
-        max_parses => 10,
-    }
-);
-Marpa::exception('Parse failed') if not $evaler;
+# Set max at 10 just in case there's an infinite loop.
+# This is for debugging, after all
+$recce->set( { max_parses => 10, } );
 
 my $i = 0;
-while ( defined( my $value = $evaler->value() ) ) {
+while ( defined( my $value = $recce->value() ) ) {
     my $value = ${$value};
-    Test::More::ok( $expected_value{$value}, "Value $i (unspecified order)" );
-    delete $expected_value{$value};
+    if ( defined $expected_value{$value} ) {
+        delete $expected_value{$value};
+        Test::More::pass("Expected Value $i: $value");
+    }
+    else {
+        Test::More::fail("Unexpected Value $i: $value");
+    }
     $i++;
-} ## end while ( defined( my $value = $evaler->value() ) )
+} ## end while ( defined( my $value = $recce->value() ) )
 
 # Local Variables:
 #   mode: cperl

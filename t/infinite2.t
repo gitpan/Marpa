@@ -7,17 +7,14 @@ use warnings;
 use lib 'lib';
 use English qw( -no_match_vars );
 use Fatal qw(open close chdir);
-use Test::More tests => 6;
+use Test::More tests => 4;
 use Marpa::Test;
 
 BEGIN {
-    Test::More::use_ok('Marpa::MDLex');
+    Test::More::use_ok('Marpa');
 }
 
-my @expected_values = split /\n/xms, <<'EOS';
-A(B(a))
-a
-EOS
+my %expected_original = map { ( $_ => 1 ) } qw( A(B(a)) a );
 
 ## no critic (Subroutines::RequireArgUnpacking)
 sub show_a         { return 'A(' . $_[1] . ')' }
@@ -51,15 +48,6 @@ $Test_Grammar::MARPA_OPTIONS = [
     }
 ];
 
-$Test_Grammar::MDLEX_OPTIONS = [
-    {   'terminals' => [
-            {   'name'  => 'a:k0',
-                'regex' => 'a'
-            }
-        ]
-    }
-];
-
 my $trace;
 open my $MEMORY, '>', \$trace;
 my $grammar = Marpa::Grammar->new(
@@ -79,38 +67,20 @@ my $recce = Marpa::Recognizer->new(
     }
 );
 
-my $lexer =
-    Marpa::MDLex->new( { recce => $recce }, @{$Test_Grammar::MDLEX_OPTIONS} );
-my $text          = 'a';
-my $fail_location = $lexer->text( \$text );
-if ( $fail_location >= 0 ) {
-    Marpa::exception(
-        Marpa::show_location( 'Parsing failed', \$text, $fail_location ) );
+$recce->tokens( [ [ 'a:k0', 'a' ] ] );
+
+my %expected = %expected_original;
+while ( my $value_ref = $recce->value() ) {
+    my $value = ${$value_ref};
+    if ( defined $expected{$value} ) {
+        Test::More::pass(qq{Expected value: "$value"});
+        delete $expected{$value};
+    }
+} ## end while ( my $value_ref = $recce->value() )
+
+for my $missing_value ( keys %expected ) {
+    Test::More::fail(qq{Missing value: "$missing_value"});
 }
-$recce->end_input();
-
-my $evaler =
-    Marpa::Evaluator->new( { recce => $recce, infinite_rewrite => 0 } );
-my $parse_count = 0;
-while ( my $value = $evaler->value() ) {
-    Marpa::Test::is(
-        ${$value},
-        $expected_values[$parse_count],
-        "cycle depth test $parse_count"
-    );
-    $parse_count++;
-} ## end while ( my $value = $evaler->value() )
-
-$evaler = Marpa::Evaluator->new( { recce => $recce, infinite_rewrite => 1 } );
-$parse_count = 0;
-while ( my $value = $evaler->value() ) {
-    Marpa::Test::is(
-        ${$value},
-        $expected_values[$parse_count],
-        "cycle depth test $parse_count"
-    );
-    $parse_count++;
-} ## end while ( my $value = $evaler->value() )
 
 # Local Variables:
 #   mode: cperl

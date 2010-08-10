@@ -142,14 +142,16 @@ for my $a_length ( 1 .. 4 ) {
         $recce->tokens(
             [ ( ($a_token) x $a_length ), ( ($b_token) x $b_length ), ] );
 
-        my $value_ref = $recce->value(
-            {   closures => {
+        my $evaler = Marpa::Evaluator->new(
+            {   recce    => $recce,
+                closures => {
                     'C_action'       => $C_action,
                     'S_action'       => $S_action,
                     'default_action' => $default_action,
                 }
             }
         );
+        my $value_ref = $evaler->value();
         my $value = $value_ref ? ${$value_ref} : 'No parse';
         Marpa::Test::is( $value, $expected{$string}, "Parse of $string" );
 

@@ -44,19 +44,12 @@ sub ah_extended {
     my @parse_counts;
     for my $loc ( 0 .. $n ) {
         my $parse_number = 0;
-        my $evaler       = Marpa::Evaluator->new(
-            {   recce       => $recce,
-                end         => $loc,
-                parse_order => 'none',
 
-                # An arbitrary maximum is put on the number of parses -- this is for
-                # debugging, and infinite loops happen.
-                max_parses => 999,
-            }
-        );
-        Marpa::exception("Cannot initialize parse at location $loc")
-            if not $evaler;
-        while ( $evaler->value() ) { $parse_counts[$loc]++ }
+        # An arbitrary maximum is put on the number of parses -- this is for
+        # debugging, and infinite loops happen.
+        $recce->reset_evaluation();
+        $recce->set( { end => $loc, max_parses => 999, } );
+        while ( $recce->value() ) { $parse_counts[$loc]++ }
     } ## end for my $loc ( 0 .. $n )
     return join q{ }, @parse_counts;
 } ## end sub ah_extended

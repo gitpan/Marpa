@@ -20,6 +20,9 @@ severity=5
 [BuiltinFunctions::ProhibitLvalueSubstr]
 severity=5
 
+# I consider these OK, but I also like to document
+# them, and the override this forces enforces
+# my documentation requirement
 [BuiltinFunctions::ProhibitReverseSortBlock]
 severity=5
 
@@ -134,7 +137,8 @@ severity=5
 lib_sections    = NAME | DESCRIPTION | SUPPORT | AUTHOR | LICENSE AND COPYRIGHT
 script_sections = NAME | USAGE | OPTIONS | EXIT STATUS | AUTHOR
 
-[ErrorHandling::RequireCarping]
+# die() is good for Internal errors.
+[-ErrorHandling::RequireCarping]
 severity=5
 
 [InputOutput::ProhibitBacktickOperators]
@@ -304,7 +308,7 @@ allow = refs
 
 [TestingAndDebugging::ProhibitNoWarnings]
 severity=5
-allow_with_category_restriction = 1
+allow=qw
 
 [TestingAndDebugging::ProhibitProlongedStrictureOverride]
 severity=5

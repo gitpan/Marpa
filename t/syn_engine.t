@@ -92,13 +92,9 @@ my $ambiguous_recce =
 
 $ambiguous_recce->tokens( \@tokens );
 
-my $evaler = Marpa::Evaluator->new( { recce => $ambiguous_recce } );
-
 my @values = ();
-if ($evaler) {
-    while ( defined( my $ambiguous_value_ref = $evaler->value() ) ) {
-        push @values, ${$ambiguous_value_ref};
-    }
+while ( defined( my $ambiguous_value_ref = $ambiguous_recce->value() ) ) {
+    push @values, ${$ambiguous_value_ref};
 }
 
 # Marpa::Display::End

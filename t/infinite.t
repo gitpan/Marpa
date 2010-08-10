@@ -7,12 +7,12 @@ use warnings;
 use English qw( -no_match_vars );
 use Fatal qw(open close chdir);
 
-use Test::More tests => 13;
+use Test::More tests => 7;
 use lib 'lib';
 use Marpa::Test;
 
 BEGIN {
-    Test::More::use_ok('Marpa::MDLex');
+    Test::More::use_ok('Marpa');
 }
 
 ## no critic (Subroutines::RequireArgUnpacking)
@@ -27,7 +27,6 @@ package Test_Grammar;
 # Formatted by Data::Dumper, which disagrees with
 # perltidy and perlcritic about things
 #<<< no perltidy
-##no critic (ValuesAndExpressions::ProhibitNoisyQuotes)
 
 $Test_Grammar::MARPA_OPTIONS_1 = [
     {   'default_action' => 'main::default_action',
@@ -38,15 +37,6 @@ $Test_Grammar::MARPA_OPTIONS_1 = [
         ],
         'start'     => 's',
         'terminals' => [ 's' ],
-    }
-];
-
-$Test_Grammar::MDLEX_OPTIONS_1 = [
-    {   'terminals' => [
-            {   'name'  => 's',
-                'regex' => '.'
-            }
-        ]
     }
 ];
 
@@ -62,15 +52,6 @@ $Test_Grammar::MARPA_OPTIONS_2 = [
         ],
         'start'     => 's',
         'terminals' => [ 'a' ],
-    }
-];
-
-$Test_Grammar::MDLEX_OPTIONS_2 = [
-    {   'terminals' => [
-            {   'name'  => 'a',
-                'regex' => '.'
-            }
-        ]
     }
 ];
 
@@ -116,30 +97,6 @@ $Test_Grammar::MARPA_OPTIONS_8 = [
     }
 ];
 
-$Test_Grammar::MDLEX_OPTIONS_8 = [
-    {   'terminals' => [
-            {   'name'  => 'e',
-                'regex' => '.'
-            },
-            {   'name'  => 't',
-                'regex' => '.'
-            },
-            {   'name'  => 'u',
-                'regex' => '.'
-            },
-            {   'name'  => 'v',
-                'regex' => '.'
-            },
-            {   'name'  => 'w',
-                'regex' => '.'
-            },
-            {   'name'  => 'x',
-                'regex' => '.'
-            }
-        ]
-    }
-];
-
 #>>>
 ## use critic
 
@@ -148,8 +105,7 @@ package main;
 my $cycle1_test = [
     'cycle1',
     $Test_Grammar::MARPA_OPTIONS_1,
-    $Test_Grammar::MDLEX_OPTIONS_1,
-    \('1'),
+    [ [ 's', '1' ] ],
     '1',
     <<'EOS'
 Cycle found involving rule: 0: s -> s
@@ -159,8 +115,7 @@ EOS
 my $cycle2_test = [
     'cycle2',
     $Test_Grammar::MARPA_OPTIONS_2,
-    $Test_Grammar::MDLEX_OPTIONS_2,
-    \('1'),
+    [ [ 'a', '1' ] ],
     '1',
     <<'EOS'
 Cycle found involving rule: 1: a -> s
@@ -168,11 +123,22 @@ Cycle found involving rule: 0: s -> a
 EOS
 ];
 
+my @cycle8_tokens = ( [ 'e', '1', 1, 0 ], [ 'v', '1', 1, 0 ], [ 'w', '1', ] );
+
+push @cycle8_tokens, map {
+    (   [ 'e', $_, 1, 0 ],
+        [ 't', $_, 1, 0 ],
+        [ 'u', $_, 1, 0 ],
+        [ 'v', $_, 1, 0 ],
+        [ 'w', $_, 1, 0 ],
+        [ 'x', $_ ],
+        )
+} qw( 2 3 4 5 6 );
+
 my $cycle8_test = [
     'cycle8',
     $Test_Grammar::MARPA_OPTIONS_8,
-    $Test_Grammar::MDLEX_OPTIONS_8,
-    \('123456'),
+    \@cycle8_tokens,
     '1 2 3 4 5 6',
     <<'EOS'
 Cycle found involving rule: 3: c -> w d x
@@ -184,27 +150,9 @@ Cycle found involving rule: 0: s -> a
 EOS
 ];
 
-my @test_data;
-for my $base_test ( $cycle1_test, $cycle2_test, $cycle8_test ) {
-    my $test_name = $base_test->[0];
-    push @test_data,
-        [
-        "$test_name infinite_rewrite",
-        @{$base_test}[ 1 .. $#{$base_test} ],
-        { infinite_rewrite => 0 }
-        ];
-    push @test_data,
-        [
-        "$test_name no infinite_rewrite",
-        @{$base_test}[ 1 .. $#{$base_test} ],
-        { infinite_rewrite => 1 }
-        ];
-} ## end for my $base_test ( $cycle1_test, $cycle2_test, $cycle8_test)
-
-for my $test_data (@test_data) {
-    my ( $test_name, $marpa_options, $mdlex_options, $input, $expected,
-        $expected_trace, $evaler_options )
-        = @{$test_data};
+for my $test_data ( $cycle1_test, $cycle2_test, $cycle8_test ) {
+    my ( $test_name, $marpa_options, $input, $expected, $expected_trace ) =
+        @{$test_data};
     my $trace = q{};
     open my $MEMORY, '>', \$trace;
     my $grammar = Marpa::Grammar->new(
@@ -216,28 +164,16 @@ for my $test_data (@test_data) {
     $grammar->precompute();
 
     my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
-    my $lexer = Marpa::MDLex->new( { recce => $recce }, @{$mdlex_options} );
-    my $fail_offset = $lexer->text($input);
-    my $result;
-    given ($fail_offset) {
-        when ( $_ < 0 ) {
-            $recce->end_input();
-            my $evaler =
-                Marpa::Evaluator->new( { recce => $recce, },
-                $evaler_options );
-            $result = $evaler->value();
-        } ## end when ( $_ < 0 )
-        default {
-            $result = \"Parse failed at offset $fail_offset";
-        }
-    };
+    $recce->tokens($input);
+    my $value_ref = $recce->value();
+    my $value = $value_ref ? ${$value_ref} : 'No parse';
 
     close $MEMORY;
 
-    Marpa::Test::is( ${$result}, $expected,       "$test_name result" );
-    Marpa::Test::is( $trace,     $expected_trace, "$test_name trace" );
+    Marpa::Test::is( $value, $expected,       "$test_name result" );
+    Marpa::Test::is( $trace, $expected_trace, "$test_name trace" );
 
-} ## end for my $test_data (@test_data)
+} ## end for my $test_data ( $cycle1_test, $cycle2_test, $cycle8_test)
 
 # Local Variables:
 #   mode: cperl

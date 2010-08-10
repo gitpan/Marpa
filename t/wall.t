@@ -91,8 +91,10 @@ $g->precompute();
 
 for my $n ( 1 .. 12 ) {
 
-    my $recce = Marpa::Recognizer->new( { grammar => $g } );
-    $g->precompute();
+    # Set max_parses just in case there's an infinite loop.
+    # This is for debugging, after all
+    my $recce =
+        Marpa::Recognizer->new( { grammar => $g, max_parses => 300 } );
     $recce->tokens(
         [   [ 'Number', 6, 1 ],
             ( ( [ 'Minus', q{-}, 1 ] ) x $n ),
@@ -100,21 +102,8 @@ for my $n ( 1 .. 12 ) {
         ]
     );
 
-    my $evaler =
-        Marpa::Evaluator->new( { recce => $recce, parse_order => 'none', } );
-
-    # Set max_parses just in case there's an infinite loop.
-    # This is for debugging, after all
-
-# Marpa::Display
-# name: Evaluator set Method Example
-
-    $evaler->set( { max_parses => 300 } );
-
-# Marpa::Display::End
-
     my $parse_count = 0;
-    while ( $evaler->value() ) { $parse_count++; }
+    while ( $recce->value() ) { $parse_count++; }
     Marpa::Test::is( $expected[$n], $parse_count, "Wall Series Number $n" );
 
 } ## end for my $n ( 1 .. 12 )

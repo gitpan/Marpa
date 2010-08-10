@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 BEGIN {
-    our $VERSION = '0.105_001';
+    our $VERSION = '0.105_003';
 }
 
 package Marpa::Internal::Perl;
@@ -472,34 +472,363 @@ my %symbol_name = (
     q{'+'} => 'PLUS',
 );
 
-my %perl_type = (
-    q{=}    => 'ASSIGNOP',
-    q{~}    => 'TILDE',
-    q{-}    => 'MINUS',
-    q{,}    => 'COMMA',
-    q{=>}   => 'COMMA',
-    q{->}   => 'ARROW',
-    q{;}    => 'SEMI',
-    q{:}    => 'COLON',
-    q{!}    => 'BANG',
-    q{?}    => 'QUESTION',
-    q{(}    => 'LPAREN',
-    q{)}    => 'RPAREN',
-    q{[}    => 'LSQUARE',
-    q{]}    => 'RSQUARE',
-    q[{]    => 'LCURLY',
-    q[}]    => 'RCURLY',
-    q{@}    => 'ATSIGN',
-    q{$}    => 'DOLLAR',
-    q{*}    => 'ASTERISK',
-    q{&}    => 'AMPERSAND',
-    q{%}    => 'PERCENT',
-    q{+}    => 'PLUS',
-    q{\\}   => 'REFGEN',
-    'do'    => 'DO',
-    'my'    => 'MY',
-    'undef' => 'UNIOP',
-    'bless' => 'LSTOP',
+my %perl_type_by_cast = (
+    q{\\} => 'REFGEN',
+    q{$}  => 'DOLLAR',
+    q{@}  => 'ATSIGN',
+);
+
+my %perl_type_by_structure = (
+    q{(} => 'LPAREN',
+    q{)} => 'RPAREN',
+    q{[} => 'LSQUARE',
+    q{]} => 'RSQUARE',
+    q[{] => 'LCURLY',
+    q[}] => 'RCURLY',
+    q{;} => 'SEMI',
+);
+
+my %perl_type_by_op = (
+    q{->}  => 'ARROW',       # 1
+    q{--}  => 'PREDEC',      # 2
+    q{++}  => 'PREINC',      # 2
+    q{**}  => 'POWOP',       # 3
+    q{~}   => 'TILDE',       # 4
+    q{!}   => 'BANG',        # 4
+    q{\\}  => 'REFGEN',      # 4
+    q{=~}  => 'MATCHOP',     # 5
+    q{!~}  => 'MATCHOP',     # 5
+    q{/}   => 'MULOP',       # 6
+    q{*}   => 'MULOP',       # 6
+    q{%}   => 'MULOP',       # 6
+    q{x}   => 'MULOP',       # 6
+    q{-}   => 'MINUS',       # 7
+    q{.}   => 'ADDOP',       # 7
+    q{+}   => 'PLUS',        # 7
+    q{<<}  => 'SHIFTOP',     # 8
+    q{>>}  => 'SHIFTOP',     # 8
+    q{-A}  => 'UNIOP',       # 9
+    q{-b}  => 'UNIOP',       # 9
+    q{-B}  => 'UNIOP',       # 9
+    q{-c}  => 'UNIOP',       # 9
+    q{-C}  => 'UNIOP',       # 9
+    q{-d}  => 'UNIOP',       # 9
+    q{-e}  => 'UNIOP',       # 9
+    q{-f}  => 'UNIOP',       # 9
+    q{-g}  => 'UNIOP',       # 9
+    q{-k}  => 'UNIOP',       # 9
+    q{-l}  => 'UNIOP',       # 9
+    q{-M}  => 'UNIOP',       # 9
+    q{-o}  => 'UNIOP',       # 9
+    q{-O}  => 'UNIOP',       # 9
+    q{-p}  => 'UNIOP',       # 9
+    q{-r}  => 'UNIOP',       # 9
+    q{-R}  => 'UNIOP',       # 9
+    q{-s}  => 'UNIOP',       # 9
+    q{-S}  => 'UNIOP',       # 9
+    q{-t}  => 'UNIOP',       # 9
+    q{-T}  => 'UNIOP',       # 9
+    q{-u}  => 'UNIOP',       # 9
+    q{-w}  => 'UNIOP',       # 9
+    q{-W}  => 'UNIOP',       # 9
+    q{-x}  => 'UNIOP',       # 9
+    q{-X}  => 'UNIOP',       # 9
+    q{-z}  => 'UNIOP',       # 9
+    q{ge}  => 'RELOP',       # 10
+    q{gt}  => 'RELOP',       # 10
+    q{le}  => 'RELOP',       # 10
+    q{lt}  => 'RELOP',       # 10
+    q{<=}  => 'RELOP',       # 10
+    q{<}   => 'RELOP',       # 10
+    q{>=}  => 'RELOP',       # 10
+    q{>}   => 'RELOP',       # 10
+    q{cmp} => 'EQOP',        # 11
+    q{eq}  => 'EQOP',        # 11
+    q{ne}  => 'EQOP',        # 11
+    q{~~}  => 'EQOP',        # 11
+    q{<=>} => 'EQOP',        # 11
+    q{==}  => 'EQOP',        # 11
+    q{!=}  => 'EQOP',        # 11
+    q{&}   => 'BITANDOP',    # 12
+    q{^}   => 'BITOROP',     # 13
+    q{|}   => 'BITOROP',     # 13
+    q{&&}  => 'ANDAND',      # 14
+    q{||}  => 'OROR',        # 15
+    q{//}  => 'DORDOR',      # 15
+    q{..}  => 'DOTDOT',      # 16
+    q{...} => 'YADAYADA',    # 17
+    q{:}   => 'COLON',       # 18
+    q{?}   => 'QUESTION',    # 18
+    q{^=}  => 'ASSIGNOP',    # 19
+    q{<<=} => 'ASSIGNOP',    # 19
+    q{=}   => 'ASSIGNOP',    # 19
+    q{>>=} => 'ASSIGNOP',    # 19
+    q{|=}  => 'ASSIGNOP',    # 19
+    q{||=} => 'ASSIGNOP',    # 19
+    q{-=}  => 'ASSIGNOP',    # 19
+    q{/=}  => 'ASSIGNOP',    # 19
+    q{.=}  => 'ASSIGNOP',    # 19
+    q{*=}  => 'ASSIGNOP',    # 19
+    q{**=} => 'ASSIGNOP',    # 19
+    q{&=}  => 'ASSIGNOP',    # 19
+    q{&&=} => 'ASSIGNOP',    # 19
+    q{%=}  => 'ASSIGNOP',    # 19
+    q{+=}  => 'ASSIGNOP',    # 19
+    q{x=}  => 'ASSIGNOP',    # 19
+    q{,}   => 'COMMA',       # 20
+    q{=>}  => 'COMMA',       # 20
+    q{not} => 'NOTOP',       # 22
+    q{and} => 'ANDOP',       # 23
+    q{or}  => 'OROP',        # 24
+    q{xor} => 'DOROP',       # 24
+);
+
+my %perl_type_by_word = (
+    'AUTOLOAD'         => 'PHASER -- TO BE DETERMINED',
+    'BEGIN'            => 'PHASER -- TO BE DETERMINED',
+    'CHECK'            => 'PHASER -- TO BE DETERMINED',
+    'CORE'             => 'TO_BE_DETERMINED',
+    'DESTROY'          => 'PHASER -- TO BE DETERMINED',
+    'END'              => 'PHASER -- TO BE DETERMINED',
+    'INIT'             => 'PHASER -- TO BE DETERMINED',
+    'NULL'             => 'TO_BE_DETERMINED',
+    'UNITCHECK'        => 'PHASER -- TO BE DETERMINED',
+    '__DATA__'         => 'TO_BE_DETERMINED',
+    '__END__'          => 'TO_BE_DETERMINED',
+    '__FILE__'         => 'THING',
+    '__LINE__'         => 'THING',
+    '__PACKAGE__'      => 'THING',
+    'abs'              => 'UNIOP',
+    'accept'           => 'LSTOP',
+    'alarm'            => 'UNIOP',
+    'atan2'            => 'LSTOP',
+    'bind'             => 'LSTOP',
+    'binmode'          => 'LSTOP',
+    'bless'            => 'LSTOP',
+    'bless'            => 'LSTOP',
+    'break'            => 'LOOPEX',
+    'caller'           => 'UNIOP',
+    'chdir'            => 'UNIOP',
+    'chmod'            => 'LSTOP',
+    'chomp'            => 'UNIOP',
+    'chop'             => 'UNIOP',
+    'chown'            => 'LSTOP',
+    'chr'              => 'UNIOP',
+    'chroot'           => 'UNIOP',
+    'close'            => 'UNIOP',
+    'closedir'         => 'UNIOP',
+    'connect'          => 'LSTOP',
+    'continue'         => 'CONTINUE',
+    'cos'              => 'UNIOP',
+    'crypt'            => 'LSTOP',
+    'dbmclose'         => 'UNIOP',
+    'dbmopen'          => 'LSTOP',
+    'default'          => 'DEFAULT',
+    'defined'          => 'UNIOP',
+    'delete'           => 'UNIOP',
+    'die'              => 'LSTOP',
+    'do'               => 'DO',
+    'dump'             => 'UNIOP',
+    'each'             => 'UNIOP',
+    'else'             => 'ELSE',
+    'elsif'            => 'ELSIF',
+    'endgrent'         => 'FUNC0',
+    'endhostent'       => 'FUNC0',
+    'endnetent'        => 'FUNC0',
+    'endprotoent'      => 'FUNC0',
+    'endpwent'         => 'FUNC0',
+    'endservent'       => 'FUNC0',
+    'eof'              => 'UNIOP',
+    'eval'             => 'UNIOP',
+    'exec'             => 'LSTOP',
+    'exists'           => 'UNIOP',
+    'exit'             => 'UNIOP',
+    'exp'              => 'UNIOP',
+    'fcntl'            => 'LSTOP',
+    'fileno'           => 'UNIOP',
+    'flock'            => 'LSTOP',
+    'for'              => 'FOR',
+    'foreach'          => 'FOR',
+    'fork'             => 'FUNC0',
+    'format'           => 'FUNC0',
+    'formline'         => 'LSTOP',
+    'getc'             => 'UNIOP',
+    'getgrent'         => 'FUNC0',
+    'getgrgid'         => 'UNIOP',
+    'getgrnam'         => 'UNIOP',
+    'gethostbyaddr'    => 'LSTOP',
+    'gethostbyname'    => 'UNIOP',
+    'gethostent'       => 'FUNC0',
+    'getlogin'         => 'FUNC0',
+    'getnetbyaddr'     => 'LSTOP',
+    'getnetbyname'     => 'UNIOP',
+    'getnetent'        => 'FUNC0',
+    'getpeername'      => 'UNIOP',
+    'getpgrp'          => 'UNIOP',
+    'getppid'          => 'FUNC0',
+    'getpriority'      => 'LSTOP',
+    'getprotobyname'   => 'UNIOP',
+    'getprotobynumber' => 'UNIOP',
+    'getprotoent'      => 'FUNC0',
+    'getpwent'         => 'FUNC0',
+    'getpwnam'         => 'UNIOP',
+    'getpwuid'         => 'UNIOP',
+    'getservbyname'    => 'LSTOP',
+    'getservbyport'    => 'LSTOP',
+    'getservent'       => 'FUNC0',
+    'getsockname'      => 'UNIOP',
+    'getsockopt'       => 'LSTOP',
+    'given'            => 'GIVEN',
+    'glob'             => 'UNIOP',
+    'gmtime'           => 'UNIOP',
+    'goto'             => 'LOOPEX',
+    'grep'             => 'LSTOP',
+    'hex'              => 'UNIOP',
+    'if'               => 'IF',
+    'import'    => 'LSTOP',    # not really a keyword, but make it a LSTOP
+    'index'     => 'LSTOP',
+    'int'       => 'UNIOP',
+    'ioctl'     => 'LSTOP',
+    'join'      => 'LSTOP',
+    'keys'      => 'UNIOP',
+    'kill'      => 'LSTOP',
+    'last'      => 'LOOPEX',
+    'lc'        => 'UNIOP',
+    'lcfirst'   => 'UNIOP',
+    'length'    => 'UNIOP',
+    'link'      => 'LSTOP',
+    'listen'    => 'LSTOP',
+    'local'     => 'LOCAL',
+    'localtime' => 'UNIOP',
+    'lock'      => 'UNIOP',
+    'log'       => 'UNIOP',
+    'lstat'     => 'UNIOP',
+    'm'           => 'QUOTEABLE -- TO BE DETERMINED',
+    'map'         => 'LSTOP',
+    'mkdir'       => 'LSTOP',
+    'msgctl'      => 'LSTOP',
+    'msgget'      => 'LSTOP',
+    'msgrcv'      => 'LSTOP',
+    'msgsnd'      => 'LSTOP',
+    'my'          => 'MY',
+    'my'          => 'MY',
+    'next'        => 'LOOPEX',
+    'no'          => 'USE',
+    'oct'         => 'UNIOP',
+    'open'        => 'LSTOP',
+    'opendir'     => 'LSTOP',
+    'ord'         => 'UNIOP',
+    'our'         => 'MY',
+    'pack'        => 'LSTOP',
+    'package'     => 'PACKAGE',
+    'pipe'        => 'LSTOP',
+    'pop'         => 'UNIOP',
+    'pos'         => 'UNIOP',
+    'print'       => 'LSTOP',
+    'printf'      => 'LSTOP',
+    'prototype'   => 'UNIOP',
+    'push'        => 'LSTOP',
+    'q'           => 'QUOTEABLE -- TO BE DETERMINED',
+    'qq'          => 'QUOTEABLE -- TO BE DETERMINED',
+    'qr'          => 'QUOTEABLE -- TO BE DETERMINED',
+    'quotemeta'   => 'UNIOP',
+    'qw'          => 'QUOTEABLE -- TO BE DETERMINED',
+    'qx'          => 'QUOTEABLE -- TO BE DETERMINED',
+    'rand'        => 'UNIOP',
+    'read'        => 'LSTOP',
+    'readdir'     => 'UNIOP',
+    'readline'    => 'UNIOP',
+    'readlink'    => 'UNIOP',
+    'readpipe'    => 'UNIOP',
+    'recv'        => 'LSTOP',
+    'redo'        => 'LOOPEX',
+    'ref'         => 'UNIOP',
+    'rename'      => 'LSTOP',
+    'require'     => 'REQUIRE',
+    'reset'       => 'UNIOP',
+    'return'      => 'LSTOP',
+    'reverse'     => 'LSTOP',
+    'rewinddir'   => 'UNIOP',
+    'rindex'      => 'LSTOP',
+    'rmdir'       => 'UNIOP',
+    's'           => 'QUOTEABLE -- TO BE DETERMINED',
+    'say'         => 'LSTOP',
+    'scalar'      => 'UNIOP',
+    'seek'        => 'LSTOP',
+    'seekdir'     => 'LSTOP',
+    'select'      => 'LSTOP',
+    'semctl'      => 'LSTOP',
+    'semget'      => 'LSTOP',
+    'semop'       => 'LSTOP',
+    'send'        => 'LSTOP',
+    'setgrent'    => 'FUNC0',
+    'sethostent'  => 'UNIOP',
+    'setnetent'   => 'UNIOP',
+    'setpgrp'     => 'LSTOP',
+    'setpriority' => 'LSTOP',
+    'setprotoent' => 'UNIOP',
+    'setpwent'    => 'FUNC0',
+    'setservent'  => 'UNIOP',
+    'setsockopt'  => 'LSTOP',
+    'shift'       => 'UNIOP',
+    'shmctl'      => 'LSTOP',
+    'shmget'      => 'LSTOP',
+    'shmread'     => 'LSTOP',
+    'shmwrite'    => 'LSTOP',
+    'shutdown'    => 'LSTOP',
+    'sin'         => 'UNIOP',
+    'sleep'       => 'UNIOP',
+    'socket'      => 'LSTOP',
+    'socketpair'  => 'LSTOP',
+    'sort'        => 'LSTOP',
+    'splice'      => 'LSTOP',
+    'split'       => 'LSTOP',
+    'sprintf'     => 'LSTOP',
+    'sqrt'        => 'UNIOP',
+    'srand'       => 'UNIOP',
+    'stat'        => 'UNIOP',
+    'state'       => 'MY',
+    'study'       => 'UNIOP',
+    'sub'         => 'SUB',
+    'substr'      => 'LSTOP',
+    'symlink'     => 'LSTOP',
+    'syscall'     => 'LSTOP',
+    'sysopen'     => 'LSTOP',
+    'sysread'     => 'LSTOP',
+    'sysseek'     => 'LSTOP',
+    'system'      => 'LSTOP',
+    'syswrite'    => 'LSTOP',
+    'tell'        => 'UNIOP',
+    'telldir'     => 'UNIOP',
+    'tie'         => 'LSTOP',
+    'tied'        => 'UNIOP',
+    'time'        => 'FUNC0',
+    'times'       => 'FUNC0',
+    'tr'          => 'QUOTEABLE -- TO BE DETERMINED',
+    'truncate'    => 'LSTOP',
+    'uc'          => 'UNIOP',
+    'ucfirst'     => 'UNIOP',
+    'umask'       => 'UNIOP',
+    'undef'       => 'UNIOP',
+    'undef'       => 'UNIOP',
+    'unless'      => 'UNLESS',
+    'unlink'      => 'LSTOP',
+    'unpack'      => 'LSTOP',
+    'unshift'     => 'LSTOP',
+    'untie'       => 'UNIOP',
+    'until'       => 'UNTIL',
+    'use'         => 'USE',
+    'utime'       => 'LSTOP',
+    'values'      => 'UNIOP',
+    'vec'         => 'LSTOP',
+    'wait'        => 'FUNC0',
+    'waitpid'     => 'LSTOP',
+    'wantarray'   => 'FUNC0',
+    'warn'        => 'LSTOP',
+    'when'        => 'WHEN',
+    'while'       => 'WHILE',
+    'write'       => 'UNIOP',
+    'y'           => 'QUOTEABLE -- TO BE DETERMINED',
 );
 
 ## use critic
@@ -510,6 +839,7 @@ sub Marpa::Perl::new {
     my %symbol = ();
     my @rules;
     my %closure;
+    my $has_ranking_action;
 
     LINE:
     for my $line ( split /\n/xms, $reference_grammar ) {
@@ -537,10 +867,17 @@ sub Marpa::Perl::new {
         my @action_arg = ();
         if ( scalar @rhs ) {
             $action_name ||= 'MyAction::rule_' . scalar @rules;
-            my $action = $gen_closure->( $lhs, \@rhs, $action_name );
-            $closure{"!$action_name"} = $action;
-            @action_arg = ( action => "!$action_name" );
-            use strict;
+            my ( $action, $ranking_action ) =
+                $gen_closure->( $lhs, \@rhs, $action_name );
+            if ( defined $action ) {
+                $closure{"!$action_name"} = $action;
+                push @action_arg, action => "!$action_name";
+            }
+            if ( defined $ranking_action ) {
+                $closure{"!r!$action_name"} = $ranking_action;
+                push @action_arg, ranking_action => "!r!$action_name";
+                $has_ranking_action++;
+            }
         } ## end if ( scalar @rhs )
         push @rules, { lhs => $lhs, rhs => \@rhs, @action_arg };
     } ## end for my $line ( split /\n/xms, $reference_grammar )
@@ -555,9 +892,16 @@ sub Marpa::Perl::new {
 
     $grammar->precompute();
 
-    return bless { grammar => $grammar, closure => \%closure }, $class;
+    return bless {
+        grammar            => $grammar,
+        closure            => \%closure,
+        has_ranking_action => $has_ranking_action
+    }, $class;
 
 } ## end sub Marpa::Perl::new
+
+my @RECCE_NAMED_ARGUMENTS =
+    qw(trace_tasks trace_terminals trace_values trace_actions);
 
 sub Marpa::Perl::parse {
 
@@ -567,11 +911,7 @@ sub Marpa::Perl::parse {
 
     my @recce_args = ();
     HASH_ARG: while ( my ( $arg, $value ) = each %{$hash_arg} ) {
-        if ( $arg eq 'trace_terminals' ) {
-            push @recce_args, $arg, $value;
-            next HASH_ARG;
-        }
-        if ( $arg eq 'trace_values' ) {
+        if ( $arg ~~ \@RECCE_NAMED_ARGUMENTS ) {
             push @recce_args, $arg, $value;
             next HASH_ARG;
         }
@@ -579,26 +919,42 @@ sub Marpa::Perl::parse {
     } ## end while ( my ( $arg, $value ) = each %{$hash_arg} )
 
     my $grammar = $parser->{grammar};
+    $parser->{has_ranking_action}
+        and push @recce_args, ranking_method => 'constant';
 
     my $recce = Marpa::Recognizer->new(
-        {   grammar => $grammar,
-            mode    => 'stream',
+        {   grammar  => $grammar,
+            mode     => 'stream',
+            closures => $parser->{closure},
             @recce_args
         }
     );
 
-    my @PPI_tokens = ();
-    my $tokenizer  = PPI::Tokenizer->new($input);
+    my $document = PPI::Document->new($input);
+    $document->index_locations();
+    my @PPI_tokens = $document->tokens();
+    my @earleme_to_PPI_token;
     my $last_perl_type;
     my ( $current_earleme, $expected_tokens ) = $recce->status();
 
-    TOKEN: while ( my $token = $tokenizer->get_token() ) {
-        push @{ $PPI_tokens[$current_earleme] }, $token;
+    local $Marpa::Perl::Internal::CONTEXT =
+        [ \@PPI_tokens, \@earleme_to_PPI_token ];
+    TOKEN:
+    for (
+        my $PPI_token_ix = 0;
+        $PPI_token_ix <= $#PPI_tokens;
+        $PPI_token_ix++
+        )
+    {
+        $earleme_to_PPI_token[$current_earleme] //= $PPI_token_ix;
+        my $token    = $PPI_tokens[$PPI_token_ix];
         my $PPI_type = ref $token;
         next TOKEN if $PPI_type eq 'PPI::Token::Whitespace';
+        next TOKEN if $PPI_type eq 'PPI::Token::Comment';
         my @tokens = ();
         my $perl_type;
         FIND_TOKENS: {
+
             if ( $PPI_type eq 'PPI::Token::Symbol' ) {
                 my ( $sigil, $word ) =
                     ( $token->{content} =~ / \A ([\$]) (\w*) \z /xms );
@@ -612,22 +968,90 @@ sub Marpa::Perl::parse {
                 @tokens = ( [ 'DOLLAR', $sigil ], [ 'WORD', $word ] );
                 last FIND_TOKENS;
             } ## end if ( $PPI_type eq 'PPI::Token::Symbol' )
+
             if ( $PPI_type eq 'PPI::Token::Cast' ) {
                 my $content = $token->{content};
                 for my $cast ( split //xms, $content ) {
-                    $perl_type = $perl_type{$content};
+                    $perl_type = $perl_type_by_cast{$content};
+                    if ( not defined $perl_type ) {
+                        die qq{Unknown $PPI_type: "$content":},
+                            Marpa::Perl::default_show_location($token),
+                            "\n";
+                    }
                     push @tokens, [ $perl_type, $cast ];
-                }
+                } ## end for my $cast ( split //xms, $content )
                 last FIND_TOKENS;
             } ## end if ( $PPI_type eq 'PPI::Token::Cast' )
-            if (   $PPI_type eq 'PPI::Token::Structure'
-                or $PPI_type eq 'PPI::Token::Word'
-                or $PPI_type eq 'PPI::Token::Operator' )
-            {
+
+            if ( $PPI_type eq 'PPI::Token::Word' ) {
                 my $content = $token->{content};
-                $perl_type = $perl_type{$content};
+                $perl_type = $perl_type_by_word{$content};
                 if ( not defined $perl_type ) {
-                    Carp::croak(qq{Unknown $PPI_type: "$content"});
+                    die qq{Unknown $PPI_type: "$content":},
+                        Marpa::Perl::default_show_location($token),
+                        "\n";
+                }
+                @tokens = ( [ $perl_type, $content ] );
+                last FIND_TOKENS;
+            } ## end if ( $PPI_type eq 'PPI::Token::Word' )
+
+            if ( $PPI_type eq 'PPI::Token::Operator' ) {
+                my $content = $token->{content};
+                $perl_type = $perl_type_by_op{$content};
+                if ( not defined $perl_type ) {
+                    die qq{Unknown $PPI_type: "$content":},
+                        Marpa::Perl::default_show_location($token),
+                        "\n";
+                }
+                if ( $perl_type eq 'PLUS' ) {
+
+                    # Apply the "ruby slippers"
+                    # Make the plus sign be whatever the parser
+                    # wishes it was
+                    my @potential_types = qw(ADDOP PLUS);
+                    TYPE: for my $type (@potential_types) {
+                        next TYPE if not $type ~~ $expected_tokens;
+                        push @tokens, [ $type, $content, 1, 1 ];
+                    }
+
+                    # For all but the last token, set
+                    # the token offset to zero.
+                    for my $ix ( 0 .. $#tokens - 1 ) {
+                        $tokens[$ix]->[3] = 0;
+                    }
+
+                    last FIND_TOKENS;
+                } ## end if ( $perl_type eq 'PLUS' )
+                if ( $perl_type eq 'MINUS' ) {
+
+                    # Apply the "ruby slippers"
+                    # Make the plus sign be whatever the parser
+                    # wishes it was
+                    my @potential_types = qw(ADDOP UMINUS);
+                    TYPE: for my $type (@potential_types) {
+                        next TYPE if not $type ~~ $expected_tokens;
+                        push @tokens, [ $type, $content, 1, 1 ];
+                    }
+
+                    # For all but the last token, set
+                    # the token offset to zero.
+                    for my $ix ( 0 .. $#tokens - 1 ) {
+                        $tokens[$ix]->[3] = 0;
+                    }
+
+                    last FIND_TOKENS;
+                } ## end if ( $perl_type eq 'MINUS' )
+                @tokens = ( [ $perl_type, $content ] );
+                last FIND_TOKENS;
+            } ## end if ( $PPI_type eq 'PPI::Token::Operator' )
+
+            if ( $PPI_type eq 'PPI::Token::Structure' ) {
+                my $content = $token->{content};
+                $perl_type = $perl_type_by_structure{$content};
+                if ( not defined $perl_type ) {
+                    die qq{Unknown $PPI_type: "$content":},
+                        Marpa::Perl::default_show_location($token),
+                        "\n";
                 }
                 if ( $perl_type eq 'RCURLY' ) {
                     if ((   not defined $last_perl_type
@@ -664,7 +1088,8 @@ sub Marpa::Perl::parse {
                 } ## end if ( $perl_type eq 'LCURLY' )
                 @tokens = ( [ $perl_type, $content ] );
                 last FIND_TOKENS;
-            } ## end if ( $PPI_type eq 'PPI::Token::Structure' or $PPI_type...)
+            } ## end if ( $PPI_type eq 'PPI::Token::Structure' )
+
             if ( $PPI_type eq 'PPI::Token::Number' ) {
                 my $content = $token->{content};
                 @tokens = ( [ 'THING', $content + 0 ] );
@@ -681,8 +1106,12 @@ sub Marpa::Perl::parse {
                 last FIND_TOKENS;
             } ## end if ( $PPI_type eq 'PPI::Token::Quote::Single' )
         } ## end FIND_TOKENS:
-        Carp::croak( 'Did not process token: ', Data::Dumper::Dumper($token) )
+
+        die 'Failed at Token: ', Data::Dumper::Dumper($token),
+            'Marpa::Perl did not know how to process token',
+            Marpa::Perl::default_show_location($token), "\n"
             if not scalar @tokens;
+
         TOKEN_SCAN: while (1) {
             my $ix = 0;
             ( $current_earleme, $expected_tokens ) =
@@ -700,22 +1129,41 @@ sub Marpa::Perl::parse {
             );
         } ## end while (1)
         $last_perl_type = $perl_type;
-    } ## end while ( my $token = $tokenizer->get_token() )
+    } ## end for ( my $PPI_token_ix = 0; $PPI_token_ix <= $#PPI_tokens...)
     $recce->end_input();
     if (wantarray) {
-        my $evaler = Marpa::Evaluator->new(
-            { recce => $recce, closures => $parser->{closure} } );
         my @values = ();
-        while ( defined( my $value_ref = $evaler->value() ) ) {
+        while ( defined( my $value_ref = $recce->value() ) ) {
             push @values, ${$value_ref};
         }
         return @values;
     } ## end if (wantarray)
     else {
-        my $value_ref = $recce->value( { closures => $parser->{closure}, } );
+        my $value_ref = $recce->value();
         return $value_ref;
     }
 
 } ## end sub Marpa::Perl::parse
+
+# Context-sensitive callback for
+# application-provided closures to use.
+sub Marpa::Perl::token {
+    Marpa::exception('No Perl context for token callback')
+        if not my $context = $Marpa::Perl::Internal::CONTEXT;
+    my ( $PPI_tokens, $earleme_to_token ) = @{$context};
+    my $earleme = Marpa::location();
+    return $PPI_tokens->[ $earleme_to_token->[$earleme] ];
+} ## end sub Marpa::Perl::token
+
+sub Marpa::Perl::default_show_location {
+    my ($token) = @_;
+    my $file_name = $token->logical_filename();
+    my $file_description = $file_name ? qq{ file "$file_name"} : q{};
+    return
+          "$file_description at line "
+        . $token->logical_line_number()
+        . q{, column }
+        . $token->column_number();
+} ## end sub Marpa::Perl::default_show_location
 
 1;

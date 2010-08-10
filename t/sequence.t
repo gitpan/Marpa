@@ -96,18 +96,14 @@ sub run_sequence_test {
 
         $recce->end_input();
 
-        my $evaler = Marpa::Evaluator->new( { recce => $recce } );
-        if ( not $evaler ) {
-            Test::More::fail("$test_name: Parse failed");
-            next SYMBOL_COUNT;
-        }
-        my $result = $evaler->value();
+        my $value_ref = $recce->value();
+        my $value = $value_ref ? ${$value_ref} : 'No parse';
 
         my $expected = join q{;}, @expected;
         if ( @expected > 1 ) {
             $expected = "($expected)";
         }
-        Test::More::is( ${$result}, $expected, $test_name );
+        Test::More::is( $value, $expected, $test_name );
 
     } ## end for my $symbol_count ( 0, 1, 2, 3, 5, 10 )
 

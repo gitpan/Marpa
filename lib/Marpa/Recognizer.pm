@@ -2,7 +2,12 @@ package Marpa::Recognizer;
 
 use 5.010;
 use warnings;
+
+# As of 9 Aug 2010 there's a problem with this perlcritic check
+## no critic (TestingAndDebugging::ProhibitNoWarnings)
 no warnings 'recursion';
+## use critic
+
 use strict;
 use integer;
 
@@ -58,10 +63,15 @@ use Marpa::Offset qw(
 
     TRACE_FILE_HANDLE
 
+    END
     CLOSURES
     TRACE_ACTIONS
     TRACE_VALUES
-    END
+    TRACE_TASKS
+    TRACING
+    MAX_PARSES
+    NULL_VALUES
+    RANKING_METHOD
 
     { The following fields must be reinitialized when
     evaluation is reset }
@@ -75,6 +85,14 @@ use Marpa::Offset qw(
     OR_NODE_HASH
 
     ITERATION_STACK
+
+    CYCLE_HASH { Hash of cycles in current parse result -- used
+    to detect cycles }
+
+    EVALUATOR_RULES
+
+    { This is the end of the list of fields which
+    must be reinitialized when evaluation is reset }
 
     =LAST_EVALUATOR_FIELD
 
@@ -94,7 +112,6 @@ use Marpa::Offset qw(
     TRACE_EARLEY_SETS
     TRACE_TERMINALS
     WARNINGS
-    TRACING
 
     MODE
 
@@ -116,7 +133,7 @@ my $parse_number = 0;
 # Returns the new parse object or throws an exception
 sub Marpa::Recognizer::new {
     my ( $class, @arg_hashes ) = @_;
-    my $self = bless [], $class;
+    my $recce = bless [], $class;
 
     my $grammar;
     ARG_HASH: for my $arg_hash (@arg_hashes) {
@@ -127,7 +144,7 @@ sub Marpa::Recognizer::new {
     } ## end for my $arg_hash (@arg_hashes)
     Marpa::exception('No grammar specified') if not defined $grammar;
 
-    $self->[Marpa::Internal::Recognizer::GRAMMAR] = $grammar;
+    $recce->[Marpa::Internal::Recognizer::GRAMMAR] = $grammar;
 
     my $grammar_class = ref $grammar;
     Marpa::exception(
@@ -158,27 +175,42 @@ sub Marpa::Recognizer::new {
 
     # set the defaults
     local $Marpa::Internal::TRACE_FH = my $trace_fh =
-        $self->[Marpa::Internal::Recognizer::TRACE_FILE_HANDLE] =
+        $recce->[Marpa::Internal::Recognizer::TRACE_FILE_HANDLE] =
         $grammar->[Marpa::Internal::Grammar::TRACE_FILE_HANDLE];
-    $self->[Marpa::Internal::Recognizer::WARNINGS] = 1;
-    $self->reset_evaluation();
-    $self->[Marpa::Internal::Recognizer::MODE]    = 'default';
-    $self->[Marpa::Internal::Recognizer::USE_LEO] = 1;
+    $recce->[Marpa::Internal::Recognizer::WARNINGS] = 1;
+    $recce->reset_evaluation();
+    $recce->[Marpa::Internal::Recognizer::MODE]           = 'default';
+    $recce->[Marpa::Internal::Recognizer::RANKING_METHOD] = 'none';
+    $recce->[Marpa::Internal::Recognizer::USE_LEO]        = 1;
+    $recce->[Marpa::Internal::Recognizer::MAX_PARSES]     = 0;
 
-    $self->set(@arg_hashes);
+    $recce->set(@arg_hashes);
+
+    if (    $grammar->[Marpa::Internal::Grammar::IS_INFINITE]
+        and $recce->[Marpa::Internal::Recognizer::RANKING_METHOD] ne 'none'
+        and not $grammar->[Marpa::Internal::Grammar::CYCLE_RANKING_ACTION] )
+    {
+        Marpa::exception(
+            "The grammar cycles (is infinitely ambiguous)\n",
+            "    but it has no 'cycle_ranking_action'.\n",
+            "    Either rewrite the grammar to eliminate cycles\n",
+            "    or define a 'cycle ranking action'\n"
+        );
+    } ## end if ( $grammar->[Marpa::Internal::Grammar::IS_INFINITE...])
 
     my $trace_terminals =
-        $self->[Marpa::Internal::Recognizer::TRACE_TERMINALS] // 0;
+        $recce->[Marpa::Internal::Recognizer::TRACE_TERMINALS] // 0;
+    my $trace_tasks = $recce->[Marpa::Internal::Recognizer::TRACE_TASKS] // 0;
 
     if (not
-        defined $self->[Marpa::Internal::Recognizer::TOO_MANY_EARLEY_ITEMS] )
+        defined $recce->[Marpa::Internal::Recognizer::TOO_MANY_EARLEY_ITEMS] )
     {
         my $AHFA_size =
             scalar @{ $grammar->[Marpa::Internal::Grammar::AHFA] };
-        $self->[Marpa::Internal::Recognizer::TOO_MANY_EARLEY_ITEMS] =
+        $recce->[Marpa::Internal::Recognizer::TOO_MANY_EARLEY_ITEMS] =
             List::Util::max( ( 2 * $AHFA_size ),
             Marpa::Internal::Recognizer::DEFAULT_TOO_MANY_EARLEY_ITEMS );
-    } ## end if ( not defined $self->[...])
+    } ## end if ( not defined $recce->[...])
 
     # Some of this processing -- to find terminals and Leo symbols
     # by state -- should perhaps be done in the grammar.
@@ -196,9 +228,7 @@ sub Marpa::Recognizer::new {
     for my $state ( @{$start_states} ) {
         my $state_id = $state->[Marpa::Internal::AHFA::ID];
         my $name     = sprintf
-            ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
             'S%d@%d-%d',
-            ## use critic
             $state_id, 0, 0;
 
         my $item;
@@ -220,18 +250,18 @@ sub Marpa::Recognizer::new {
 
     } ## end for my $state ( @{$start_states} )
 
-    $self->[Marpa::Internal::Recognizer::EARLEY_HASH] = {};
+    $recce->[Marpa::Internal::Recognizer::EARLEY_HASH] = {};
 
-    $self->[Marpa::Internal::Recognizer::GRAMMAR]     = $grammar;
-    $self->[Marpa::Internal::Recognizer::EARLEY_SETS] = [$earley_set];
+    $recce->[Marpa::Internal::Recognizer::GRAMMAR]     = $grammar;
+    $recce->[Marpa::Internal::Recognizer::EARLEY_SETS] = [$earley_set];
 
-    $self->[Marpa::Internal::Recognizer::FURTHEST_EARLEME]       = 0;
-    $self->[Marpa::Internal::Recognizer::LAST_COMPLETED_EARLEME] = 0;
+    $recce->[Marpa::Internal::Recognizer::FURTHEST_EARLEME]       = 0;
+    $recce->[Marpa::Internal::Recognizer::LAST_COMPLETED_EARLEME] = 0;
 
-    $self->[Marpa::Internal::Recognizer::POSTDOT] = $postdot;
+    $recce->[Marpa::Internal::Recognizer::POSTDOT] = $postdot;
 
     # Don't include the start states in the Leo sets.
-    $self->[Marpa::Internal::Recognizer::LEO_SETS] = [];
+    $recce->[Marpa::Internal::Recognizer::LEO_SETS] = [];
 
     if ( $trace_terminals > 1 ) {
         for my $terminal (
@@ -245,7 +275,7 @@ sub Marpa::Recognizer::new {
         } ## end for my $terminal ( grep { $terminal_names->{$_} } keys...)
     } ## end if ( $trace_terminals > 1 )
 
-    return $self;
+    return $recce;
 } ## end sub Marpa::Recognizer::new
 
 use constant RECOGNIZER_OPTIONS => [
@@ -253,14 +283,18 @@ use constant RECOGNIZER_OPTIONS => [
         closures
         end
         leo
+        max_parses
+        mode
+        ranking_method
         too_many_earley_items
         trace_actions
         trace_earley_sets
+        trace_fh
         trace_file_handle
+        trace_tasks
         trace_terminals
         trace_values
         warnings
-        mode
         }
 ];
 
@@ -275,6 +309,8 @@ sub Marpa::Recognizer::reset_evaluation {
     $recce->[Marpa::Internal::Recognizer::OR_NODES]          = [];
     $recce->[Marpa::Internal::Recognizer::OR_NODE_HASH]      = {};
     $recce->[Marpa::Internal::Recognizer::ITERATION_STACK]   = [];
+    $recce->[Marpa::Internal::Recognizer::CYCLE_HASH]        = {};
+    $recce->[Marpa::Internal::Recognizer::EVALUATOR_RULES]   = [];
     return;
 } ## end sub Marpa::Recognizer::reset_evaluation
 
@@ -307,6 +343,10 @@ sub Marpa::Recognizer::set {
             $recce->[Marpa::Internal::Recognizer::USE_LEO] = $value ? 1 : 0;
         }
 
+        if ( defined( my $value = $args->{'max_parses'} ) ) {
+            $recce->[Marpa::Internal::Recognizer::MAX_PARSES] = $value;
+        }
+
         if ( defined( my $value = $args->{'mode'} ) ) {
             if ( not $value ~~ Marpa::Internal::Recognizer::RECOGNIZER_MODES )
             {
@@ -314,6 +354,18 @@ sub Marpa::Recognizer::set {
             }
             $recce->[Marpa::Internal::Recognizer::MODE] = $value;
         } ## end if ( defined( my $value = $args->{'mode'} ) )
+
+        if ( defined( my $value = $args->{'ranking_method'} ) ) {
+            Marpa::exception(q{ranking_method must be 'constant' or 'none'})
+                if not $value ~~ [qw(constant none)];
+            $recce->[Marpa::Internal::Recognizer::RANKING_METHOD] = $value;
+        }
+
+        if ( defined( my $value = $args->{'trace_fh'} ) ) {
+            $trace_fh =
+                $recce->[Marpa::Internal::Recognizer::TRACE_FILE_HANDLE] =
+                $value;
+        }
 
         if ( defined( my $value = $args->{'trace_file_handle'} ) ) {
             $trace_fh =
@@ -331,6 +383,17 @@ sub Marpa::Recognizer::set {
                 $recce->[Marpa::Internal::Recognizer::TRACING] = 1;
             }
         } ## end if ( defined( my $value = $args->{'trace_actions'} ))
+
+        if ( defined( my $value = $args->{'trace_tasks'} ) ) {
+            Marpa::exception('trace_tasks must be set to a number >= 0')
+                if $value !~ /\A\d+\z/xms;
+            $recce->[Marpa::Internal::Recognizer::TRACE_TASKS] = $value + 0;
+            if ($value) {
+                say {$trace_fh} "Setting trace_tasks option to $value"
+                    or Marpa::exception("Cannot print: $ERRNO");
+                $recce->[Marpa::Internal::Recognizer::TRACING] = 1;
+            }
+        } ## end if ( defined( my $value = $args->{'trace_tasks'} ) )
 
         if ( defined( my $value = $args->{'trace_terminals'} ) ) {
             $recce->[Marpa::Internal::Recognizer::TRACE_TERMINALS] = $value;
@@ -362,12 +425,24 @@ sub Marpa::Recognizer::set {
         } ## end if ( defined( my $value = $args->{'trace_values'} ) )
 
         if ( defined( my $value = $args->{'end'} ) ) {
+
+            # Not allowed once parsing is started
+            if ( $recce->[Marpa::Internal::Recognizer::PARSE_COUNT] > 0 ) {
+                Marpa::exception(
+                    q{Cannot reset end once parsing has started});
+            }
             $recce->[Marpa::Internal::Recognizer::END] = $value;
             ## Do not allow setting this option in recognizer for single parse mode
             $recce->[Marpa::Internal::Recognizer::SINGLE_PARSE_MODE] = 0;
-        }
+        } ## end if ( defined( my $value = $args->{'end'} ) )
 
         if ( defined( my $value = $args->{'closures'} ) ) {
+
+            # Not allowed once parsing is started
+            if ( $recce->[Marpa::Internal::Recognizer::PARSE_COUNT] > 0 ) {
+                Marpa::exception(
+                    q{Cannot reset end once parsing has started});
+            }
             my $closures = $recce->[Marpa::Internal::Recognizer::CLOSURES] =
                 $value;
             ## Do not allow setting this option in recognizer for single parse mode
@@ -795,11 +870,18 @@ sub Marpa::Recognizer::tokens {
                 "  Processing complete to $last_completed_earleme\n"
             ) if $current_token_earleme < $last_completed_earleme;
 
-            if ( not $terminal_names->{$symbol_name} ) {
-                Marpa::exception(
-                    qq{Token name "$symbol_name" is not the name of a terminal symbol}
-                );
-            }
+            if (   not defined $symbol_name
+                or not $terminal_names->{$symbol_name} )
+            {
+                local $Data::Dumper::Terse    = 1;
+                local $Data::Dumper::Maxdepth = 1;
+                my $problem =
+                    defined $symbol_name
+                    ? qq{Token name "$symbol_name" is not the name of a terminal symbol}
+                    : q{The name of a terminal symbol was an undef};
+                Marpa::exception( q{Fatal Problem with token: },
+                    Data::Dumper::Dumper($token_args), $problem );
+            } ## end if ( not defined $symbol_name or not $terminal_names...)
 
             # Make sure it's an allowed terminal symbol.
             my $postdot_data = $postdot_here->{$symbol_name};
@@ -930,9 +1012,7 @@ sub Marpa::Recognizer::tokens {
                     my $origin      = $reset ? $target_ix : $parent;
                     my $to_state_id = $to_state->[Marpa::Internal::AHFA::ID];
                     my $name        = sprintf
-                        ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
                         'S%d@%d-%d',
-                        ## use critic
                         $to_state_id, $origin, $target_ix;
 
                     my $target_item = $earley_hash->{$name};
@@ -1121,9 +1201,7 @@ sub complete {
                 my $transition_state_id =
                     $transition_state->[Marpa::Internal::AHFA::ID];
                 my $name = sprintf
-                    ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
                     'S%d@%d-%d',
-                    ## use critic
                     $transition_state_id, $origin, $earleme_to_complete;
                 my $target_item = $earley_hash->{$name};
                 if ( not defined $target_item ) {
@@ -1286,9 +1364,7 @@ sub complete {
         } ## end FIND_LEO_ITEM_DATA:
 
         my $name = sprintf
-            ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
             'L%d@%d-%d',
-            ## use critic
             $leo_state->[Marpa::Internal::AHFA::ID], $leo_parent,
             $earleme_to_complete;
         my $leo_item = [];

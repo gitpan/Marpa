@@ -22,8 +22,8 @@ BEGIN {
 # name: Marpa::token_location example
 
 sub rank_null_a {
-    return ( $MyTest::MAXIMAL ? -1 : 1 )
-        * 10**( 3 - Marpa::token_location() );
+    return \(
+        ( $MyTest::MAXIMAL ? -1 : 1 ) * 10**( 3 - Marpa::token_location() ) );
 }
 
 # Marpa::Display::End
@@ -56,7 +56,8 @@ $grammar->set( { terminals => ['a'], } );
 
 $grammar->precompute();
 
-my $recce = Marpa::Recognizer->new( { grammar => $grammar, } );
+my $recce = Marpa::Recognizer->new(
+    { grammar => $grammar, ranking_method => 'constant' } );
 
 my $input_length = 4;
 $recce->tokens( [ ( [ 'a', 'a', 1 ] ) x $input_length ] );
@@ -69,12 +70,9 @@ for my $i ( 0 .. $input_length ) {
         local $MyTest::MAXIMAL = $maximal;
         my $expected = $maximal ? \@maximal : \@minimal;
         my $name     = $maximal ? 'maximal' : 'minimal';
-        my $evaler   = Marpa::Evaluator->new(
-            {   recce => $recce,
-                end   => $i,
-            }
-        );
-        my $result = $evaler->value();
+        $recce->reset_evaluation();
+        $recce->set( { end => $i, } );
+        my $result = $recce->value();
         Test::More::is( ${$result}, $expected->[$i],
             "$name parse permutation $i" );
 

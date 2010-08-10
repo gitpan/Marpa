@@ -287,6 +287,20 @@ Otherwise, returns a Perl false.
 Not usually needed, but in unusual sitations a lexer may find this
 the easiest way to determine if a symbol is a terminal.
 
+=head2 status
+
+The return value of the status method is that
+same as that of the L</"tokens"> method.
+For more details, see
+L<the description of C<tokens> method|/"tokens">.
+
+The C<status> method is the only way to get the list of
+the expected terminals at earleme 0, before any tokens
+have been recognized.
+It can also been used whenever it is convenient to
+liberate checks of the status of the recognizer
+from calls to the C<tokens> method.
+
 =head1 TRACE ACCESSORS
 
 =head2 show_earley_sets
@@ -674,6 +688,25 @@ allow anonymous
 subroutines to be semantic actions.
 For more details, see L<the document on
 semantics|Marpa::Semantics>.
+
+=head2 max_parses
+
+The value must be an integer.
+If it is greater than zero, the evaluator will
+return no more than that number of parse results.
+If it is zero, there will be no
+limit on the number of parse results returned.
+The default is for
+there to be no limit.
+
+Marpa allows extremely ambiguous grammars.
+When a parse's ambiguity is deliberate,
+C<max_parses> 
+can be used when
+the user only wants to see the first few parse results.
+C<max_parses> is also useful to
+limit CPU usage and output length when testing
+and debugging.
 
 =head2 trace_actions
 

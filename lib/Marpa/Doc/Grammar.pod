@@ -388,8 +388,7 @@ This is only
 relevant in sequence rules.
 Other comments indicate
 whether rules
-were nullable, unproductive, inaccessible, empty,
-or had a non-zero priority.
+were nullable, unproductive, inaccessible, or empty.
 
 The C<vlhs>, C<vrhs> and C<real> comments
 show rule settings relevant in tracking "virtual"
@@ -840,9 +839,8 @@ in order,
 are
 the C<lhs> property,
 the C<rhs> property,
-the C<action> property
-and the C<priority> property.
-The last three are optional.
+and the C<action> property.
+The last two are optional.
 Omission of an optional
 property in a short form descriptor
 has the same effect 

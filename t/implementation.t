@@ -7,7 +7,7 @@ use strict;
 use warnings;
 
 use Fatal qw(open close);
-use Test::More tests => 10;
+use Test::More tests => 9;
 
 use lib 'lib';
 use Marpa::Test;
@@ -223,6 +223,7 @@ END_EARLEY_SETS
 my $trace_output;
 open my $trace_fh, q{>}, \$trace_output;
 $value_ref = $recce->value( { trace_fh => $trace_fh, trace_values => 1 } );
+$recce->set( { trace_fh => \*STDOUT, trace_values => 0 } );
 close $trace_fh;
 
 $value = $value_ref ? ${$value_ref} : 'No Parse';
@@ -264,83 +265,9 @@ END_TRACE_OUTPUT
 
 $recce->reset_evaluation();
 
-# Marpa::Display
-# name: Implementation Example Multi-parse Evaluator Call
-
-my $evaler = Marpa::Evaluator->new( { recce => $recce } );
-
-# Marpa::Display::End
-
-$value_ref = $evaler->value();
+$value_ref = $recce->value();
 $value = $value_ref ? ${$value_ref} : 'No Parse';
 Marpa::Test::is( 49, $value, 'Implementation Example Value 3' );
-
-# Marpa::Display
-# name: Implementation Example show_bocage Call
-
-my $show_bocage_output = $evaler->show_bocage(2);
-
-# Marpa::Display::End
-
-# Marpa::Display
-# name: Implementation Example show_bocage Output
-# start-after-line: END_BOCAGE
-# end-before-line: '^END_BOCAGE$'
-
-Marpa::Test::is( $show_bocage_output,
-    <<'END_BOCAGE' , 'Implementation Example Bocage' );
-parse count: 1
-S2@0-5L6o0 -> S2@0-5L6o0a0
-S2@0-5L6o0a0 -> S5@0-5L0o1
-    rule 5: Expression['] -> Expression .
-    value_ops
-S5@0-5L0o1 -> S5@0-5L0o1a1
-S5@0-5L0o1a1 -> S12@0-5L1o2
-    rule 0: Expression -> Term .
-    value_ops
-S12@0-5L1o2 -> S12@0-5L1o2a2
-S12@0-5L1o2a2 -> S8@0-4R3:2o5 S3@4-5L1o3
-    rule 3: Term -> Term Add Term .
-    value_ops
-S3@4-5L1o3 -> S3@4-5L1o3a3
-S3@4-5L1o3a3 -> S4@4-5L2o4
-    rule 1: Term -> Factor .
-    value_ops
-S4@4-5L2o4 -> S4@4-5L2o4a4
-S4@4-5L2o4a4 -> \7
-    rule 2: Factor -> Number .
-    value_ops
-S8@0-4R3:2o5 -> S8@0-4R3:2o5a5
-S8@0-4R3:2o5a5 -> S5@0-3R3:1o6 \'+'
-    rule 3: Term -> Term Add . Term
-S5@0-3R3:1o6 -> S5@0-3R3:1o6a6
-S5@0-3R3:1o6a6 -> S3@0-3L1o7
-    rule 3: Term -> Term . Add Term
-S3@0-3L1o7 -> S3@0-3L1o7a7
-S3@0-3L1o7a7 -> S10@0-3L2o8
-    rule 1: Term -> Factor .
-    value_ops
-S10@0-3L2o8 -> S10@0-3L2o8a8
-S10@0-3L2o8a8 -> S6@0-2R4:2o10 S4@2-3L2o9
-    rule 4: Factor -> Factor Multiply Factor .
-    value_ops
-S4@2-3L2o9 -> S4@2-3L2o9a9
-S4@2-3L2o9a9 -> \1
-    rule 2: Factor -> Number .
-    value_ops
-S6@0-2R4:2o10 -> S6@0-2R4:2o10a10
-S6@0-2R4:2o10a10 -> S3@0-1R4:1o11 \'*'
-    rule 4: Factor -> Factor Multiply . Factor
-S3@0-1R4:1o11 -> S3@0-1R4:1o11a11
-S3@0-1R4:1o11a11 -> S4@0-1L2o12
-    rule 4: Factor -> Factor . Multiply Factor
-S4@0-1L2o12 -> S4@0-1L2o12a12
-S4@0-1L2o12a12 -> \42
-    rule 2: Factor -> Number .
-    value_ops
-END_BOCAGE
-
-# Marpa::Display::End
 
 # Local Variables:
 #   mode: cperl

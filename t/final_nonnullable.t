@@ -7,7 +7,7 @@ use 5.010;
 use strict;
 use warnings;
 
-use Test::More tests => 7;
+use Test::More tests => 11;
 
 use lib 'lib';
 use Marpa::Test;
@@ -126,25 +126,33 @@ S14: 4
 n -> a .
 END_OF_STRING
 
-my @results = qw{NA (-;-;-;a) (a;-;-;a) (a;a;-;a) (a;a;a;a)};
+my @expected = map {
+    +{ map { ( $_ => 1 ) } @{$_} }
+    }
+    [q{}],
+    [qw( (-;-;-;a) )],
+    [qw( (a;-;-;a) (-;-;a;a) (-;a;-;a) )],
+    [qw( (a;a;-;a) (-;a;a;a) (a;-;a;a))],
+    [qw( (a;a;a;a) )];
 
 for my $input_length ( 1 .. 4 ) {
-    my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
+
+    # Set max at 10 just in case there's an infinite loop.
+    # This is for debugging, after all
+    my $recce =
+        Marpa::Recognizer->new( { grammar => $grammar, max_parses => 10 } );
     $recce->tokens( [ ( [ 'a', 'a', 1 ] ) x $input_length ] );
-    my $evaler = Marpa::Evaluator->new(
-        {   recce       => $recce,
-            parse_order => 'original',
-
-            # Set max at 10 just in case there's an infinite loop.
-            # This is for debugging, after all
-            max_parses => 10,
-
+    while ( my $value_ref = $recce->value() ) {
+        my $value = $value_ref ? ${$value_ref} : 'No parse';
+        my $expected = $expected[$input_length];
+        if ( defined $expected->{$value} ) {
+            delete $expected->{$value};
+            Test::More::pass(qq{Expected value: "$value"});
         }
-    );
-    my $value = $evaler->value();
-    Marpa::Test::is( ( $value ? ${$value} : 'No parse' ),
-        $results[$input_length],
-        "final nonnulling, input length=$input_length" );
+        else {
+            Test::More::fail(qq{Unexpected value: "$value"});
+        }
+    } ## end while ( my $value_ref = $recce->value() )
 } ## end for my $input_length ( 1 .. 4 )
 
 # Local Variables:

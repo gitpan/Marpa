@@ -48,7 +48,11 @@ FILE: while ( my $file = <$manifest> ) {
 close $manifest;
 
 my $rcfile = File::Spec->catfile( 'author.t', 'perlcriticrc' );
-Test::Perl::Critic->import( -profile => $rcfile, -exclude => 'Dynamic::*' );
+Test::Perl::Critic->import(
+    -verbose => '%l:%c %p %r',
+    -profile => $rcfile,
+    -exclude => 'Dynamic::*'
+);
 Test::Perl::Critic::all_critic_ok(@test_files);
 
 1;

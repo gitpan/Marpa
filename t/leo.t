@@ -138,12 +138,8 @@ for my $a_length ( 1 .. 4 ) {
     for my $b_length ( 0 .. $a_length ) {
 
         my $string = ( 'a' x $a_length ) . ( 'b' x $b_length );
-        my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
-        $recce->tokens(
-            [ ( ($a_token) x $a_length ), ( ($b_token) x $b_length ), ] );
-
-        my $evaler = Marpa::Evaluator->new(
-            {   recce    => $recce,
+        my $recce = Marpa::Recognizer->new(
+            {   grammar  => $grammar,
                 closures => {
                     'C_action'       => $C_action,
                     'S_action'       => $S_action,
@@ -151,7 +147,10 @@ for my $a_length ( 1 .. 4 ) {
                 }
             }
         );
-        my $value_ref = $evaler->value();
+        $recce->tokens(
+            [ ( ($a_token) x $a_length ), ( ($b_token) x $b_length ), ] );
+
+        my $value_ref = $recce->value();
         my $value = $value_ref ? ${$value_ref} : 'No parse';
         Marpa::Test::is( $value, $expected{$string}, "Parse of $string" );
 

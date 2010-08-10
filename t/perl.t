@@ -1,7 +1,5 @@
 #!/usr/bin/perl -w
 
-## no critic (ErrorHandling::RequireCarping);
-
 use 5.010;
 use strict;
 use warnings;
@@ -39,9 +37,9 @@ our @OUTPUT = ();
 our %SYMTAB = ( SCALAR => {} );
 
 sub DEBUG_dump {
-    say STDERR 'DEBUG: ', join "\n", @main::OUTPUT
+    say {*STDERR} 'DEBUG: ', join "\n", @main::OUTPUT
         or die "Cannot print to STDERR: $ERRNO";
-    say STDERR 'DEBUG: Symbol table: ', Data::Dumper::Dumper( \%SYMTAB )
+    say {*STDERR} 'DEBUG: Symbol table: ', Data::Dumper::Dumper( \%SYMTAB )
         or die "Cannot print to STDERR: $ERRNO";
     return;
 } ## end sub DEBUG_dump
@@ -427,8 +425,6 @@ sub gen_closure {
         $v;
     };
 } ## end sub gen_closure
-
-## no critic (ErrorHandling::RequireCarping);
 
 my %symbol  = ();
 my %closure = ();

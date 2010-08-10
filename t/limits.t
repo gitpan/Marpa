@@ -71,17 +71,9 @@ sub test_grammar {
     Marpa::exception("Exception while recognizing end of input:\n$EVAL_ERROR")
         if not $eval_ok;
 
-    my $evaler;
-    $eval_ok = eval {
-        $evaler = Marpa::Evaluator->new( { recce => $recce, } );
-        1;
-    };
-    Marpa::exception("Exception while creating Evaluator:\n$EVAL_ERROR")
-        if not $eval_ok;
-    Marpa::exception("Evaluator not created\n") if not $evaler;
-    my $value = $evaler->value;
-    Marpa::exception("No parse\n") if not $value;
-    return ${$value};
+    my $value_ref = $recce->value();
+    Marpa::exception("No parse\n") if not $value_ref;
+    return ${$value_ref};
 } ## end sub test_grammar
 
 # RHS too long is not testable

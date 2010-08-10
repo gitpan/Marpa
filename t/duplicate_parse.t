@@ -6,7 +6,7 @@ use 5.010;
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 6;
 
 use lib 'lib';
 use Marpa::Test;
@@ -131,97 +131,23 @@ my $input_length = 3;
 my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
 $recce->tokens(
     [ map { [ 'a', chr( SPACE + $_ ), 1 ] } ( 1 .. $input_length ) ] );
-my $evaler = Marpa::Evaluator->new(
-    {   recce => $recce,
 
-        # Set max at 10 just in case there's an infinite loop.
-        # This is for debugging, after all
-        max_parses => 10,
+# Set max at 10 just in case there's an infinite loop.
+# This is for debugging, after all
+$recce->set( { max_parses => 10 } );
+
+my %expected = map { ( $_ => 1 ) } qw( (-;a;b;c) (a;-;b;c) (a;b;-;c) );
+
+while ( my $value_ref = $recce->value() ) {
+    my $value = $value_ref ? ${$value_ref} : 'No parse';
+    if ( defined $expected{$value} ) {
+        delete $expected{$value};
+        Test::More::pass("Expected value: $value");
     }
-);
-
-my $bocage = $evaler->show_bocage(3);
-
-Marpa::Test::is( $bocage, <<'END_OF_STRING', 'Bocage' );
-parse count: 0
-S2@0-3L6o0 -> S2@0-3L6o0a0
-S2@0-3L6o0a0 -> S13@0-3L1o12
-    rule 10: S['] -> S .
-    value_ops
-S2@0-3L6o0 -> S2@0-3L6o0a1
-S2@0-3L6o0a1 -> S8@0-3L1o1
-    rule 10: S['] -> S .
-    value_ops
-S8@0-3L1o1 -> S8@0-3L1o1a2
-S8@0-3L1o1a2 -> S6@0-1R5:2o10 S9@1-3L5o5
-    rule 5: S -> p p[] S[R0:2] .
-    (part of 0) S -> < p > < p > < p n > .
-    value_ops
-S8@0-3L1o1 -> S8@0-3L1o1a3
-S8@0-3L1o1a3 -> S6@0-1R6:2o2 S9@1-3L5o5
-    rule 6: S -> p[] p S[R0:2] .
-    (part of 0) S -> < p > < p > < p n > .
-    value_ops
-S6@0-1R6:2o2 -> S6@0-1R6:2o2a4
-S6@0-1R6:2o2a4 -> S1@0-0R6:1o4 S4@0-1L2o3
-    rule 6: S -> p[] p . S[R0:2]
-    (part of 0) S -> < p > < p > . < p n >
-S4@0-1L2o3 -> S4@0-1L2o3a5
-S4@0-1L2o3a5 -> \'a'
-    rule 1: p -> a .
-    value_ops
-S1@0-0R6:1o4 -> S1@0-0R6:1o4a6
-S1@0-0R6:1o4a6 -> \undef
-    rule 6: S -> p[] . p S[R0:2]
-    (part of 0) S -> < p > . < p > < p n >
-S9@1-3L5o5 -> S9@1-3L5o5a7
-S9@1-3L5o5a7 -> S11@1-2R8:1o8 S4@2-3L3o7
-    rule 8: S[R0:2] -> p n .
-    (part of 0) S -> p p < p > < n > .
-    value_ops
-S4@2-3L3o7 -> S4@2-3L3o7a10
-S4@2-3L3o7a10 -> \'c'
-    rule 3: n -> a .
-    value_ops
-S11@1-2R8:1o8 -> S11@1-2R8:1o8a11
-S11@1-2R8:1o8a11 -> S4@1-2L2o9
-    rule 8: S[R0:2] -> p . n
-    (part of 0) S -> p p < p > . < n >
-S4@1-2L2o9 -> S4@1-2L2o9a12
-S4@1-2L2o9a12 -> \'b'
-    rule 1: p -> a .
-    value_ops
-S6@0-1R5:2o10 -> S6@0-1R5:2o10a13
-S6@0-1R5:2o10a13 -> S6@0-1R5:1o11 \undef
-    rule 5: S -> p p[] . S[R0:2]
-    (part of 0) S -> < p > < p > . < p n >
-S6@0-1R5:1o11 -> S6@0-1R5:1o11a14
-S6@0-1R5:1o11a14 -> S4@0-1L2o3
-    rule 5: S -> p . p[] S[R0:2]
-    (part of 0) S -> < p > . < p > < p n >
-S13@0-3L1o12 -> S13@0-3L1o12a15
-S13@0-3L1o12a15 -> S10@0-2R4:2o15 S5@2-3L5o13
-    rule 4: S -> p p S[R0:2] .
-    (part of 0) S -> < p > < p > < p n > .
-    value_ops
-S5@2-3L5o13 -> S5@2-3L5o13a16
-S5@2-3L5o13a16 -> S7@2-2R9:1o14 S4@2-3L3o7
-    rule 9: S[R0:2] -> p[] n .
-    (part of 0) S -> p p < p > < n > .
-    value_ops
-S7@2-2R9:1o14 -> S7@2-2R9:1o14a18
-S7@2-2R9:1o14a18 -> \undef
-    rule 9: S[R0:2] -> p[] . n
-    (part of 0) S -> p p < p > . < n >
-S10@0-2R4:2o15 -> S10@0-2R4:2o15a19
-S10@0-2R4:2o15a19 -> S6@0-1R4:1o16 S4@1-2L2o9
-    rule 4: S -> p p . S[R0:2]
-    (part of 0) S -> < p > < p > . < p n >
-S6@0-1R4:1o16 -> S6@0-1R4:1o16a20
-S6@0-1R4:1o16a20 -> S4@0-1L2o3
-    rule 4: S -> p . p S[R0:2]
-    (part of 0) S -> < p > . < p > < p n >
-END_OF_STRING
+    else {
+        Test::More::fail("Unexpected value: $value");
+    }
+} ## end while ( my $value_ref = $recce->value() )
 
 # Local Variables:
 #   mode: cperl

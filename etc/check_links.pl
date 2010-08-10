@@ -100,7 +100,7 @@ PAGE: for my $url (@doc_urls) {
 
         if ( $url_seen{$link}++ ) {
             if ( $verbose >= 2 ) {
-                say STDERR "Already tried $link"
+                say {*STDERR} "Already tried $link"
                     or Carp::croak("Cannot print: $ERRNO");
                 $at_col_0 = 1;
             }
@@ -109,9 +109,10 @@ PAGE: for my $url (@doc_urls) {
 
         if ( $verbose > 1 ) {
             $at_col_0 or print "\n" or Carp::croak("Cannot print: $ERRNO");
-            say STDERR "Trying $link" or Carp::croak("Cannot print: $ERRNO");
+            say {*STDERR} "Trying $link"
+                or Carp::croak("Cannot print: $ERRNO");
             $at_col_0 = 1;
-        }
+        } ## end if ( $verbose > 1 )
 
         my $link_response =
             $ua->request( HTTP::Request->new( GET => $link ) );
@@ -133,12 +134,14 @@ PAGE: for my $url (@doc_urls) {
         if ($verbose) {
             $at_col_0 or print "\n" or Carp::croak("Cannot print: $ERRNO");
             my $uri = $link_response->base();
-            say STDERR "FOUND $link" or Carp::croak("Cannot print: $ERRNO");
-            say STDERR "  uri: $uri" or Carp::croak("Cannot print: $ERRNO");
+            say {*STDERR} "FOUND $link"
+                or Carp::croak("Cannot print: $ERRNO");
+            say {*STDERR} "  uri: $uri"
+                or Carp::croak("Cannot print: $ERRNO");
             if ( $verbose >= 3 ) {
                 for my $redirect ( $link_response->redirects() ) {
                     my $redirect_uri = $redirect->base();
-                    say STDERR "  redirect: $redirect_uri"
+                    say {*STDERR} "  redirect: $redirect_uri"
                         or Carp::croak("Cannot print: $ERRNO");
                 }
             } ## end if ( $verbose >= 3 )

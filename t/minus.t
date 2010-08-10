@@ -2,13 +2,10 @@
 
 use 5.010;
 
-# An ambiguous equation,
-# this time using the lexer
-
 use strict;
 use warnings;
 
-use Test::More tests => 12;
+use Test::More tests => 11;
 
 use lib 'lib';
 use Marpa::Test;
@@ -108,16 +105,6 @@ $grammar->precompute();
 
 my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
 
-my $lexer = Marpa::MDLex->new(
-    {   recognizer => $recce,
-        terminals  => [
-            [ 'Number',     '\d+' ],
-            [ 'Minus',      '[-]' ],
-            [ 'MinusMinus', '[-][-]' ],
-        ]
-    }
-);
-
 Marpa::Test::is( $grammar->show_rules,
     <<'END_RULES', 'Minuses Equation Rules' );
 0: E -> E Minus E /* priority=50 */
@@ -171,7 +158,7 @@ S11: leo-c; 4
 E -> E Minus E .
 END_AHFA
 
-my @expected_values = (
+my %expected = map { ( $_ => 1 ) } (
     #<<< no perltidy
     '(((6--)--)-1)==5',
     '((6--)-(--1))==6',
@@ -184,48 +171,28 @@ my @expected_values = (
     #>>>
 );
 
-# test multiple text calls
-for my $string_piece ( '6', '-----', '1' ) {
-    my $fail_offset = $lexer->text($string_piece);
-    if ( $fail_offset >= 0 ) {
-        Marpa::exception("Parse failed at offset $fail_offset");
-    }
-} ## end for my $string_piece ( '6', '-----', '1' )
+my @input = ();
+push @input, [ 'Number', '6' ];
+push @input, ( [ 'MinusMinus', q{--}, 2, 0 ], [ 'Minus', q{-} ] ) x 4;
+push @input, [ 'Minus',  q{-}, ];
+push @input, [ 'Number', '1' ];
 
-$recce->end_input();
+$recce->tokens( \@input );
 
-my $evaler = Marpa::Evaluator->new(
-    {   recce       => $recce,
-        parse_order => 'original',
+# Set max_parses to 20 in case there's an infinite loop.
+# This is for debugging, after all
+$recce->set( { max_parses => 20 } );
 
-        # Set max_parses to 20 in case there's an infinite loop.
-        # This is for debugging, after all
-        max_parses => 20,
-    }
-);
-Marpa::exception('Could not initialize parse') if not $evaler;
-
-for my $i ( 0 .. $#expected_values ) {
-    my $value_ref = $evaler->value();
-    my $test_name = "Minus Equation Value $i";
-    if ( not defined $value_ref ) {
-        Test::More::fail("No value for $test_name");
+while ( my $value_ref = $recce->value() ) {
+    my $value = $value_ref ? ${$value_ref} : 'No parse';
+    if ( defined $expected{$value} ) {
+        delete $expected{$value};
+        Test::More::pass("Expected Value $value");
     }
     else {
-        Marpa::Test::is( ${$value_ref}, $expected_values[$i], $test_name );
+        Test::More::fail("Unexpected Value $value");
     }
-} ## end for my $i ( 0 .. $#expected_values )
-
-my @extra_values = ();
-while ( my $value = $evaler->value() ) {
-    push @extra_values, ${$value};
-}
-
-my $extra_values_count = scalar @extra_values;
-for my $extra_value (@extra_values) {
-    Test::More::diag("Extra Value: $extra_value");
-}
-Marpa::Test::is( $extra_values_count, 0, 'Minuses Equation Value Count' );
+} ## end while ( my $value_ref = $recce->value() )
 
 # Local Variables:
 #   mode: cperl

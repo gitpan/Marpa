@@ -9,7 +9,7 @@ use Test::More tests => 2;
 use Marpa::Test;
 
 BEGIN {
-    Test::More::use_ok('Marpa::MDLex');
+    Test::More::use_ok('Marpa');
 }
 
 package Test;
@@ -72,35 +72,16 @@ $Test_Grammar::MARPA_OPTIONS = [
     }
 ];
 
-$Test_Grammar::MDLEX_OPTIONS = [
-    {   'terminals' => [
-            {   'name'  => 'Z',
-                'regex' => 'Z'
-            }
-        ]
-    }
-];
-
 package main;
 
 my $g = Marpa::Grammar->new( @{$Test_Grammar::MARPA_OPTIONS} );
 $g->precompute();
 my $recce = Marpa::Recognizer->new( { grammar => $g } );
-my $lexer =
-    Marpa::MDLex->new( { recce => $recce }, @{$Test_Grammar::MDLEX_OPTIONS} );
-
-my $fail_offset = $lexer->text('Z');
-if ( $fail_offset >= 0 ) {
-    Carp::croak("Parse failed at offset $fail_offset");
-}
-
-$recce->end_input();
-my $evaler = Marpa::Evaluator->new( { recce => $recce } );
-Marpa::exception('No parse found') if not $evaler;
-my $value = $evaler->value();
-Marpa::exception('No evaluation found') if not $value;
+$recce->tokens( [ [ 'Z', 'Z' ] ] );
+my $ref_value = $recce->value();
+my $value = $ref_value ? ${$ref_value} : 'No parse';
 Marpa::Test::is(
-    ${$value},
+    $value,
     'A is missing, but Zorro was here',
     'null value example'
 );

@@ -14,7 +14,7 @@ Carp::croak("usage: $PROGRAM_NAME: old_version new_version")
 
 my ( $old, $new ) = @ARGV;
 
-say STDERR "$old $new" or Carp::croak("Cannot print: $ERRNO");
+say {*STDERR} "$old $new" or Carp::croak("Cannot print: $ERRNO");
 
 sub check_version {
     my $version = shift;

@@ -1,8 +1,8 @@
 #!perl
 
-# the example grammar in Aycock/Horspool "Practical Earley Parsing",
-# _The Computer Journal_, Vol. 45, No. 6, pp. 620-630,
-# in its "NNF" form
+# This uses an ambiguous grammar to implement a binary
+# counter.  A very expensive way to do it, but a
+# good test of the ranking logic.
 
 use 5.010;
 use strict;
@@ -20,22 +20,17 @@ BEGIN {
 
 ## no critic (Subroutines::RequireArgUnpacking)
 
-# Ranks are in increments to .001
-# This is to make sure
-# that the ranks are floating point --
+# Ranks are less than 1
+# to make sure
 # that integer rounding
 # is not happening anywhere.
-use constant TEST_INCREMENT => .001;
 
+# If we are counting up, the lowest number
+# has to have the highest numerical rank.
 sub rank_one {
-    #<<< perltidy adds trailing whitespace as of 2009-11-22
-    return
-          TEST_INCREMENT
-        * ( $MyTest::UP ? -1 : 1 )
-        * ( 2**-( Marpa::location() ) );
-    #>>>
-} ## end sub rank_one
-sub rank_zero { return 0 }
+    return \( ( $MyTest::UP ? -1 : 1 ) / ( 2 << Marpa::location() ) );
+}
+sub rank_zero { return \0 }
 sub zero      { return '0' }
 sub one       { return '1' }
 
@@ -77,7 +72,8 @@ my $grammar = Marpa::Grammar->new(
 
 $grammar->precompute();
 
-my $recce = Marpa::Recognizer->new( { grammar => $grammar, } );
+my $recce = Marpa::Recognizer->new(
+    { grammar => $grammar, ranking_method => 'constant' } );
 
 my $input_length = 4;
 $recce->tokens( [ ( ['t'] ) x $input_length ] );
@@ -88,16 +84,17 @@ my @counting_down = reverse @counting_up;
 
 for my $up ( 1, 0 ) {
     local $MyTest::UP = $up;
-    my $expected = $up ? ( \@counting_up ) : ( \@counting_down );
+    my $count = $up ? ( \@counting_up ) : ( \@counting_down );
     my $direction = $up ? 'up' : 'down';
-    my $evaler = Marpa::Evaluator->new( { recce => $recce, } );
+    $recce->reset_evaluation();
     my $i = 0;
-    while ( my $result = $evaler->value() ) {
+    while ( my $result = $recce->value() ) {
+        my $got      = ${$result};
+        my $expected = $count->[$i];
         say ${$result} or Carp::croak("Could not print to STDOUT: $ERRNO");
-        Test::More::is( ${$result}, $expected->[$i],
-            "counting $direction $i" );
+        Test::More::is( $got, $expected, "counting $direction $i" );
         $i++;
-    } ## end while ( my $result = $evaler->value() )
+    } ## end while ( my $result = $recce->value() )
 } ## end for my $up ( 1, 0 )
 
 # Local Variables:

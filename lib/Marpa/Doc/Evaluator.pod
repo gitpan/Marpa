@@ -20,8 +20,46 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-=head1 DESCRIPTION
+=head1 DEPRECATED
 
+This interface is now deprecated in favor of the 3rd Generation
+evaluator
+which is part of the <Marpa Recognizer|Marpa::Recognizer>.
+It may be removed in the future
+and, when XS support is added to Marpa.
+
+The 3rd Generation interface benefits
+from the design lessons learned from the previous two
+generations.  It is faster, more powerful
+and less complicated,
+both internally and externally.
+
+Marpa is alpha software, and at this point is experimental,
+so hopefully no major or production applications depended
+on the 2nd Generation interface.
+
+=head1 CONVERTING TO THE 3rd GENERATION EVALUATOR
+
+Conversion of existing code
+should be simple.
+
+=head2 Ranking Parses
+
+During the life of the 2nd Generation evaluator,
+the default parse order varied.
+In the 3rd Generation evaluator, it is 'none'.
+This means that the C<parse_order> named argument of
+the <Marpa Recognizer|Marpa::Recognizer> must be set to
+a value other than "C<none>",
+or all ranking actions will be silently ignored.
+
+The ranking actions must return a B<reference> to the rank,
+not the rank itself.
+This change from the 2nd Generation is to allow the ranking
+actions to specify that a choice is to be ignored by
+returning an undefined.
+
+=head1 DESCRIPTION
 
 C<Marpa::Evaluator> objects implement Marpa's Multi-parse
 Evaluator.

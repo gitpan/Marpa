@@ -34,10 +34,8 @@ my $test = sub {
     $g->precompute();
     my $recce = Marpa::Recognizer->new( { grammar => $g } );
     $recce->tokens( [ ( [ 'a', 'a', 1 ] ) x 4 ] );
-    my $evaler = Marpa::Evaluator->new( { recce => $recce } );
-    Marpa::exception('No parse found') if not $evaler;
-    $evaler->value();
-    [ $g, $recce, $evaler ];
+    $recce->value();
+    [ $g, $recce ];
 };
 
 my $tester            = Test::Weaken->new($test);

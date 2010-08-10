@@ -18,6 +18,13 @@ sub import {
 
 *Marpa::exception = \&Carp::croak;
 
+## no critic (Subroutines::RequireArgUnpacking)
+sub Marpa::internal_error {
+    Carp::confess( "Internal Marpa Error: This could be a bug in Marpa\n",
+        @_ );
+}
+## use critic
+
 # Perl critic at present is not smart about underscores
 # in hex numbers
 ## no critic (ValuesAndExpressions::RequireNumberSeparators)

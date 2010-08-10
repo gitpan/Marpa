@@ -5,7 +5,7 @@ use 5.010;
 use strict;
 use warnings;
 
-use Test::More tests => 25;
+use Test::More tests => 10;
 
 use lib 'lib';
 use Marpa::Test;
@@ -28,9 +28,8 @@ sub default_action {
 ## use critic
 
 my $grammar = Marpa::Grammar->new(
-    {   start   => 'S',
-        strip   => 0,
-        maximal => 1,
+    {   start => 'S',
+        strip => 0,
 
         rules => [
             [ 'S',  [qw/p p p n/], ],
@@ -52,52 +51,85 @@ my $grammar = Marpa::Grammar->new(
             [ 'x',  ['t'], ],
         ],
         terminals      => ['t'],
-        maximal        => 1,
         default_action => 'main::default_action',
     }
 );
 
 $grammar->precompute();
 
-my @results;
-$results[1][0] = '(-;-;-;(-;-;-;-;-;t))';
-$results[1][1] = '(-;-;-;t)';
-$results[2][0] = '(t;-;-;(-;-;-;-;-;t))';
-$results[2][1] = '(t;-;-;t)';
-$results[2][2] = '(-;t;-;(-;-;-;-;-;t))';
-$results[3][0] = '(t;t;-;(-;-;-;-;-;t))';
-$results[3][1] = '(t;t;-;t)';
-$results[3][2] = '(t;-;t;(-;-;-;-;-;t))';
-$results[4][0] = '(t;t;t;(-;-;-;-;-;t))';
-$results[4][1] = '(t;t;t;t)';
-$results[4][2] = '(t;t;-;(t;-;-;-;-;t))';
-$results[5][0] = '(t;t;t;(t;-;-;-;-;t))';
-$results[5][1] = '(t;t;t;(-;t;-;-;-;t))';
-$results[5][2] = '(t;t;t;(-;-;t;-;-;t))';
-$results[6][0] = '(t;t;t;(t;t;-;-;-;t))';
-$results[6][1] = '(t;t;t;(t;-;t;-;-;t))';
-$results[6][2] = '(t;t;t;(t;-;-;t;-;t))';
-$results[7][0] = '(t;t;t;(t;t;t;-;-;t))';
-$results[7][1] = '(t;t;t;(t;t;-;t;-;t))';
-$results[7][2] = '(t;t;t;(t;t;-;-;t;t))';
-$results[8][0] = '(t;t;t;(t;t;t;t;-;t))';
-$results[8][1] = '(t;t;t;(t;t;t;-;t;t))';
-$results[8][2] = '(t;t;t;(t;t;-;t;t;t))';
-$results[9][0] = '(t;t;t;(t;t;t;t;t;t))';
+# The count of results without an r2 production, the count
+# is C(n-1,3), when n>=4, 0 otherwise.
+# The count of results with an r2 productions is C(n-1,8).
+# Total results is the sum of the results with an
+# r2 production and those without.
+my @expected_count;
+$expected_count[1] = 2;     # 1 w/o r2; 1 with an r2
+$expected_count[2] = 11;    # 3 w/o r2; 8 with an r2
+$expected_count[3] = 31;    # 3 w/o r2; 28 with an r2
+$expected_count[4] = 57;    # 1 w/o r2; 56 with an r2
+$expected_count[5] = 70;    # 0 w/o r2; 70 with an r2
+$expected_count[6] = 56;    # 0 w/o r2; 70 with an r2
+$expected_count[7] = 28;    # 0 w/o r2; 28 with an r2
+$expected_count[8] = 8;     # 0 w/o r2; 8 with an r2
+$expected_count[9] = 1;     # 0 w/o r2; 1 with an r2
 
 for my $input_length ( 1 .. 9 ) {
-    my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
+    my $recce =
+        Marpa::Recognizer->new( { grammar => $grammar, max_parses => 100 } );
     $recce->tokens( [ ( [ 't', 't', 1 ] ) x $input_length ] );
-    my $evaler = Marpa::Evaluator->new(
-        { recce => $recce, parse_order => 'original', } );
-    my $i = 0;
-    while ( $i < 3 and my $value = $evaler->value() ) {
-        my $expected = $results[$input_length][$i] // q{[unexpected result]};
-        Marpa::Test::is( ${$value}, $expected,
-            "cycle with initial nullables, input length=$input_length, value #$i"
-        );
-        $i++;
-    } ## end while ( $i < 3 and my $value = $evaler->value() )
+    my $parse_count = 0;
+    my $expected    = 1;
+    while ( $expected and my $value_ref = $recce->value() ) {
+        $expected = 0;
+        my $value = ${$value_ref};
+        $parse_count++;
+        if ($value =~ m{
+            \A
+            [(]
+                ((t|[-])[;]){3}
+                (t|[-])
+            [)]
+            \z
+            }xms
+            )
+        {
+            $expected = 1;
+        } ## end if ( $value =~ m{ ) (})
+        elsif (
+            $value =~ m{
+            \A
+            [(]
+            ((t|[-])[;]){3}
+                [(]
+                    ((t|[-])[;]){5}
+                    (t|[-])
+                [)]
+            [)]
+            \z
+            }xms
+            )
+        {
+            $expected = 1;
+        } ## end elsif ( $value =~ m{ ) (})
+        $expected &&= $input_length == ( $value =~ tr/t/t/ );
+        if ( not $expected ) {
+            Test::More::fail(
+                qq{Unexpected value, length=$input_length, "$value"});
+        }
+    } ## end while ( $expected and my $value_ref = $recce->value() )
+    if ($expected) {
+        my $expected_count = $expected_count[$input_length];
+        if ( $parse_count == $expected_count ) {
+            Test::More::pass(
+                qq{Good parse count $parse_count; input length=$input_length}
+            );
+        }
+        else {
+            Test::More::fail(
+                qq{Bad parse count $parse_count, expected $expected_count; input length=$input_length}
+            );
+        }
+    } ## end if ($expected)
 } ## end for my $input_length ( 1 .. 9 )
 
 # Local Variables:

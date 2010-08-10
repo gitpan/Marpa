@@ -3,7 +3,13 @@ package Marpa::Grammar;
 use 5.010;
 
 use warnings;
+
+# There's a problem with this perlcritic check
+# as of 9 Aug 2010
+## no critic (TestingAndDebugging::ProhibitNoWarnings)
 no warnings qw(recursion qw);
+## use critic
+
 use strict;
 
 # It's all integers, except for the version number
@@ -91,6 +97,9 @@ use Marpa::Offset qw(
     VIRTUAL_RHS
     DISCARD_SEPARATION
     REAL_SYMBOL_COUNT
+    CYCLE { Can this rule be part of a cycle? }
+    VIRTUAL_CYCLE { Is this rule part of a cycle from the virtual
+    point of view? }
 
     =LAST_EVALUATOR_FIELD
     =LAST_RECOGNIZER_FIELD
@@ -169,6 +178,7 @@ use Marpa::Offset qw(
     PHASE { the grammar's phase }
     ACTIONS { Default package in which to find actions }
     DEFAULT_ACTION { Action for rules without one }
+    CYCLE_RANKING_ACTION { Action for ranking rules which cycle }
     TRACE_FILE_HANDLE
     STRIP { Boolean.  If true, strip unused data to save space. }
     LHS_TERMINALS { Boolean.  If true, LHS terminals are allowed. }
@@ -426,6 +436,7 @@ use constant GRAMMAR_OPTIONS => [
         academic
         action_object
         actions
+        cycle_ranking_action
         infinite_action
         default_action
         default_null_value
@@ -593,6 +604,11 @@ sub Marpa::Grammar::set {
 
         if ( defined( my $value = $args->{'action_object'} ) ) {
             $grammar->[Marpa::Internal::Grammar::ACTION_OBJECT] = $value;
+        }
+
+        if ( defined( my $value = $args->{'cycle_ranking_action'} ) ) {
+            $grammar->[Marpa::Internal::Grammar::CYCLE_RANKING_ACTION] =
+                $value;
         }
 
         if ( defined( my $value = $args->{'default_action'} ) ) {
@@ -1542,13 +1558,11 @@ sub add_rule {
                 '  Rule starts ',
                 $lhs_name,
                 ' -> ',
-                join(
-                    q{ },
+                (   join q{ },
+
+                    # Just print the first 5 symbols on the RHS
                     map { $_->[Marpa::Internal::Symbol::NAME] }
-                        ## take just the first few, 5 for example
-                        ## no critic (ValuesAndExpressions::ProhibitMagicNumbers)
                         @{$rhs}[ 0 .. 5 ]
-                        ## use critic
                 ),
                 " ... \n"
             );
@@ -2313,6 +2327,9 @@ sub nullable {
 
 } ## end sub nullable
 
+# This assumes the CHAF rewrite has been done,
+# so that every symbol is either nulling or
+# non-nullable.  There are no proper nullables.
 sub infinite_rules {
     my ($grammar) = @_;
     my $rules     = $grammar->[Marpa::Internal::Grammar::RULES];
@@ -2326,33 +2343,34 @@ sub infinite_rules {
     RULE: for my $rule ( @{$rules} ) {
         next RULE if not $rule->[Marpa::Internal::Rule::USED];
         my $rhs = $rule->[Marpa::Internal::Rule::RHS];
-        my $non_nullable_symbol;
+        my $non_nulling_symbol;
 
-        # Only one empty rule is allowed in a CHAF grammar -- a nulling
-        # start rule -- this takes care of that exception.
-        next RULE if not scalar @{$rhs};
-
+        # Looking for unit rules:
+        # Eliminate all rules with two or more non-nullables on
+        # the RHS.
         for my $rhs_symbol ( @{$rhs} ) {
             if ( not $rhs_symbol->[Marpa::Internal::Symbol::NULLABLE] ) {
 
                 # if we have two non-nullables on the RHS in this rule,
-                # it can never amount to a unit rule and we can ignore it
-                next RULE if defined $non_nullable_symbol;
+                # it cannot be a unit rule and we can ignore it
+                next RULE if defined $non_nulling_symbol;
 
-                $non_nullable_symbol = $rhs_symbol;
+                $non_nulling_symbol = $rhs_symbol;
             } ## end if ( not $rhs_symbol->[Marpa::Internal::Symbol::NULLABLE...])
         }    # for $rhs_symbol
 
-        # Above we've eliminated all rules with two or more non-nullables
-        # on the RHS.  So here we have a rule with at most one non-nullable
-        # on the RHS.
-
-        next RULE if not defined $non_nullable_symbol;
+        # Above we've eliminated all rules with two or more non-nulling
+        # on the RHS.  So here we have a rule with zero or one non-nulling
+        # symbol on the RHS.  With zero non-nulling rules, this rule
+        # must be nulling (empty) and cannot cycle.
+        # Only one empty rule is allowed in a CHAF grammar -- a nulling
+        # start rule -- this takes care of that exception.
+        next RULE if not defined $non_nulling_symbol;
 
         my $start_id =
             $rule->[Marpa::Internal::Rule::LHS]
             ->[Marpa::Internal::Symbol::ID];
-        my $derived_id = $non_nullable_symbol->[Marpa::Internal::Symbol::ID];
+        my $derived_id = $non_nulling_symbol->[Marpa::Internal::Symbol::ID];
 
         # Keep track of our unit rules
         push @unit_rules, [ $rule, $start_id, $derived_id ];
@@ -2395,7 +2413,18 @@ sub infinite_rules {
             if $start_symbol_id != $derived_symbol_id
                 and
                 not $unit_derivation[$derived_symbol_id][$start_symbol_id];
+
         push @infinite_rules, $rule;
+
+        next RULE if not( $rule->[Marpa::Internal::Rule::CYCLE] = 1 );
+
+        # From a virtual point of view, a rule is a cycle if it is
+        # not a CHAF rule, or if it does not have a virtual RHS.
+        # Rules from a sequence rule rewrite count as "virtual"
+        # rules for this purpose, at least for now.
+        $rule->[Marpa::Internal::Rule::VIRTUAL_CYCLE] =
+               !( defined $rule->[Marpa::Internal::Rule::VIRTUAL_START] )
+            || !$rule->[Marpa::Internal::Rule::VIRTUAL_RHS];
     } ## end while ( my $unit_rule_data = pop @unit_rules )
     return \@infinite_rules;
 } ## end sub infinite_rules
@@ -3282,45 +3311,70 @@ sub rewrite_as_CHAF {
     }    # RULE
 
     # Create a new start symbol
-    my ( $productive, $null_value ) = @{$old_start_symbol}[
-        Marpa::Internal::Symbol::PRODUCTIVE,
-        Marpa::Internal::Symbol::NULL_VALUE,
-    ];
-    my $new_start_symbol =
-        assign_symbol( $grammar,
-        $old_start_symbol->[Marpa::Internal::Symbol::NAME] . q{[']} );
-    @{$new_start_symbol}[
-        Marpa::Internal::Symbol::PRODUCTIVE,
-        Marpa::Internal::Symbol::ACCESSIBLE,
-        Marpa::Internal::Symbol::START,
-        Marpa::Internal::Symbol::NULL_VALUE,
-        ]
-        = ( $productive, 1, 1, $null_value );
+    my $new_start_symbol;
+    my $start_is_nulling =
+        $old_start_symbol->[Marpa::Internal::Symbol::NULLING];
+    my $start_is_productive =
+        $old_start_symbol->[Marpa::Internal::Symbol::PRODUCTIVE];
+    if ( not $start_is_nulling ) {
+        $new_start_symbol =
+            assign_symbol( $grammar,
+            $old_start_symbol->[Marpa::Internal::Symbol::NAME] . q{[']} );
+        $new_start_symbol->[Marpa::Internal::Symbol::NULL_VALUE] =
+            $old_start_symbol->[Marpa::Internal::Symbol::NULL_VALUE];
+        $new_start_symbol->[Marpa::Internal::Symbol::PRODUCTIVE] =
+            $start_is_productive;
+        $new_start_symbol->[Marpa::Internal::Symbol::ACCESSIBLE] = 1;
+        $new_start_symbol->[Marpa::Internal::Symbol::START]      = 1;
 
-    # Create a new start rule
-    my $new_start_rule = add_rule(
-        {   grammar           => $grammar,
-            lhs               => $new_start_symbol,
-            rhs               => [$old_start_symbol],
-            virtual_lhs       => 1,
-            real_symbol_count => 1,
-        }
-    );
+        # Create a new start rule
+        my $new_start_rule = add_rule(
+            {   grammar           => $grammar,
+                lhs               => $new_start_symbol,
+                rhs               => [$old_start_symbol],
+                virtual_lhs       => 1,
+                real_symbol_count => 1,
+            }
+        );
 
-    $new_start_rule->[Marpa::Internal::Rule::PRODUCTIVE] = $productive;
-    $new_start_rule->[Marpa::Internal::Rule::ACCESSIBLE] = 1;
-    $new_start_rule->[Marpa::Internal::Rule::USED]       = 1;
+        $new_start_rule->[Marpa::Internal::Rule::PRODUCTIVE] =
+            $start_is_productive;
+        $new_start_rule->[Marpa::Internal::Rule::ACCESSIBLE] = 1;
+        $new_start_rule->[Marpa::Internal::Rule::USED]       = 1;
+    } ## end if ( not $start_is_nulling )
 
     # If we created a null alias for the original start symbol, we need
     # to create a nulling start rule
-    my $old_start_alias =
-        $old_start_symbol->[Marpa::Internal::Symbol::NULL_ALIAS];
-    if ($old_start_alias) {
-        my $new_start_alias = alias_symbol( $grammar, $new_start_symbol );
-        $new_start_alias->[Marpa::Internal::Symbol::START] = 1;
+    my $nulling_old_start =
+          $start_is_nulling
+        ? $old_start_symbol
+        : $old_start_symbol->[Marpa::Internal::Symbol::NULL_ALIAS];
+    if ($nulling_old_start) {
+        my $nulling_new_start_symbol;
+        if ($new_start_symbol) {
+            $nulling_new_start_symbol =
+                alias_symbol( $grammar, $new_start_symbol );
+        }
+        else {
+            $new_start_symbol = $nulling_new_start_symbol = assign_symbol(
+                $grammar,
+                $old_start_symbol->[Marpa::Internal::Symbol::NAME] . q{['][]}
+            );
+            $nulling_new_start_symbol->[Marpa::Internal::Symbol::NULL_VALUE] =
+                $old_start_symbol->[Marpa::Internal::Symbol::NULL_VALUE];
+            $nulling_new_start_symbol->[Marpa::Internal::Symbol::PRODUCTIVE] =
+                $start_is_productive;
+            $nulling_new_start_symbol->[Marpa::Internal::Symbol::NULLING] = 1;
+            $nulling_new_start_symbol->[Marpa::Internal::Symbol::NULLABLE] =
+                1;
+            $nulling_new_start_symbol->[Marpa::Internal::Symbol::ACCESSIBLE] =
+                1;
+        } ## end else [ if ($new_start_symbol) ]
+        $nulling_new_start_symbol->[Marpa::Internal::Symbol::START] = 1;
+
         my $new_start_alias_rule = add_rule(
             {   grammar           => $grammar,
-                lhs               => $new_start_alias,
+                lhs               => $nulling_new_start_symbol,
                 rhs               => [],
                 virtual_lhs       => 1,
                 real_symbol_count => 1,
@@ -3329,12 +3383,12 @@ sub rewrite_as_CHAF {
 
         # Nulling rules are not considered useful, but the top-level one is an exception
         $new_start_alias_rule->[Marpa::Internal::Rule::PRODUCTIVE] =
-            $productive;
+            $start_is_productive;
         $new_start_alias_rule->[Marpa::Internal::Rule::ACCESSIBLE] = 1;
         $new_start_alias_rule->[Marpa::Internal::Rule::USED]       = 1;
         $new_start_alias_rule->[Marpa::Internal::Rule::NULLABLE]   = 1;
 
-    } ## end if ($old_start_alias)
+    } ## end if ($nulling_old_start)
 
     $grammar->[Marpa::Internal::Grammar::START] = $new_start_symbol;
     return;

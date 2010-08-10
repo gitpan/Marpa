@@ -9,7 +9,7 @@ use strict;
 use warnings;
 
 use lib 'lib';
-use Test::More tests => 20;
+use Test::More tests => 31;
 use Marpa::Test;
 
 BEGIN {
@@ -337,44 +337,38 @@ EARLEME: for my $earleme ( 0 .. $input_length + 1 ) {
     } ## end given
 } ## end for my $earleme ( 0 .. $input_length + 1 )
 
-my @expected = (q{});
-$expected[1] = join "\n", qw(
-    (a;;;)
-    (;a;;)
-    (;;a;)
-    (;;;a)
-);
-$expected[2] = join "\n", qw(
-    (a;a;;)
-    (a;;a;)
-    (a;;;a)
-    (;a;a;)
-    (;a;;a)
-    (;;a;a)
-);
-$expected[3] = join "\n", qw(
-    (a;a;a;)
-    (a;a;;a)
-    (a;;a;a)
-    (;a;a;a)
-);
-$expected[4] = '(a;a;a;a)';
+my @expected = map {
+    +{ map { ( $_ => 1 ) } @{$_} }
+    }
+    [q{}],
+    [qw( (a;;;) (;a;;) (;;a;) (;;;a) )],
+    [qw( (a;a;;) (a;;a;) (a;;;a) (;a;a;) (;a;;a) (;;a;a) )],
+    [qw( (a;a;a;) (a;a;;a) (a;;a;a) (;a;a;a) )],
+    ['(a;a;a;a)'];
+
+$recce->set( { max_parses => 20 } );
 
 for my $i ( 0 .. $input_length ) {
-    my $evaler = Marpa::Evaluator->new(
-        {   recce       => $recce,
-            end         => $i,
-            max_parses  => 20,
-            parse_order => 'original',
-        }
-    );
-    my @result;
-    while ( my $result = $evaler->value() ) {
-        push @result, ${$result};
-    }
-    my $all_results = ( join "\n", @result );
-    Test::More::is( $all_results, $expected[$i], "parse permutation $i" );
 
+    $recce->reset_evaluation();
+    $recce->set( { end => $i } );
+    my $expected = $expected[$i];
+
+    while ( my $value_ref = $recce->value() ) {
+
+        my $value = $value_ref ? ${$value_ref} : 'No parse';
+        if ( defined $expected->{$value} ) {
+            delete $expected->{$value};
+            Test::More::pass(qq{Expected result for length=$i, "$value"});
+        }
+        else {
+            Test::More::fail(qq{Unexpected result for length=$i, "$value"});
+        }
+    } ## end while ( my $value_ref = $recce->value() )
+
+    for my $value ( keys %{$expected} ) {
+        Test::More::fail(qq{Missing result for length=$i, "$value"});
+    }
 } ## end for my $i ( 0 .. $input_length )
 
 # Local Variables:

@@ -70,12 +70,12 @@ my $grammar = Marpa::Grammar->new(
 );
 
 my $expected = <<'EOS';
-sva(s(n(time));v(flies);adju(pr(like);o(art(an);n(arrow))))
-svo(s(adje(time);n(flies));v(like);o(art(an);n(arrow)))
 sva(s(n(fruit));v(flies);adju(pr(like);o(art(a);n(banana))))
+sva(s(n(time));v(flies);adju(pr(like);o(art(an);n(arrow))))
 svo(s(adje(fruit);n(flies));v(like);o(art(a);n(banana)))
+svo(s(adje(time);n(flies));v(like);o(art(an);n(arrow)))
 EOS
-my $actual = q{};
+my @actual = ();
 
 $grammar->precompute();
 
@@ -104,12 +104,11 @@ for my $data ( 'time flies like an arrow.', 'fruit flies like a banana.' ) {
     }
     $recce->end_input();
 
-    my $evaler = Marpa::Evaluator->new( { recognizer => $recce, } );
-    Carp::croak('Parse failed') if not $evaler;
-
-    while ( defined( my $value = $evaler->value() ) ) {
-        $actual .= ${$value} . "\n";
+    while ( defined( my $value_ref = $recce->value() ) ) {
+        my $value = $value_ref ? ${$value_ref} : 'No parse';
+        push @actual, $value;
     }
 } ## end for my $data ( 'time flies like an arrow.', ...)
 
-Marpa::Test::is( $actual, $expected, 'Ambiguous English sentences' );
+Marpa::Test::is( ( join "\n", sort @actual ) . "\n",
+    $expected, 'Ambiguous English sentences' );
