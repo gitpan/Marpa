@@ -8,7 +8,7 @@ use Fatal qw(open close);
 
 use Module::Build;
 
-my $marpa_version = '0.105_003';
+my $marpa_version = '0.105_004';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -48,7 +48,10 @@ my $build = $class->new(
     dist_author   => 'Jeffrey Kegler',
     dist_version  => $marpa_version,
     dist_abstract => 'Generate Parsers from any BNF grammar',
-    recommends    => { 'PPI' => '1.206', },
+    recommends => {
+        'PPI'        => '1.206',
+        'Test::More' => '0.94',
+    },
     requires      => {
         'Scalar::Util'     => 0,
         'HTML::Parser'     => '3.64',

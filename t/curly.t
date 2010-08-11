@@ -7,7 +7,28 @@ use strict;
 use English qw( -no_match_vars );
 
 use Getopt::Long ();
-use Test::More   ( tests => 4, import => [] );
+use Test::More ( import => [] );
+
+BEGIN {
+    my $PPI_problem;
+    CHECK_PPI: {
+        if ( not eval { require PPI } ) {
+            $PPI_problem = 'PPI not installed';
+            last CHECK_PPI;
+        }
+        if ( not PPI->VERSION(1.206) ) {
+            $PPI_problem = 'PPI 1.206 not installed';
+        }
+    } ## end CHECK_PPI:
+    if ($PPI_problem) {
+        Test::More::plan skip_all => $PPI_problem;
+    }
+    else {
+        Test::More::plan tests => 5;
+    }
+    Test::More::use_ok('Marpa');
+} ## end BEGIN
+
 use Marpa::Perl  ();
 use Marpa::Test  ();
 
