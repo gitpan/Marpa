@@ -29,8 +29,8 @@ BEGIN {
     Test::More::use_ok('Marpa');
 } ## end BEGIN
 
-use Marpa::Perl  ();
-use Marpa::Test  ();
+use Marpa::Perl ();
+use Marpa::Test ();
 
 # Run in utility mode?
 my $utility = 0;

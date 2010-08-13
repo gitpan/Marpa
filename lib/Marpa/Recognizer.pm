@@ -86,9 +86,6 @@ use Marpa::Offset qw(
 
     ITERATION_STACK
 
-    CYCLE_HASH { Hash of cycles in current parse result -- used
-    to detect cycles }
-
     EVALUATOR_RULES
 
     { This is the end of the list of fields which
@@ -309,7 +306,6 @@ sub Marpa::Recognizer::reset_evaluation {
     $recce->[Marpa::Internal::Recognizer::OR_NODES]          = [];
     $recce->[Marpa::Internal::Recognizer::OR_NODE_HASH]      = {};
     $recce->[Marpa::Internal::Recognizer::ITERATION_STACK]   = [];
-    $recce->[Marpa::Internal::Recognizer::CYCLE_HASH]        = {};
     $recce->[Marpa::Internal::Recognizer::EVALUATOR_RULES]   = [];
     return;
 } ## end sub Marpa::Recognizer::reset_evaluation

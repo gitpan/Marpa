@@ -27,9 +27,9 @@ our $CYCLE_RANK = 1;
 # If we are counting up, the lowest number
 # has to have the highest numerical rank.
 # sub rank_cycle { return \($main::CYCLE_RANK*(Marpa::location()+1)) }
-sub rank_cycle { return \($main::CYCLE_RANK*(9-Marpa::location())) }
+sub rank_cycle { return \( $main::CYCLE_RANK * ( 9 - Marpa::location() ) ) }
 
-sub rule_action { return 'direct' }
+sub rule_action  { return 'direct' }
 sub cycle_action { return 'cycle' }
 
 sub default_rule_action {
@@ -40,18 +40,19 @@ sub default_rule_action {
 ## use critic
 
 my $grammar = Marpa::Grammar->new(
-    {   start => 'S',
-        strip => 0,
-        infinite_action => 'quiet',
+    {   start                => 'S',
+        strip                => 0,
+        infinite_action      => 'quiet',
         cycle_ranking_action => 'main::rank_cycle',
-        rules => [
+        rules                => [
             {   lhs    => 'S',
                 rhs    => [qw/item item/],
                 action => 'main::default_rule_action'
             },
-            {   lhs            => 'item',
-                rhs            => ['direct'],
-                action         => 'main::rule_action',
+            {   lhs    => 'item',
+                rhs    => ['direct'],
+                action => 'main::rule_action',
+
                 # ranking_action => 'main::rank_rule'
             },
             {   lhs    => 'item',
@@ -89,10 +90,10 @@ my @expected1 = qw(
     cycle;direct
     cycle;cycle
 );
-my @expected = (@expected1, (reverse @expected1));
+my @expected = ( @expected1, ( reverse @expected1 ) );
 
 my $i = 0;
-for my $cycle_rank ( (-1, 1) ) {
+for my $cycle_rank ( -1, 1 ) {
     $main::CYCLE_RANK = $cycle_rank;
     $recce->reset_evaluation();
     while ( my $result = $recce->value() ) {

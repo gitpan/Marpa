@@ -10,10 +10,8 @@ use lib 'lib';
 use English qw( -no_match_vars );
 use Fatal qw(open close chdir);
 
-use Test::More tests => 7;
+use Test::More tests => 5;
 use Marpa::Test;
-
-use constant A_LOT_OF_VALUES => 25;
 
 BEGIN {
     Test::More::use_ok('Marpa');
@@ -102,26 +100,7 @@ Cycle found involving rule: 0: A -> A
 EOS
 ];
 
-my $plex3_test = [
-    '3-plex test',
-    [ start => 's', rules => make_plex_rules(3) ],
-    <<'EOS',
-1884 values
-EOS
-    <<'EOS',
-Cycle found involving rule: 12: C -> C
-Cycle found involving rule: 11: C -> B
-Cycle found involving rule: 10: C -> A
-Cycle found involving rule: 7: B -> C
-Cycle found involving rule: 6: B -> B
-Cycle found involving rule: 5: B -> A
-Cycle found involving rule: 2: A -> C
-Cycle found involving rule: 1: A -> B
-Cycle found involving rule: 0: A -> A
-EOS
-];
-
-for my $test_data ( $plex1_test, $plex2_test, $plex3_test ) {
+for my $test_data ( $plex1_test, $plex2_test ) {
     my ( $test_name, $rules, $expected_values, $expected_trace ) =
         @{$test_data};
 
@@ -129,11 +108,8 @@ for my $test_data ( $plex1_test, $plex2_test, $plex3_test ) {
     open my $MEMORY, '>', \$trace;
     my %args = (
         @{$rules},
-        infinite_action => 'warn',
-        strip           => 0,
-
-        # Let the cycles make the parse absurdly large
-        # That's the point of the test
+        infinite_action   => 'warn',
+        strip             => 0,
         trace_file_handle => $MEMORY,
     );
     my $grammar = Marpa::Grammar->new( \%args );
@@ -144,6 +120,7 @@ for my $test_data ( $plex1_test, $plex2_test, $plex3_test ) {
 
     my $recce = Marpa::Recognizer->new(
         { grammar => $grammar, trace_file_handle => \*STDERR } );
+
     $recce->tokens( [ [ 't', 't', 1 ] ] );
 
     my @values = ();
@@ -151,16 +128,10 @@ for my $test_data ( $plex1_test, $plex2_test, $plex3_test ) {
         push @values, ${$value_ref};
     }
 
-    my $values = q{};
-    if ( @values > A_LOT_OF_VALUES ) {
-        $values = @values . ' values';
-    }
-    else {
-        $values = join "\n", sort @values;
-    }
+    my $values = join "\n", sort @values;
     Marpa::Test::is( "$values\n", $expected_values, $test_name );
 
-} ## end for my $test_data ( $plex1_test, $plex2_test, $plex3_test)
+} ## end for my $test_data ( $plex1_test, $plex2_test )
 
 # Local Variables:
 #   mode: cperl
