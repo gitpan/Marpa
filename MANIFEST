@@ -37,9 +37,11 @@ lib/Marpa/Callback.pm
 lib/Marpa/Display.pm
 lib/Marpa/Doc/Algorithm.pod
 lib/Marpa/Doc/Bibliography.pod
-lib/Marpa/Doc/Bocage.pod
 lib/Marpa/Doc/Debug.pod
-lib/Marpa/Doc/Evaluator.pod
+lib/Marpa/Doc/Deprecated/Bocage.pod
+lib/Marpa/Doc/Deprecated/Evaluator.pod
+lib/Marpa/Doc/Deprecated/Implementation.pod
+lib/Marpa/Doc/Deprecated/Semantics.pod
 lib/Marpa/Doc/Grammar.pod
 lib/Marpa/Doc/Implementation.pod
 lib/Marpa/Doc/Leo.pod

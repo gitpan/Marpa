@@ -34,30 +34,8 @@ method recognizes tokens.
 Pedantically, recognition and evaluation are distinct things.
 Recognition is determining whether there is a parse.
 Evaluation is determining the value of a parse.
-In practice the two are usually intertwined.
-A lot of what
-L<Marpa::Recognizer> does can be
-regarded as "evaluation".
-
-In particular,
-L<Marpa::Recognizer> has a built-in
-L<Single Parse Evaluator|/"SINGLE PARSE EVALUATOR">,
-which works on unambiguous grammars.
-The Single Parse Evaluator also works for
-ambiguous parses if the grammar is not
-infinitely ambiguous.
-The Single Parse Evaluator only returns one parse.
-For ambiguous grammars,
-the Single Parse Evaluator
-arbitrarily
-selects a parse.
-
-The Single Parse Evaluator 
-is usually the best choice when there is only one parse.
-The Single Parse Evaluator 
-is also usually the best choice 
-for an application that only needs one parse,
-and is not fussy about which one.
+In Marpa, the
+L<Marpa::Recognizer> handles both recognition and evaluation.
 
 =head2 Location
 
@@ -274,9 +252,8 @@ the C<tokens> method returns the empty array.
 
 =head2 value
 
-The value mutator implements
-L<the Single Parse Evaluator|/"SINGLE PARSE EVALUATOR">.
-It is described in L<its own section|/"SINGLE PARSE EVALUATOR">.
+The value mutator evaluates and returns a parse result.
+It is described in L<its own section|/"EVALUATION">.
 
 =head1 ACCESSOR
 
@@ -395,6 +372,21 @@ In C<default> mode,
 the C<end_input> method is not useful. 
 As the name indicates,
 C<default> mode is the default.
+
+=head2 ranking_method
+
+The value must be a string:
+either "C<none>" or "C<constant>".
+When the value is "C<none>", Marpa returns the parse results
+in arbitrary order.
+When the value is "C<constant>", Marpa allows the user
+to control the order in which parse results are returned by
+specifying ranking actions which assign values to rules and tokens.
+
+The default is for parse results to be returned in arbitrary order.
+For details, see L<the section on ranking in the document
+on
+semantics|Marpa::Semantics/"Ranking">.
 
 =head2 too_many_earley_items
 
@@ -610,7 +602,7 @@ resumes,
 the token descriptor index is unchanged, but
 points to an altered token descriptor.
 
-=head1 SINGLE PARSE EVALUATOR
+=head1 EVALUATION
 
 =for Marpa::Display
 name: Engine Synopsis Unambiguous Parse
@@ -622,8 +614,7 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-The Single Parse Evaluator is implemented as
-the C<value> method call.
+The C<value> method call evaluates and returns a parse result.
 Its arguments are zero or more hashes of named arguments.
 It returns a B<reference> to the value of a parse,
 or undef if there was no parse.
@@ -670,8 +661,6 @@ Sources of action names include
 
 =item * The C<ranking_action> properties of rules
 
-=item * The C<ranking_action> properties of symbols
-
 =item * For its C<new> method,
 the C<action_object> named argument of grammars
 
@@ -707,6 +696,19 @@ the user only wants to see the first few parse results.
 C<max_parses> is also useful to
 limit CPU usage and output length when testing
 and debugging.
+
+=head2 ranking_method
+
+The value must be a string:
+either "C<none>" or "C<constant>".
+When the value is "C<none>", Marpa returns the parse results
+in arbitrary order.
+When the value is "C<constant>", Marpa allows the user
+to control the order in which parse results are returned by
+specifying ranking actions.
+The default is for parse results to be returned in arbitrary order.
+For details, see L<the section on parse order in the semantics
+document|Marpa::Semantics/"PARSE ORDER">.
 
 =head2 trace_actions
 

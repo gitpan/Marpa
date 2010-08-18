@@ -16,8 +16,8 @@ BEGIN {
     Test::More::use_ok('Marpa');
 }
 
-# Marpa::Display
-# name: Implementation Example
+# IGNORE Marpa::Display
+# IGNORE name: Gen2 Implementation Example
 
 my $grammar = Marpa::Grammar->new(
     {   start          => 'Expression',
@@ -63,7 +63,7 @@ sub My_Actions::do_multiply {
 
 sub My_Actions::first_arg { shift; return shift; }
 
-# Marpa::Display::End
+# IGNORE Marpa::Display::End
 
 my $show_symbols_output = $grammar->show_symbols();
 
@@ -225,7 +225,7 @@ my $value = $value_ref ? ${$value_ref} : 'No Parse';
 Marpa::Test::is( 49, $value, 'Implementation Example G2 Value' );
 
 # Marpa::Display
-# name: Implementation Example show_bocage Call
+# name: Gen2 Implementation Example show_bocage Call
 
 my $show_bocage_output = $evaler->show_bocage(2);
 

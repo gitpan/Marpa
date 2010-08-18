@@ -10,7 +10,7 @@ critic:
 	-(cd ..; prove author.t/critic.t) 2>&1 | tee critic.errs
 
 display:
-	-(cd ..; prove author.t/display.t)
+	-(cd ..; prove author.t/display.t) 2>&1 | tee display.errs
 
 pod:
 	-(cd ..; prove author.t/pod.t)

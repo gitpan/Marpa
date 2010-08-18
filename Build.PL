@@ -8,7 +8,7 @@ use Fatal qw(open close);
 
 use Module::Build;
 
-my $marpa_version = '0.105_006';
+my $marpa_version = '0.105_007';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -43,6 +43,23 @@ my $class = Module::Build->subclass(
     } ## end sub ACTION_dist
 SUBCLASS
 
+my %pod_files = map { ( "lib/Marpa/Doc/$_" => "lib/Marpa/$_" ) } qw(
+    Algorithm.pod
+    Bibliography.pod
+    Deprecated/Bocage.pod
+    Deprecated/Evaluator.pod
+    Deprecated/Implementation.pod
+    Grammar.pod
+    Implementation.pod
+    Marpa.pod
+    Models.pod
+    Parse_Terms.pod
+    Recognizer.pod
+    Semantics.pod
+    Support.pod
+    Tracing.pod
+);
+
 my $build = $class->new(
     dist_name     => 'Marpa',
     dist_author   => 'Jeffrey Kegler',
@@ -59,22 +76,7 @@ my $build = $class->new(
     },
     build_requires => { 'Test::More' => 0.94 },
     PL_files       => {},            # workaround Module::Build bug
-    pod_files      => {
-        'lib/Marpa/Doc/Algorithm.pod'      => 'lib/Marpa/Algorithm.pod',
-        'lib/Marpa/Doc/Bibliography.pod'   => 'lib/Marpa/Bibliography.pod',
-        'lib/Marpa/Doc/Bocage.pod'         => 'lib/Marpa/Bocage.pod',
-        'lib/Marpa/Doc/Evaluator.pod'      => 'lib/Marpa/Evaluator.pod',
-        'lib/Marpa/Doc/Grammar.pod'        => 'lib/Marpa/Grammar.pod',
-        'lib/Marpa/Doc/Implementation.pod' => 'lib/Marpa/Implementation.pod',
-        'lib/Marpa/Doc/Marpa.pod'          => 'lib/Marpa.pod',
-        'lib/Marpa/Doc/Models.pod'         => 'lib/Marpa/Models.pod',
-        'lib/Marpa/Doc/Parse_Terms.pod'    => 'lib/Marpa/Parse_Terms.pod',
-        'lib/Marpa/Doc/Recognizer.pod'     => 'lib/Marpa/Recognizer.pod',
-        'lib/Marpa/Doc/Semantics.pod'      => 'lib/Marpa/Semantics.pod',
-        'lib/Marpa/Doc/Support.pod'        => 'lib/Marpa/Support.pod',
-        'lib/Marpa/Doc/Tracing.pod'        => 'lib/Marpa/Tracing.pod',
-    },
-    meta_merge => {
+    meta_merge     => {
         resources =>
             { repository => 'git://github.com/jeffreykegler/Marpa.git', },
         no_index => {
@@ -90,7 +92,7 @@ my $build = $class->new(
             package => [
 
                 # not public, at least for now
-                qw(Marpa::Offset Marpa::Test Marpa::Display ),
+                qw(Marpa::Perl Marpa::Offset Marpa::Test Marpa::Display ),
 
                 # permanently on the noindex list, as they are EOL'd
                 # and will not be documented
@@ -114,6 +116,7 @@ my $build = $class->new(
             },
         },
     },
+    pod_files          => \%pod_files,
     license            => 'perl',
     create_license     => 1,
     create_readme      => 0,

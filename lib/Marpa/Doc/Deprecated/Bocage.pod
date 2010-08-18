@@ -1,6 +1,25 @@
 =head1 NAME
 
-Marpa::Bocage - Implementation of Marpa's Bocage Data Structure
+Marpa::Deprecated::Bocage - DEPRECATED: Marpa's Bocage Data Structure
+
+=head1 THIS DOCUMENT IS DEPRECATED
+
+Most users should ignore this document.
+It describes the semantics for the internal data
+structure of a deprecated interface,
+part of the 2nd Generation Evaluator described
+in L<Marpa::Deprecated::Evaluator>.
+This document, for the time being,
+is kept for reference in case any legacy applications
+are still using that evaluator.
+Marpa's
+current evaluator is part of its
+Recognizer and described L<in the Recognizer's document|Marpa::Recognizer>.
+
+Marpa is alpha, so that its interfaces are subject
+to change.
+This document and the interface it describes will be
+removed in a future release of Marpa.
 
 =head1 SYNOPSIS
 
@@ -694,7 +713,7 @@ perltidy: '-dcsc -sil=0'
 =for Marpa::Display::End
 
 =for Marpa::Display
-name: Implementation Example show_bocage Call
+name: Gen2 Implementation Example show_bocage Call
 perltidy: '-dcsc -sil=0'
 
     my $show_bocage_output = $evaler->show_bocage(2);

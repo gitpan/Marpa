@@ -76,8 +76,8 @@ grammars with useless or empty productions.
 
 This document contains a top-level overview
 of the API for the Marpa parse engine.
-The two examples in the L<synopsis|/"SYNOPSIS">
-show the typical flow of calls in the Marpa API.
+The two examples in this document
+show the typical flows of Marpa method calls.
 This document will use these examples
 to describe the basic features of Marpa
 in semi-tutorial fashion.
@@ -101,59 +101,10 @@ according to a semantics.
 
 In Marpa these three tasks
 are, for the most part, distinct phases.
-The Marpa API is structured around them.
-
-=head2 Creating a Grammar
-
-The package L<Marpa::Grammar> creates grammars.
-It also "precomputes" the grammars.
-Precomputation creates a set of data structures that
-the recognizer will need.
-
-=head2 Recognizing Input
-
-The L<Marpa::Recognizer> package creates recognizers from grammars.
-A recognizer reads input
-and produces tables based on
-the grammar and the input.
-The
-information that the
-evaluators use to find parses
-is in the recognizer's tables.
-
-=head2 Evaluating Parses
-
-Marpa's evaluators find the parse results
-in the recognizer's tables.
-If the input did not match the grammar,
-the tables will contain no parse results,
-and the evaluators will indicate that.
-If the input did match the grammar,
-the tables will contain one or more parse results.
-There may be more than one parse result,
-because Marpa allows ambiguous grammars.
-
-Marpa has two evaluators:
-a Single Parse Evaluator,
-and a Multi-parse Evaluator.
-The Single Parse Evaluator
-returns the value of only
-one of the parse results.
-The Multi-parse Evaluator allows the application
-to iterate parse trees.
-
-For each of its rules,
-a Marpa application
-can specify a Perl closure to implement
-that rule's semantics.
-For each token,
-a Marpa application can specify
-a Perl scalar to be the token's value.
-The Marpa evaluators apply these semantics recursively to
-the parse trees.
-The value of the root node of a parse tree
-becomes the value of the parse result
-and is returned to the user.
+Grammars are L<Marpa::Grammar> objects.
+The reading of input and the evaluation of the parse
+according to the semantics is performed by
+L<Marpa::Recognizer> objects.
 
 =head1 EXAMPLE 1: A SIMPLE CALCULATOR
 
@@ -236,12 +187,10 @@ normalize-whitespace: 1
 
 The C<actions> and C<default_action> named arguments specify
 semantics.
-Their argument values are strings, which
-rely for their interpretation
-on the evaluators.
+Their argument values are strings,
+which acquire their semantics during evaluation.
 
-The evaluators will be described
-L<later|/"THE SINGLE PARSE EVALUATOR">.
+Evaluation will be described later.
 Peeking ahead,
 the C<default_action> named argument
 will be interpreted
@@ -390,9 +339,9 @@ when the grammar contains empty rules,
 see L<Marpa::Grammar/"Terminals">.
 
 The second element of a token descriptor is the B<token value>.
-A token value must be a Perl scalar, but the rest
-of its semantics
-is entirely up to the application.
+A token value must be a Perl scalar, but otherwise its form
+and semantics
+are entirely up to the application.
 If the token value is omitted,
 it is a Perl C<undef>.
 In the calculator example, the values of the
@@ -419,14 +368,6 @@ If there was no parse result,
 C<Marpa::Recognizer::value>
 returns
 C<undef>.
-
-The C<Marpa::Recognizer::value> method is Marpa's
-Single Parse evaluator.
-Marpa has two evaluators: a Single Parse Evaluator and
-a Multi-parse Evaluator.
-The Single Parse Evaluator will handle all unambiguous grammars
-as well as many ambiguous parses.
-The Single Parse Evaluator is the best evaluator for most situations.
 
 =head2 Resolving the Semantics
 
@@ -511,7 +452,7 @@ Marpa will fall back to trying to find a semantic Perl closure
 using the default action.
 
 The other two rules in the above display work similarly.
-Marpa will look for Perl closures named
+Marpa will look for Perl closures
 named "C<My_Actions::Term>"
 and "C<My_Actions::Factor>".
 It will not find them and will fall back to trying to use
@@ -582,81 +523,11 @@ The exception is the value for the start rule.
 The return value for the start rule
 becomes the value of the parse result.
 
-The C<default_action> named argument is optional.
-When there is no default action for a grammar,
-rules without an explicit semantics return a Perl C<undef>.
-
-=head1 THE SINGLE PARSE EVALUATOR
-
-In most cases
-the parse result returned by
-Marpa's Single Parse Evaluator is all that is wanted.
-The Single Parse Evaluator is not a separate package.
-It is implemented
-as the
-L</"Marpa::Recognizer::value"> method.
-
-L<Marpa::Recognizer>'s Single Parse Evaluator is far more powerful
-than the evaluator in most parser generators, but it does have
-limitations.
-
-=over
-
-=item * The L</"Marpa::Recognizer::value"> method cannot be used if
-your grammar is infinitely ambiguous.
-A grammar is infinitely ambiguous if there is some input
-for which you could
-list the parse results forever,
-with none of the parse results being duplicates.
-
-=item * The L</"Marpa::Recognizer::value"> method cannot be used if
-your parse is ambiguous B<and>
-you want to see B<two or more> of the possible parse results.
-
-=item * The L</"Marpa::Recognizer::value"> method cannot be used if
-your parse is ambiguous B<and>
-you want to be able to B<choose which of the parse results> you see.
-
-=back
-
-In all other cases, the L</"Marpa::Recognizer::value"> can be used,
-will be faster,
-and will usually be the best choice.
-
-=head1 THE MULTI-PARSE EVALUATOR
-
-The Multi-parse Evaluator is for situations
-in which you cannot use Marpa's Single Parse Evaluator.
-The Multi-parse Evaluator handles all possible parses --
-every possible input to any BNF-expressible grammar.
-For unambiguous and finitely ambiguous grammars,
-the Multi-parse Evaluator will iterate all the parse results.
-The Multi-parse Evaluator also
-allows the application to
-control the order in which parse results are produced.
-
-For infinitely ambiguous grammars,
-the Multi-parse Evaluator will iterate all the non-cyclical parse results.
-Few users will need or want to work with infinitely
-ambiguous grammars.
-Those interested in more on this topic can look
-at the documentation
-for L<Marpa::Evaluator>.
-
-Finitely ambiguous grammars
-can be very useful.
-They haven't been much used in the past,
-because few parsers were capable of handling them.
-
-The Single Parse Evaluator will evaluate parses
-from finitely ambiguous grammars.
-But the Single Parse Evaluator
-is limited to returning one parse result, chosen arbitrarily.
-That is sufficient for
-a lot of work with ambiguous grammars.
-When it's not sufficient,
-L<the Multi-parse Evaluator|Marpa::Evaluator>
-is the right tool.
+Rules with no action specified for them take their
+semantics from The C<default_action> named argument.
+If there is no default action for a grammar,
+rules without no action specified for them
+return a Perl C<undef>.
 
 =head1 EXAMPLE 2: AN AMBIGUOUS PARSE
 
@@ -675,8 +546,6 @@ but it also means there can be multiple parse results,
 and the different parse results can have different values.
 In this application we decide, for each input,
 to return the value for every one of the parse results.
-The Single Parse Evaluator will not do this,
-so we use the Multi-parse Evaluator.
 
 =for Marpa::Display
 name: Engine Synopsis Ambiguous Parse
@@ -701,13 +570,9 @@ perltidy: '-dcsc -sil=0'
 
     $ambiguous_recce->tokens( \@tokens );
 
-    my $evaler = Marpa::Evaluator->new( { recce => $ambiguous_recce } );
-
     my @values = ();
-    if ($evaler) {
-        while ( defined( my $ambiguous_value_ref = $evaler->value() ) ) {
-            push @values, ${$ambiguous_value_ref};
-        }
+    while ( defined( my $ambiguous_value_ref = $ambiguous_recce->value() ) ) {
+        push @values, ${$ambiguous_value_ref};
     }
 
 =for Marpa::Display::End
@@ -736,32 +601,7 @@ the C<lhs> property,
 the C<rhs> property,
 and the C<action> property.
 
-=head2 Marpa::Evaluator::new
-
-=for Marpa::Display
-name: Engine Synopsis Ambiguous Parse
-partial: 1
-normalize-whitespace: 1
-
-    my $evaler = Marpa::Evaluator->new( { recce => $ambiguous_recce } );
-
-=for Marpa::Display::End
-
-Multi-parse evaluators are objects in the C<Marpa::Evaluator> class.
-They are created with the C<Marpa::Evaluator::new> method.
-The arguments to this constructor are references to hashes of named arguments.
-In this example, the only named argument is "C<recce>".
-The C<recce> named argument is required.
-It must be the name of the recognizer in whose tables
-the evaluator will find its parse results.
-
-It is possible that C<Marpa::Evaluator::new> will be able to see
-immediately that there are no parse results in the recognizer's tables.
-In that case
-C<Marpa::Evaluator::new>
-returns a Perl C<undef>.
-
-=head2 Marpa::Evaluator::value
+=head2 Marpa::Recognizer::value
 
 =for Marpa::Display
 name: Engine Synopsis Ambiguous Parse
@@ -769,22 +609,21 @@ partial: 1
 normalize-whitespace: 1
 
     my @values = ();
-    if ($evaler) {
-        while ( defined( my $ambiguous_value_ref = $evaler->value() ) ) {
-            push @values, ${$ambiguous_value_ref};
-        }
+    while ( defined( my $ambiguous_value_ref = $ambiguous_recce->value() ) ) {
+        push @values, ${$ambiguous_value_ref};
     }
 
 =for Marpa::Display::End
 
-The 
-C<Marpa::Evaluator::value> method iterates through the parse results.
-It returns a reference to the value of the current parse result.
+When called more than once,
+the C<Marpa::Recognizer::value> method iterates through the parse results.
+For each cvall,
+it returns a reference to the value of a parse result.
 At the end of the iteration, after
 all parse results have been returned,
-C<Marpa::Evaluator::value> returns C<undef>.
+C<Marpa::Recognizer::value> returns C<undef>.
 If there were no parse results,
-C<Marpa::Evaluator::value> returns C<undef> the first
+C<Marpa::Recognizer::value> returns C<undef> the first
 time that it is called.
 
 =head1 ERRORS AND EXCEPTIONS
@@ -809,8 +648,6 @@ L<Marpa::Grammar> document.
 For full details on Marpa's recognizer objects and their methods,
 see the
 L<Marpa::Recognizer> document.
-The L<Marpa::Evaluator> document provides
-details about the Multi-parse Evaluator.
 
 L<Marpa::Parse_Terms> is intended as a quick refresher in
 parsing terminology.
@@ -863,13 +700,21 @@ L<http://www.amazon.com/God-Proof-Jeffrey-Kegler/dp/1434807355>.
 =head1 ACKNOWLEDGMENTS
 
 Marpa is
-derived from the parser described in
+directly derived from two other parsers.
+The first was discovered by
+John Aycock and
+R.  Nigel Horspool
+and is described in their
 L<Aycock and Horspool 2002|Marpa::Bibliography/"Aycock and Horspool 2002">.
-I've made significant changes to it,
-which are documented separately (L<Marpa::Algorithm>).
-Aycock and Horspool, for their part,
-built on the
+The second was described by Joop Leo and is described in
+L<Leo 1991|Marpa::Bibliography/"Leo 1991">.
+Aycock, Horspool, and Leo, in turn, based their
+algorithms on the
 L<algorithm discovered by Jay Earley|Marpa::Bibliography/"Earley 1970">.
+I combined the Aycock-Horspool algorithm with the Leo algorithm,
+and added significant changes of my own.
+More details on the algorithm itself are in
+L<another document|Marpa::Algorithm>.
 
 I'm grateful to Randal Schwartz for his support over the years that
 I've been working on Marpa.
@@ -906,18 +751,6 @@ Adam Kennedy patiently instructed me
 in module writing,
 both on the finer points and
 on issues about which I really should have know better.
-
-My academic sources are described in detail in 
-L<my bibliography|Marpa::Bibliography> and
-L<my (very difficult and sketchy) description of the Marpa algorithm|Marpa::Algorithm>.
-Here I want to name those who
-created the algorithms which are the direct
-and near-direct predecesssors of Marpa --
-Jay Earley,
-Joop Leo,
-John Aycock and
-R.  Nigel Horspool.
-Without their work Marpa would not exist.
 
 =head1 SUPPORT
 

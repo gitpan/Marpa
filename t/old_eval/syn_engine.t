@@ -69,7 +69,7 @@ my $value = $value_ref ? ${$value_ref} : 'No Parse';
 # Ambiguous, Array Form Rules
 
 # Marpa::Display
-# name: Engine Synopsis Ambiguous Parse
+# name: Gen3 Engine Synopsis Ambiguous Parse
 
 my $ambiguous_grammar = Marpa::Grammar->new(
     {   start   => 'E',

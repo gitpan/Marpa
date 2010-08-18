@@ -1,11 +1,97 @@
 =head1 NAME
 
-Marpa::Evaluator - Marpa Evaluator Objects
+Marpa::Deprecated::Evaluator - a DEPRECATED Evaluator
+
+=head1 THIS MODULE IS DEPRECATED
+
+This module has been replaced by
+methods of the L<Marpa Recognizer|Marpa::Recognizer>.
+This module is no longer supported
+and will be removed in a future release.
+In particular, there will never be XS support
+for this module.
+
+=head2 History
+
+This module was the 2nd Generation Marpa Evaluator.
+It is now strongly
+deprecated in favor of the 3rd Generation
+Evaluator,
+which is part of the L<Marpa Recognizer|Marpa::Recognizer>.
+
+The 3rd Generation is faster, more powerful
+and less complicated,
+both internally and externally.
+The 3rd Generation Evaluator benefits
+from the design lessons learned from the previous two
+generations.
+
+Marpa is alpha software, and at this point is experimental,
+so hopefully no major or production applications depended
+on the 2nd Generation interface.
+
+=head1 HOW TO CONVERT TO THE 3rd GENERATION EVALUATOR
+
+Conversion of existing code
+should be simple.
+In the 3rd Generation parser, no Evaluator objects
+should be created.
+Instead of the Evaluator object's C<value> method,
+the L<Marpa::Recognizer::value method|Marpa::Recognizer/"value">
+should be used.
+Its interface is essentially the same.
+
+In the 2nd Generation Evaluator,
+multiple evaluations based on the same
+L<Marpa::Recognizer object|Marpa::Recognizer>
+could be performed by
+creating multiple Marpa::Evaluator objects.
+In the 3rd Generation, this is done
+by using
+the L<Marpa::Recognizer::reset_evaluation method|Marpa::Recognizer/"reset_evaluation">
+to reset the evaluation data in the Marpa Recognizer object.
+
+=head2 Ranking Parses
+
+In the 3rd Generation Evaluator,
+the C<ranking_method> named argument
+corresponds to 
+the C<parse_order> named argument of
+the 2nd Generation Evaluator.
+
+During the life of the 2nd Generation Evaluator,
+the default parse order varied.
+In the 3rd Generation Evaluator, it is "C<none>".
+This means that the C<ranking_method> named argument of
+the L<Marpa Recognizer|Marpa::Recognizer> must be set to
+a value other than "C<none>",
+or all ranking actions will be silently ignored.
+
+Aside from "C<none>",
+the 2nd Generation Evaluator only had one documented
+parse order: "C<numeric>".
+This name was somewhat misleading, and
+the ranking method which provides the same capabilities
+in the 3rd Generation Evaluator is called
+"C<constant>".
+
+In converting from the 2nd Generation Evaluator to the
+3rd, the return values of the ranking actions will
+usually have to change.
+In the 2nd Generation, these returned a rank.
+In the 3rd Generation, these return a
+B<reference> to a rank.
+This allows 3rd Generation
+to specify that, instead of being ranked,
+a choice should be ignored.
+If a 3rd Generation ranking closure returns a
+Perl C<undef>,
+the token or rule it corresponds to will be ignored.
 
 =head1 SYNOPSIS
 
 =for Marpa::Display
-name: Engine Synopsis Ambiguous Parse
+name: Gen3 Engine Synopsis Ambiguous Parse
 partial: 1
 normalize-whitespace: 1
 
@@ -19,45 +105,6 @@ normalize-whitespace: 1
     }
 
 =for Marpa::Display::End
-
-=head1 DEPRECATED
-
-This interface is now deprecated in favor of the 3rd Generation
-evaluator
-which is part of the <Marpa Recognizer|Marpa::Recognizer>.
-It may be removed in the future
-and, when XS support is added to Marpa.
-
-The 3rd Generation interface benefits
-from the design lessons learned from the previous two
-generations.  It is faster, more powerful
-and less complicated,
-both internally and externally.
-
-Marpa is alpha software, and at this point is experimental,
-so hopefully no major or production applications depended
-on the 2nd Generation interface.
-
-=head1 CONVERTING TO THE 3rd GENERATION EVALUATOR
-
-Conversion of existing code
-should be simple.
-
-=head2 Ranking Parses
-
-During the life of the 2nd Generation evaluator,
-the default parse order varied.
-In the 3rd Generation evaluator, it is 'none'.
-This means that the C<parse_order> named argument of
-the <Marpa Recognizer|Marpa::Recognizer> must be set to
-a value other than "C<none>",
-or all ranking actions will be silently ignored.
-
-The ranking actions must return a B<reference> to the rank,
-not the rank itself.
-This change from the 2nd Generation is to allow the ranking
-actions to specify that a choice is to be ignored by
-returning an undefined.
 
 =head1 DESCRIPTION
 
@@ -152,19 +199,19 @@ using the rule's C<ranking_action> property.
 For the rank of a node to be calculated, the ranking action
 must first be resolved to a ranking Perl closure. 
 Ranking actions are resolved to ranking Perl closures
-in the L<evaluator setup phase|Marpa::Semantics/"Evaluator Setup Phase">,
+in the L<evaluator setup phase|Marpa::Deprecated::Semantics/"Evaluator Setup Phase">,
 using the same logic that resolves semantics actions to 
 Perl semantic closures.
 The logic that resolves action names to closures is described in
 detail in
-L<the semantics document|Marpa::Semantics/"RESOLVING ACTION NAMES">.
+L<the semantics document|Marpa::Deprecated::Semantics/"RESOLVING ACTION NAMES">.
 
 The ranking closures for token leaf nodes
 and the ranking closures for nulled leaf nodes
 are called
-in the L<bocage setup phase|Marpa::Semantics/"Bocage Setup Phase">.
+in the L<bocage setup phase|Marpa::Deprecated::Semantics/"Bocage Setup Phase">.
 The ranking closures for rule nodes are called
-during the L<parse setup phase|Marpa::Semantics/"Parse Setup Phase">.
+during the L<parse setup phase|Marpa::Deprecated::Semantics/"Parse Setup Phase">.
 
 =head2 Infinitely Ambiguous Grammars
 
@@ -219,7 +266,7 @@ below|/"INFINITELY AMBIGUOUS GRAMMARS: THE DETAILS">.
 =head2 new
 
 =for Marpa::Display
-name: Engine Synopsis Ambiguous Parse
+name: Gen3 Engine Synopsis Ambiguous Parse
 partial: 1
 normalize-whitespace: 1
 
@@ -279,7 +326,7 @@ The arguments to the C<set> method are zero or more hashes of named arguments.
 =head2 value
 
 =for Marpa::Display
-name: Engine Synopsis Ambiguous Parse
+name: Gen3 Engine Synopsis Ambiguous Parse
 partial: 1
 normalize-whitespace: 1
 
@@ -310,7 +357,7 @@ Failures are thrown as exceptions.
 =head2 show_bocage
 
 =for Marpa::Display
-name: Implementation Example show_bocage Call
+name: Gen2 Implementation Example show_bocage Call
 perltidy: '-dcsc -sil=0'
 
     my $show_bocage_output = $evaler->show_bocage(2);
@@ -349,7 +396,7 @@ not formally complete without them.
 =head1 CONTEXT-AWARE STATIC METHODS
 
 =for Marpa::Display
-name: Marpa::token_location example
+name: Gen3 Marpa::token_location example
 perltidy: '-dcsc -sil=0'
 
     sub rank_null_a {
@@ -423,7 +470,7 @@ the C<closure> named argument is to
 allow anonymous
 subroutines to be semantic actions.
 For more details, see L<the document on
-semantics|Marpa::Semantics>.
+semantics|Marpa::Deprecated::Semantics>.
 
 =head2 end
 

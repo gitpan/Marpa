@@ -1440,6 +1440,7 @@ sub Marpa::Recognizer::value {
     # Look for the start item and start rule
     my $earley_set = $earley_sets->[$current_parse_set];
 
+    # Perhaps this call should be moved.
     # The null values are currently a function of the grammar,
     # and should be constant for the life of a recognizer.
     my $null_values = $recce->[Marpa::Internal::Recognizer::NULL_VALUES] //=

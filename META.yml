@@ -33,6 +33,7 @@ no_index:
     - Marpa::Evaluator
     - Marpa::Grammar
   package:
+    - Marpa::Perl
     - Marpa::Offset
     - Marpa::Test
     - Marpa::Display
@@ -43,7 +44,7 @@ no_index:
 provides:
   Marpa:
     file: lib/Marpa.pm
-    version: 0.105_006
+    version: 0.105_007
 recommends:
   PPI: 1.206
   Test::More: 0.94
@@ -54,4 +55,4 @@ requires:
 resources:
   license: http://dev.perl.org/licenses/
   repository: git://github.com/jeffreykegler/Marpa.git
-version: 0.105_006
+version: 0.105_007

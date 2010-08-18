@@ -61,6 +61,7 @@ if ( not $debug_mode ) {
 
     my %file_seen = ();
     FILE: for my $test_file (@test_files) {
+
         next FILE if $exclude{$test_file};
         next FILE if -d $test_file;
         if ( $file_seen{$test_file}++ ) {
