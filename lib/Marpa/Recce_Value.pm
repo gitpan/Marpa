@@ -1431,8 +1431,9 @@ sub Marpa::Recognizer::value {
         "  Recognition done only as far as location $last_completed_earleme\n"
     ) if $furthest_earleme > $last_completed_earleme;
 
-    my $rules   = $grammar->[Marpa::Internal::Grammar::RULES];
-    my $symbols = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
+    my $rules             = $grammar->[Marpa::Internal::Grammar::RULES];
+    my $symbols           = $grammar->[Marpa::Internal::Grammar::SYMBOLS];
+    my $grammar_has_cycle = $grammar->[Marpa::Internal::Grammar::HAS_CYCLE];
 
     my $current_parse_set = $parse_set_arg
         // $recce->[Marpa::Internal::Recognizer::FURTHEST_EARLEME];
@@ -1646,17 +1647,24 @@ sub Marpa::Recognizer::value {
 
             push @task_list, [Marpa::Internal::Task::FIX_TREE];
 
-            push @task_list,
-                [
-                $choices->[0]->[Marpa::Internal::Choice::ITERATION_SUBTREE]
-                ? Marpa::Internal::Task::GRAFT_SUBTREE
-                : Marpa::Internal::Task::CHECK_FOR_CYCLE
-                ];
+            if ( $choices->[0]->[Marpa::Internal::Choice::ITERATION_SUBTREE] )
+            {
+                push @task_list, [Marpa::Internal::Task::GRAFT_SUBTREE];
+                next TASK;
+            }
+
+            if ($grammar_has_cycle) {
+                push @task_list, [Marpa::Internal::Task::CHECK_FOR_CYCLE];
+                next TASK;
+            }
 
             next TASK;
+
         } ## end if ( $task_type == Marpa::Internal::Task::ITERATE )
 
         if ( $task_type == Marpa::Internal::Task::CHECK_FOR_CYCLE ) {
+
+            next TASK if not $grammar_has_cycle;
 
             # This task assumes the top node and the ranks of all its
             # ancestores are already dirtied.
@@ -1956,14 +1964,19 @@ sub Marpa::Recognizer::value {
 
             push @task_list, [Marpa::Internal::Task::FIX_TREE];
 
-            push @task_list,
-                [
-                $choices->[0]->[Marpa::Internal::Choice::ITERATION_SUBTREE]
-                ? Marpa::Internal::Task::GRAFT_SUBTREE
-                : Marpa::Internal::Task::CHECK_FOR_CYCLE
-                ];
+            if ( $choices->[0]->[Marpa::Internal::Choice::ITERATION_SUBTREE] )
+            {
+                push @task_list, [Marpa::Internal::Task::GRAFT_SUBTREE];
+                next TASK;
+            }
+
+            if ($grammar_has_cycle) {
+                push @task_list, [Marpa::Internal::Task::CHECK_FOR_CYCLE];
+                next TASK;
+            }
 
             next TASK;
+
         } ## end while ( $task_type == Marpa::Internal::Task::FIX_TREE )
 
         if ( $task_type == Marpa::Internal::Task::POPULATE_OR_NODE ) {
@@ -2505,39 +2518,43 @@ sub Marpa::Recognizer::value {
 
             my $and_node_tag = $and_node->[Marpa::Internal::And_Node::TAG];
 
-            if ( not defined $cycle_hash ) {
-                my @and_node_tags = map {
-                    $_->[Marpa::Internal::Iteration_Node::CHOICES]->[0]
-                        ->[Marpa::Internal::Choice::AND_NODE]
-                        ->[Marpa::Internal::And_Node::TAG]
-                } @{$iteration_stack};
-                my %cycle_hash;
-                @cycle_hash{@and_node_tags} = @and_node_tags;
-                $cycle_hash = \%cycle_hash;
-            } ## end if ( not defined $cycle_hash )
+            if ($grammar_has_cycle) {
 
-            # Check if we are about to cycle.
-            if ( $or_node->[Marpa::Internal::Or_Node::CYCLE]
-                and exists $cycle_hash->{$and_node_tag} )
-            {
+                if ( not defined $cycle_hash ) {
+                    my @and_node_tags = map {
+                        $_->[Marpa::Internal::Iteration_Node::CHOICES]->[0]
+                            ->[Marpa::Internal::Choice::AND_NODE]
+                            ->[Marpa::Internal::And_Node::TAG]
+                    } @{$iteration_stack};
+                    my %cycle_hash;
+                    @cycle_hash{@and_node_tags} = @and_node_tags;
+                    $cycle_hash = \%cycle_hash;
+                } ## end if ( not defined $cycle_hash )
 
-                # If there is another choice, increment choice and restack
-                # this task ...
-                #
-                # This iteration node is not yet on the stack, so we
-                # don't need to do anything with the pointers.
-                if ( scalar @{$choices} > 1 ) {
-                    shift @{$choices};
-                    push @task_list, $task;
+                # Check if we are about to cycle.
+                if ( $or_node->[Marpa::Internal::Or_Node::CYCLE]
+                    and exists $cycle_hash->{$and_node_tag} )
+                {
+
+                    # If there is another choice, increment choice and restack
+                    # this task ...
+                    #
+                    # This iteration node is not yet on the stack, so we
+                    # don't need to do anything with the pointers.
+                    if ( scalar @{$choices} > 1 ) {
+                        shift @{$choices};
+                        push @task_list, $task;
+                        next TASK;
+                    }
+
+                    # Otherwise, throw away all pending tasks and
+                    # iterate
+                    @task_list = ( [Marpa::Internal::Task::ITERATE] );
                     next TASK;
-                }
+                } ## end if ( $or_node->[Marpa::Internal::Or_Node::CYCLE] and...)
+                $cycle_hash->{$and_node_tag} = $and_node_tag;
 
-                # Otherwise, throw away all pending tasks and
-                # iterate
-                @task_list = ( [Marpa::Internal::Task::ITERATE] );
-                next TASK;
-            } ## end if ( $or_node->[Marpa::Internal::Or_Node::CYCLE] and...)
-            $cycle_hash->{$and_node_tag} = $and_node_tag;
+            } ## end if ($grammar_has_cycle)
 
             # Tell the parent that the new iteration node is its child.
             if (defined(

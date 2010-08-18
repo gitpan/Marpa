@@ -179,6 +179,7 @@ use Marpa::Offset qw(
     ACTIONS { Default package in which to find actions }
     DEFAULT_ACTION { Action for rules without one }
     CYCLE_RANKING_ACTION { Action for ranking rules which cycle }
+    HAS_CYCLE { Does this grammar have a cycle? }
     TRACE_FILE_HANDLE
     STRIP { Boolean.  If true, strip unused data to save space. }
     LHS_TERMINALS { Boolean.  If true, LHS terminals are allowed. }
@@ -2416,7 +2417,7 @@ sub infinite_rules {
 
         push @infinite_rules, $rule;
 
-        next RULE if not( $rule->[Marpa::Internal::Rule::CYCLE] = 1 );
+        $rule->[Marpa::Internal::Rule::CYCLE] = 1;
 
         # From a virtual point of view, a rule is a cycle if it is
         # not a CHAF rule, or if it does not have a virtual RHS.
@@ -2426,7 +2427,11 @@ sub infinite_rules {
                !( defined $rule->[Marpa::Internal::Rule::VIRTUAL_START] )
             || !$rule->[Marpa::Internal::Rule::VIRTUAL_RHS];
     } ## end while ( my $unit_rule_data = pop @unit_rules )
+
+    $grammar->[Marpa::Internal::Grammar::HAS_CYCLE] = scalar @infinite_rules;
+
     return \@infinite_rules;
+
 } ## end sub infinite_rules
 
 # This assumes the grammar has been rewritten into CHAF form.

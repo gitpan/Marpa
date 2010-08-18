@@ -8,7 +8,7 @@ use Fatal qw(open close);
 
 use Module::Build;
 
-my $marpa_version = '0.105_007';
+my $marpa_version = '0.105_008';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -82,27 +82,27 @@ my $build = $class->new(
         no_index => {
             directory =>
                 [qw( inc xs libmarpa lib/Marpa/UrHTML t author.t save )],
-            namespace => [
-                'Marpa::Internal',          'Marpa::MDL::Internal',
-                'Marpa::MDLex::Internal',   'Marpa::UrHTML::Internal',
-                'Marpa::Display::Internal', 'Marpa::Test',
-                'Marpa::Recognizer',        'Marpa::Evaluator',
-                'Marpa::Grammar',
-            ],
-            package => [
+            namespace => [ 'Marpa::Recognizer', 'Marpa::Grammar', ],
+            package   => [
 
                 # not public, at least for now
                 qw(Marpa::Perl Marpa::Offset Marpa::Test Marpa::Display ),
 
                 # permanently on the noindex list, as they are EOL'd
                 # and will not be documented
-                qw( Marpa::MDL Marpa::MDLex ),
+                qw( Marpa::MDL Marpa::MDLex Marpa::Evaluator ),
 
                 # moved elsewhere
                 qw( Marpa::UrHTML ),
 
                 # never intended to see the light of day
-                qw(Marpa::Internal),
+                qw(
+                    Marpa::Display::Internal
+                    Marpa::Internal
+                    Marpa::MDLex::Internal
+                    Marpa::MDL::Internal
+                    Marpa::UrHTML::Internal
+                    ),
 
             ],
         },

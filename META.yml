@@ -23,14 +23,7 @@ no_index:
     - author.t
     - save
   namespace:
-    - Marpa::Internal
-    - Marpa::MDL::Internal
-    - Marpa::MDLex::Internal
-    - Marpa::UrHTML::Internal
-    - Marpa::Display::Internal
-    - Marpa::Test
     - Marpa::Recognizer
-    - Marpa::Evaluator
     - Marpa::Grammar
   package:
     - Marpa::Perl
@@ -39,12 +32,17 @@ no_index:
     - Marpa::Display
     - Marpa::MDL
     - Marpa::MDLex
+    - Marpa::Evaluator
     - Marpa::UrHTML
+    - Marpa::Display::Internal
     - Marpa::Internal
+    - Marpa::MDLex::Internal
+    - Marpa::MDL::Internal
+    - Marpa::UrHTML::Internal
 provides:
   Marpa:
     file: lib/Marpa.pm
-    version: 0.105_007
+    version: 0.105_008
 recommends:
   PPI: 1.206
   Test::More: 0.94
@@ -55,4 +53,4 @@ requires:
 resources:
   license: http://dev.perl.org/licenses/
   repository: git://github.com/jeffreykegler/Marpa.git
-version: 0.105_007
+version: 0.105_008

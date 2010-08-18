@@ -532,9 +532,9 @@ When explicit resolution is the only kind of resolution that is wanted,
 it is best to pick a name that is very unlikely to be the name
 of a Perl closure.
 Many of
-L<Marpa::UrHTML>'s action names
+L<Marpa::HTML>'s action names
 are intended for explicit resolution only.
-In L<Marpa::UrHTML> those action names
+In L<Marpa::HTML> those action names
 begin with
 an exclamation mark ("!"),
 and that convention is recommended.

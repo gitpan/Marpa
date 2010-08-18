@@ -562,39 +562,39 @@ inconsistent with the recognizer's internal data.
 
 =head2 An Example
 
-Marpa's HTML parser, L<Marpa::UrHTML>, is
+Marpa's HTML parser, L<Marpa::HTML>, is
 an example of how this flexibility can help
 with a non-trivial, real-life application.
 When an interactive C<tokens> call returns due to
 an invalid token name,
-L<Marpa::UrHTML>
+L<Marpa::HTML>
 tries to fix things in two ways.
 
 First, it looks at the expected tokens list
 for the name of a token
 that will work as a "virtual" token.
-If L<Marpa::UrHTML> finds
+If L<Marpa::HTML> finds
 an acceptable virtual token name,
 it will create a token descriptor for it "on the fly".
 In effect, 
-L<Marpa::UrHTML> supplies
+L<Marpa::HTML> supplies
 tokens that the parser wants
 but which are missing in the physical input.
-L<Marpa::UrHTML>
+L<Marpa::HTML>
 inserts the virtual tokens into the input
 using non-interactive
 C<tokens> method calls.
 After inserting the virtual tokens,
-L<Marpa::UrHTML>
+L<Marpa::HTML>
 loops back to the main, interactive,
 C<tokens> call,
 resuming the original input at the point where it left off.
 
 Second,
 under some circumstances
-L<Marpa::UrHTML> will change the next token descriptor in the
+L<Marpa::HTML> will change the next token descriptor in the
 token descriptor array to fit the parser's expectations.
-L<Marpa::UrHTML>
+L<Marpa::HTML>
 then loops back to the main interactive call to C<tokens>.
 When
 the main interactive call to C<tokens>
