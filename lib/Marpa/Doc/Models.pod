@@ -113,19 +113,21 @@ When lexing is B<actually ambiguous>, Marpa
 will use all consistent alternatives.
 When the lexing in a parse is actually ambiguous,
 the parse will be ambiguous.
-This means that in Marpa, a parse can be ambiguous,
-even when the grammar is not ambiguous.
+From the point of view of Marpa's semantics,
+ambiguity caused by lexing is exactly the
+same as ambiguity caused by an ambiguous grammar.
 
-Marpa's semantics deal
-with ambiguity due to lexing in the
-same way that Marpa deals with
-grammatical ambiguity.
-When the Single Parse Evaluator is used,
-Marpa arbitrarily chooses one of the possible
-token choices.
-When the Multi-parse Evaluator is used,
-Marpa allows the user to iterate through alternative
-lexings.
+It's a bit of a pedantic point, but in the rest of
+this documentation I follow the standard
+terminology in saying that grammar is ambiguous
+if it can produce more than one parse result,
+and vice versa.
+In Marpa this is not strictly true.
+An unambiguous grammar can produce than one parse
+in Marpa, if the lexing is ambiguous.
+Conversely, if Marpa returns more than
+one parse result for a grammar, you cannot conclude
+that the grammar itself is ambiguous.
 
 =head1 THE CHARACTER-PER-EARLEME MODEL
 

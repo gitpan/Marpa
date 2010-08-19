@@ -13,11 +13,11 @@ use XSLoader;
 # to load in Marpa as well. Pretty useless otherwise, because we
 # need to _overwrite_ the Marpa methods, we can't have it loading
 # after we do.
-use Marpa 0.105_008 ();
+use Marpa 0.105_009 ();
 
 # Define compatibility information
 BEGIN {
-    our $VERSION = '0.105_008';
+    our $VERSION = '0.105_009';
     our %EXCLUDE = ();
 }
 

@@ -58,7 +58,7 @@ symbol name.
 
 =head2 Terminal Symbols
 
-In Marpa, all symbols are terminals are default.
+If a grammar has no empty rules, all symbols are terminals by default.
 Unlike most parser generators,
 Marpa will allow terminals to appear on the left
 hand side of rules.
@@ -79,29 +79,14 @@ only symbols which do not appear on the LHS of a rule can be terminals.
 If no symbols are directly marked, Marpa will implicitly
 mark all the non-LHS symbols as terminals.
 
-Here is a complete listing of the ways in which a symbol C<X> can become a terminal:
-
-=over
-
-=item * A symbol C<X> is a terminal by default.
-
-=item * If no symbols are directly marked as terminals, and
-the L<C<lhs_terminals> named argument|/"lhs_terminals"> is set,
-symbol C<X> is a terminal.
-These are the defaults, so this case simply restates the previous one.
-
-=item * If symbol C<X> is directly marked using the L<C<terminals> named argument|/"terminals">,
-it is a terminal.
-
-=item * If symbol C<X> is directly marked using the L<C<terminal> property|/"terminal">,
-it is a terminal.
-
-=item * If symbol C<X> is not the LHS symbol for any rule,
-the L<C<lhs_terminals> named argument|/"lhs_terminals"> is unset,
-and no terminals are marked directly,
-then symbol C<X> is implicitly marked as a terminal.
-
-=back
+Marpa is stricter for grammars with empty rules --
+it does not allow them to take the default.
+If the LHS of an empty rule could also be a terminal,
+it would make life difficult for the recognizer.
+If a grammar has any empty rules,
+it must either directly mark its terminals,
+or must unset 
+the L<C<lhs_terminals> named argument|/"lhs_terminals">.
 
 For most grammars, the default can be taken, in which case
 all symbols are terminals.
@@ -112,20 +97,46 @@ Also, the recognizer checks that input tokens are
 terminals, so that being selective about which symbols
 are terminals and which are not can allow better input checking.
 
-Marpa is stricter for grammars with empty rules --
-it does not allow them to take the default.
-If the LHS of an empty rule could also be a terminal,
-it would make life difficult for the recognizer.
-If a grammar has any empty rules,
-it must either directly mark its terminals,
-or must unset 
-the L<C<lhs_terminals> named argument|/"lhs_terminals">.
+=head3 Summary
+
+The following summarizes the logic which determines
+whether a symbol C<S> is terminal.
+As a reminder,
+a symbol is said to be B<directly marked as a terminal>
+if it is one of the symbols in the
+L<C<terminals> named argument|/"terminals">,
+or if the symbol has the L<C<terminal> property|/"terminal"> set.
+
+=over
+
+=item * If any symbol is directly marked as a terminal,
+then a symbol C<S> is a terminal if and only if it is also directly marked
+as a terminal.
+
+=item * If no symbol is directly marked as a terminal,
+and the L<C<lhs_terminals> named argument|/"lhs_terminals"> is unset,
+then all non-LHS symbols are terminals.
+
+=item * If the grammar contains no empty rules,
+no symbol is directly marked as a terminal,
+and the L<C<lhs_terminals> named argument|/"lhs_terminals"> is set or
+left at its default,
+then all symbols are terminals.
+ 
+=item * The only case not covered above is that in which
+a grammar contains one or more empty rules,
+no symbol is directly marked as a terminal,
+and the L<C<lhs_terminals> named argument|/"lhs_terminals"> is set or
+left at its default.
+This is a fatal error.
+
+=back
 
 =head2 Sequence Rules
 
 It is very common in a grammar for one symbol to derive a
 sequence of other symbols.
-Marpa has a shorthand for this:
+Marpa allows a shorthand for this:
 sequence rules.
 
 A rule is a sequence rule if the C<min> rule property is defined.
@@ -138,13 +149,13 @@ name: Marpa::Grammar min 0 sequence example
 partial: 1
 normalize-whitespace: 1
 
-    { lhs => 'sequence', rhs => ['sequence_item'], min => 0 }
+    { lhs => 'sequence', rhs => ['item'], min => 0 }
 
 =for Marpa::Display::End
 
 A C<min> of zero indicates a sequence of 0 or more symbols.
 This is the equivalent of using the star quantifier
-("C<sequence_item*>") in the
+("C<item*>") in the
 standard regular expression notation.
 
 =for Marpa::Display
@@ -152,42 +163,29 @@ name: Marpa::Grammar min 1 sequence example
 partial: 1
 normalize-whitespace: 1
 
-    { lhs => 'sequence', rhs => ['sequence_item'], min => 1 }
+    { lhs => 'sequence', rhs => ['item'], min => 1 }
 
 =for Marpa::Display::End
 
 A C<min> of one indicates a sequence of 1 or more symbols.
 This is the equivalent of using the plus quantifier
-("C<sequence_item+>") in the
+("C<item+>") in the
 standard regular expression notation.
-
-To keep things simple,
-the right hand side of a sequence rule must be a single symbol.
-Of course, applications will often want to repeat sequences of multiple symbols.
-That is easy to do indirectly:
-
-=for Marpa::Display
-name: Marpa::Grammar multipart rhs sequence example
-partial: 1
-normalize-whitespace: 1
-
-    { lhs => 'sequence', rhs => [qw(sequence_item)], min => 0 },
-    { lhs => 'sequence_item', rhs => [qw(part1 part2)], },
-
-=for Marpa::Display::End
 
 Sequences can have a separator, specified
 with the C<separator> rule property.
 By default, separation is Perl-style:
 trailing separators are allowed.
-In "proper" separation,
+In "C<proper>" separation,
 a separator must actually separate
 two sequence items
 and therefore is not allowed
 after the last item of a sequence.
-If you prefer "proper" separaration,
+If you prefer "C<proper>" separaration,
 you can set
 the C<proper> rule property.
+
+=head3 Advantages of Sequence Rules
 
 You are never forced to use sequence rules,
 but it's usually better if you do.
@@ -206,6 +204,8 @@ natural code.
 See L<the section on sequences in the semantics
 document|Marpa::Semantics/"Sequence Rule Nodes">.
 
+=head3 Caveats
+
 Marpa throws an exception if you try to use a nullable symbol
 as the right hand side of a sequence rule,
 or as the separator for a sequence rule.
@@ -215,6 +215,21 @@ Nothing prevents you from specifying a sequence of nullables using non-sequence 
 But usually there is no good reason to do this,
 and for efficiency reasons,
 it is a good thing to avoid.
+
+To keep things simple,
+the right hand side of a sequence rule must be a single symbol.
+Of course, applications will often want to repeat sequences of multiple symbols.
+That is easy to do indirectly:
+
+=for Marpa::Display
+name: Marpa::Grammar multipart rhs sequence example
+partial: 1
+normalize-whitespace: 1
+
+    { lhs => 'sequence', rhs => [qw(item)], min => 0 },
+    { lhs => 'item', rhs => [qw(part1 part2)], },
+
+=for Marpa::Display::End
 
 =head1 CONSTRUCTOR
 
@@ -249,7 +264,7 @@ returns a new Marpa grammar object or throws an exception.
 The arguments to
 C<Marpa::Grammar::new> are
 references to hashes of named arguments.
-In the key/value pairs of this hash,
+In each key/value pair of this hash,
 the hash key is the argument name
 and the hash value is the value of
 the named argument.
@@ -289,8 +304,9 @@ C<set> either returns true or throws an exception.
 
 Returns a Perl true when its argument is the name of a terminal symbol.
 Otherwise, returns a Perl false.
-Not usually needed, but in unusual sitations a lexer may find this
-the easiest way to determine if a symbol is a terminal.
+Not often needed,
+but a lexer may find this
+the most convenient way to determine if a symbol is a terminal.
 
 =head1 TRACE ACCESSORS
 
@@ -532,12 +548,6 @@ infinitely ambiguous grammars, but
 wants a warning message to be printed
 to the trace file handle.
 
-The setting of the C<infinite_action> property and
-the choice of evaluators are independent of each other.
-The Single Parse Evaluator will detect attempts to
-use it with an infinitely ambiguous grammar
-and throw an exception at evaluator setup time.
-
 =head2 lhs_terminals
 
 The value of the C<lhs_terminals> named argument is a Boolean.
@@ -631,7 +641,8 @@ By default the trace file handle is C<STDERR>.
 =head2 trace_rules
 
 Traces rules as they are added to the grammar.
-Useful, but you may prefer the C<show_rules> method.
+Useful, but you will usually
+prefer the C<show_rules> method.
 Does not require knowledge of Marpa internals.
 
 A C<trace_rules> setting becomes effective
@@ -704,14 +715,12 @@ that property.
 =head2 action
 
 The value of the C<action> rule property is a string which
-expresses semantics.
-Its standard use is as the name of the rule's semantic action.
-The action name resolves to a Perl closure.
+specifies the semantics for the rule.
 For details, see
 L<the document on semantics|Marpa::Semantics>.
 
 The semantics of nulling symbols are dealt with on a per-symbol
-basis, rather than per rule.
+basis, rather than a per-rule basis.
 For this reason the
 C<action> rule property is useless
 for empty rules.
@@ -747,7 +756,7 @@ The value of the C<lhs> rule property must be a string containing
 the name of the rule's left hand side symbol.
 Every Marpa rule must have a left hand side symbol.
 
-The C<lhs> plays a role in the standard semantics.
+The C<lhs> plays a role in the semantics.
 If no C<action> rule property is defined,
 Marpa looks in either the
 grammar's C<actions> package
@@ -782,20 +791,20 @@ By default, sequence rules with separators allow trailing
 separators,
 Perl-style.
 If the C<proper> rule property is a Perl true,
-"proper" separation is enforced.
+"C<proper>" separation is enforced.
 In proper separation,
 separation must actually separate sequence items,
 and trailing separators are not allowed.
 
 =head2 ranking_action
 
-The C<ranking_action> rule property expresses semantics.
-Its standard use is to control the order
-of the parses.
-The Single Parse Evaluator ignores it.
-For its semantics in the Multi-parse Evaluator,
+The C<ranking_action> rule property 
+affects the order
+in which Marpa returns
+parse results for an ambiguous parse.
+For details
 see
-L<that evaluator's documentation|Marpa::Evaluator>
+L<the document on Marpa's semantics|Marpa::Semantics>
 
 =head2 rhs
 
@@ -853,9 +862,19 @@ Marpa throws an exception if a duplicate rule is added.
 For non-sequence rules, a rule is considered a duplicate if it has the
 same left hand side symbol,
 and the same symbols in the same order on the right hand side.
-For sequences, a rule is considered a duplicate if it has the same
-left hand symbol, the same right hand side symbol,
-and the same separator.
+For sequences,
+two rules are considered duplicates if
+
+=over
+
+=item * Both have the same left hand symbol.
+
+=item * Both have the same right hand symbol.
+
+=item * Either both have no separator,
+or both have the same separator.
+
+=back
 
 =head1 SYMBOL DESCRIPTORS
 
@@ -884,8 +903,7 @@ The available symbol properties are as follows:
 
 =head2 null_value
 
-The C<null_value> symbol property expresses semantics.
-Its standard use is as 
+The C<null_value> symbol property specifies
 the null value of its symbol.
 Details are given in
 L<the document on semantics|Marpa::Semantics>.

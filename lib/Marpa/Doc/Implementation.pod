@@ -1278,26 +1278,13 @@ source choices,
 or an Earley item with
 two or more applicable LR(0) items.
 
-Marpa's Single Parse Evaluator will produce one result
-from an ambiguous parse, but only one result.
-When the Single Parse Evaluator encounters a point of ambiguity,
-it arbitrarily picks one of the alternatives.
-
-Marpa's Multi-parse Evaluator will iterate all the results of an
-ambiguous parse.
-The Multi-parse Evaluator allows the user
-to control the order in which the parse results are produced.
-
 =head2 Calculating the Parse Result
 
 Marpa calculates parse results using fairly traditional methods.
-Marpa first derives a pre-order tree from the Earley sets
-using either the Single Parse Evaluator or the Multi-parse Evaluator.
-In the case of an unambiguous parse the two evaluators will produce
-exactly the same tree.
-
-Marpa evaluates the pre-order tree bottom-up,
+Marpa first derives a pre-order tree from the Earley sets.
+Marpa then evaluates the pre-order tree bottom-up,
 using an evaluation stack.
+
 The evaluation stack is initialized to empty.
 Every time Marpa evaluates a tree node,
 it pushes the result onto the evaluation stack.

@@ -52,16 +52,7 @@ normalize-whitespace: 1
 
 =head1 OVERVIEW
 
-This document describes
-Marpa's standard semantics.
-Marpa's
-B<standard semantics> are shared by Marpa's 
-Single Parse Evaluator and its
-Multi-parse Evaluator.
-As of this writing, the standard semantics are the only
-semantics available for Marpa.
-
-Marpa's standard semantics will be
+Marpa's semantics will be
 familiar
 to those who have used traditional
 methods to evaluate parses.
@@ -516,8 +507,8 @@ as a special case.
 
 =head2 Explicit Resolution
 
-The standard semantics support the C<closures> named argument,
-which allows the user to directly control the mapping from action names
+The C<closures> named argument,
+allows the user to directly control the mapping from action names
 to semantic Perl closures.
 The value of the C<closures> named argument
 is a reference to a hash whose keys are

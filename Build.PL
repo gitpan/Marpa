@@ -8,7 +8,7 @@ use Fatal qw(open close);
 
 use Module::Build;
 
-my $marpa_version = '0.105_008';
+my $marpa_version = '0.105_009';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -60,6 +60,23 @@ my %pod_files = map { ( "lib/Marpa/Doc/$_" => "lib/Marpa/$_" ) } qw(
     Tracing.pod
 );
 
+my @no_index_namespace_inclusive = (
+
+    # not for now, at least
+    qw(Marpa::Perl Marpa::Offset Marpa::Test Marpa::Display ),
+
+    # permanently on the noindex list, as they are EOL'd
+    # and will not be documented
+    qw( Marpa::MDL Marpa::MDLex Marpa::Evaluator ),
+
+    # moved elsewhere
+    qw( Marpa::UrHTML ),
+
+    # never intended to see the light of day
+    qw( Marpa::Internal),
+
+);
+
 my $build = $class->new(
     dist_name     => 'Marpa',
     dist_author   => 'Jeffrey Kegler',
@@ -82,29 +99,11 @@ my $build = $class->new(
         no_index => {
             directory =>
                 [qw( inc xs libmarpa lib/Marpa/UrHTML t author.t save )],
-            namespace => [ 'Marpa::Recognizer', 'Marpa::Grammar', ],
-            package   => [
-
-                # not public, at least for now
-                qw(Marpa::Perl Marpa::Offset Marpa::Test Marpa::Display ),
-
-                # permanently on the noindex list, as they are EOL'd
-                # and will not be documented
-                qw( Marpa::MDL Marpa::MDLex Marpa::Evaluator ),
-
-                # moved elsewhere
-                qw( Marpa::UrHTML ),
-
-                # never intended to see the light of day
-                qw(
-                    Marpa::Display::Internal
-                    Marpa::Internal
-                    Marpa::MDLex::Internal
-                    Marpa::MDL::Internal
-                    Marpa::UrHTML::Internal
-                    ),
-
+            namespace => [
+                'Marpa::Recognizer', 'Marpa::Grammar',
+                @no_index_namespace_inclusive
             ],
+            package => [@no_index_namespace_inclusive],
         },
     },
     meta_add => {

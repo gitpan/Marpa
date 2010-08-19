@@ -194,13 +194,13 @@ Evaluation will be described later.
 Peeking ahead,
 the C<default_action> named argument
 will be interpreted
-as an action name.
+as an B<action name>.
 This action name will resolve to a Perl closure
 that implements the semantics for rules
 without a per-rule semantics.
 C<actions> will be the name
 of a Perl package where Marpa looks for
-the semantic Perl closures.
+the B<semantic Perl closures>.
 
 =head3 The rules Named Argument
 
@@ -246,14 +246,11 @@ in order.
 This array may be zero length, in which case
 this is an B<empty rule> --
 a rule with no symbols on the right hand side.
-A rule is also empty if
-there is no C<rhs> specifier in its descriptor.
 There are no empty rules in this example.
 
 =head4 The action Property
 
 The value of the C<action> rule property is a string.
-What the string means is up to the evaluator.
 Peeking ahead, each C<action> property string
 will be interpreted
 as an action name.
@@ -291,7 +288,7 @@ normalize-whitespace: 1
 C<Marpa::Recognizer::new> creates a new recognizer.
 Its arguments are references to hashes of named arguments.
 In this example the only named argument is
-"C<grammar>", which is required.
+the required argument: "C<grammar>".
 The value of the 
 C<grammar> 
 named argument must be a precomputed Marpa
@@ -371,8 +368,8 @@ C<undef>.
 
 =head2 Resolving the Semantics
 
-The first thing Marpa::Recognizer::value needs to do is
-resolve the semantics.
+The first thing C<Marpa::Recognizer::value> needs to do is
+to resolve the semantics.
 B<Resolving the semantics> means
 mapping the action names into
 semantic Perl closures.
@@ -407,7 +404,7 @@ For example, the C<action> property for the above rule
 is "C<do_multiply>" and the C<actions> named argument to the grammar
 was "C<My_Actions>".
 So Marpa looks for a closure whose fully qualified name is C<My_Actions::do_multiply>,
-which it finds.
+which it finds:
 
 =for Marpa::Display
 name: Engine Synopsis Unambiguous Parse
@@ -444,7 +441,7 @@ as an action name, it will fall back to
 using the 
 default action for the grammar.
 
-For example, for the first rule in the above display,
+For example, in the first rule in the above display,
 Marpa will look for a Perl closure with the fully qualified
 name "C<My_Actions::Expression>".
 When Marpa does not find a closure by that name,
@@ -524,7 +521,7 @@ The return value for the start rule
 becomes the value of the parse result.
 
 Rules with no action specified for them take their
-semantics from The C<default_action> named argument.
+semantics from the C<default_action> named argument.
 If there is no default action for a grammar,
 rules without no action specified for them
 return a Perl C<undef>.
@@ -617,7 +614,7 @@ normalize-whitespace: 1
 
 When called more than once,
 the C<Marpa::Recognizer::value> method iterates through the parse results.
-For each cvall,
+For each call,
 it returns a reference to the value of a parse result.
 At the end of the iteration, after
 all parse results have been returned,

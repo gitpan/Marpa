@@ -18,7 +18,7 @@ BEGIN {
 
 ## no critic (Subroutines::RequireArgUnpacking)
 sub sequence      { shift; return 'seq(' .  ( join q{;}, @_ ) . ')' }
-sub sequence_item { shift; return 'item(' . ( join q{;}, @_ ) . ')' }
+sub item { shift; return 'item(' . ( join q{;}, @_ ) . ')' }
 ## use critic
 
 my $grammar;
@@ -31,14 +31,14 @@ my $min0 =
 # Marpa::Display
 # name: Marpa::Grammar min 0 sequence example
 
-    { lhs => 'sequence', rhs => ['sequence_item'], min => 0 }
+    { lhs => 'sequence', rhs => ['item'], min => 0 }
 
 # Marpa::Display::End
 ; # semicolon to terminate rule
 
 $grammar = Marpa::Grammar->new(
     {   start     => 'sequence',
-        terminals => [qw(sequence_item)],
+        terminals => [qw(item)],
         rules     => [$min0],
         actions => 'main'
     }
@@ -48,7 +48,7 @@ $grammar->precompute();
 
 $recce = Marpa::Recognizer->new( { grammar => $grammar } );
 
-$recce->tokens( [ [ 'sequence_item', '0' ], ['sequence_item', '1'] ]);
+$recce->tokens( [ [ 'item', '0' ], ['item', '1'] ]);
 
 $value_ref = $recce->value();
 $value = $value_ref ? ${$value_ref} : 'No Parse';
@@ -61,7 +61,7 @@ my $min1 =
 # Marpa::Display
 # name: Marpa::Grammar min 1 sequence example
 
-    { lhs => 'sequence', rhs => ['sequence_item'], min => 1 }
+    { lhs => 'sequence', rhs => ['item'], min => 1 }
 
 # Marpa::Display::End
 ; # semicolon to terminate rule
@@ -76,7 +76,7 @@ $grammar->precompute();
 
 $recce = Marpa::Recognizer->new( { grammar => $grammar } );
 
-$recce->tokens( [ [ 'sequence_item', '0' ], [ 'sequence_item', '1' ] ] );
+$recce->tokens( [ [ 'item', '0' ], [ 'item', '1' ] ] );
 
 $value_ref = $recce->value();
 $value = $value_ref ? ${$value_ref} : 'No Parse';
@@ -89,8 +89,8 @@ my $multipart = [
 # Marpa::Display
 # name: Marpa::Grammar multipart rhs sequence example
 
-    { lhs => 'sequence', rhs => [qw(sequence_item)], min => 0 },
-    { lhs => 'sequence_item', rhs => [qw(part1 part2)], },
+    { lhs => 'sequence', rhs => [qw(item)], min => 0 },
+    { lhs => 'item', rhs => [qw(part1 part2)], },
 
 # Marpa::Display::End
 ]; # semicolon to terminate rule
