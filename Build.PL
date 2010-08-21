@@ -8,7 +8,7 @@ use Fatal qw(open close);
 
 use Module::Build;
 
-my $marpa_version = '0.105_009';
+my $marpa_version = '0.105_010';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -44,15 +44,15 @@ my $class = Module::Build->subclass(
 SUBCLASS
 
 my %pod_files = map { ( "lib/Marpa/Doc/$_" => "lib/Marpa/$_" ) } qw(
-    Algorithm.pod
-    Bibliography.pod
+    Advanced/Algorithm.pod
+    Advanced/Bibliography.pod
+    Advanced/Implementation.pod
+    Advanced/Models.pod
     Deprecated/Bocage.pod
     Deprecated/Evaluator.pod
     Deprecated/Implementation.pod
     Grammar.pod
-    Implementation.pod
     Marpa.pod
-    Models.pod
     Parse_Terms.pod
     Recognizer.pod
     Semantics.pod

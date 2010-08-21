@@ -1,6 +1,6 @@
 =head1 NAME
 
-Marpa::Leo - Marpa Leo Implementation
+Marpa::Advanced::Leo - Marpa Leo Implementation
 
 =head1 THIS DOCUMENT IS IN PROGRESS
 
@@ -12,7 +12,7 @@ The most important parts of this document are not yet written.
 This document describes 
 Marpa's implementation of the algorithm
 in
-L<Leo 1991|Marpa::Bibliography/"Leo 1991">.
+L<Leo 1991|Marpa::Advanced::Bibliography/"Leo 1991">.
 The focus is on
 features
 useful for tracing and debugging
@@ -26,7 +26,7 @@ that she
 has a general knowledge of parsing,
 and that she is familiar with
 L<the document on basic Marpa
-implementation|Marpa::Implementation>.
+implementation|Marpa::Advanced::Implementation>.
 and
 its prerequisites.
 All the examples

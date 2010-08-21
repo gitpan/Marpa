@@ -23,10 +23,11 @@ removed in a future release of Marpa.
 
 =head1 SYNOPSIS
 
-This sample L<Marpa::Evaluator::show_bocage|Marpa::Evaluator/"show_bocage">
+This sample
+L<Marpa::Deprecated::Evaluator::show_bocage|Marpa::Deprecated::Evaluator/"show_bocage">
 output
 is for the code in the appendix.
-It is the same example used in L<Marpa::Implementation> and
+It is the same example used in L<Marpa::Deprecated::Implementation> and
 in L<Marpa> as the unambiguous case.
 
 =for Marpa::Display
@@ -87,11 +88,11 @@ normalize-whitespace: 1
 
 =head1 OVERVIEW
 
-This document is intended to be read after L<Marpa::Implementation>,
+This document is intended to be read after L<Marpa::Deprecated::Implementation>,
 which in turn is intended to be read after most of the other Marpa API
 documentation.
 It describes the bocage data structure used by the Marpa's L<Multi-parse
-Evaluator|/Marpa::Evaluator>.
+Evaluator|/Marpa::Deprecated::Evaluator>.
 This is internal implementation information, useful for advanced users
 and for tracing parses and grammars.
 
@@ -105,7 +106,7 @@ called a B<parse bocage>.
 The parse bocage allows Marpa to reconstruct multiple parse results
 quickly.
 The parse bocage is created
-when L<Marpa::Evaluator::new|Marpa::Evaluator/"new"> is called,
+when L<Marpa::Deprecated::Evaluator::new|Marpa::Deprecated::Evaluator/"new"> is called,
 during the L<bocage setup phase|Marpa::Semantics/"Bocage Setup Phase">,
 
 =head1 DESCRIPTION

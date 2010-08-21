@@ -1,6 +1,6 @@
 =head1 NAME
 
-Marpa::Algorithm - The Marpa Algorithm
+Marpa::Advanced::Algorithm - The Marpa Algorithm
 
 =head1 DESCRIPTION
 
@@ -31,13 +31,13 @@ Perhaps I should have been looking more for a Hieronymous Bosch.
 =item 1970
 
 Jay Earley L<invents the algorithm that now bears his
-name|Marpa::Bibliography/"Earley 1970">.
+name|Marpa::Advanced::Bibliography/"Earley 1970">.
 
 =item 1991
 
 Joop Leo L<describes a way to modify Earley's algorithm so that it
 runs in O(n) time for all LR-regular
-grammars|Marpa::Bibliography/"Leo 1991">.
+grammars|Marpa::Advanced::Bibliography/"Leo 1991">.
 LR-regular is a vast class of grammars, including all the
 LR(k) grammars, all grammars parseable with recursive descent,
 and regular expressions.
@@ -47,7 +47,7 @@ in practical use today, and then some.
 =item 2002
 
 L<Aycock and Horspool describe a way to do LR(0)
-precomputation|Marpa::Bibliography/"Aycock and Horspool 2002">
+precomputation|Marpa::Advanced::Bibliography/"Aycock and Horspool 2002">
 for Earley's algorithm.
 Their method makes Earley's faster in most
 practical situations, but not all.
@@ -76,7 +76,7 @@ familiarity with the literature on Earley parsing.
 
 The algorithm described in
 L<Aycock-Horspool 2002
-|Marpa::Bibliography/"Aycock and Horspool 2002">
+|Marpa::Advanced::Bibliography/"Aycock and Horspool 2002">
 speeds up Earley's algorithm
 by combining Earley items.
 Each Earley item in Earley's original algorithm
@@ -98,18 +98,18 @@ Earley items and
 improved the speed of Earley's algorithm considerably.
 
 L<Aycock-Horspool 2002
-|Marpa::Bibliography/"Aycock and Horspool 2002">
+|Marpa::Advanced::Bibliography/"Aycock and Horspool 2002">
 had other very practical insights.
 For example, I can't imagine how I could have written Marpa had
 I not learned how to deal with
 nullable symbols and rules from 
 L<Aycock-Horspool 2002
-|Marpa::Bibliography/"Aycock and Horspool 2002">.
+|Marpa::Advanced::Bibliography/"Aycock and Horspool 2002">.
 But Aycock and Horspool could not
 lay claim to any theoretical milestones.
 As the theoreticians say,
 L<Aycock-Horspool 2002
-|Marpa::Bibliography/"Aycock and Horspool 2002">
+|Marpa::Advanced::Bibliography/"Aycock and Horspool 2002">
 "improved the constants".
 Worst case remained the same,
 and right-recursion was still quadratic.
@@ -133,13 +133,13 @@ without doing so much
 processing that most or all of the benefit of
 one algorithm or the other would be lost.
 L<Leo 1991
-|Marpa::Bibliography/"Leo 1991">,
+|Marpa::Advanced::Bibliography/"Leo 1991">,
 L<Aycock-Horspool 2002
-|Marpa::Bibliography/"Aycock and Horspool 2002">,
+|Marpa::Advanced::Bibliography/"Aycock and Horspool 2002">,
 and even Earley's original algorithm
 (after the bug fix suggested
 L<by Aho & Ullman in
-1972|Marpa::Bibliography/"Aho and Ullman 1972">)
+1972|Marpa::Advanced::Bibliography/"Aho and Ullman 1972">)
 all do the same job.
 For decades now, the only question has been speed.
 
@@ -185,17 +185,17 @@ had the potential
 to derail the project of combining
 the best of
 L<Leo 1991
-|Marpa::Bibliography/"Leo 1991">
+|Marpa::Advanced::Bibliography/"Leo 1991">
 and
 L<Aycock-Horspool
-2002|Marpa::Bibliography/"Aycock and Horspool 2002">
+2002|Marpa::Advanced::Bibliography/"Aycock and Horspool 2002">
 to
 get the best of both.
 
 =head2 Marpa's Changes to the Leo Recognizer Algorithm
 
 L<Leo 1991
-|Marpa::Bibliography/"Leo 1991">
+|Marpa::Advanced::Bibliography/"Leo 1991">
 describes an algorithm for a recognizer.
 Marpa modifies Leo's original recognizer algorithm in two
 major respects.
@@ -208,7 +208,7 @@ Second, Leo's algorithm is lazy about computing Leo
 items.
 (A B<Leo item> is my term for what
 L<Leo 1991
-|Marpa::Bibliography/"Leo 1991">
+|Marpa::Advanced::Bibliography/"Leo 1991">
 calls
 "transition items".)
 Leo's original algorithm
@@ -280,7 +280,7 @@ proved simple.
 The tradeoffs clearly favored the
 indirect implementation which
 L<Leo 1991
-|Marpa::Bibliography/"Leo 1991">
+|Marpa::Advanced::Bibliography/"Leo 1991">
 suggests and Marpa uses.
 
 =head1 IMPROVEMENTS TO THE AYCOCK-HORSPOOL RECOGNITION ENGINE
@@ -412,7 +412,7 @@ The description of the
 "split E<epsilon>-DFA"
 is on pages 624-627 of 
 L<Aycock-Horspool
-2002|Marpa::Bibliography/"Aycock and Horspool 2002">.
+2002|Marpa::Advanced::Bibliography/"Aycock and Horspool 2002">.
 It contained several insights
 without which Marpa could not have been written.
 I find the term "split E<epsilon>-DFA" unwieldy,

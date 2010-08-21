@@ -1,6 +1,6 @@
 =head1 NAME
 
-Marpa::Implementation - Marpa Implementation
+Marpa::Advanced::Implementation - Marpa Implementation
 
 =head1 OVERVIEW
 
@@ -57,7 +57,7 @@ a proper nullable is a symbol that
 might or might not be nulled.
 
 Nullable symbols were a problem in previous versions of Earley parsers.
-L<Aycock and Horspool 2002|Marpa::Bibliography/"Aycock and Horspool 2002">
+L<Aycock and Horspool 2002|Marpa::Advanced::Bibliography/"Aycock and Horspool 2002">
 outlined a new approach for dealing with them.
 I use their ideas with modifications of my own.
 
@@ -359,7 +359,7 @@ and in those models the term B<earleme> can take on
 other meanings.
 User interested in the alternative input models
 should look at
-L<Marpa::Models>.
+L<Marpa::Advanced::Models>.
 
 In addition to its B<current earleme>,
 each Earley item has a B<AHFA state>, and an B<origin>.
@@ -389,7 +389,7 @@ a traditional Earley item.
 AHFA states are not traditional --
 they come from Aycock and Horspool.
 The use of the at-sign as punctuation is from
-L<Grune and Jacobs|Marpa::Bibliography/"Grune and Jacobs 2008">.
+L<Grune and Jacobs|Marpa::Advanced::Bibliography/"Grune and Jacobs 2008">.
 And I have added the current earleme to the notation.)
 
 =head1 AHFA STATES
@@ -443,12 +443,12 @@ from which this AHFA state was formed.
 The LR(0) NFA state numbers may be ignored.
 LR(0) automata are described in many of
 the L<standard parsing
-texts|Marpa::Bibliography/"Grune and Jacobs 2008">.
+texts|Marpa::Advanced::Bibliography/"Grune and Jacobs 2008">.
 The Aycock-Horspool Finite Automata (AHFA) is
 built from the LR(0) NFA (Non-deterministic Finite Automata),
 by a process that is described
 in L<the Aycock-Horspool
-paper|Marpa::Bibliography/"Aycock and Horspool 2002">.
+paper|Marpa::Advanced::Bibliography/"Aycock and Horspool 2002">.
 LR(0) automata and LR(0) state numbers
 will not be mentioned again in this document.
 
@@ -483,7 +483,7 @@ Earley items are built from one or more LR(0) items.
 In traditional Earley parsing, each Earley item contained one and only one LR(0) item.
 This made the internals simpler, but was not as efficient.
 Marpa combines LR(0) items into AHFA states
-based on the ideas in L<Aycock and Horspool 2002|Marpa::Bibliography/"Aycock and Horspool 2002">.
+based on the ideas in L<Aycock and Horspool 2002|Marpa::Advanced::Bibliography/"Aycock and Horspool 2002">.
 
 Marpa places an important restriction on LR(0) items.
 The post-dot symbol is B<never> a nullable symbol.
@@ -701,7 +701,7 @@ a token length of 1 is the B<only> token length possible.
 When other, non-standard, input models are used, tokens
 can be variable length.
 For details on alternative input models,
-see L<Marpa::Models>.
+see L<Marpa::Advanced::Models>.
 
 =head2 Prediction
 
@@ -792,7 +792,7 @@ In other words, rule initializations recurse.
 
 The AHFA states invented by
 L<Aycock and Horspool
-|Marpa::Bibliography/"Aycock and Horspool 2002">
+|Marpa::Advanced::Bibliography/"Aycock and Horspool 2002">
 handle these recursive rule initializations
 efficiently.
 Above we looked at AHFA states S8 and S9.
@@ -1084,7 +1084,7 @@ normalize-whitespace: 1
 (Ignore the "leo-c" notation for now.
 It indicates that S10 is what's called a Leo completion.
 The Leo logic is dealt in L<another
-document|Marpa::Leo>.)
+document|Marpa::Advanced::Leo>.)
 
 The completed symbol is C<Factor> with origin
 0 and current earleme 3.
@@ -1349,11 +1349,11 @@ symbols on the right hand side.
 =head1 THE LEO LOGIC
 
 Marpa uses the ideas from L<an algorithm developed
-by Joop Leo|Marpa::Bibliography/"Leo 1991"> to deal
+by Joop Leo|Marpa::Advanced::Bibliography/"Leo 1991"> to deal
 with right recursion.
 The Leo logic is complex enough to merit its own
 example, and so is presented in L<a separate
-document|Marpa::Leo>.
+document|Marpa::Advanced::Leo>.
 
 =head1 DETERMINING WHETHER A PARSE IS SUCCESSFUL
 

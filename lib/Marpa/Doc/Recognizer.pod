@@ -34,7 +34,7 @@ method recognizes tokens.
 Pedantically, recognition and evaluation are distinct things.
 Recognition is determining whether there is a parse.
 Evaluation is determining the value of a parse.
-In Marpa, the
+The
 L<Marpa::Recognizer> handles both recognition and evaluation.
 
 =head2 Location
@@ -44,9 +44,7 @@ This document will assume
 that Marpa is using the traditional, token-stream,
 model of the input,
 unless it states otherwise.
-Marpa supports other input models,
-which are discussed in L<a separate
-document|Marpa::Models>.
+Marpa supports other input models.
 
 The B<current parse location>, or B<current earleme>,
 is the location at which the next input is expected.
@@ -54,8 +52,8 @@ Intuitively, the current earleme can be thought of as
 the recognizer's current position.
 Alternative input models,
 and the reasons for the term I<earleme> itself,
-are presented in L<the
-document on alternative input models|Marpa::Models>.
+are discussed in L<the
+document on alternative input models|Marpa::Advanced::Models>.
 
 =head2 Exhaustion
 
@@ -76,34 +74,8 @@ When an evaluator is called using the default parse end location,
 the evaluator will find no parses
 in an exhausted recognizer.
 It may be possible for an exhausted recognizer to produce a valid parse
-when the parse end location is set
+if the parse end location is set
 to a location before the end of input.
-
-=head2 Failed Parses
-
-Failed parses do not necessarily show up
-in the recognizer.
-Despite its name,
-Marpa's recognizer
-does not actually indicate
-whether or not it recognized its input.
-Recognition is not decided until an evaluator
-is called.
-There are two reasons for this.
-
-=over
-
-=item * The location of the end of parsing is not known for certain until
-the evaluator is called.
-Whether an input is recognized or not cannot be decided until the parse
-end location is known.
-
-=item * Recognition for its own sake is an academic issue.
-Applications are concerned
-about whether there were any parse results.
-And producing parse results is the job of the evaluators.
-
-=back
 
 =head1 CONSTRUCTOR
 
@@ -111,7 +83,7 @@ And producing parse results is the job of the evaluators.
 
 The C<new> method's arguments are references to hashes of named
 arguments.
-In the key/value pairs of these hashes, the key is the argument name,
+In each key/value pair of these hashes, the key is the argument name,
 and the hash value is the value of the argument.
 The C<new> method either returns a new recognizer object or throws an exception.
 The named arguments are described L<in a section below|/"NAMED ARGUMENTS">.
@@ -121,16 +93,17 @@ The named arguments are described L<in a section below|/"NAMED ARGUMENTS">.
 =head2 end_input
 
 Indicates that input is finished.
-The C<end_input> method takes no arguments.
-Calling C<end_input> is not
-useful
+Calling C<end_input> is not necessary
+or useful
 in the recognizer's
 C<default> mode.
+In C<stream> mode,
+the C<end_input> method is needed to indicate the end of input.
+
+The C<end_input> method takes no arguments.
 The C<end_input> method returns a Perl true value on success.
 On failure, it throws an exception.
 
-In C<stream> mode,
-the C<end_input> method is needed to indicate the end of input.
 Calling C<end_input> multiple times on the same recognizer object
 is harmless,
 but useless.
@@ -215,7 +188,7 @@ Optional, and
 not used in the traditional, token-stream, model of the input.
 Token length is
 described in L<the document on alternative input
-models|Marpa::Models>.
+models|Marpa::Advanced::Models>.
 
 =item * Token offset
 
@@ -223,7 +196,7 @@ Optional, and
 not used in the traditional, token-stream, model of the input.
 Token offset is
 described in L<the document on alternative input
-models|Marpa::Models>.
+models|Marpa::Advanced::Models>.
 
 =back
 
@@ -261,8 +234,9 @@ It is described in L<its own section|/"EVALUATION">.
 
 Returns a Perl true when its argument is the name of a terminal symbol.
 Otherwise, returns a Perl false.
-Not usually needed, but in unusual sitations a lexer may find this
-the easiest way to determine if a symbol is a terminal.
+Not often needed, but in special sitations a lexer may find this
+the most convenient way
+to determine if a symbol is a terminal.
 
 =head2 status
 
@@ -271,12 +245,13 @@ same as that of the L</"tokens"> method.
 For more details, see
 L<the description of C<tokens> method|/"tokens">.
 
-The C<status> method is the only way to get the list of
-the expected terminals at earleme 0, before any tokens
-have been recognized.
-It can also been used whenever it is convenient to
-liberate checks of the status of the recognizer
-from calls to the C<tokens> method.
+The C<status> method
+can be used to check the status of the recognizer
+without calling the C<tokens> method.
+The C<tokens> method is the only way to
+get the list of expected tokens
+at earleme 0,
+before the first call of the C<tokens> method.
 
 =head1 TRACE ACCESSORS
 
@@ -294,12 +269,14 @@ normalize-whitespace: 1
 
 Returns a multi-line string
 listing every Earley item in every Earley set.
-For debugging grammars, try C<show_progress> first.
 C<show_earley_sets> 
-requires knowledge of Marpa internals to interpret,
-and C<show_progress> will usually contain all the detail
-necessary to debug grammars
-and interpret parse progress.
+requires knowledge of Marpa internals to interpret.
+
+For debugging grammars,
+users will want to use C<show_progress> instead.
+C<show_progress> contains the information
+necessary for debugging grammars
+and interpreting parse progress.
 
 =head2 show_progress
 
@@ -319,22 +296,22 @@ the string contains reports for
 the last completed earleme, which is typically the one
 of most interest.
 With a non-negative argument I<N>,
-and the string contains reports for earleme I<N>.
+the string contains reports for earleme I<N>.
 
 With two numeric arguments, I<N> and I<M>, the arguments are interpreted
 as a range of earlemes and the returned string contains
 reports for all earlemes from I<N> to I<M>.
 The first argument must be non-negative.
-If the second argument is negative,
-"-I<M>", the range is to the I<M>th earleme from the last.
+If the second argument is a negative integer,
+"-I<M>", it indicates the I<M>th earleme from the last.
 In other words,
 -1 is the last earleme, -2 the next to last, etc.
 The call C<< $recce->show_progress(0, -1) >>
 will print progress reports for the entire parse.
 
 C<show_progress> is
-a powerful tool for users who need
-to debug application grammars.
+an important tool for 
+debugging application grammars.
 It can also be used to track the
 progress of a parse or
 to investigate how a parse works.
@@ -391,38 +368,38 @@ semantics|Marpa::Semantics/"Ranking">.
 =head2 too_many_earley_items
 
 The C<too_many_earley_items> argument is optional.
-If specified, it sets the B<earley item warning threshold>.
-If an earley set becomes larger than the
-earley item warning threshold,
+If specified, it sets the B<Earley item warning threshold>.
+If an Earley set becomes larger than the
+Earley item warning threshold,
 a warning is printed to the trace file handle.
 
 Marpa parses from any BNF,
 and can handle grammars and inputs which produce large
-earley sets.
-But parsing that involves large earley sets can be slow.
-Large earley sets
-are something most users can,
+Earley sets.
+But parsing that involves large Earley sets can be slow.
+Large Earley sets
+are something most applications can,
 and will wish to, avoid.
 
 By default, Marpa calculates
-an earley item warning threshold
+an Earley item warning threshold
 based on the size of the
 grammar.
-This default, calculated, threshold will never be less than 100.
-If the earley item warning threshold is set to 0,
-warnings about large earley sets are turned off.
-For details about earley sets,
+The default threshold will never be less than 100.
+If the Earley item warning threshold is set to 0,
+warnings about large Earley sets are turned off.
+For details about Earley sets,
 see
-L<the implementation document|Marpa::Implementation>.
+L<the implementation document|Marpa::Advanced::Implementation>.
 
 =head2 trace_earley_sets
 
 A boolean.
-If true, causes each earley set to be written
+If true, causes each Earley set to be written
 to the trace file handle as it is completed.
-For details about earley sets,
+For details about Earley sets,
 see
-L<the implementation document|Marpa::Implementation>.
+L<the implementation document|Marpa::Advanced::Implementation>.
 
 =head2 trace_file_handle
 
@@ -441,13 +418,14 @@ When the trace level is 0,
 tracing of terminals is off.
 This is the default.
 
-A trace level of 1 or higher,
-traces terminals as they are accepted or rejected
+At a trace level of 1 or higher,
+Marpa traces terminals as they are accepted or rejected
 by the recognizer.
-A trace level of 2 or higher
-traces the terminals expected at every
+At a trace level of 2 or higher,
+Marpa traces the terminals expected at every
 earleme.
-Practical grammars often a large number of different
+Practical grammars often expect
+a large number of different
 terminals at many locations,
 so the output from a trace level of 2
 can be voluminous.
@@ -482,7 +460,8 @@ normalize-whitespace: 1
 
 Marpa allows prediction-driven
 lexing.
-That is, Marpa can tell the lexer
+In other words,
+Marpa can tell the lexer
 which symbols are acceptable as tokens at the next location
 in the parse.
 This can be very useful.
@@ -505,16 +484,22 @@ descriptor index.
 Token descriptors
 before the token descriptor index are ignored.
 
+An B<unexpected token descriptor> is a token descriptor
+whose token name is not the name of one of the terminal
+symbols expected at that point in the input.
+The token represented by an unexpected token descriptor
+is an B<unexpected token>.
+In non-interactive calls to the C<tokens> method,
+an unexpected token descriptor causes an exception to be thrown.
+
 In interactive calls,
-if a token descriptor has a token name that is not a valid terminal,
-the C<tokens> method returns, leaving the B<token descriptor index>
-where it was when C<tokens> had the problem.
-(In non-interactive calls,
-an invalid token name causes an exception to be thrown.)
-If  C<tokens> reads the entire
-token descriptor array without a problem,
-the token descriptor index will be
-set to one past the end of the token descriptor array.
+the C<tokens> method returns
+leaving the 
+token descriptor index pointing to
+the first unexpected token descriptor.
+If there were no unexpected token descriptors,
+the token descriptor index will be set
+to one past the end of the token descriptor array.
 
 The behavior of the token descriptor index is designed to
 facilitate loops like the one in the example above.
@@ -541,7 +526,7 @@ to the same recognizer.
 A single recognizer
 can read input
 from any number of token descriptor arrays.
-Between C<tokens>'s calls,
+Between calls to C<tokens>,
 the application is allowed to edit the token descriptor array,
 and to change the token descriptor index.
 
@@ -557,7 +542,7 @@ have been in the past.
 Statelessness means that,
 regardless of what
 an application does with its token descriptor arrays,
-it cannot make them
+it is impossible to make them
 inconsistent with the recognizer's internal data.
 
 =head2 An Example
@@ -616,16 +601,8 @@ normalize-whitespace: 1
 
 The C<value> method call evaluates and returns a parse result.
 Its arguments are zero or more hashes of named arguments.
-It returns a B<reference> to the value of a parse,
-or undef if there was no parse.
-
-If the parse is not ambiguous, the reference returned will
-be to the value of
-the only valid parse.
-If the parse is ambiguous,
-the reference returned will
-be to the value of
-a parse chosen arbitrarily.
+It returns a B<reference> to the value of the next parse result,
+or undef if there are no more parse results.
 
 These are the named arguments available to the C<value> method
 call:
@@ -644,7 +621,7 @@ The C<value> method's
 C<closures> named argument
 is
 a reference to a hash.
-In the key/value pairs of this hash,
+In each key/value pair of this hash,
 the key must be an action name.
 The hash value
 must be a CODE ref.
@@ -689,10 +666,10 @@ The default is for
 there to be no limit.
 
 Marpa allows extremely ambiguous grammars.
-When a parse's ambiguity is deliberate,
 C<max_parses> 
-can be used when
-the user only wants to see the first few parse results.
+can be used if
+the user only wants to see the first few parse results of
+an ambiguous parse.
 C<max_parses> is also useful to
 limit CPU usage and output length when testing
 and debugging.

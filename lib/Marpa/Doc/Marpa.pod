@@ -657,8 +657,8 @@ L<Marpa::Debug> document.
 
 =head2 Advanced Documents
 
-The L<Marpa::Implementation> describes Marpa's internals.
-The L<Marpa::Models> document (yet to be written)
+The L<Marpa::Advanced::Implementation> describes Marpa's internals.
+The L<Marpa::Advanced::Models> document (yet to be written)
 will provide details about alternative models
 of the input for Marpa.
 
@@ -666,8 +666,8 @@ of the input for Marpa.
 
 For those with a theoretical bent,
 my sources, and other useful references, are described in
-L<Marpa::Bibliography>.
-L<Marpa::Algorithm> describes the Marpa algorithm itself.
+L<Marpa::Advanced::Bibliography>.
+L<Marpa::Advanced::Algorithm> describes the Marpa algorithm itself.
 
 =head1 AUTHOR
 
@@ -702,16 +702,17 @@ The first was discovered by
 John Aycock and
 R.  Nigel Horspool
 and is described in their
-L<Aycock and Horspool 2002|Marpa::Bibliography/"Aycock and Horspool 2002">.
+L<Aycock and Horspool 2002|Marpa::Advanced::Bibliography/"Aycock and Horspool 2002">.
 The second was described by Joop Leo and is described in
-L<Leo 1991|Marpa::Bibliography/"Leo 1991">.
+L<Leo 1991|Marpa::Advanced::Bibliography/"Leo 1991">.
 Aycock, Horspool, and Leo, in turn, based their
 algorithms on the
-L<algorithm discovered by Jay Earley|Marpa::Bibliography/"Earley 1970">.
+L<algorithm discovered by Jay Earley|Marpa::Advanced::Bibliography/"Earley 1970">.
 I combined the Aycock-Horspool algorithm with the Leo algorithm,
 and added significant changes of my own.
 More details on the algorithm itself are in
-L<another document|Marpa::Algorithm>.
+L<another
+document|Marpa::Advanced::Algorithm>.
 
 I'm grateful to Randal Schwartz for his support over the years that
 I've been working on Marpa.

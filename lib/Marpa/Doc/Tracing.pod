@@ -146,13 +146,13 @@ who want to delve into
 internals.
 
 Marpa's internals are described in 
-the L<implementation document|Marpa::Implementation>.
+the L<implementation document|Marpa::Advanced::Implementation>.
 The internal traces are
 L<C<Marpa::Recognizer::show_earley_sets>
 |Marpa::Recognizer/"show_earley_sets">,
 and L<C<Marpa::Grammar::show_AHFA>
 |Marpa::Grammar/"show_AHFA">.
-The L<implementation document|Marpa::Implementation>
+The L<implementation document|Marpa::Advanced::Implementation>
 has example outputs from
 the
 C<show_earley_sets> and

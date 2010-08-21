@@ -17,8 +17,8 @@ BEGIN {
 }
 
 ## no critic (Subroutines::RequireArgUnpacking)
-sub sequence      { shift; return 'seq(' .  ( join q{;}, @_ ) . ')' }
-sub item { shift; return 'item(' . ( join q{;}, @_ ) . ')' }
+sub sequence { shift; return 'seq(' .  ( join q{;}, @_ ) . ')' }
+sub item     { shift; return 'item(' . ( join q{;}, @_ ) . ')' }
 ## use critic
 
 my $grammar;
