@@ -1,7 +1,11 @@
 package Marpa::Test;
+
 use 5.010;
 use strict;
 use warnings;
+
+use Data::Dumper;
+
 use Marpa::Internal;
 
 Marpa::exception('Test::More not loaded')
@@ -13,7 +17,6 @@ BEGIN {
     eval 'use Test::Differences';
     ## use critic
 } ## end BEGIN
-use Data::Dumper;
 
 ## no critic (Subroutines::RequireArgUnpacking)
 sub Marpa::Test::is {

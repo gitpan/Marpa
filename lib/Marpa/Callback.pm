@@ -7,9 +7,7 @@ use integer;
 
 use English qw( -no_match_vars );
 
-use Marpa::Internal;
-use Marpa::Evaluator;
-use Marpa::Recce_Value;
+use Marpa::Internal::Carp_Not;
 
 sub Marpa::location {
     Marpa::exception('No context for location callback')

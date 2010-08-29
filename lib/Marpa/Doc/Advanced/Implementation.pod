@@ -22,8 +22,8 @@ assume that none of the data has been stripped.
 
 Marpa rewrites grammars,
 adding internal symbols and rules in the process.
-This rewriting does not affect the semantics,
-but it does show up when you examine the internals.
+These rewritings do not affect the semantics,
+but they do show up when you examine the internals.
 
 Marpa's internal symbols have B<tags> at the end,
 enclosed in square brackets.
@@ -67,6 +67,7 @@ a non-nullable variant and a nulling variant.
 The non-nullable variant keeps the original symbol's name,
 but is no longer allowed to appear in places
 where it might be nulled.
+
 The name of the nulling variant
 is that of the original symbol with the nulling tag ("C<[]>") suffixed.
 When the nulling variant is used,
@@ -81,20 +82,21 @@ Marpa marks nulling symbols internally and
 recognizes them directly,
 without the need for empty rules.
 
-Rules with proper nullables on the rhs
+Rules with proper nullables on the RHS
 have to be replaced with
 new rules covering every possible combination of
 the non-nullable and nulling variants.
-That rewrite is described in the next section.
+That rewrite is called the CHAF rewrite,
+and is described in the next section.
 
 =head2 CHAF Rewriting
 
-To deal with the splitting of rhs proper nullables into two symbols,
+To deal with the splitting of RHS proper nullables into two symbols,
 one non-nullable and one nulling,
-Aycock and Horspool created new rules covering all possible rhs combinations
+Aycock and Horspool created new rules covering all possible RHS combinations
 of non-nullable and nulling symbols.
 This B<factoring> is exponential in the theoretical worst case,
-and I believed there would be efficiency issues in practice as well.
+and I believe would create efficiency issues in practice as well.
 
 A result due to Chomsky shows that any grammar can be rewritten
 as a grammar with at most two symbols on the right hand side.
@@ -185,10 +187,10 @@ four rules.
 
 In the example in the above display,
 the original rule (Rule 0) was broken into three pieces.
-Rule 0 had 5 rhs symbols,
-and the three pieces contain, respectively, the first two rhs symbols;
-the third rhs symbol;
-and the last two (that is, 4th and 5th) rhs symbols.
+Rule 0 had 5 RHS symbols,
+and the three pieces contain, respectively, the first two RHS symbols;
+the third RHS symbol;
+and the last two (that is, 4th and 5th) RHS symbols.
 
 The first piece of Rule 0 is factored into four rules: Rules 13 to 16.
 The second piece is factored into three rules: Rules 17 to 19.
@@ -200,7 +202,7 @@ left hand side of the first piece is the left hand
 side of the original rule.
 New symbols are introduced to be the left hand sides
 of the other pieces.
-The names of the new lhs symbols are formed
+The names of the new LHS symbols are formed
 by suffixing a tag to
 the name of the original left hand side.
 The suffixed tag begins with a capital "R" and identifies the
@@ -210,14 +212,14 @@ the tag "C<[R0:3]>" indicates that this
 symbol is the left hand side for the piece of Rule 0 which begins at right hand symbol 3
 (the first symbol is symbol 0).
 
-When a new lhs symbol is created for a piece,
-the worst case is that the new lhs is
+When a new LHS symbol is created for a piece,
+the worst case is that the new LHS is
 also a proper nullable.
 This worst case occurs when
 all the original symbols in the
-piece for the new lhs
+piece for the new LHS
 and all symbols in all subsequent pieces are proper nullables.
-When a newly created lhs symbol is a proper nullable,
+When a newly created LHS symbol is a proper nullable,
 it counts against the limit of two proper nullables per piece,
 and it must also be factored,
 just like the proper nullables in the original rule.
@@ -228,7 +230,7 @@ of the right hand side are all
 proper nullables.
 That means that all the symbols in the last two pieces of the original rule
 are proper nullables.
-Therefore both of the newly created lhs symbols are proper nullables.
+Therefore both of the newly created LHS symbols are proper nullables.
 
 The original Rule 0 has 4 proper nullables.
 After the CHAF rewrite,
@@ -244,8 +246,10 @@ resulted in 16 rules.
 For cases other than the worst,
 and for situations with
 more than 4 proper nullables, the advantage of CHAF becomes overwhelming.
-For 5 proper nullables, there would be 13 rules for CHAF versus 32 for NNF.
-For 6 proper nullables, the count 16 for CHAF versus 64 for NNF.
+For 5 proper nullables, there would be 13 rules for CHAF,
+versus 32 for NNF.
+For 6 proper nullables, there would be 16 rules for CHAF,
+versus 64 for NNF.
 
 CHAF preserves user semantics.
 Marpa,
@@ -318,7 +322,7 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-Note that rule 5, the empty rule with the C<block> symbol as its lhs,
+Note that rule 5, the empty rule with the C<block> symbol as its LHS,
 is marked "C<!used>".
 C<block> is a proper nullable, and rules from sequence conversion
 undergo the same rewriting of proper nullables as any other rules.
@@ -330,9 +334,8 @@ and that is why it was marked "C<!used>".
 
 =head1 EARLEY SETS
 
-Speaking pedantically,
-creating the Earley sets is
-not parsing in the strict sense.
+Creating the Earley sets is
+not parsing in the strict pedantic sense.
 Creating the Earley sets is B<recognition> --
 determining whether or not a grammar recognizes an input.
 During recognition,
@@ -412,7 +415,8 @@ that it originates at earleme 0;
 and that it is currently at
 (or has its dot position at)
 earleme 3.
-We can get a description of the AHFA states with the C<show_AHFA> method.
+We can get a description of the AHFA states
+using the C<show_AHFA> method.
 (For those who like the big picture,
 the entire C<show_AHFA> output,
 along with the other
@@ -439,18 +443,9 @@ The two numbers on the first line
 after the AHFA state name
 are the numbers of the LR(0) NFA states
 from which this AHFA state was formed.
-
-The LR(0) NFA state numbers may be ignored.
-LR(0) automata are described in many of
-the L<standard parsing
-texts|Marpa::Advanced::Bibliography/"Grune and Jacobs 2008">.
-The Aycock-Horspool Finite Automata (AHFA) is
-built from the LR(0) NFA (Non-deterministic Finite Automata),
-by a process that is described
-in L<the Aycock-Horspool
-paper|Marpa::Advanced::Bibliography/"Aycock and Horspool 2002">.
-LR(0) automata and LR(0) state numbers
-will not be mentioned again in this document.
+They
+will not be mentioned again in this document,
+and may be ignored.
 
 Marpa uses AHFA states to track the parse.
 Every AHFA state has one or more LR(0) items.
@@ -472,7 +467,8 @@ The location of the dot is called the B<dot position>.
 The symbol before the dot position in an LR(0) item is called the B<pre-dot symbol>.
 The symbol after the dot position in an LR(0) item is called the B<post-dot symbol>.
 
-The last line in the above display shows transitions.
+The last line in the above display shows the B<transitions>
+from AHFA state S5.
 It says that, when Marpa sees an C<Add> token,
 it will transition both to AHFA state S8
 and to AHFA state S9.
@@ -493,11 +489,13 @@ symbols.
 When an LR(0) item is not a completed rule,
 the post-dot symbol will always be non-nullable.
 Intuitively, it may be helpful to think of Marpa as
-recognizing nulling symbols instantly whenever they are encountered,
+recognizing nulling symbols instantly,
+whenever they are encountered,
 so that the dot position never stops in front of a nulling symbol.
 
 Because nulling symbols are never post-dot symbols,
-the dot position is tracked in non-nulling symbols.
+the dot position is tracked
+in terms of the non-nulling symbols only.
 Nulling symbols are skipped over as if they didn't exist.
 This document speaks of the B<non-null symbol position> in a rule,
 or simply of the B<non-null position>.
@@ -542,7 +540,7 @@ not found directly in the input,
 but that are found indirectly by applying the rules of the grammar.
 
 B<Prediction> adds Earley items
-that represent rules that might
+to represent rules that might
 start at a given location.
 B<Initialization> adds one or two Earley items to Earley set 0
 to represent the start rules.
@@ -552,7 +550,13 @@ to represent the start rules.
 Scanning adds Earley items to indicate
 which tokens have been recognized in the
 input, and where.
-Look again at Earley item S5@0-3.
+Let's look at the case where we are at earleme 3;
+we are about to recognize an C<Add> token;
+and we have in our Earley set 3
+the Earley item S5@0-3.
+S5@0-3 is the Earley item we
+already looked at.
+
 The current earleme for 
 S5@0-3 is earleme 3.
 Here, again, is the information for
@@ -580,12 +584,11 @@ In this example, an C<Add> token corresponds to a plus sign ("C<+>").
 Marpa's state machine is
 not fully deterministic, it is quasi-deterministic.
 That is, Marpa's state machine is not a DFA
-(Deterministic Finite Automata),
-it is a AHFA.
+(Deterministic Finite Automata).
 A DFA state,
 for any given token,
 has at most one transition.
-A AHFA state,
+Marpa's AHFA states,
 for any given token,
 can have up to two transitions.
 In the case of AHFA state S5,
@@ -603,8 +606,9 @@ The transition to
 AHFA state S8 is
 an example of adding a B<scanned Earley item>
 to an Earley set.
-Let's look at scanning, and the transition to AHFA state 8,
-first.
+At this point, we are discussing scanning,
+so the first transition that we will look at
+is the transition to AHFA state 8.
 
 =for Marpa::Display:
 name: Implementation Example show_AHFA Output
@@ -617,7 +621,7 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-Which earley set does the new earley item for AHFA state S8 go into?
+Which Earley set does the new Earley item for AHFA state S8 go into?
 In this example, the C<Add> token has a length
 (in earlemes) of 1.
 The current earleme for S5@0-3 is earleme 3.
@@ -638,7 +642,8 @@ we've determined so far, the new, scanned, Earley item
 will have its dot location at earleme 4,
 will have AHFA state S8,
 and will have its origin at earleme 0.
-This means that the new, scanned, Earley item will be S8@0-4.
+This means that the new, scanned, Earley item will be S8@0-4,
+and will look like this:
 
 =for Marpa::Display:
 name: Implementation Example show_earley_sets Output
@@ -916,7 +921,8 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-We see that it does contain all four of the rule
+We see that, indeed,
+S9 contains all four of the rule
 initializations
 that we found in this section.
 
@@ -963,15 +969,16 @@ normalize-whitespace: 1
 Every completed symbol has an origin and a current earleme.
 The origin and the current earleme of a completed symbol
 are exactly the same as the
-origin and the current earleme of Earley item containing the
-completed symbol.
+origin and the current earleme
+of the Earley item that completes
+that symbol.
 In this case,
-the Earley item containing the completed symbol C<Factor>
+the Earley item completing the symbol C<Factor>
 is S4@2-3 so that
 C<Factor> is a completed symbol with
 origin at 2 and current earleme at 3.
 
-An Earley item containing a completed symbol is called a B<completion Earley item>,
+An Earley item that completes a symbol is called a B<completion Earley item>,
 or simply a B<completion>.
 As a result of recognizing a completion Earley item,
 Marpa may add
@@ -1046,7 +1053,7 @@ Note the source choice in brackets after the name:
 C<[p=S6@0-2; c=S4@2-3]>.
 Previously we saw a token source choice.
 This is another kind of source choice, a B<completion source choice>.
-This source choice says the reason for S10@0-3 to be in the earley sets
+This source choice says the reason for S10@0-3 to be in the Earley sets
 is the completion cause S4@2-3
 and its matching predecessor,
 S6@0-2.
@@ -1086,7 +1093,8 @@ It indicates that S10 is what's called a Leo completion.
 The Leo logic is dealt in L<another
 document|Marpa::Advanced::Leo>.)
 
-The completed symbol is C<Factor> with origin
+The completed symbol is C<Factor>,
+with origin
 0 and current earleme 3.
 Looking for
 matching predecessors at earleme 0,
@@ -1112,7 +1120,7 @@ normalize-whitespace: 1
 =for Marpa::Display::End
 
 The completed symbol is C<Factor> and its transition
-in S1 is to S3, so we add S3@0-3 to earley set 3.
+in S1 is to S3, so we add S3@0-3 to Earley set 3.
 
 =for Marpa::Display
 name: Implementation Example show_earley_sets Output
@@ -1149,7 +1157,7 @@ symbol.
 In AHFA state S1, the transition on C<Term>
 is to AHFA state S5.
 This means S5@0-3 will be
-added to earley set 3 as a completion effect,
+added to Earley set 3 as a completion effect,
 with S3@0-3 as the cause and S1@0-0 as the matching predecessor:
 
 =for Marpa::Display
@@ -1197,43 +1205,86 @@ For some very simple grammars S1@0-0 is not necessary.
 
 =head1 EVALUATION
 
-=head2 Choosing LR(0) Items
+As of this writing,
+this section is not a complete presentation of Marpa's
+Generation 3 evaluator.
+Instead,
+it focuses on the issues relevant to users
+using Marpa's advanced trace accessors.
+
+=head2 Applicable Dotted Rules
 
 As we have seen, Marpa uses AHFA states in its Earley items,
-and these can contain multiple LR(0) items.
-To produce an actual parse result, Marpa must, for every Earley
-item, choose exactly one of the LR(0) items.
-To do this, it looks for an B<applicable LR(0) item>.
+and these can contain more than one dotted rule.
+To produce an actual parse result, Marpa must
+find the dotted rules which are applicable for
+that particular parse.
+A dotted rule that applies in a particular parse result
+is called an B<applicable dotted rule>
+or an B<applicable LR(0) item>.
+
+The search for applicable dotted rules begins with the start
+Earley item.
+There will always be exactly one dotted rule in
+a start Earley item,
+and that one dotted rule will always be applicable
+to the current parse result.
+In other words,
+in any parse result,
+the dotted rule in its start Earley item
+is an applicable dotted rule.
+The search for the other dotted rules applicable to that parse result
+proceeds top-down,
+starting with
+the applicable dotted rule in the start Earley item.
 
 If the parse is not ambiguous, there will be exactly one
-applicable LR(0) item for every Earley item.
+applicable dotted rule for every Earley item.
 If the parse is ambiguous,
-some Earley items may have more than one applicable LR(0)
-item.
+at some points there may be more than one applicable dotted
+rule.
+Ambiguous parsing is discussed in greater depth in the
+next section.
 
-An LR(0) item in a completion cause is B<applicable> if it matches
-the LR(0) item in its completion effect,
-and vice versa.
-An LR(0) item in a completion cause
-B<matches> the LR(0) item in a completion effect,
-if and only if the left hand side of the LR(0) item
+To find applicable dotted rules
+while proceeding top-down,
+Marpa must be able to do two things.
+First,
+given a pairing of a completion effect
+with its completion cause,
+and an applicable dotted rule in the completion effect,
+Marpa must be able to
+determine the applicable dotted rules in the completion cause.
+A dotted rule in a completion cause is B<applicable>
+if and only if the LHS symbol of the dotted rule
 in the completion cause
 is the same
 as the first non-null symbol
-before the dot position in the LR(0) item in the completion effect.
+before the dot position of the applicable dotted rule
+in the completion effect.
 
-An LR(0) item in a predecessor is B<applicable> if it matches
-the LR(0) item in the successor,
-and vice versa.
-An LR(0) item in a predecessor B<matches> the LR(0) item in its successor
+Second,
+given a pairing of a successor Earley item
+with its predecessor Earley item,
+and an applicable dotted rule in the successor,
+Marpa must be able to
+determine the applicable dotted rules in the predecessor
+Earley item.
+Recall that a dotted rule is a duple containing a
+production of the grammar and a dot position in that production.
+A dotted rule in a predecessor is B<applicable>
 if and only if
 
 =over
 
-=item * the two LR(0) items are for the same rule, and
+=item * its production is the same as the
+production of the
+applicable dotted rule
+in the successor, and
 
-=item * the dot position is exactly one non-null symbol earlier in the predecessor
-than it is in the successor.
+=item * its dot position is exactly one non-null symbol earlier
+than the dot position of the applicable dotted rule
+in the successor.
 
 =back
 
@@ -1248,9 +1299,10 @@ Earley item twice.
 
 Two Earley items are considered "the same"
 if they have the same AHFA state,
-the same origin
+the same origin,
 and the same current earleme.
 Marpa will never add the same Earley item twice.
+
 In cases where Marpa might add the same Earley item twice,
 Marpa instead adds another source choice to the
 already existing Earley item.
@@ -1276,7 +1328,7 @@ A B<point of ambiguity> is
 an Earley item with two or more
 source choices,
 or an Earley item with
-two or more applicable LR(0) items.
+two or more applicable dotted rules.
 
 =head2 Calculating the Parse Result
 
@@ -1425,16 +1477,17 @@ normalize-whitespace: 1
 =for Marpa::Display::End
       
 A parse is B<successful> if that parse is
-successful an its end of parsing location.
-Marpa's idea of the end of parsing location
-depends on its input model,
-and can be explcitly overriden by the user.
+successful at its end of parsing location.
+Marpa's default idea of the end of parsing location
+depends on its input model.
+(The end of parsing location
+can be also be explicitly set by the user.)
 
 The parse in our example
 reads five tokens,
 uses the default input model,
 and uses the default end of parsing.
-The puts the end of parsing for our
+That puts the end of parsing for our
 example parse at earleme location 5.
 Since parsing is successful at location 5,
 the parse in our example is successful.

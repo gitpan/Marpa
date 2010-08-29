@@ -15,7 +15,7 @@ read
 L<the overview document
 for tracing
 problems|Marpa::Tracing> before
-reading this one.
+reading this document.
 
 =head1 DESCRIPTION
 
@@ -97,11 +97,12 @@ follow from way in which origin and current location are defined.
 First,
 if a dotted rule is a prediction, origin and current location will always be the same.
 Second,
-the input stream location where a rule ends is not necessarily tracked, unless the
+the input stream location where a rule ends is not tracked unless the
 dotted rule is a completion.
 In other cases,
-we don't necessarily know the location at which (or even if) the rule will
-be completed.
+we don't know if the rule will
+be completed,
+much less at which location.
 
 =head1 THE BASE EXAMPLE
 
@@ -169,7 +170,7 @@ to point us to the error.
 But, in order to look at more of Marpa's
 tracing facilities, let's pretend we have not
 had our morning coffee,
-and we miss the significance of these warning messages.
+and that we miss the significance of these warning messages.
 
 =head1 THE trace_terminals OUTPUT
 
@@ -216,7 +217,7 @@ That should strike us as strange,
 and send us back to the grammar.
 But for the sake of our example we will
 assume that we are slow on the uptake today,
-and this does not clue us in.
+and that this does not clue us in.
 We move on.
 
 =head1 THE show_progress OUTPUT
@@ -238,8 +239,11 @@ If a parse is at all large, you'll often need to be selective.
 Of most interest is the progress report for the "current"
 Earley set.
 In our example that's earleme 3.
-The current Earley set is in the return value of the
-L<C<tokens> method|Marpa::Recognizer/"tokens">.
+You can find out the current earleme from
+the return value of either the
+L<C<tokens> method|Marpa::Recognizer/"tokens">
+or the
+L<C<status> method|Marpa::Recognizer/"status">.
 But it may be easier to simply call
 L<C<show_progress>|Marpa::Recognizer/"show_progress">
 without arguments.
@@ -275,7 +279,7 @@ More relevant for our purposes,
 we see that we have completed rules for C<Expression>, and C<Factor>,
 as expected.
 We also see two Earley items that show
-that we are in the progress of building another C<Factor>,
+that we are in the process of building another C<Factor>,
 and that it is expecting a C<Multiply> symbol.
 This is not the rule we want, but it explains why the C<trace_terminals>
 output showed that the recognizer was expecting a 
@@ -394,14 +398,14 @@ The special null start symbol ends in "C<['][]>".
 
 =head2 Empty Rules
 
-You may notice that any empty rules in your grammar never
+
+If you have empty rules in your grammar,
+you may notice that they never
 appear in the traces.
 That is because Marpa allows at most one empty rule in any
 grammar, and that rule is the one Marpa adds itself:
 the special empty start rule.
-Marpa removes all empty and nulling rules in the original grammar,
-after noting that the left hand side
-of an nulling rule must be treated as a nulling symbol.
+Marpa removes all empty and nulling rules in the original grammar.
 
 Marpa's removal of nulling rules is recursive,
 at it needs to be.
@@ -475,11 +479,11 @@ Joop Leo figured out a way to get around this.
 Leo noted that most of the completions were trivial,
 in the sense
 that their only purpose was to create the topmost
-completion in the chain.
+completion in a chain.
 He figured out how to get directly
 to the topmost completion
 and let that topmost completion
-stand in for the long chain of trivial completions
+stand in for the chain of trivial completions
 that produced it.
 This reduced the time and space
 required to O(I<n>).

@@ -55,6 +55,7 @@ lib/Marpa/Doc/Tracing.pod
 lib/Marpa/Evaluator.pm
 lib/Marpa/Grammar.pm
 lib/Marpa/Internal.pm
+lib/Marpa/Internal/Carp_Not.pm
 lib/Marpa/MDL.pm
 lib/Marpa/MDL/.gitignore
 lib/Marpa/MDL/Internal/Actions.pm

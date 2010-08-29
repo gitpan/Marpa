@@ -12,7 +12,7 @@ no warnings qw(recursion qw);
 use strict;
 use integer;
 
-use Marpa::Internal;
+use Marpa::Internal::Carp_Not;
 
 # The bocage is Marpa's structure for keeping multiple parses.
 # A parse bocage is a list of or-nodes, whose child
@@ -200,13 +200,8 @@ use Marpa::Offset qw(
 
 package Marpa::Internal::Evaluator;
 
-use Scalar::Util;
-use List::Util;
 use English qw( -no_match_vars );
-use Data::Dumper;
-use Storable;
-use Marpa::Callback;
-use Marpa::Internal;
+use Marpa::Internal::Carp_Not;
 
 our $DEFAULT_ACTION_VALUE = \undef;
 

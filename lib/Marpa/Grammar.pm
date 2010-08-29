@@ -16,7 +16,7 @@ use strict;
 use integer;
 use utf8;
 
-use Marpa::Internal;
+use Marpa::Internal::Carp_Not;
 
 =begin Implementation:
 
@@ -225,7 +225,6 @@ use Marpa::Offset qw(
 
 package Marpa::Internal::Grammar;
 
-use Carp;
 use POSIX qw(ceil);
 
 # values for grammar phases
@@ -249,12 +248,9 @@ sub phase_description {
 
 package Marpa::Internal::Grammar;
 
-use Data::Dumper;
-use Storable;
 use English qw( -no_match_vars );
-use List::Util;
 
-use Marpa::Internal;
+use Marpa::Internal::Carp_Not;
 
 # Longest RHS is 2**28-1.  It's 28 bits, not 32, so
 # it will fit in the internal priorities computed

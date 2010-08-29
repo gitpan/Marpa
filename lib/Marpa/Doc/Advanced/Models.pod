@@ -1,11 +1,11 @@
 =head1 NAME
 
-Marpa::Advanced::Models - Other Input Models (Advanced)
+Marpa::Advanced::Models - Other Input Models
 
 =head1 ABOUT THIS DOCUMENT
 
-The alternative input models desribed in this document are a
-very advanced technique.
+The alternative input models desribed in this document are an
+advanced technique.
 This document may safely be ignored by ordinary Marpa users.
 
 =head1 DESCRIPTION
@@ -84,8 +84,8 @@ earleme 0.
 
 When token offset is left undefined,
 it defaults to 1.
-That means the next token will be added at another
-earleme location, one after the current one.
+That means the next token will be added at the next
+earleme location after the current one.
 This is the correct value for the token
 stream model.
 
@@ -104,10 +104,10 @@ Potentially ambiguous lexing occurs in any parse where multiple
 tokens start at a single earleme.
 An B<actual ambiguity> only occurs if
 more than one of the potential token choices is consistent with
-the grammar and its input.
+the grammar and previous input.
 If there is no actual ambiguity, Marpa
 will use the only token choice which is
-consistent with the grammar and its inputs.
+consistent with the grammar and previous inputs.
 
 When lexing is B<actually ambiguous>, Marpa
 will use all consistent alternatives.
@@ -117,17 +117,15 @@ From the point of view of Marpa's semantics,
 ambiguity caused by lexing is exactly the
 same as ambiguity caused by an ambiguous grammar.
 
-It's a bit of a pedantic point, but in the rest of
-this documentation I follow the standard
-terminology in saying that grammar is ambiguous
+In the standard
+terminology,
+a grammar is ambiguous
 if it can produce more than one parse result,
 and vice versa.
 In Marpa this is not strictly true.
-An unambiguous grammar can produce than one parse
-in Marpa, if the lexing is ambiguous.
-Conversely, if Marpa returns more than
-one parse result for a grammar, you cannot conclude
-that the grammar itself is ambiguous.
+In Marpa,
+an unambiguous grammar will produce than one parse,
+if the lexing is actually ambiguous.
 
 =head1 THE CHARACTER-PER-EARLEME MODEL
 

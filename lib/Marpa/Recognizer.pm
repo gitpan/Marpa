@@ -13,7 +13,7 @@ use integer;
 
 use English qw( -no_match_vars );
 
-use Marpa::Internal;
+use Marpa::Internal::Carp_Not;
 
 # Elements of the EARLEY ITEM structure
 # Note that these are Earley items as modified by Aycock & Horspool,
@@ -116,9 +116,8 @@ use Marpa::Offset qw(
 
 package Marpa::Internal::Recognizer;
 
-use Marpa::Internal;
+use Marpa::Internal::Carp_Not;
 
-use Data::Dumper;
 use English qw( -no_match_vars );
 
 use constant EARLEME_MASK => ~(0x7fffffff);

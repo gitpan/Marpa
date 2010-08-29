@@ -81,8 +81,11 @@ mark all the non-LHS symbols as terminals.
 
 Marpa is stricter for grammars with empty rules --
 it does not allow them to take the default.
-If the LHS of an empty rule could also be a terminal,
-it would make life difficult for the recognizer.
+There is an efficiency hit whenever
+the LHS of an empty rule is a terminal as well,
+so Marpa does not allow this to happen by default --
+the user has to be explicitly indicate that that is
+what she wants.
 If a grammar has any empty rules,
 it must either directly mark its terminals,
 or must unset 
@@ -134,15 +137,21 @@ This is a fatal error.
 
 =head2 Sequence Rules
 
-It is very common in a grammar for one symbol to derive a
-sequence of other symbols.
+It is very common in a grammar for one symbol to produce a
+repeating sequence.
 Marpa allows a shorthand for this:
 sequence rules.
+The RHS of a sequence rule will be repeated,
+as specified by the C<min> rule property.
+In sequence rules the RHS must always be one symbol
+in length,
+and that symbol may not be a nullable symbol.
 
 A rule is a sequence rule if the C<min> rule property is defined.
-C<min> can be 0 or 1, and indicates the minimum length of the
-sequence.
-As of this writing, the maximum length is always infinite.
+C<min> can be 0 or 1, and specifies the minimum number of times
+that the sequence is allowed to repeat.
+As of this writing,
+the maximum number of repetitions is always infinite.
 
 =for Marpa::Display
 name: Marpa::Grammar min 0 sequence example
@@ -153,7 +162,7 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-A C<min> of zero indicates a sequence of 0 or more symbols.
+A C<min> of zero indicates a sequence that repeats zero or more times.
 This is the equivalent of using the star quantifier
 ("C<item*>") in the
 standard regular expression notation.
@@ -167,7 +176,7 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-A C<min> of one indicates a sequence of 1 or more symbols.
+A C<min> of one indicates a sequence that repeats one or more times.
 This is the equivalent of using the plus quantifier
 ("C<item+>") in the
 standard regular expression notation.
@@ -181,7 +190,7 @@ a separator must actually separate
 two sequence items
 and therefore is not allowed
 after the last item of a sequence.
-If you prefer "C<proper>" separaration,
+If you prefer "C<proper>" separation,
 you can set
 the C<proper> rule property.
 
@@ -322,7 +331,8 @@ perltidy: '-dcsc -sil=0'
 =for Marpa::Display::End
 
 Returns a multi-line string listing the states of the AHFA
-with the LR(0) items, LR(0) NFA states, and transitions for each.
+with the LR(0) items, LR(0) NFA states,
+and the transitions for each.
 Not useful before the grammar is precomputed.
 Useful in debugging, but requires knowledge of Marpa internals.
 
@@ -436,8 +446,8 @@ the Marpa internals to interpret.
 
 =head2 action_object
 
-The C<action_object> named argument expresses semantics.
-Its standard use is as a class name to be used
+The C<action_object> named argument
+specifies a class name to be used
 in resolving action names to Perl closures.
 If a C<new> constructor is defined
 in the C<action_object> package,
@@ -456,8 +466,7 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-The C<actions> named argument expresses semantics.
-Its standard use is to specify
+The C<actions> named argument specifies
 the Perl package that Marpa will use when resolving
 action names to Perl closures.
 If both an 
@@ -483,16 +492,15 @@ normalize-whitespace: 1
 
 =for Marpa::Display::End
 
-The C<default_action> named argument expresses semantics.
-Its standard use is to specify the semantic action
+The C<default_action> named argument specifies
+the semantic action
 for rules without an L<C<action> property|/"action">.
 Details are given in
 L<the document on semantics|Marpa::Semantics>.
 
 =head2 default_null_value
 
-The C<default_null_value> named argument expresses semantics.
-Its standard use is to specify
+The C<default_null_value> named argument specifies
 the null value for
 symbols
 without a L<C<null_value> property|/"null_value">.
@@ -609,7 +617,7 @@ available for tracing and debugging.
 
 The value of the C<symbols> named
 arguments must be a reference to a hash.
-In the key/value pairs of this hash,
+In each key/value pair of this hash,
 the hash key is the symbol property name
 and the hash value is the
 symbol descriptor.
@@ -707,7 +715,7 @@ normalize-whitespace: 1
 The long form descriptor of a rule is a
 reference to a hash
 of B<rule properties>.
-In the key/value pairs of this hash,
+In each key/value pair of this hash,
 the hash key is the rule property name
 and the hash value is the value of
 that property.
@@ -859,20 +867,28 @@ in the long form.
 =head2 Duplicate Rules
 
 Marpa throws an exception if a duplicate rule is added.
-For non-sequence rules, a rule is considered a duplicate if it has the
-same left hand side symbol,
-and the same symbols in the same order on the right hand side.
-For sequences,
-two rules are considered duplicates if
+For non-sequence rules, two rules are considered duplicates if
 
 =over
 
-=item * Both have the same left hand symbol.
+=item * Both rules have the same left hand symbol.
 
-=item * Both have the same right hand symbol.
+=item * Both rules have the same right hand symbols in the same order.
 
-=item * Either both have no separator,
-or both have the same separator.
+=back
+
+For two sequence rules to be considered duplicates,
+the same requirements
+hold as for non-sequence rules,
+but there is also an additional requirement.
+For two sequence rules to be considered duplicates,
+one of the following two conditions must hold
+
+=over
+
+=item * Both rules have no separator.
+
+=item * Both rules have identical separators.
 
 =back
 

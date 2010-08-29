@@ -230,7 +230,7 @@ remove-blank-last-line: 1
 
 =for Marpa::Display::End
 
-=head2 C<show_earley_sets> Output
+=head2 C<show_earley_sets> "Before" Output
 
 =for Marpa::Display:
 name: Leo Example show_earley_sets "Before" Output
@@ -289,7 +289,7 @@ remove-blank-last-line: 1
 
 =for Marpa::Display::End
 
-=head2 C<show_earley_sets> Output
+=head2 C<show_earley_sets> "After" Output
 
 =for Marpa::Display:
 name: Leo Example show_earley_sets "After" Output

@@ -27,8 +27,7 @@ Make sure that
 Marpa's C<warnings> named arguments
 for both the grammar and the recognizer
 are turned on.
-The C<warnings> named arguments are
-on by default.
+Warnings are on by default.
 
 =head2 Turn off Stripping
 
@@ -63,9 +62,9 @@ At any given parse location,
 Marpa is only looking
 for those tokens that it thinks
 could result in a successful parse.
-That means that the list of
+Examining the list of
 tokens that the recognizer is looking for
-tells you where
+can also tell you where
 the recognizer thinks it is.
 
 =head2 Trace Progress
@@ -129,7 +128,7 @@ includes the following:
 
 When considering how much tracing to turn on,
 remember that if the input text to the grammar is large,
-the outputs from C<show_earley_sets>,
+the outputs from
 C<trace_terminals>,
 C<show_progress>,
 and C<trace_values>
@@ -159,6 +158,11 @@ C<show_earley_sets> and
 C<show_AHFA>
 methods,
 and explains how to read them.
+Note that,
+if the input text to the grammar is large,
+the output from C<show_earley_sets>
+will be very lengthy.
+You want to work with short inputs if at all possible.
 
 =head1 LICENSE AND COPYRIGHT
 

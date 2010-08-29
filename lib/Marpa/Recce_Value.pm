@@ -5,11 +5,8 @@ use warnings;
 use strict;
 use integer;
 
-use Scalar::Util;
-use List::Util;
 use English qw( -no_match_vars );
-use Data::Dumper;
-use Marpa::Internal;
+use Marpa::Internal::Carp_Not;
 
 # This perlcritic check is broken as of 9 Aug 2010
 ## no critic (TestingAndDebugging::ProhibitNoWarnings)

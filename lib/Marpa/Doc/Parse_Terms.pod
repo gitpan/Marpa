@@ -85,8 +85,8 @@ The right hand side of a production is a symbol string of zero or more symbols.
 In the example, C<Expression> is the left hand side, and 
 C<Term> and C<Factor> are right hand side symbols.
 
-Left hand side and right hand side are often abbreviated as B<rhs> and B<lhs>.
-If the rhs of a production has no symbols,
+Left hand side and right hand side are often abbreviated as B<RHS> and B<LHS>.
+If the RHS of a production has no symbols,
 the production is called an B<empty production>
 or an B<empty rule>.
 
@@ -98,9 +98,9 @@ that symbol string is also called a B<sentence>.
 =head2 Derivations
 
 A B<step> of a derivation, or B<derivation step>, is made by taking a symbol string
-and any production in the grammar whose lhs occurs in that symbol string,
-and replacing any occurrence of the lhs symbol in the symbol string with the
-rhs of the production.  For example, if C<A>, C<B>, C<C>, C<D>, and C<X> are symbols,
+and any production in the grammar whose LHS occurs in that symbol string,
+and replacing any occurrence of the LHS symbol in the symbol string with the
+RHS of the production.  For example, if C<A>, C<B>, C<C>, C<D>, and C<X> are symbols,
 and
 
 =for Marpa::Display:
@@ -177,7 +177,7 @@ In any instance where a symbol produces the empty string,
 it is said to be B<nulled>,
 or to be a B<null symbol>.
 
-=head2 Other Special Cases
+=head2 Useless Rules
 
 If any derivation from the start symbol uses a rule,
 that rule is called B<reachable> or B<accessible>.
@@ -186,18 +186,24 @@ is called B<unreachable> or B<inaccessible>.
 If any derivation which results in a sentence uses a rule,
 that rule is said to be B<productive>.
 A rule that is not productive is called B<unproductive>.
-A simple case of an unproductive rule is one whose rhs contains a symbol which is not
-a terminal and not on the lhs of any other rule.
+A simple case of an unproductive rule is one whose RHS contains a symbol which is not
+a terminal and not on the LHS of any other rule.
 A rule which is inaccessible or unproductive is called a
 B<useless> rule.
+Marpa can handle grammars with useless rules.
 
 A symbol is B<reachable> if it appears in a reachable production.
-A symbol is B<productive> if it appears on the lhs of a productive rule,
+A symbol is B<productive> if it appears on the LHS of a productive rule,
 or if it is a nullable symbol.
 If a symbol is not reachable or not accessible,
 it is B<unreachable> or B<inaccessible>.
 If a symbol is not productive,
 it is B<unproductive>.
+A symbol which is inaccessible or unproductive is called a
+B<useless> symbol.
+Marpa can handle grammars with useless symbols.
+
+=head2 Recursion and Cycles
 
 If any symbol in the grammar non-trivially produces a symbol string containing itself,
 the grammar is said to be B<recursive>.
@@ -205,6 +211,12 @@ If any symbol non-trivially produces a symbol string with itself on the left,
 the grammar is said to be B<left-recursive>.
 If any symbol non-trivially produces a symbol string with itself on the right,
 the grammar is said to be B<right-recursive>.
+Marpa can handle all recursive grammars,
+including
+grammars which are left-recursive,
+grammars which are right-recursive,
+and grammars
+which contain both left- and right-recursion.
 
 A B<cycle> is a non-trivial derivation
 from any symbol to the string of symbols
@@ -213,31 +225,29 @@ Since the result of a cycle is exactly the same as the beginning of
 a cycle, a cycle is the parsing equivalent of an infinite loop.
 A grammar which contains no cycles is B<cycle-free>.
 
-A grammar which contains a cycle is B<infinitely ambigious>.
-This is a grammar with a cycle can repeat the cycle in a derivation
+A grammar which contains a cycle is called B<infinitely ambigious>,
+because a grammar with a cycle can repeat that cycle in a derivation
 an arbitrary number of times.
-Therefore, for some input, there is no limit to the number
-of parses a grammar with a cycle can produce.
-
-A B<proper context-free grammar> in one which is
-cycle-free and has no useless rules or empty productions.
-Marpa does not require the context-free grammars it parses to
-be proper.  Marpa can handles grammars with cycles, useless rules
-or both.
+Marpa can handle cycles,
+and will produce parses even for
+infinitely ambiguous grammars.
 
 =head2 Structure
 
-The structure of a parse can be represented by as a series of derivation steps from
+The structure of a parse can be represented as a series of derivation steps from
 the start symbol to the input.
 Another way to represent structure is as a B<parse tree>.
 Every symbol used in the parse is
 represented by a B<node> of the parse tree.
 Wherever a production is used in the parse,
-its lhs is represented by a B<parent node>
-and the rhs symbols are represented by B<child nodes>.
+its LHS is represented by a B<parent node>
+and the RHS symbols are represented by B<child nodes>.
 The start symbol is the B<root> of the tree.
+The node at the root of the tree is called the B<start node>.
+
 Terminals are B<leaf nodes>.
-Symbols on the
+Any node with a symbol being used as a terminal is a B<terminal node>.
+In Marpa, symbols on the
 left hand side of empty productions are also B<leaf nodes>.
 If a node is not a B<leaf node>, it is an B<inner node>.
 A B<nulled node> is one that represents a nulled symbol.
@@ -245,20 +255,19 @@ A B<nulled node> is one that represents a nulled symbol.
 If, for a given grammar and a given input,
 more than one derivation tree is possible,
 we say that parse is B<ambiguous>.
-If any parse from a grammar is ambiguous,
+The standard definition of an ambigious grammar is that,
+if any parse from a grammar is ambiguous,
 the grammar is B<ambiguous>.
 
-The node at the root of the tree is the B<start node>.
-Any node with a symbol being used as a terminal is a B<terminal node>.
-The B<depth> of a node is its distance from the root.
-The root node is at depth 0.
-If a parent node is at depth C<n>,
-its children are at depth C<n+1>.
-
-As with depths in bodies of water, the concepts of B<higher> and B<lower>
-have the sense opposite to that of the numerical values.
-The node at depth 0 is higher than any other node.
-Parent nodes are higher than their children.
+Marpa is unusual in that it allows ambiguous B<input>,
+so for Marpa this definition needs to be modified.
+In the Marpa context, a grammar is called ambigious,
+if for any unambiguous input,
+some parse from that grammar is ambiguous.
+Marpa can handle ambiguous grammars, whether ambiguity
+is defined in the standard way,
+or used with its Marpa-specific
+meaning.
 
 =head2 Semantics
 
@@ -279,20 +288,20 @@ In the traditional method of evaluating a parse tree,
 every node which represents a terminal symbol
 has a value associated with it on input.
 Non-null inner nodes 
-take their semantics from the production whose lhs they represent.
+take their semantics from the production whose LHS they represent.
 Nulled nodes are dealt with as special cases.
 
 The semantics for a production
-describe how to calculate the value of the node which represents the lhs
+describe how to calculate the value of the node which represents the LHS
 (the parent node)
-from the values of zero or more of the nodes which represent the rhs symbols
+from the values of zero or more of the nodes which represent the RHS symbols
 (child nodes).
 Values are computed recursively, bottom-up.
 The value of a parse is the value of its start symbol.
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2007-2009 Jeffrey Kegler, all rights reserved.
+Copyright 2007-2010 Jeffrey Kegler, all rights reserved.
 Marpa is free software under the Perl license.
 For details see the LICENSE file in the Marpa distribution.
 
