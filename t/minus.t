@@ -11,7 +11,7 @@ use lib 'lib';
 use Marpa::Test;
 
 BEGIN {
-    Test::More::use_ok('Marpa::MDLex');
+    Test::More::use_ok('Marpa');
 }
 
 # The inefficiency (at least some of it) is deliberate.

@@ -30,7 +30,7 @@ use Test::More tests => 2;
 use Marpa::Test;
 
 BEGIN {
-    Test::More::use_ok('Marpa::MDLex');
+    Test::More::use_ok('Marpa');
 }
 
 ## no critic (Subroutines::RequireArgUnpacking)
@@ -79,36 +79,38 @@ my @actual = ();
 
 $grammar->precompute();
 
-for my $data ( 'time flies like an arrow.', 'fruit flies like a banana.' ) {
-
-    my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
-    Carp::croak('Failed to create recognizer') if not $recce;
-
-    my $lexer = Marpa::MDLex->new(
-        {   recognizer     => $recce,
-            default_prefix => '\s+|\A',
-            terminals      => [
-                { name => 'preposition_lex', regex => 'like' },
-                { name => 'verb_lex',        regex => 'like|flies' },
-                {   name  => 'adjective_noun_lex',
-                    regex => 'fruit|banana|time|arrow|flies'
-                },
-                { name => 'article_lex', regex => 'a\b|an' }
-            ]
-        }
-    );
-
-    my $fail_offset = $lexer->text($data);
-    if ( $fail_offset >= 0 ) {
-        Carp::croak("Parse failed at offset $fail_offset");
+my %lexical_class = (
+    'preposition_lex'    => 'like',
+    'verb_lex'           => 'like flies',
+    'adjective_noun_lex' => 'fruit banana time arrow flies',
+    'article_lex'        => 'a an',
+);
+my %vocabulary = ();
+while ( my ( $lexical_class, $words ) = each %lexical_class ) {
+    for my $word ( split q{ }, $words ) {
+        push @{ $vocabulary{$word} }, $lexical_class;
     }
+}
+
+for my $data ( 'time flies like an arrow', 'fruit flies like a banana' ) {
+
+    my $recce =
+        Marpa::Recognizer->new( { grammar => $grammar, mode => 'stream' } );
+    die 'Failed to create recognizer' if not $recce;
+
+    for my $word ( split q{ }, $data ) {
+        defined $recce->tokens(
+            [ map { [ $_, $word, 1, 0 ] } @{ $vocabulary{$word} } ] )
+            or die 'Recognition failed';
+    }
+
     $recce->end_input();
 
     while ( defined( my $value_ref = $recce->value() ) ) {
         my $value = $value_ref ? ${$value_ref} : 'No parse';
         push @actual, $value;
     }
-} ## end for my $data ( 'time flies like an arrow.', ...)
+} ## end for my $data ( 'time flies like an arrow', ...)
 
 Marpa::Test::is( ( join "\n", sort @actual ) . "\n",
     $expected, 'Ambiguous English sentences' );

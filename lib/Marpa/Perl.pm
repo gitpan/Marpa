@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 BEGIN {
-    our $VERSION = '0.105_011';
+    our $VERSION = '0.105_012';
 }
 
 package Marpa::Internal::Perl;
@@ -1011,13 +1011,7 @@ sub Marpa::Perl::parse {
                     my @potential_types = qw(ADDOP PLUS);
                     TYPE: for my $type (@potential_types) {
                         next TYPE if not $type ~~ $expected_tokens;
-                        push @tokens, [ $type, $content, 1, 1 ];
-                    }
-
-                    # For all but the last token, set
-                    # the token offset to zero.
-                    for my $ix ( 0 .. $#tokens - 1 ) {
-                        $tokens[$ix]->[3] = 0;
+                        push @tokens, [ $type, $content, 1, 0 ];
                     }
 
                     last FIND_TOKENS;
@@ -1030,13 +1024,7 @@ sub Marpa::Perl::parse {
                     my @potential_types = qw(ADDOP UMINUS);
                     TYPE: for my $type (@potential_types) {
                         next TYPE if not $type ~~ $expected_tokens;
-                        push @tokens, [ $type, $content, 1, 1 ];
-                    }
-
-                    # For all but the last token, set
-                    # the token offset to zero.
-                    for my $ix ( 0 .. $#tokens - 1 ) {
-                        $tokens[$ix]->[3] = 0;
+                        push @tokens, [ $type, $content, 1, 0 ];
                     }
 
                     last FIND_TOKENS;
@@ -1075,13 +1063,7 @@ sub Marpa::Perl::parse {
                     }
                     TYPE: for my $type (@potential_types) {
                         next TYPE if not $type ~~ $expected_tokens;
-                        push @tokens, [ $type, $content, 1, 1 ];
-                    }
-
-                    # For all but the last token, set
-                    # the token offset to zero.
-                    for my $ix ( 0 .. $#tokens - 1 ) {
-                        $tokens[$ix]->[3] = 0;
+                        push @tokens, [ $type, $content, 1, 0 ];
                     }
 
                     last FIND_TOKENS;

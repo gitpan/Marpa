@@ -75,26 +75,59 @@ Marpa does not allow zero length tokens in any input model.
 
 The token offset
 is the fourth element of each token's descriptor.
-This is the offset to be added to the B<current earleme location>.
+Its value is taken as
+the offset to be added to the B<current earleme location>.
 The B<current earleme location> is the earleme which
 will be the start earleme of the
 next token to be added.
 When parsing begins, the current earleme location is
 earleme 0.
 
+Negative token offsets are not allowed.
+Zero token offsets are allowed except
+for the last token descriptor of a L<tokens()
+call|Marpa::Recognizer/"tokens">.
+A zero token offset
+will cause 
+the next token to start at the same location.
+Multiple tokens starting at the same location
+will cause the lexing to be ambiguous.
+Marpa supports ambiguous lexing.
+
 When token offset is left undefined,
 it defaults to 1.
-That means the next token will be added at the next
-earleme location after the current one.
 This is the correct value for the token
-stream model.
+stream model of input.
 
-Negative token offsets are not allowed.
-Zero token offset are allowed,
-and will cause 
-multiple tokens to start at the same location.
-This in turn will cause lexing to be ambiguous.
-Marpa supports ambiguous lexing.
+The intuitive expectation seems to be that
+every L<tokens()
+call|Marpa::Recognizer/"tokens">
+will advance the current earleme after the
+last token descriptor.
+Because of this, a token offset of zero is
+not allowed for the last token descriptor.
+As a special case, when a token offset of
+zero is explicitly specified
+for the last token descriptor of a L<tokens()
+call|Marpa::Recognizer/"tokens">,
+it is B<silently changed> to 1.
+
+In practice this seems 
+to obey the principle of least surprise.
+The typical loop in an ambiguous lexing
+makes one pass for each earleme,
+gathering all the tokens that can start at that
+earleme into a list.
+For every token in this list,
+except the last,
+the token offset clearly should be 0,
+since all of the tokens are at the same earleme.
+A programmer might expect that he can give all the tokens
+a token offset of 0, thinking that Marpa will understand
+that the intention is to advance the current earleme
+after the L<tokens() call|Marpa::Recognizer/"tokens"> is complete.
+Since this is what the programmer expects,
+this is what Marpa does.
 
 =head1 AMBIGUOUS LEXING
 

@@ -11,10 +11,8 @@ use lib 'lib';
 use Marpa::Test;
 use English qw( -no_match_vars );
 
-# use Smart::Comments;
-
 BEGIN {
-    Test::More::use_ok('Marpa::MDLex');
+    Test::More::use_ok('Marpa');
 }
 
 my @features = qw(
@@ -187,26 +185,24 @@ sub run_test {
 
     my $recce = Marpa::Recognizer->new( { grammar => $grammar } );
 
-    my $lexer = Marpa::MDLex->new(
-        {   recce          => $recce,
-            default_prefix => '\s*',
-            terminals      => [
-                [ 'Number', '\d+' ],
-                [ 'AddOp',  '[-+]' ],
-                [ 'MultOp', '[*]' ],
-                { name => 'Text', builtin => 'q_quote' },
-            ],
-        }
+    my @tokens = (
+        [ Number => 2 ],
+        [ MultOp => q{*} ],
+        [ Number => 3 ],
+        [ AddOp  => q{+} ],
+        [ Number => 4 ],
+        [ MultOp => q{*} ],
+        [ Number => 1 ],
+        [ Text   => q{trailer} ],
     );
 
-    my $fail_offset = $lexer->text('2 * 3 + 4 * 1 q{trailer}');
-    if ( $fail_offset >= 0 ) {
-        Marpa::exception("Parse failed at offset $fail_offset");
+    if ( not defined $recce->tokens( \@tokens ) ) {
+        Marpa::exception('Recognition failed');
     }
 
     $recce->end_input();
 
-    my $expected  = '(((2*3)+(4*1))==10; q{trailer};[default null];[null])';
+    my $expected  = '(((2*3)+(4*1))==10;trailer;[default null];[null])';
     my $value_ref = $recce->value();
     my $value     = $value_ref ? ${$value_ref} : 'No parse';
     Marpa::Test::is( $value, $expected, 'Ambiguous Equation Value' );

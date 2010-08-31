@@ -908,21 +908,23 @@ sub Marpa::Recognizer::tokens {
 
             my $value_ref = \($value);
 
-            given ($length) {
-                when (undef) { $length = 1; }
-                when ( $_ & Marpa::Internal::Recognizer::EARLEME_MASK ) {
-                    Marpa::exception(
-                        'Token ' . $symbol_name . " is too long\n",
-                        "  Token starts at $last_completed_earleme, and its length is $length\n"
-                        )
-                } ## end when ( $_ & Marpa::Internal::Recognizer::EARLEME_MASK)
-                when ( $_ <= 0 ) {
-                    Marpa::exception( 'Token '
-                            . $symbol_name
-                            . ' has non-positive length '
-                            . $length );
-                } ## end when ( $_ <= 0 )
-            } ## end given
+            if ( not defined $length ) {
+                $length = 1;
+            }
+
+            if ( $length & Marpa::Internal::Recognizer::EARLEME_MASK ) {
+                Marpa::exception(
+                    'Token ' . $symbol_name . " is too long\n",
+                    "  Token starts at $last_completed_earleme, and its length is $length\n"
+                );
+            } ## end if ( $length & Marpa::Internal::Recognizer::EARLEME_MASK)
+
+            if ( $length <= 0 ) {
+                Marpa::exception( 'Token '
+                        . $symbol_name
+                        . ' has non-positive length '
+                        . $length );
+            } ## end if ( $length <= 0 )
 
             my $end_earleme = $current_token_earleme + $length;
 
@@ -935,7 +937,7 @@ sub Marpa::Recognizer::tokens {
             Marpa::exception(
                 'Token ' . $symbol_name . " has negative offset\n",
                 "  Token starts at $last_completed_earleme, and its length is $length\n",
-                "  Tokens are required to in sequence by location\n",
+                "  Tokens are required to be in sequence by location\n",
             ) if $offset < 0;
             $next_token_earleme += $offset;
 
@@ -965,7 +967,11 @@ sub Marpa::Recognizer::tokens {
 
         } ## end while ( $current_token_earleme == $next_token_earleme )
 
+        # The last descriptor in
+        # a tokens call always advances the current earleme by at least one
         $current_token_earleme++;
+        $current_token_earleme = $next_token_earleme
+            if $next_token_earleme > $current_token_earleme;
 
         $tokens_here //= [];
 

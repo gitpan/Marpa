@@ -10,7 +10,7 @@ use Test::More tests => 5;
 use Marpa::Test;
 
 BEGIN {
-    Test::More::use_ok('Marpa::MDLex');
+    Test::More::use_ok('Marpa');
 }
 
 package Test_Grammar;
@@ -133,39 +133,17 @@ $Test_Grammar::MARPA_OPTIONS = [
     }
   ];
 
-$Test_Grammar::MDLEX_OPTIONS = [
-    {   'default_prefix' => '\\s*',
-        'terminals'      => [
-            {   'name'  => 'die:k0',
-                'regex' => 'die'
-            },
-            {   'name'  => 'unary-function-name',
-                'regex' => '(caller|eof|sin|localtime)'
-            },
-            {   'name'  => 'nullary-function-name',
-                'regex' => '(caller|eof|sin|time|localtime)'
-            },
-            {   'name'  => 'number',
-                'regex' => '\\d+'
-            },
-            {   'name'  => 'semicolon',
-                'regex' => ';'
-            },
-            {   'name'  => 'division-sign',
-                'regex' => '[/]'
-            },
-            {   'name'  => 'pattern-match',
-                'regex' => '[/][^/]*/'
-            },
-            {   'name'  => 'comment',
-                'regex' => '[#].*'
-            },
-            {   'name'  => 'string-literal',
-                'regex' => '"[^"]*"'
-            }
-        ]
-    }
-];
+my %regexes = (
+    'die:k0'                => 'die',
+    'unary-function-name'   => '(caller|eof|sin|localtime)',
+    'nullary-function-name' => '(caller|eof|sin|time|localtime)',
+    'number'                => '\\d+',
+    'semicolon'             => ';',
+    'division-sign'         => '[/]',
+    'pattern-match'         => '[/][^/]*/',
+    'comment'               => '[#].*',
+    'string-literal'        => '"[^"]*"',
+);
 
 ## use critic
 #>>>
@@ -193,10 +171,27 @@ $g->precompute();
 TEST: for my $test_data (@test_data) {
 
     my ( $test_name, $test_input, $test_results ) = @{$test_data};
-    my $recce = Marpa::Recognizer->new( { grammar => $g } );
-    my $lexer = Marpa::MDLex->new( { recce => $recce },
-        @{$Test_Grammar::MDLEX_OPTIONS} );
-    $lexer->text( \$test_input );
+    my $recce = Marpa::Recognizer->new( { grammar => $g, mode => 'stream' } );
+
+    my $input_length = length $test_input;
+    pos $test_input = 0;
+    my ( $current_earleme, $expected_terminals ) = $recce->status();
+    for ( my $pos = 0; $pos < $input_length; $pos++ ) {
+        my @tokens = ();
+        TOKEN_TYPE: while ( my ( $token, $regex ) = each %regexes ) {
+            next TOKEN_TYPE if not $token ~~ $expected_terminals;
+            pos $test_input = $pos;
+            next TOKEN_TYPE
+                if not $test_input =~ m{ \G \s* (?<match>$regex) }xgms;
+
+## no critic (Variables::ProhibitPunctuationVars)
+            push @tokens,
+                [ $token, $+{match}, ( ( pos $test_input ) - $pos ), 0 ];
+
+        } ## end while ( my ( $token, $regex ) = each %regexes )
+        ( $current_earleme, $expected_terminals ) =
+            $recce->tokens( \@tokens );
+    } ## end for ( my $pos = 0; $pos < $input_length; $pos++ )
     $recce->end_input();
 
     my @parses;
