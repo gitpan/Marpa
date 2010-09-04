@@ -8,7 +8,7 @@ use Fatal qw(open close);
 
 use Module::Build;
 
-my $marpa_version = '0.105_012';
+my $marpa_version = '0.200000';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',

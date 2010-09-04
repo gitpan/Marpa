@@ -1,24 +1,14 @@
 Revision history for Marpa
 
-0.105_012 Mon Aug 30 17:58:11 2010
-0.105_011 Sat Aug 28 18:34:36 2010
-0.105_010 Fri Aug 20 17:45:00 2010
-0.105_009 Wed Aug 18 21:14:49 2010
-0.105_008 Tue Aug 17 20:36:55 2010
-0.105_007 Mon Aug 16 14:36:24 2010
-0.105_006 Thu Aug 12 21:33:18 2010
-0.105_005 Thu Aug 12 06:28:49 2010
-0.105_004 Tue Aug 10 19:56:22 2010
-0.105_003 Mon Aug  9 20:15:38 2010
-0.105_002 Tue Jul 13 20:22:42 2010
-0.105_001 Wed Jul  7 08:51:22 2010
-0.105_000 Tue Jun 29 11:05:37 2010
-
-    * New series of developer's releases.
+0.200000 Sat Sep  4 10:05:56 2010
 
     * Adding Generation 3 evaluator.
-      Lots of changes, including a new
+      Many changes, including a new
       interface.
+
+    * Generation 2 evaluator now is
+      deprecated and will be removed
+      in the future.
 
     * Fixed failure to install on systems without PPI.
 
