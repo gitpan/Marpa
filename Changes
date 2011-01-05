@@ -1,5 +1,16 @@
 Revision history for Marpa
 
+0.201_000 Sat Sep  4 10:23:53 2010
+
+    * New series of developer's releases.
+
+    * Retro-port minor CHAF bug fix from Marpa::XS --
+      In certain unusual circumstances,
+      Nulling symbols following proper nullables might be
+      omitted.  The case is obscure enough that I only discovered
+      it by reading the code -- it never emerged in testing.
+      But now it is fixed.
+
 0.200000 Sat Sep  4 10:05:56 2010
 
     * Adding Generation 3 evaluator.

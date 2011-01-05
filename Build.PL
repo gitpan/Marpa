@@ -8,7 +8,7 @@ use Fatal qw(open close);
 
 use Module::Build;
 
-my $marpa_version = '0.200000';
+my $marpa_version = '0.201_000';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -98,7 +98,7 @@ my $build = $class->new(
             { repository => 'git://github.com/jeffreykegler/Marpa.git', },
         no_index => {
             directory =>
-                [qw( inc xs libmarpa lib/Marpa/UrHTML t author.t save )],
+                [qw( inc xs lib/Marpa/UrHTML t author.t save )],
             namespace => [
                 'Marpa::Recognizer', 'Marpa::Grammar',
                 @no_index_namespace_inclusive

@@ -3207,10 +3207,13 @@ sub rewrite_as_CHAF {
                     # aliases for the rest of the rule.
                     # At this point we are guaranteed all the
                     # rest of the rhs symbols DO have a null alias.
-                    splice @{$last_nulling_rhs}, -1, 1,
-                        ( map { $_->[Marpa::Internal::Symbol::NULL_ALIAS] }
-                            @{$rhs}[ $subproduction_end_ix + 1 .. $#{$rhs} ]
-                        );
+                    splice @{$last_nulling_rhs}, -1, 1, (
+                        map {
+                                  $_->[Marpa::Internal::Symbol::NULLING]
+                                ? $_
+                                : $_->[Marpa::Internal::Symbol::NULL_ALIAS]
+                            } @{$rhs}[ $subproduction_end_ix + 1 .. $#{$rhs} ]
+                    );
                 } ## end if ( $next_subproduction_lhs and ...)
                 else {
                     $last_nulling_rhs->[$last_nullable_subproduction_ix] =

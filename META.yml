@@ -7,7 +7,7 @@ build_requires:
 configure_requires:
   Module::Build: 0.36
 distribution_type: module
-generated_by: 'Module::Build version 0.3601'
+generated_by: 'Module::Build version 0.3607'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -17,7 +17,6 @@ no_index:
   directory:
     - inc
     - xs
-    - libmarpa
     - lib/Marpa/UrHTML
     - t
     - author.t
@@ -47,7 +46,7 @@ no_index:
 provides:
   Marpa:
     file: lib/Marpa.pm
-    version: 0.200000
+    version: 0.201_000
 recommends:
   PPI: 1.206
   Test::More: 0.94
@@ -58,4 +57,4 @@ requires:
 resources:
   license: http://dev.perl.org/licenses/
   repository: git://github.com/jeffreykegler/Marpa.git
-version: 0.200000
+version: 0.201_000
