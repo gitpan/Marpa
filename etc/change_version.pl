@@ -78,24 +78,6 @@ sub fix_marpa_pm {
     return $text_ref;
 } ## end sub fix_marpa_pm
 
-sub fix_marpa_xs_pm {
-    my $text_ref  = shift;
-    my $file_name = shift;
-
-    if ( ${$text_ref} !~ s/(our\s+\$VERSION\s*=\s*')$old';/$1$new';/xms ) {
-        say {*STDERR}
-            "failed to change VERSION definition from $old to $new in $file_name"
-            or Carp::croak("Could not print to STDERR: $ERRNO");
-    }
-    if ( ${$text_ref} !~ s/(use\s+Marpa\s+)$old(\s+[(][)][;])$/$1$new$2/xms )
-    {
-        say {*STDERR}
-            "failed to change VERSION from $old to $new in use in $file_name"
-            or Carp::croak("Could not print to STDERR: $ERRNO");
-    } ## end if ( ${$text_ref} !~ ...)
-    return $text_ref;
-} ## end sub fix_marpa_xs_pm
-
 sub update_changes {
     my $text_ref  = shift;
     my $file_name = shift;
@@ -113,7 +95,6 @@ sub update_changes {
 change( \&fix_build_pl,    'Build.PL' );
 change( \&fix_marpa_pm,    'lib/Marpa.pm' );
 change( \&fix_marpa_pm,    'lib/Marpa/Perl.pm' );
-change( \&fix_marpa_xs_pm, 'xs/lib/Marpa/XS.pm' );
 change( \&update_changes,  'Changes' );
 
 say {*STDERR} 'REMEMBER TO UPDATE Changes file'
