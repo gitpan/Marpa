@@ -8,7 +8,7 @@ use Fatal qw(open close);
 
 use Module::Build;
 
-my $marpa_version = '0.202000';
+my $marpa_version = '0.203_000';
 
 my $class = Module::Build->subclass(
     class => 'Module::Build::Custom',
@@ -86,6 +86,7 @@ my $build = $class->new(
         'PPI'        => '1.206',
         'Test::More' => '0.94',
     },
+    configure_requires => { 'Module::Build' => 0.38 },
     requires => {
         'Scalar::Util'     => 0,
         'HTML::Parser'     => '3.64',
@@ -117,7 +118,6 @@ my $build = $class->new(
     },
     pod_files          => \%pod_files,
     license            => 'perl',
-    create_license     => 1,
     create_readme      => 0,
     create_makefile_pl => 'small',
     test_files         => [ map { glob $_ } qw(t/*.t t/*/*.t) ],

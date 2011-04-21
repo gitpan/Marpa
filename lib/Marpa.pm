@@ -5,7 +5,7 @@ use warnings;
 use strict;
 
 BEGIN {
-    our $VERSION = '0.202000';
+    our $VERSION = '0.203_000';
 }
 
 use Scalar::Util ();

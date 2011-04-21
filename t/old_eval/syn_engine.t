@@ -18,6 +18,8 @@ BEGIN {
 # Marpa::Display
 # name: Engine Synopsis Unambiguous Parse
 
+use Marpa;
+
 my $grammar = Marpa::Grammar->new(
     {   start          => 'Expression',
         actions        => 'My_Actions',
@@ -70,6 +72,8 @@ my $value = $value_ref ? ${$value_ref} : 'No Parse';
 
 # Marpa::Display
 # name: Gen3 Engine Synopsis Ambiguous Parse
+
+use Marpa;
 
 my $ambiguous_grammar = Marpa::Grammar->new(
     {   start   => 'E',

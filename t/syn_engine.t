@@ -6,19 +6,17 @@ use 5.010;
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 3;
 
 use lib 'lib';
 use Marpa::Test;
-
-BEGIN {
-    Test::More::use_ok('Marpa');
-}
 
 ## no critic (ErrorHandling::RequireCarping);
 
 # Marpa::Display
 # name: Engine Synopsis Unambiguous Parse
+
+use Marpa;
 
 my $grammar = Marpa::Grammar->new(
     {   start          => 'Expression',
@@ -72,6 +70,8 @@ my $value = $value_ref ? ${$value_ref} : 'No Parse';
 
 # Marpa::Display
 # name: Engine Synopsis Ambiguous Parse
+
+use Marpa;
 
 my $ambiguous_grammar = Marpa::Grammar->new(
     {   start   => 'E',

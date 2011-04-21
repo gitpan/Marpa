@@ -1,0 +1,89 @@
+{
+   "abstract" : "Generate Parsers from any BNF grammar",
+   "author" : [
+      "Jeffrey Kegler"
+   ],
+   "dynamic_config" : 1,
+   "generated_by" : "Module::Build version 0.38, CPAN::Meta::Converter version 2.110930",
+   "license" : [
+      "perl_5"
+   ],
+   "meta-spec" : {
+      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "version" : "2"
+   },
+   "name" : "Marpa",
+   "no_index" : {
+      "directory" : [
+         "inc",
+         "xs",
+         "lib/Marpa/UrHTML",
+         "t",
+         "author.t",
+         "save"
+      ],
+      "namespace" : [
+         "Marpa::Recognizer",
+         "Marpa::Grammar",
+         "Marpa::Perl",
+         "Marpa::Offset",
+         "Marpa::Test",
+         "Marpa::Display",
+         "Marpa::MDL",
+         "Marpa::MDLex",
+         "Marpa::Evaluator",
+         "Marpa::UrHTML",
+         "Marpa::Internal"
+      ],
+      "package" : [
+         "Marpa::Perl",
+         "Marpa::Offset",
+         "Marpa::Test",
+         "Marpa::Display",
+         "Marpa::MDL",
+         "Marpa::MDLex",
+         "Marpa::Evaluator",
+         "Marpa::UrHTML",
+         "Marpa::Internal"
+      ]
+   },
+   "prereqs" : {
+      "build" : {
+         "requires" : {
+            "Test::More" : "0.94"
+         }
+      },
+      "configure" : {
+         "requires" : {
+            "Module::Build" : "0.38"
+         }
+      },
+      "runtime" : {
+         "recommends" : {
+            "PPI" : "1.206",
+            "Test::More" : "0.94"
+         },
+         "requires" : {
+            "HTML::Parser" : "3.64",
+            "HTML::PullParser" : "3.57",
+            "Scalar::Util" : 0
+         }
+      }
+   },
+   "provides" : {
+      "Marpa" : {
+         "file" : "lib/Marpa.pm",
+         "version" : "0.203_000"
+      }
+   },
+   "release_status" : "testing",
+   "resources" : {
+      "license" : [
+         "http://dev.perl.org/licenses/"
+      ],
+      "repository" : {
+         "url" : "git://github.com/jeffreykegler/Marpa.git"
+      }
+   },
+   "version" : "0.203_000"
+}

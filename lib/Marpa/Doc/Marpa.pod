@@ -8,6 +8,8 @@ Marpa - Parse any Language You Can Describe in BNF
 name: Engine Synopsis Unambiguous Parse
 perltidy: '-dcsc -sil=0'
 
+   use Marpa;
+
     my $grammar = Marpa::Grammar->new(
         {   start   => 'Expression',
             actions => 'My_Actions',
@@ -547,6 +549,8 @@ to return the value for every one of the parse results.
 =for Marpa::Display
 name: Engine Synopsis Ambiguous Parse
 perltidy: '-dcsc -sil=0'
+
+    use Marpa;
 
     my $ambiguous_grammar = Marpa::Grammar->new(
         {   start   => 'E',
