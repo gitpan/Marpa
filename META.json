@@ -73,7 +73,7 @@
    "provides" : {
       "Marpa" : {
          "file" : "lib/Marpa.pm",
-         "version" : "0.203_000"
+         "version" : "0.203_001"
       }
    },
    "release_status" : "testing",
@@ -85,5 +85,5 @@
          "url" : "git://github.com/jeffreykegler/Marpa.git"
       }
    },
-   "version" : "0.203_000"
+   "version" : "0.203_001"
 }
