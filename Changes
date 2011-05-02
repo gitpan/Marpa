@@ -1,9 +1,9 @@
 Revision history for Marpa
 
-0.203_001 Thu Apr 21 20:00:17 2011
-0.203_000 Wed Apr 20 21:37:24 2011
+0.204000 Mon May  2 16:20:27 2011
 
-    * Developer's Releases.
+    * Fixed documentation error:
+      Added "use Marpa;"
 
 0.202000 Sun Jan  9 20:46:35 2011
 
