@@ -5,7 +5,18 @@ use warnings;
 use strict;
 
 BEGIN {
-    our $VERSION = '0.204000';
+    our $VERSION = '0.205_000';
+}
+
+BEGIN {
+    if ( defined $Marpa::XS::VERSION ) {
+	Carp::croak( "You can only load one of the Marpa modules at a time\n",
+	    'Version ', $Marpa::XS::VERSION, " of Marpa::XS is already loaded\n" );
+    }
+    if ( defined $Marpa::PP::VERSION ) {
+	Carp::croak( "You can only load one of the Marpa modules at a time\n",
+	    'Version ', $Marpa::PP::VERSION, " of Marpa::PP is already loaded\n" );
+    }
 }
 
 use Scalar::Util ();

@@ -1,5 +1,12 @@
 Revision history for Marpa
 
+0.205_000 Tue Oct 25 21:26:41 PDT 2011
+
+    * Developer's release
+
+    * Ensure never loaded together with Marpa::PP or
+      Marpa::XS.
+
 0.204000 Mon May  2 16:20:27 2011
 
     * Fixed documentation error:

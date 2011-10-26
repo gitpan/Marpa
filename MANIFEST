@@ -3,6 +3,7 @@ Build.PL
 Changes
 LICENSE
 MANIFEST
+META.json
 META.yml
 Makefile.PL
 README
@@ -114,6 +115,8 @@ t/mdl/equation.t
 t/mdl/minus.t
 t/mdl/randal.t
 t/minus.t
+t/no_pp.t
+t/no_xs.t
 t/null_example.t
 t/null_infinite1.t
 t/null_infinite4.t
@@ -158,4 +161,3 @@ t/syn_engine.t
 t/timeflies.t
 t/wall.t
 t/weaken.t
-META.json
