@@ -5,7 +5,7 @@ use warnings;
 use strict;
 
 BEGIN {
-    our $VERSION = '0.205_000';
+    our $VERSION = '0.206000';
 }
 
 BEGIN {
