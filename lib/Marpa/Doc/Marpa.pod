@@ -60,10 +60,18 @@ perltidy: '-dcsc -sil=0'
 
 =head1 DESCRIPTION
 
-=head2 This is ALPHA software
+=head2 This release is OBSOLETE
+
+This release is obsolete.
+Please use the more up-to-date versions of Marpa instead.
+As of this writing,
+I recommend L<Marpa::XS>, which is beta,
+and whose interface I expect to keep stable.
+For those without a C compiler,
+L<Marpa::PP> is a Pure Perl alternative.
 
 This is B<alpha> software.
-There may be bugs. The interface may change.
+There may be bugs.
 Please be careful.
 Do not rely
 on it for anything mission-critical.

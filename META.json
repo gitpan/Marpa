@@ -73,10 +73,10 @@
    "provides" : {
       "Marpa" : {
          "file" : "lib/Marpa.pm",
-         "version" : "0.206000"
+         "version" : "0.207_000"
       }
    },
-   "release_status" : "stable",
+   "release_status" : "testing",
    "resources" : {
       "license" : [
          "http://dev.perl.org/licenses/"
@@ -85,5 +85,5 @@
          "url" : "git://github.com/jeffreykegler/Marpa.git"
       }
    },
-   "version" : "0.206000"
+   "version" : "0.207_000"
 }
