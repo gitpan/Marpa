@@ -1,5 +1,10 @@
 Revision history for Marpa
 
+0.208000 Wed Nov 30 20:29:11 PST 2011
+
+    * Add language deprecating this distribution
+      in favor of Marpa::XS
+
 0.206000 Sat Oct 29 18:05:40 PDT 2011
 
     * Ensure that the Marpa module is never
